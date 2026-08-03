@@ -298,18 +298,51 @@
                 </div>
             </div>
 
-            <!-- Right Side: Trends & Advice Widget -->
-            <div class="card">
-                <h3 class="card-title"><i class="fa-solid fa-chart-line text-blue"></i> Trend Liderleri & Tavsiyeler</h3>
-                
-                <h4 style="margin-top:1rem; color:var(--text-muted); text-transform:uppercase;">Kısa Vade (Günlük) Trade</h4>
-                <div style="background:var(--bg-base); padding:1rem; border-radius:8px; border:1px solid var(--border-color); margin-top:0.5rem;">
-                    Banka endeksi öncülüğünde momentum güçlü. Gün içi direnç kırılımlarında <b>Piramitleme</b> stratejisi uygulanabilir.
+            <!-- Right Side: Live Autonomous AI Committee Macro & Sector Engine -->
+            <div class="card" style="border:1px solid rgba(139, 92, 246, 0.4); background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(15,23,42,0.95) 100%); box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem;">
+                    <h3 class="card-title" style="margin:0; font-size:1.05rem; color:var(--accent-purple);"><i class="fa-solid fa-users-viewfinder text-purple"></i> Otonom Komite: Piyasa Trend Liderleri & Rejim Stratejisi</h3>
+                    <span class="badge" style="background:rgba(139, 92, 246, 0.2); color:#c084fc; font-weight:700; border:1px solid rgba(139, 92, 246, 0.4); padding:3px 8px; border-radius:12px; font-size:0.75rem;">Canlı Konsensüs</span>
                 </div>
                 
-                <h4 style="margin-top:1.5rem; color:var(--text-muted); text-transform:uppercase;">Uzun Vade (Aylık) Yatırım</h4>
-                <div style="background:var(--bg-base); padding:1rem; border-radius:8px; border:1px solid var(--border-color); margin-top:0.5rem;">
-                    Sınai endeksinde ucuzlayan temel rasyolar birikim (accumulation) bölgesi sunuyor. UZUN vade için Kademeli alıma uygundur.
+                <div id="home-committee-summary" style="display:flex; flex-direction:column; gap:0.8rem; margin-top:0.5rem;">
+                    <!-- 1. Canlı Rejim ve Sektörel Rotasyon -->
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:8px; padding:0.8rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+                            <span style="font-size:0.85rem; font-weight:700; color:var(--accent-green);"><i class="fa-solid fa-bolt"></i> Günlük Trend & Scalp Motoru</span>
+                            <span style="font-size:0.72rem; background:rgba(16,185,129,0.2); color:var(--accent-green); padding:2px 6px; border-radius:4px; font-weight:700;">MOMENTUM GÜÇLÜ</span>
+                        </div>
+                        <div id="home-advice-short" style="font-size:0.82rem; color:var(--text-light); line-height:1.4;">
+                            BIST genelinde para girişi odaklı hisselerde kırılımlar destekleniyor. Direnç hacimle geçildiğinde <b>Piramitleme</b> ve <b>5D Scalp</b> stratejileri ön plandadır.
+                        </div>
+                    </div>
+                    
+                    <!-- 2. Makro ve Uzun Vade Stratejisi -->
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:8px; padding:0.8rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+                            <span style="font-size:0.85rem; font-weight:700; color:var(--accent-blue);"><i class="fa-solid fa-shield-halved"></i> Kurumsal & Bilanço Değerleme (Uzun Vade)</span>
+                            <span style="font-size:0.72rem; background:rgba(59,130,246,0.2); color:var(--accent-blue); padding:2px 6px; border-radius:4px; font-weight:700;">KADEMELİ AKÜMÜLASYON</span>
+                        </div>
+                        <div id="home-advice-long" style="font-size:0.82rem; color:var(--text-light); line-height:1.4;">
+                            Temel rasyosu güçlü, F/K ve PD/DD çarpanları sektör ortalamasının altında kalan ihracatçı ve temettü liderlerinde destek testlerinde <b>Kademeli Alım</b> önerilir.
+                        </div>
+                    </div>
+
+                    <!-- 3. Canlı Öne Çıkan Komite Hisseleri -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-top:0.2rem;" id="home-top-picks">
+                        <button type="button" onclick="document.getElementById('symbol-input').value='THYAO'; analyzeSymbol();" style="flex:1; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:0.5rem; color:var(--text-light); cursor:pointer; font-size:0.78rem; text-align:center;">
+                            <div style="font-weight:800; color:var(--accent-green);">THYAO</div>
+                            <div style="font-size:0.7rem; color:var(--text-muted);">Komite Skoru: 88</div>
+                        </button>
+                        <button type="button" onclick="document.getElementById('symbol-input').value='TUPRS'; analyzeSymbol();" style="flex:1; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:0.5rem; color:var(--text-light); cursor:pointer; font-size:0.78rem; text-align:center;">
+                            <div style="font-weight:800; color:var(--accent-blue);">TUPRS</div>
+                            <div style="font-size:0.7rem; color:var(--text-muted);">Komite Skoru: 84</div>
+                        </button>
+                        <button type="button" onclick="document.getElementById('symbol-input').value='ASELS'; analyzeSymbol();" style="flex:1; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:0.5rem; color:var(--text-light); cursor:pointer; font-size:0.78rem; text-align:center;">
+                            <div style="font-weight:800; color:var(--accent-purple);">ASELS</div>
+                            <div style="font-size:0.7rem; color:var(--text-muted);">Komite Skoru: 81</div>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1164,6 +1197,6 @@
         </button>
     </div>
 
-    <script src="app.js?v=20260803_v6_unified_decision"></script>
+    <script src="app.js?v=20260803_v7_dynamic_committee"></script>
 </body>
 </html>

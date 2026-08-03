@@ -1597,6 +1597,48 @@ function renderAllDashboardTables() {
         'low_volume': 'tb-low_volume'
     };
 
+    // Canlı Giriş Ekranı: Otonom Komite Liderleri ve Tavsiyelerini Güncelle
+    const homePicksContainer = document.getElementById('home-top-picks');
+    if (homePicksContainer) {
+        let bestItems = [];
+        if (globalDashboardData['tavan_adaylari'] && globalDashboardData['tavan_adaylari'].length > 0) {
+            bestItems.push(...globalDashboardData['tavan_adaylari'].slice(0, 2));
+        }
+        if (globalDashboardData['opportunities_1h'] && globalDashboardData['opportunities_1h'].length > 0) {
+            bestItems.push(...globalDashboardData['opportunities_1h'].slice(0, 2));
+        }
+        if (globalDashboardData['opportunities'] && globalDashboardData['opportunities'].length > 0) {
+            bestItems.push(...globalDashboardData['opportunities'].slice(0, 2));
+        }
+        
+        // Benzersiz sembolleri al ve ilk 3 tanesini yerleştir
+        const uniqueSymbols = [];
+        const seenSyms = new Set();
+        for (let item of bestItems) {
+            if (item && item.Symbol && !seenSyms.has(item.Symbol)) {
+                seenSyms.add(item.Symbol);
+                uniqueSymbols.push(item);
+            }
+        }
+        
+        if (uniqueSymbols.length > 0) {
+            const top3 = uniqueSymbols.slice(0, 3);
+            const colors = ["var(--accent-green)", "var(--accent-blue)", "var(--accent-purple)"];
+            homePicksContainer.innerHTML = "";
+            top3.forEach((item, idx) => {
+                let sVal = item.Score !== undefined ? item.Score : (item.Score_5 ? item.Score_5 * 20 : 85);
+                let col = colors[idx] || "var(--accent-green)";
+                let priceStr = item.Price ? `₺${parseFloat(item.Price).toFixed(2)}` : '';
+                homePicksContainer.innerHTML += `
+                    <button type="button" onclick="document.getElementById('symbol-input').value='${item.Symbol}'; analyzeSymbol();" style="flex:1; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:0.5rem; color:var(--text-light); cursor:pointer; font-size:0.78rem; text-align:center; transition:transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+                        <div style="font-weight:800; color:${col};">${item.Symbol} <span style="font-size:0.7rem; color:var(--text-light); font-weight:normal;">${priceStr}</span></div>
+                        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;">Komite Skoru: <b style="color:${col};">${sVal}</b></div>
+                    </button>
+                `;
+            });
+        }
+    }
+
     for (let cat in cats) {
         const tbody = document.getElementById(cats[cat]);
         if (!tbody) continue;
