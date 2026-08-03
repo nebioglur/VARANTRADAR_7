@@ -2665,12 +2665,11 @@ async function fetchStatsTabData(startDate = '2026-08-05', endDate = '', symbol 
     const hofTbody = document.getElementById('stats-tab-hall-of-fame-tbody');
     const hourlyContainer = document.getElementById('stats-tab-hourly-cards-container');
 
-    if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="7" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> 05 Agustos 2026 baslangicli performans arsivi taranıyor...</td></tr>`;
-    if (hofTbody) hofTbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Yıldız hisseler hesaplanıyor...</td></tr>`;
+    if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="7" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Performans arsivi yukleniyor...</td></tr>`;
+    if (hofTbody) hofTbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Yildiz hisseler hesaplaniyor...</td></tr>`;
     if (hourlyContainer) hourlyContainer.innerHTML = `<div style="color:var(--text-muted); font-size:0.85rem; padding:1rem;"><i class="fa-solid fa-spinner fa-spin"></i> Saatlik veriler yukleniyor...</div>`;
 
     try {
-        // İstatistikler sekmesindeki input değerlerini kullan
         const tabStartDate = document.getElementById('stats-tab-start-date')?.value || startDate;
         const tabEndDate = document.getElementById('stats-tab-end-date')?.value || endDate;
         const tabSymbol = document.getElementById('stats-tab-symbol-search')?.value || symbol;
@@ -2685,7 +2684,26 @@ async function fetchStatsTabData(startDate = '2026-08-05', endDate = '', symbol 
         const data = await res.json();
 
         if (data.status === 'success') {
-            renderHistoryKpis(data.summary, 'stats-tab-');
+            const summ = data.summary || {};
+
+            // Veri yoksa (henüz ilk gün başlamadı) - bekleme ekranı göster
+            if (!summ.total_days_tracked || summ.total_days_tracked === 0) {
+                renderHistoryKpis(summ, 'stats-tab-');
+                if (hourlyContainer) hourlyContainer.innerHTML = `
+                    <div style="grid-column:1/-1; text-align:center; padding:2.5rem 1rem; background:rgba(16,185,129,0.04); border:1px dashed rgba(16,185,129,0.3); border-radius:10px;">
+                        <div style="font-size:2.5rem; margin-bottom:0.8rem;">📅</div>
+                        <div style="font-size:1.1rem; font-weight:800; color:#10b981; margin-bottom:0.4rem;">Sistem 05 Agustos 2026 Sabahi Hazir!</div>
+                        <div style="font-size:0.88rem; color:var(--text-muted); max-width:420px; margin:0 auto; line-height:1.6;">
+                            Sabah 10:15'te ilk tavan taramasi yapildiginda istatistikler buraya otomatik kaydedilecek.<br>
+                            <span style="color:#facc15; font-weight:700;">Her gun seans saatlerinde (10:15 / 11:30 / 14:00 / 16:00) ve 18:10 kapanis doneminde guncellenir.</span>
+                        </div>
+                    </div>`;
+                if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">Henuz kayitli seans bulunmuyor. Ilk seans verisi 05 Agustos 2026 sabahi 10:15'te olusturulacak.</td></tr>`;
+                if (hofTbody) hofTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">Henuz veri yok.</td></tr>`;
+                return;
+            }
+
+            renderHistoryKpis(summ, 'stats-tab-');
             renderHourlyCards(data.hourly_summary || [], hourlyContainer);
             renderDailyBreakdown(data.daily_breakdown || [], dailyTbody, 'stats-tab-');
             renderHallOfFame(data.hall_of_fame || [], hofTbody);

@@ -33,20 +33,18 @@ class TavanAuditTracker:
 
     @classmethod
     def load_all_audits(cls) -> Dict[str, Any]:
+        """Kalıcı denetim veritabanını yükler. Boşsa boş dict döner — gerçek verilerle dolacak."""
         cls._ensure_dir()
         if os.path.exists(AUDIT_FILE_PATH):
             try:
                 with open(AUDIT_FILE_PATH, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                    if data and isinstance(data, dict) and len(data) > 0:
+                    if data and isinstance(data, dict):
                         return data
             except Exception as e:
-                print(f"[TavanAuditTracker] Yükleme hatası: {e}")
-        
-        # Dosya yoksa veya boşsa varsayılan 05 Ağustos 2026 geçmiş denetim verilerini oluştur
-        initial_data = cls._generate_initial_historical_data()
-        cls.save_all_audits(initial_data)
-        return initial_data
+                print(f"[TavanAuditTracker] Yukleme hatasi: {e}")
+        # Boş başla — 05 Ağustos 2026'dan itibaren gerçek verilerle dolacak
+        return {}
 
     @classmethod
     def save_all_audits(cls, data: Dict[str, Any]):
@@ -263,11 +261,16 @@ class TavanAuditTracker:
 
     @classmethod
     def get_audit_report(cls, selected_date: str = None) -> Dict[str, Any]:
-        """İstenen günün veya en güncel günün denetim raporunu döndürür."""
+        """Istenen gunun veya en guncel gunun denetim raporunu dondurur."""
         all_audits = cls.load_all_audits()
         if not all_audits:
-            all_audits = cls._generate_initial_historical_data()
-            cls.save_all_audits(all_audits)
+            return {
+                "status": "empty",
+                "selected_date": selected_date or datetime.now().strftime("%Y-%m-%d"),
+                "available_dates": [],
+                "audit": {},
+                "overall_stats": {"cumulative_total_candidates": 0, "cumulative_tavan_success_pct": 0, "cumulative_plus5_success_pct": 0, "cumulative_avg_max_gain_pct": 0}
+            }
 
         available_dates = sorted(list(all_audits.keys()), reverse=True)
         
@@ -309,13 +312,22 @@ class TavanAuditTracker:
     @classmethod
     def get_long_term_history(cls, start_date: str = "2026-08-05", end_date: str = None, symbol_filter: str = None, time_filter: str = None) -> Dict[str, Any]:
         """
-        05 Ağustos 2026'dan itibaren veya özel tarih aralığında uzun vadeli kümülatif
-        Tavan ve +%5 başarı performans karnesini ve Saat Dilimi Başarı Analizini üretir.
+        05 Agustos 2026'dan itibaren gercek tavan oneri performansini uretir.
+        Veri yoksa bos ozet dondurur — demo veri uretmez.
         """
         all_audits = cls.load_all_audits()
         if not all_audits:
-            all_audits = cls._generate_initial_historical_data()
-            cls.save_all_audits(all_audits)
+            return {
+                "status": "success",
+                "start_date": start_date or "2026-08-05",
+                "end_date": end_date or datetime.now().strftime("%Y-%m-%d"),
+                "official_inception_date": "2026-08-05",
+                "summary": {"total_days_tracked": 0, "total_candidates_tracked": 0, "total_hit_ceiling": 0, "tavan_success_pct": 0.0, "total_hit_plus5": 0, "plus5_success_pct": 0.0, "cumulative_avg_max_gain_pct": 0.0, "cumulative_avg_closing_gain_pct": 0.0, "ahlatci_warrant_avg_gain_pct": 0.0},
+                "hourly_summary": [],
+                "daily_breakdown": [],
+                "hall_of_fame": [],
+                "available_range": {"min_date": "2026-08-05", "max_date": datetime.now().strftime("%Y-%m-%d")}
+            }
 
         sorted_dates = sorted(list(all_audits.keys()))
         
