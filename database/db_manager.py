@@ -78,14 +78,33 @@ class DBManager:
         except Exception as e:
             logger.error(f"Error adding to watchlist: {e}")
 
-    def save_analysis_history(self, symbol: str, interval: str, score: int, action: str, reasoning: str):
+    def get_setting(self, key: str, default: str = None) -> str:
+        """Belirtilen ayar anahtarının değerini getirir."""
         try:
             conn = self.get_connection()
-            conn.execute('''
-                INSERT INTO analysis_history (symbol, interval, score, action, reasoning, analyzed_at)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (symbol, interval, score, action, reasoning, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+            cursor = conn.cursor()
+            cursor.execute("SELECT setting_value FROM settings WHERE setting_key = ?", (key,))
+            row = cursor.fetchone()
+            conn.close()
+            return row[0] if row and row[0] is not None else default
+        except Exception as e:
+            logger.error(f"Error getting setting {key}: {e}")
+            return default
+
+    def save_setting(self, key: str, value: str) -> bool:
+        """Belirtilen ayar anahtarını kaydeder veya günceller."""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            now = datetime.now().isoformat()
+            cursor.execute("""
+                INSERT INTO settings (setting_key, setting_value, updated_at) 
+                VALUES (?, ?, ?)
+                ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = excluded.updated_at
+            """, (key, value, now))
             conn.commit()
             conn.close()
+            return True
         except Exception as e:
-            logger.error(f"Error saving analysis history: {e}")
+            logger.error(f"Error saving setting {key}: {e}")
+            return False

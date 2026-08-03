@@ -97,22 +97,38 @@ def background_scanner():
     
     notif = NotificationManager()
     sent_tavan = {}
+    sent_1h = {}
     sent_5m = {}
+    
+    # Sunucu başlatıldığında tek seferlik Telegram kontrol/açılış bildirimi gönder
+    try:
+        notif.send_system_startup_alert()
+    except Exception as e_start:
+        print(f"[BACKGROUND] Telegram açılış bildirimi hatası: {e_start}")
     
     def process_notifications(results):
         if not results or not isinstance(results, dict):
             return
         today_str = datetime.now().strftime("%Y-%m-%d")
         
-        # Tavan adaylari bildirimleri (Ayni gun sadece 1 kez gonder)
+        # 1. Tavan Adayları Bildirimleri (Aynı gün sadece 1 kez gönder)
         for tavan in results.get("tavan_adaylari", []):
             sym = tavan.get("Symbol")
             if sym and sent_tavan.get(sym) != today_str:
                 notif.send_tavan_alert(sym, tavan.get("Score", 0), tavan.get("Report", ""), tavan.get("Position"), extra=tavan)
                 sent_tavan[sym] = today_str
-                time.sleep(0.5) # Telegram API rate limit onlemi
+                time.sleep(0.5) # Telegram API rate limit önlemi
                 
-        # 5m RSI sinyalleri bildirimleri (Ayni gun, ayni sinyali sadece 1 kez gonder)
+        # 2. 1 Saatlik Güçlü Fırsatlar Bildirimleri (Score 4 veya 5 olanlar, günde 1 kez)
+        for opp in results.get("opportunities_1h", []):
+            sym = opp.get("Symbol")
+            score_5 = opp.get("Score_5", 0)
+            if sym and score_5 >= 4 and sent_1h.get(sym) != today_str:
+                notif.send_1h_opportunity_alert(opp)
+                sent_1h[sym] = today_str
+                time.sleep(0.5)
+                
+        # 3. 5m RSI Sinyalleri Bildirimleri (Aynı gün, aynı sinyali sadece 1 kez gönder)
         for rsi in results.get("signals_5m", []):
             sym = rsi.get("Symbol")
             sig = rsi.get("Signal")
@@ -519,6 +535,31 @@ def api_settings():
             return jsonify({"status": "success", "message": "Ayarlar başarıyla kaydedildi."})
         except Exception as e:
             return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/test_telegram', methods=['GET', 'POST'])
+def api_test_telegram():
+    """Telegram entegrasyonunu anında test eden endpoint."""
+    try:
+        from services.notification_manager import NotificationManager
+        from datetime import datetime
+        notif = NotificationManager()
+        now_time = datetime.now().strftime("%H:%M:%S")
+        test_msg = (
+            f"🔔 <b>VARANTRADAR PRO - TELEGRAM TEST BİLDİRİMİ</b>\n\n"
+            f"✅ <b>Bağlantı:</b> Başarılı! Telegram Botu ve Chat ID tam uyumlu çalışıyor.\n"
+            f"💰 <b>Örnek Fiyat:</b> ₺125.40 (+%4.50)\n"
+            f"🎯 <b>Tavan Hedefi:</b> ₺138.00 (Kalan: %+10.0)\n"
+            f"🛡 <b>Zarar Kes (Stop):</b> ₺121.50\n"
+            f"⏱ <b>Test Saati:</b> {now_time}\n\n"
+            f"🤖 <i>Artık tüm tavan adayları, 1 saatlik fırsatlar ve 5D RSI sinyalleri otomatik olarak bu kanala iletilecektir.</i>"
+        )
+        ok = notif.send_telegram_message(test_msg)
+        if ok:
+            return jsonify({"status": "success", "message": "Test mesajı Telegram'a başarıyla iletildi!"})
+        else:
+            return jsonify({"status": "error", "message": "Telegram bildirimi gönderilemedi. Lütfen Token ve Chat ID'nizi kontrol ediniz."}), 500
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/chart_data', methods=['GET'])
 def api_chart_data():

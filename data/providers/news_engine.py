@@ -1,7 +1,15 @@
 import traceback
-from gnews import GNews
-from textblob import TextBlob
 from datetime import datetime, timedelta
+
+try:
+    from gnews import GNews
+except ImportError:
+    GNews = None
+
+try:
+    from textblob import TextBlob
+except ImportError:
+    TextBlob = None
 
 class NewsEngine:
     """
@@ -10,12 +18,17 @@ class NewsEngine:
     """
     def __init__(self):
         # Set up GNews for Turkey / Turkish
-        self.google_news = GNews(language='tr', country='TR', period='6m', max_results=30)
+        if GNews:
+            self.google_news = GNews(language='tr', country='TR', period='6m', max_results=30)
+        else:
+            self.google_news = None
         
     def fetch_news(self, symbol):
         """
         Fetches up to 30 news articles from the past 6 months for the given symbol.
         """
+        if not self.google_news:
+            return []
         try:
             # Clean symbol (e.g. remove .IS)
             clean_symbol = symbol.replace('.IS', '')
