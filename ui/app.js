@@ -2652,6 +2652,19 @@ async function fetchLongTermHistoryData(startDate = '2026-08-05', endDate = '', 
 // 📊 İSTATİSTİKLER SEKMESİ - ANA FONKSİYONLARI
 // ============================================================
 
+function switchStatsTab(tabName, btnEl) {
+    // Sidebar butonları
+    document.querySelectorAll('#stats-wrapper .s-tab').forEach(b => b.classList.remove('active'));
+    if (btnEl) btnEl.classList.add('active');
+
+    // Tab pane'leri göster/gizle
+    const tabs = ['ozet', 'saatlik', 'gunluk', 'hallfame'];
+    tabs.forEach(t => {
+        const el = document.getElementById('stab-' + t);
+        if (el) el.style.display = (t === tabName) ? 'block' : 'none';
+    });
+}
+
 function applyStatsTabFilter() {
     const startDate = document.getElementById('stats-tab-start-date')?.value || '2026-08-05';
     const endDate = document.getElementById('stats-tab-end-date')?.value || '';
@@ -2689,17 +2702,11 @@ async function fetchStatsTabData(startDate = '2026-08-05', endDate = '', symbol 
             // Veri yoksa (henüz ilk gün başlamadı) - bekleme ekranı göster
             if (!summ.total_days_tracked || summ.total_days_tracked === 0) {
                 renderHistoryKpis(summ, 'stats-tab-');
-                if (hourlyContainer) hourlyContainer.innerHTML = `
-                    <div style="grid-column:1/-1; text-align:center; padding:2.5rem 1rem; background:rgba(16,185,129,0.04); border:1px dashed rgba(16,185,129,0.3); border-radius:10px;">
-                        <div style="font-size:2.5rem; margin-bottom:0.8rem;">📅</div>
-                        <div style="font-size:1.1rem; font-weight:800; color:#10b981; margin-bottom:0.4rem;">Sistem 05 Agustos 2026 Sabahi Hazir!</div>
-                        <div style="font-size:0.88rem; color:var(--text-muted); max-width:420px; margin:0 auto; line-height:1.6;">
-                            Sabah 10:15'te ilk tavan taramasi yapildiginda istatistikler buraya otomatik kaydedilecek.<br>
-                            <span style="color:#facc15; font-weight:700;">Her gun seans saatlerinde (10:15 / 11:30 / 14:00 / 16:00) ve 18:10 kapanis doneminde guncellenir.</span>
-                        </div>
-                    </div>`;
-                if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">Henuz kayitli seans bulunmuyor. Ilk seans verisi 05 Agustos 2026 sabahi 10:15'te olusturulacak.</td></tr>`;
-                if (hofTbody) hofTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">Henuz veri yok.</td></tr>`;
+                const notice = document.getElementById('stats-empty-notice');
+                if (notice) notice.style.display = 'block';
+                if (hourlyContainer) hourlyContainer.innerHTML = `<div style="color:var(--text-muted); font-size:0.85rem; padding:2rem; text-align:center; grid-column:1/-1;"><i class="fa-regular fa-calendar-xmark" style="font-size:2rem; color:#10b981; display:block; margin-bottom:0.5rem;"></i>Henuz seans verisi yok. Ilk kayit 05 Agustos 2026 sabahi 10:15'te olusturulacak.</div>`;
+                if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">Henuz kayitli seans bulunmuyor.</td></tr>`;
+                if (hofTbody) hofTbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">Henuz veri yok.</td></tr>`;
                 return;
             }
 
