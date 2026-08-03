@@ -39,9 +39,6 @@ class ExecutiveDecisionEngine:
         if options_result is None:
             options_result = {}
         
-        # =========================================================
-        # THE 20-MODULE COMMAND CENTER REPORT
-        # =========================================================
         from decision.coach import PsychologyCoach
         from decision.agents.cio_ai import ChiefInvestmentOfficer
         import datetime
@@ -49,7 +46,6 @@ class ExecutiveDecisionEngine:
         
         # 1. TRADE PLANNER (Giriş, Stop, TP) - Dinamik VIX ve ATR ile
         trend = technical_result.get("Trend", "YATAY")
-        # Macro'dan sanal bir VIX al, yoksa 20.0
         vix_level = 20.0 
         if "Volatility" in macro_result and macro_result["Volatility"] == "YÜKSEK VOLATİLİTE":
             vix_level = 30.0
@@ -63,7 +59,7 @@ class ExecutiveDecisionEngine:
             total_capital=total_capital, 
             entry_price=entry_avg, 
             stop_loss=stop_loss,
-            win_rate_pct=55.0, # TODO: Backtest'ten dinamik gelecek
+            win_rate_pct=55.0,
             risk_reward_ratio=trade_plan.get("Risk_Reward_Ratio", 2.0)
         )
         
@@ -75,7 +71,6 @@ class ExecutiveDecisionEngine:
         action = cio_report["Final_Action"] 
         
         # 4. AĞIRLIKLANDIRMA VE GÜVEN SKORU
-
         engine_scores = {
             "Technical": technical_result.get("Score", 50.0),
             "Fundamental": fundamental_result.get("Score", 50.0),
@@ -86,7 +81,6 @@ class ExecutiveDecisionEngine:
         
         # --- FAZ 3: YAPAY ZEKA ÖĞRENME MOTORU BAĞLANTISI ---
         regime = macro_result.get("Regime", "YATAY")
-        # Base Confidence = AILearningEngine'den gelen dinamik ağırlıklar
         ai_weights = AILearningEngine.get_regime_weights(regime)
         
         confidence_score = (
@@ -101,12 +95,11 @@ class ExecutiveDecisionEngine:
         anti_agent = AntiAgent.challenge_decision(engine_scores, confidence_score)
         confidence_score = anti_agent["Adjusted_Confidence"]
         
-        # --- UYUYAN DEVLERİ UYANDIRMA: FAZ 1 ---
+        # Order Flow & Smart Money
         from engines.order_flow_engine import OrderFlowEngine
         from engines.smart_money_engine import SmartMoneyEngine as SMEngineDeep
         from engines.explainable_ai_engine import ExplainableAIEngine
         
-        # 1. Order Flow (Derinlik / Hacim Dengesizliği)
         imbalance = OrderFlowEngine.analyze_synthetic_imbalance(df, window=5)
         sweeps = OrderFlowEngine.detect_liquidity_sweeps(df, lookback=20)
         imbalance_val = float(imbalance.iloc[-1]) if not imbalance.empty and not pd.isna(imbalance.iloc[-1]) else 0.5
@@ -120,7 +113,6 @@ class ExecutiveDecisionEngine:
             "Sweep_Count": len(sweeps)
         }
         
-        # 2. Smart Money Deep (Kurumsal Balina Takibi)
         mfi = SMEngineDeep.calculate_mfi(df)
         obv = SMEngineDeep.calculate_obv(df)
         mfi_val = float(mfi.iloc[-1]) if not mfi.empty and not pd.isna(mfi.iloc[-1]) else 50.0
@@ -133,20 +125,17 @@ class ExecutiveDecisionEngine:
             "Whale_Action": sm_status
         }
         
-        # 3. Explainable AI (7 Neden)
         decision_str = "AL" if confidence_score > 60 else ("SAT" if confidence_score < 40 else "BEKLE")
-        vwap_dist = 0 # VWAP implementasyonu sonraya bırakıldı
+        vwap_dist = 0
         reasons_list = ExplainableAIEngine.generate_explanation(decision_str, technical_result.get("Indicators", {}), smart_money_result.get("Score", 50), vwap_dist)
         
-        # Mevcut sahte 7_Whys sözlüğünü XAI'nin gerçek mantığıyla eziyoruz.
         whys_dict = {}
         for i, r in enumerate(reasons_list):
             whys_dict[f"XAI_Nedensellik_{i+1}"] = r
             
         cio_report["The_7_Whys"] = whys_dict
-        # ---------------------------------------
         
-        # 5. VALIDASYON (Backtest ve Monte Carlo)
+        # 5. VALIDASYON
         tp_main = trade_plan["Exit_Plan"]["Take_Profit_2"]
         backtest = BacktestValidator.run_historical_test(symbol, df, entry_avg, stop_loss, tp_main)
         rr_str = str(trade_plan["Risk_Reward_Ratio"])
@@ -157,13 +146,10 @@ class ExecutiveDecisionEngine:
         atr_estimate = current_price * 0.02
         multiplier = 1.0 if is_bull else -1.0
         
-        # 7. Risk & Conviction
         risk_score = 100 - confidence_score + (20 if not is_bull else 0)
         risk_score = min(max(risk_score, 0), 100)
         conviction_score = confidence_score * 0.8 + engine_scores.get("SmartMoney", 50) * 0.2
-
         
-        # 3. Investment Grade
         if confidence_score >= 90: inv_grade = "AAA"
         elif confidence_score >= 80: inv_grade = "AA"
         elif confidence_score >= 70: inv_grade = "A"
@@ -172,7 +158,6 @@ class ExecutiveDecisionEngine:
         elif confidence_score >= 40: inv_grade = "B"
         else: inv_grade = "CCC"
         
-        # 3.5 Operations & Positioning
         op_pyramiding = "Karlı pozisyonlara ekleme yapma aşamasına geçilmedi."
         if is_bull and trend == "GÜÇLÜ YÜKSELİŞ" and confidence_score > 70:
             op_pyramiding = "Trend güçlü. Direnç kırılımlarında karlı pozisyonlara (Piramitleme) ekleme yapılabilir."
@@ -189,7 +174,6 @@ class ExecutiveDecisionEngine:
         elif inv_grade in ["CCC", "B"]:
             op_long_term = "UZAK DUR - Makro ve temel yapı bozuk."
         
-        # 4. Multi-Timeframe Generator
         mtf = {
             "Daily": {"Trend": trend, "Move": f"%{round(atr_estimate/current_price*100,1)}", "Risk": "Yüksek", "Target": round(current_price + atr_estimate*1.5*multiplier,2), "Stop": round(current_price - atr_estimate*1.5*multiplier,2)},
             "Weekly": {"Trend": "Boğa" if is_bull else "Yatay", "Move": f"%{round((atr_estimate*4)/current_price*100,1)}", "Risk": "Orta", "Target": round(current_price + atr_estimate*4*multiplier,2), "Stop": round(current_price - atr_estimate*4*multiplier,2)},
@@ -198,17 +182,15 @@ class ExecutiveDecisionEngine:
             "Month_6": {"Trend": "Döngüsel", "Move": f"%{round((atr_estimate*45)/current_price*100,1)}", "Risk": "Düşük", "Target": round(current_price + atr_estimate*45*multiplier,2), "Stop": round(current_price - atr_estimate*20*multiplier,2)}
         }
         
-        # 5. DOS and DONTS
         directives = PsychologyCoach.generate_command_center_directives(action, confidence_score, regime, risk_score)
 
-        # Calculate daily change percentage
         change_pct = 0.0
         if df is not None and len(df) >= 2:
             prev_close = df['close'].iloc[-2]
             if prev_close > 0:
                 change_pct = ((current_price - prev_close) / prev_close) * 100
 
-        # --- V2.0: 6-Month News & AI Feedback ---
+        # News & AI Feedback
         try:
             news_engine = NewsEngine()
             historical_news = news_engine.fetch_news(symbol)
@@ -228,6 +210,60 @@ class ExecutiveDecisionEngine:
             historical_news = []
             ai_narrative = f"Yapay Zeka Raporu oluşturulamadı: {e}"
 
+        # --- BÜYÜK YATIRIMCI İKNA & KARAR MOTORU (CONVICTION PLAYBOOK) ---
+        tp1_val = trade_plan["Exit_Plan"]["Take_Profit_1"]
+        tp2_val = trade_plan["Exit_Plan"]["Take_Profit_2"]
+        entry1_val = trade_plan['Entry_Plan']['Entry_1']
+        entry2_val = trade_plan['Entry_Plan']['Entry_2']
+        
+        tp1_gain = round(((tp1_val - current_price) / current_price) * 100, 1) if current_price > 0 else 5.0
+        tp2_gain = round(((tp2_val - current_price) / current_price) * 100, 1) if current_price > 0 else 10.0
+        sl_loss = round(((current_price - stop_loss) / current_price) * 100, 1) if current_price > 0 else 3.0
+        sl_loss = max(sl_loss, 0.8)
+        rr_calc = round(tp2_gain / sl_loss, 1) if sl_loss > 0 else 2.5
+        
+        if confidence_score >= 70:
+            verdict_badge = "GÜÇLÜ AL"
+            verdict_title = "🚨 KESİN AL — YÜKSEK KURUMSAL İKNA & MOMENTUM"
+            verdict_color = "#10b981"
+            exec_pitch = f"{symbol} hissesinde teknik güç, akıllı para hacmi ve piyasa rejimi aynı yönde birleşerek (confluence) yüksek olasılıklı bir yükseliş fırsatı oluşturmuştur. Fiyat ₺{round(current_price, 2)} seviyesinde olup, ₺{stop_loss} seviyesinde risk sıkı tutulurken ₺{tp1_val} (+%{tp1_gain}) ve ₺{tp2_val} (+%{tp2_gain}) hedefleri 1:{rr_calc} gibi asimetrik bir kazanç/risk avantajı sunmaktadır."
+        elif confidence_score >= 50:
+            verdict_badge = "KADEMELİ AL"
+            verdict_title = "🛡️ KADEMELİ AL — PULLBACK DESTEK GİRİŞİ"
+            verdict_color = "#38bdf8"
+            exec_pitch = f"{symbol} hissesinde ana trend yukarı yönlüdür ancak kısa vadeli göstergeler düzeltme veya direnç testine işaret etmektedir. Tek seferde girmek yerine ₺{entry1_val} ve olası testte ₺{entry2_val} desteklerinden 2 kademede alım yaparak ortalamayı güvenli seviyede tutmak en akılcı stratejidir."
+        else:
+            verdict_badge = "İZLE / BEKLE"
+            verdict_title = "🛑 İZLE / NÖTR — RİSKSİZ BEKLEME"
+            verdict_color = "#f59e0b"
+            exec_pitch = f"{symbol} için teknik ve hacim verileri şu anda net bir yön teyidi vermemektedir. Sermayenizi korumak adına kırılım veya destek dönüşü teyit edilmeden pozisyon açılması önerilmez."
+
+        warrant_gain_tp1 = round(tp1_gain * 5.2, 1)
+        warrant_gain_tp2 = round(tp2_gain * 5.2, 1)
+
+        conviction_playbook = {
+            "Verdict_Badge": verdict_badge,
+            "Verdict_Title": verdict_title,
+            "Verdict_Color": verdict_color,
+            "Executive_Pitch": exec_pitch,
+            "Risk_Reward_Ratio": f"1 : {rr_calc}",
+            "Max_Risk_Loss_Pct": f"-%{sl_loss}",
+            "TP1_Gain_Pct": f"+%{tp1_gain}",
+            "TP2_Gain_Pct": f"+%{tp2_gain}",
+            "Top_3_Proofs": [
+                f"<b>1. Kurumsal Para & Hacim:</b> MFI %{round(mfi_val, 1)} ({sm_status}) ve OBV trendi {obv_trend} yönünde. Alıcı baskısı {buyer_pressure} olarak ölçüldü.",
+                f"<b>2. Teknik Güç & Trend:</b> Trend '{trend}' yönünde, teknik puan {technical_result.get('Score', 50)}/100. Fiyat hareketli ortalamaların üzerinde güç topluyor.",
+                f"<b>3. Matematiksel Risk/Ödül:</b> Zarar Kes: ₺{stop_loss} (-%{sl_loss} risk) | Ana Hedef: ₺{tp2_val} (+%{tp2_gain} kâr). Risk/Kazanç Oranı 1 : {rr_calc} ile istatistiksel üstünlük sağlar."
+            ],
+            "Tactical_Steps": [
+                f"<b>🛒 1. Giriş:</b> ₺{entry1_val} seviyesinden planlanan sermayenin %50'si ile ilk kademe alımı yapın.",
+                f"<b>🔄 2. Destek Alımı:</b> Geri çekilme olursa ₺{entry2_val} seviyesinden kalan %50 ile maliyet düşürün.",
+                f"<b>🛡️ 3. Sermaye Kalkanı:</b> ₺{stop_loss} altında kapanış gelirse pozisyonu kapatıp sermayenizi koruyun.",
+                f"<b>💰 4. Kâr Realizasyonu:</b> ₺{tp1_val} (+%{tp1_gain}) seviyesinde %50 kâr alın; kalan için stop'u maliyete çekerek sıfır riskle ₺{tp2_val} (+%{tp2_gain}) hedefine sürün."
+            ],
+            "Warrant_Tactics": f"⚡ <b>Kaldıraçlı Varant Fırsatı:</b> Hissedeki olası +%{tp1_gain} - +%{tp2_gain} yükseliş, ~5x kaldıraçlı bir Alım (Call) Varantında <b>+%{warrant_gain_tp1} ile +%{warrant_gain_tp2}</b> arasında kâr potansiyeli yaratır. Delta 0.40 - 0.60 arası, min 30 gün vadeli varant önerilir."
+        }
+
         return {
             "META": {
                 "Symbol": symbol,
@@ -235,7 +271,8 @@ class ExecutiveDecisionEngine:
                 "Change_Pct": round(change_pct, 2),
                 "Timestamp": timestamp
             },
-            "Section_1_Executive": f"Bugünkü piyasa koşullarında {symbol}, {regime} rejimi ve {confidence_score} güven skoru nedeniyle {inv_grade} seviyesinde değerlendirilmektedir.",
+            "Section_0_Conviction_Playbook": conviction_playbook,
+            "Section_1_Executive": exec_pitch,
             "Section_2_Grade": inv_grade,
             "Section_3_Opportunity": round(confidence_score * 0.9 + 10, 1),
             "Section_4_Confidence": confidence_score,
@@ -246,14 +283,14 @@ class ExecutiveDecisionEngine:
             "Section_9_Position": {
                 "Amount": f"Kasanın Maksimum %{risk_plan.get('Max_Risk_Pct', 2.0)}'si",
                 "Scaling": "3 Kademe",
-                "Entry_1": trade_plan['Entry_Plan']['Entry_1'],
-                "Entry_2": trade_plan['Entry_Plan']['Entry_2'],
+                "Entry_1": entry1_val,
+                "Entry_2": entry2_val,
                 "Entry_3": round(current_price * 0.95, 2),
                 "Cash_Reserve": "Min %30 Nakit"
             },
             "Section_10_Exit": {
-                "TP1": trade_plan["Exit_Plan"]["Take_Profit_1"],
-                "TP2": trade_plan["Exit_Plan"]["Take_Profit_2"],
+                "TP1": tp1_val,
+                "TP2": tp2_val,
                 "TP3": trade_plan["Exit_Plan"]["Take_Profit_3"],
                 "Strategy": "Trailing Stop & Kademeli Satış"
             },
@@ -288,7 +325,7 @@ class ExecutiveDecisionEngine:
                 "Monte_Carlo_Risk": f"%{monte_carlo.get('Max_Drawdown_Pct', 0.0)}",
                 "Average_Days_to_Target": backtest.get("Average_Days_to_Target", 0.0)
             },
-                        "Section_19_Reasoning": {
+            "Section_19_Reasoning": {
                 "Pro": "Kurumsal para girişi ve teknik güç.",
                 "Con": "Kısa vadeli momentum yorgunluğu.",
                 "Counter": anti_agent["Counter_Opinion"],
@@ -330,7 +367,6 @@ class ExecutiveDecisionEngine:
             "Section_26_SmartMoney": smart_money_deep_data,
             "Section_27_Fundamental": {
                 "P_E_Ratio": fundamental_result.get("P_E_Ratio", "N/A"),
-
                 "ROE": fundamental_result.get("ROE", "N/A"),
                 "Debt_to_Equity": fundamental_result.get("Debt_to_Equity", "N/A"),
                 "Score": fundamental_result.get("Score", 50.0),

@@ -6,7 +6,7 @@
     <title>VARANTRADAR PRO | FINTECH TERMINAL</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=20260723">
+    <link rel="stylesheet" href="style.css?v=20260803_v2">
     <!-- ApexCharts -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     
@@ -43,6 +43,10 @@
 
     <!-- LOADING OVERLAY -->
     <div id="loading" class="loading-overlay" style="display: none;">
+        <!-- 📱 TELEFON & MASAÜSTÜ İÇİN GERİ DÖN OK TUŞU -->
+        <button type="button" class="btn-cancel-loading" onclick="cancelLoadingAndGoBack()" title="Geri Dön / Taramayı İptal Et">
+            <i class="fa-solid fa-arrow-left"></i> Geri Dön
+        </button>
         <div class="spinner"></div>
         <div class="loading-text">Veri Kaynakları Taranıyor...</div>
         <div class="term-box">
@@ -297,6 +301,63 @@
                 
                 <!-- 1. OVERVIEW TAB -->
                 <div id="tab-overview" class="tab-pane active">
+                    
+                    <!-- 0. CONVICTION & ACTION PLAYBOOK (BAŞ YATIRIM YÖNETİCİSİ İKNA & KARAR KARTI) -->
+                    <div class="card conviction-card" id="conviction-wrapper" style="border: 2px solid var(--accent-green); background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.95) 100%); margin-bottom: 1.5rem; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);">
+                        <div class="conviction-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 1rem; margin-bottom: 1rem;">
+                            <div>
+                                <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-blue); font-weight: 700;">
+                                    <i class="fa-solid fa-brain"></i> BAŞ YATIRIM YÖNETİCİSİ (CIO) KURUMSAL KARAR RAPORU
+                                </div>
+                                <h2 id="conviction-title" style="font-size: 1.35rem; font-weight: 800; color: #fff; margin-top: 4px;">
+                                    🚨 KESİN AL — YÜKSEK KURUMSAL İKNA & MOMENTUM
+                                </h2>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div id="conviction-rr-badge" style="background: rgba(59, 130, 246, 0.15); border: 1px solid var(--accent-blue); color: var(--accent-blue); padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 0.9rem;">
+                                    <i class="fa-solid fa-scale-balanced"></i> R:R <span id="conviction-rr-val">1 : 3.2</span>
+                                </div>
+                                <div id="conviction-action-badge" class="badge" style="background: var(--accent-green); color: #000; font-size: 1rem; padding: 6px 14px; font-weight: 800; border-radius: 8px;">
+                                    GÜÇLÜ AL
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pitch Narrative -->
+                        <div id="conviction-pitch" style="font-size: 0.98rem; line-height: 1.6; color: #e2e8f0; background: rgba(0, 0, 0, 0.25); padding: 1rem; border-radius: 8px; border-left: 4px solid var(--accent-green); margin-bottom: 1.2rem;">
+                            Analiz hazırlanıyor...
+                        </div>
+
+                        <!-- 3 Killer Proofs & Tactical Steps (Grid 2 Col) -->
+                        <div class="grid-2-col" style="gap: 1.2rem; margin-bottom: 1.2rem;">
+                            <!-- Left: 3 Big Proofs (Neden İkna Olmalısın?) -->
+                            <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06); padding: 1rem; border-radius: 8px;">
+                                <h4 style="color: var(--accent-yellow); font-size: 0.95rem; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 6px;">
+                                    <i class="fa-solid fa-check-double"></i> Neden İkna Olmalısın? (3 Temel Kanıt)
+                                </h4>
+                                <ul id="conviction-proofs" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; font-size: 0.88rem; color: #cbd5e1;">
+                                </ul>
+                            </div>
+
+                            <!-- Right: Step-by-Step Playbook (4 Adımlı İşlem Rotası) -->
+                            <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06); padding: 1rem; border-radius: 8px;">
+                                <h4 style="color: var(--accent-green); font-size: 0.95rem; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 6px;">
+                                    <i class="fa-solid fa-route"></i> 4 Adımlı Taktik İşlem Planı
+                                </h4>
+                                <ul id="conviction-steps" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; font-size: 0.88rem; color: #cbd5e1;">
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Warrant Tactics Bar -->
+                        <div id="conviction-warrant-box" style="background: linear-gradient(90deg, rgba(234, 179, 8, 0.1) 0%, rgba(30, 58, 138, 0.15) 100%); border: 1px solid rgba(234, 179, 8, 0.3); padding: 0.9rem 1.2rem; border-radius: 8px; font-size: 0.9rem; color: #fef08a; display: flex; align-items: center; gap: 10px;">
+                            <i class="fa-solid fa-bolt-lightning text-yellow" style="font-size: 1.3rem;"></i>
+                            <div id="conviction-warrant-text">
+                                ⚡ Kaldıraçlı Varant Fırsatı hesaplanıyor...
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="grid-2-col">
                         <!-- AI Scores & Charts -->
                         <div class="card">
@@ -891,6 +952,6 @@
         </button>
     </div>
 
-    <script src="app.js?v=20260724_v11"></script>
+    <script src="app.js?v=20260803_v2"></script>
 </body>
 </html>

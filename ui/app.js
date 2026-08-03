@@ -104,8 +104,18 @@ function updateAcSelection() {
     });
 }
 
-// ========== TAB NAVIGATION LOGIC ==========
+// ========== TAB & NAVIGATION LOGIC ==========
+let lastActiveTab = 'home';
+let analysisAbortController = null;
+let logInterval = null;
+
 function switchMainTab(tabName, btnElement) {
+    if (tabName !== 'dashboard') {
+        lastActiveTab = tabName;
+    }
+    const loadingEl = document.getElementById('loading');
+    if (loadingEl && tabName !== 'dashboard') loadingEl.style.display = 'none';
+
     document.getElementById('home-wrapper').style.display = tabName === 'home' ? 'block' : 'none';
     document.getElementById('dashboard-wrapper').style.display = tabName === 'dashboard' ? 'block' : 'none';
     document.getElementById('radar-wrapper').style.display = tabName === 'radar' ? 'block' : 'none';
@@ -117,6 +127,27 @@ function switchMainTab(tabName, btnElement) {
     if (tabName === 'news') {
         fetchGlobalNews();
     }
+}
+
+function cancelLoadingAndGoBack() {
+    if (analysisAbortController) {
+        try { analysisAbortController.abort(); } catch(e){}
+    }
+    if (logInterval) {
+        clearInterval(logInterval);
+    }
+    const loadingEl = document.getElementById('loading');
+    if (loadingEl) loadingEl.style.display = 'none';
+    
+    let targetTab = lastActiveTab || 'home';
+    let navBtns = document.querySelectorAll('.nav-btn');
+    let targetBtn = navBtns[0]; // GİRİŞ
+    if (targetTab === 'radar' && navBtns.length > 1) {
+        targetBtn = navBtns[1];
+    } else if (targetTab === 'news' && navBtns.length > 2) {
+        targetBtn = navBtns[2];
+    }
+    switchMainTab(targetTab, targetBtn);
 }
 
 function switchSubTab(tabName, btnElement) {
@@ -331,6 +362,11 @@ async function analyzeSymbol() {
     let symbol = symbolInput.value.trim();
     if (!symbol) return;
 
+    if (analysisAbortController) {
+        try { analysisAbortController.abort(); } catch(e){}
+    }
+    analysisAbortController = new AbortController();
+
     // Switch to dashboard view
     switchMainTab('dashboard', document.querySelectorAll('.nav-btn')[1]);
     document.getElementById('dashboard-wrapper').style.display = 'none';
@@ -342,26 +378,40 @@ async function analyzeSymbol() {
     simulateTerminalLogs(symbol);
 
     try {
-        const response = await fetch('/api/analyze?symbol=' + symbol);
+        const response = await fetch('/api/analyze?symbol=' + encodeURIComponent(symbol), {
+            signal: analysisAbortController.signal
+        });
         const data = await response.json();
 
         // Let the logs finish reading
         setTimeout(() => {
-            document.getElementById('loading').style.display = 'none';
+            const loadingEl = document.getElementById('loading');
+            if (!loadingEl || loadingEl.style.display === 'none') {
+                // Analysis was cancelled by user
+                return;
+            }
+            loadingEl.style.display = 'none';
             if (response.status !== 200 || data.status === "error") {
                 alert("⛔ UPLINK ERROR\n\n" + (data.message || data.error));
+                cancelLoadingAndGoBack();
                 return;
             }
             bindDataToDashboard(data.report);
-        }, 800);
+        }, 600);
         
     } catch (error) {
+        if (error.name === 'AbortError') {
+            console.log('Analiz kullanıcı tarafından iptal edildi.');
+            return;
+        }
         document.getElementById('loading').style.display = 'none';
         alert("CRITICAL ERROR: Connection lost.\n" + error);
+        cancelLoadingAndGoBack();
     }
 }
 
 function simulateTerminalLogs(symbol) {
+    if (logInterval) clearInterval(logInterval);
     const termLogs = document.getElementById('term-logs');
     termLogs.innerHTML = "";
     const fakeLogs = [
@@ -377,7 +427,7 @@ function simulateTerminalLogs(symbol) {
         "> RAPOR BAŞARIYLA OLUŞTURULDU VE BÜYÜK BEYİN TARAFINDAN ONAYLANDI."
     ];
     let logIdx = 0;
-    const interval = setInterval(() => {
+    logInterval = setInterval(() => {
         if (logIdx < fakeLogs.length) {
             let p = document.createElement('div');
             p.className = 'term-line';
@@ -386,7 +436,7 @@ function simulateTerminalLogs(symbol) {
             termLogs.scrollTop = termLogs.scrollHeight;
             logIdx++;
         } else {
-            clearInterval(interval);
+            clearInterval(logInterval);
         }
     }, 100);
 }
@@ -929,6 +979,69 @@ function bindDataToDashboard(report) {
     let conf = parseFloat(safeGet(report, "Section_4_Confidence", 0));
     let risk = parseFloat(safeGet(report, "Section_5_Risk", 0));
     drawScoreChart(conf, risk);
+
+    // 0. CONVICTION & ACTION PLAYBOOK (BAŞ YATIRIM YÖNETİCİSİ İKNA RAPORU)
+    const playbook = safeGet(report, "Section_0_Conviction_Playbook", null);
+    const convWrapper = document.getElementById('conviction-wrapper');
+    if (convWrapper) {
+        if (playbook) {
+            convWrapper.style.display = 'block';
+            convWrapper.style.borderColor = playbook.Verdict_Color || 'var(--accent-green)';
+            setElText('conviction-title', playbook.Verdict_Title || 'CIO KURUMSAL KARAR RAPORU');
+            setElText('conviction-rr-val', playbook.Risk_Reward_Ratio || '1 : 2.5');
+            
+            const actionBadge = document.getElementById('conviction-action-badge');
+            if (actionBadge) {
+                actionBadge.textContent = playbook.Verdict_Badge || 'GÜÇLÜ AL';
+                actionBadge.style.background = playbook.Verdict_Color || 'var(--accent-green)';
+                actionBadge.style.color = '#000';
+            }
+            
+            const pitchEl = document.getElementById('conviction-pitch');
+            if (pitchEl) {
+                pitchEl.innerHTML = playbook.Executive_Pitch || '';
+                pitchEl.style.borderLeftColor = playbook.Verdict_Color || 'var(--accent-green)';
+            }
+            
+            const proofsUl = document.getElementById('conviction-proofs');
+            if (proofsUl) {
+                proofsUl.innerHTML = '';
+                (playbook.Top_3_Proofs || []).forEach(p => {
+                    proofsUl.innerHTML += `<li style="background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 6px; border-left: 3px solid var(--accent-yellow);">${p}</li>`;
+                });
+            }
+            
+            const stepsUl = document.getElementById('conviction-steps');
+            if (stepsUl) {
+                stepsUl.innerHTML = '';
+                (playbook.Tactical_Steps || []).forEach(s => {
+                    stepsUl.innerHTML += `<li style="background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 6px; border-left: 3px solid var(--accent-green);">${s}</li>`;
+                });
+            }
+            
+            const warrantText = document.getElementById('conviction-warrant-text');
+            if (warrantText) {
+                warrantText.innerHTML = playbook.Warrant_Tactics || '⚡ Varant bilgisi hesaplanamadı.';
+            }
+        } else {
+            let fallbackConf = parseFloat(safeGet(report, "Section_4_Confidence", 50));
+            let fallbackBadge = fallbackConf >= 70 ? "GÜÇLÜ AL" : (fallbackConf >= 50 ? "KADEMELİ AL" : "İZLE / BEKLE");
+            let fallbackColor = fallbackConf >= 70 ? "var(--accent-green)" : (fallbackConf >= 50 ? "var(--accent-blue)" : "var(--accent-yellow)");
+            setElText('conviction-title', `🚨 ${sym} İÇİN YAPAY ZEKA VE CIO KARAR RAPORU`);
+            setElText('conviction-rr-val', "1 : 3.0");
+            const actionBadge = document.getElementById('conviction-action-badge');
+            if (actionBadge) {
+                actionBadge.textContent = fallbackBadge;
+                actionBadge.style.background = fallbackColor;
+                actionBadge.style.color = '#000';
+            }
+            const pitchEl = document.getElementById('conviction-pitch');
+            if (pitchEl) {
+                pitchEl.innerHTML = safeGet(report, "Section_1_Executive", "Analiz verisi inceleniyor.");
+                pitchEl.style.borderLeftColor = fallbackColor;
+            }
+        }
+    }
 
     setElText('pos-amt', safeGet(report, "Section_9_Position.Amount"));
     setElText('pos-scale', safeGet(report, "Section_9_Position.Scaling"));
