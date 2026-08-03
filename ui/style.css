@@ -570,3 +570,31 @@ body {
         font-size: 1.8rem !important;
     }
 }
+
+/* Pill Tabs Active / Hover Styles */
+.pill-btn {
+    transition: all 0.2s ease;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+.pill-btn:hover {
+    transform: translateY(-1px);
+    background: rgba(59, 130, 246, 0.25) !important;
+    color: #fff !important;
+}
+.pill-btn.active {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(37, 99, 235, 0.3) 100%) !important;
+    color: #38bdf8 !important;
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+}
+
+/* Smooth Fade In Animation for Filtered Cards */
+.card-fade-in {
+    animation: cardFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes cardFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+

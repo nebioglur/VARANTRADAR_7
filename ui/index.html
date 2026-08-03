@@ -167,6 +167,31 @@
 
             </div>
 
+            <!-- 📱 MOBİL & MASAÜSTÜ HIZLI KATEGORİ FİLTRE HAPLARI (PILL TABS) -->
+            <div id="radar-pill-tabs" style="grid-column: 1 / -1; display:flex; gap:8px; overflow-x:auto; padding-bottom:6px; margin-bottom:1rem; scrollbar-width:none; -webkit-overflow-scrolling:touch;">
+                <button type="button" class="pill-btn active" onclick="filterRadarGrid('all', this)" style="background:rgba(59,130,246,0.18); color:#38bdf8; border:1px solid rgba(56,189,248,0.4); padding:7px 15px; border-radius:20px; font-weight:700; font-size:0.85rem; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-border-all"></i> Tümü
+                </button>
+                <button type="button" class="pill-btn" onclick="filterRadarGrid('radar-card-0', this)" style="background:rgba(30,41,59,0.8); color:var(--text-muted); border:1px solid rgba(255,255,255,0.1); padding:7px 15px; border-radius:20px; font-weight:700; font-size:0.85rem; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-rocket" style="color:var(--accent-red);"></i> 🚀 Tavan Radarı
+                </button>
+                <button type="button" class="pill-btn" onclick="filterRadarGrid('radar-card-1', this)" style="background:rgba(30,41,59,0.8); color:var(--text-muted); border:1px solid rgba(255,255,255,0.1); padding:7px 15px; border-radius:20px; font-weight:700; font-size:0.85rem; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-clock" style="color:var(--accent-green);"></i> ⚡ 1 Saatlik Fırsatlar
+                </button>
+                <button type="button" class="pill-btn" onclick="filterRadarGrid('radar-card-2', this)" style="background:rgba(30,41,59,0.8); color:var(--text-muted); border:1px solid rgba(255,255,255,0.1); padding:7px 15px; border-radius:20px; font-weight:700; font-size:0.85rem; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-bolt" style="color:var(--accent-blue);"></i> 🎯 5D RSI Sinyalleri
+                </button>
+                <button type="button" class="pill-btn" onclick="filterRadarGrid('radar-card-3', this)" style="background:rgba(30,41,59,0.8); color:var(--text-muted); border:1px solid rgba(255,255,255,0.1); padding:7px 15px; border-radius:20px; font-weight:700; font-size:0.85rem; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-chart-line" style="color:var(--accent-yellow);"></i> 📊 Günlük Tarama
+                </button>
+                <button type="button" class="pill-btn" onclick="filterRadarGrid('radar-card-4', this)" style="background:rgba(30,41,59,0.8); color:var(--text-muted); border:1px solid rgba(255,255,255,0.1); padding:7px 15px; border-radius:20px; font-weight:700; font-size:0.85rem; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-arrow-trend-up" style="color:var(--accent-green);"></i> 📈 Yükselenler
+                </button>
+                <button type="button" class="pill-btn" onclick="filterRadarGrid('radar-card-5', this)" style="background:rgba(30,41,59,0.8); color:var(--text-muted); border:1px solid rgba(255,255,255,0.1); padding:7px 15px; border-radius:20px; font-weight:700; font-size:0.85rem; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-arrow-trend-down" style="color:var(--accent-red);"></i> 📉 Düşenler
+                </button>
+            </div>
+
             <!-- MULTI-TABLE GRID -->
             <div id="radar-cards-grid" style="grid-column: 1 / -1; display:grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap:1.5rem; margin-bottom:1.5rem;">
                 
@@ -1139,6 +1164,6 @@
         </button>
     </div>
 
-    <script src="app.js?v=20260803_v4_jpg_export"></script>
+    <script src="app.js?v=20260803_v5_mobile_touch_pills"></script>
 </body>
 </html>

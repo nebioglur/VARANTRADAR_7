@@ -2268,5 +2268,73 @@ async function exportAnalysisAsJPG() {
     }
 }
 
+// 📱 MOBİL & MASAÜSTÜ KATEGORİ FİLTRELEME FONKSİYONU (PILL TABS)
+function filterRadarGrid(targetCardId, btnElement) {
+    const allCards = document.querySelectorAll('#radar-cards-grid > .card');
+    const allPillBtns = document.querySelectorAll('#radar-pill-tabs .pill-btn');
+    
+    // Update pill active states
+    allPillBtns.forEach(b => {
+        b.classList.remove('active');
+        b.style.background = 'rgba(30,41,59,0.8)';
+        b.style.color = 'var(--text-muted)';
+        b.style.borderColor = 'rgba(255,255,255,0.1)';
+    });
+    
+    if (btnElement) {
+        btnElement.classList.add('active');
+        btnElement.style.background = 'linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(37, 99, 235, 0.3) 100%)';
+        btnElement.style.color = '#38bdf8';
+        btnElement.style.borderColor = '#38bdf8';
+    }
+    
+    if (targetCardId === 'all') {
+        allCards.forEach(c => {
+            c.style.display = 'block';
+            c.classList.add('card-fade-in');
+        });
+    } else {
+        allCards.forEach(c => {
+            if (c.id === targetCardId) {
+                c.style.display = 'block';
+                c.classList.add('card-fade-in');
+                // Mobilde yumusak kaydirma
+                if (window.innerWidth <= 850) {
+                    c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            } else {
+                c.style.display = 'none';
+            }
+        });
+    }
+}
+
+// 📱 MOBİL ALT BAR BUTONLARI İLE PİLL TABS EŞLEŞTİRME
+function jumpToCard(cardIdx) {
+    const pillButtons = document.querySelectorAll('#radar-pill-tabs .pill-btn');
+    const bottomNavBtns = document.querySelectorAll('.bottom-mobile-bar .bm-btn');
+    
+    bottomNavBtns.forEach(b => b.classList.remove('active'));
+    
+    if (cardIdx === 0 && document.getElementById('bm-tavan')) {
+        document.getElementById('bm-tavan').classList.add('active');
+        if (pillButtons[1]) filterRadarGrid('radar-card-0', pillButtons[1]);
+    } else if (cardIdx === 1 && document.getElementById('bm-1h')) {
+        document.getElementById('bm-1h').classList.add('active');
+        if (pillButtons[2]) filterRadarGrid('radar-card-1', pillButtons[2]);
+    } else if (cardIdx === 2 && document.getElementById('bm-5m')) {
+        document.getElementById('bm-5m').classList.add('active');
+        if (pillButtons[3]) filterRadarGrid('radar-card-2', pillButtons[3]);
+    }
+}
+
+let currentActiveCardIdx = 0;
+function navigateCard(direction) {
+    currentActiveCardIdx = (currentActiveCardIdx + direction + 3) % 3;
+    jumpToCard(currentActiveCardIdx);
+}
+
+
+
 
 
