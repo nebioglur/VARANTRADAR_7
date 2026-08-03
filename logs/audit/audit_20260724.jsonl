@@ -1,0 +1,54 @@
+{"timestamp": 1784862174.43428, "time_str": "2026-07-24 06:02:54", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "ANELE.IS: YFinance API deneniyor..."}}
+{"timestamp": 1784862184.9346476, "time_str": "2026-07-24 06:03:04", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "ANELE.IS: YFinance API BAŞARILI (Q=85)"}}
+{"timestamp": 1784862184.9357703, "time_str": "2026-07-24 06:03:04", "event_type": "DATA_FETCH_SUCCESS", "symbol": "ANELE.IS", "details": {"source": "YFinance API", "quality": 85}}
+{"timestamp": 1784862185.1408534, "time_str": "2026-07-24 06:03:05", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^GSPC: YFinance API deneniyor..."}}
+{"timestamp": 1784862186.4915683, "time_str": "2026-07-24 06:03:06", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^GSPC: YFinance API BAŞARILI (Q=100)"}}
+{"timestamp": 1784862186.4927351, "time_str": "2026-07-24 06:03:06", "event_type": "DATA_FETCH_SUCCESS", "symbol": "^GSPC", "details": {"source": "YFinance API", "quality": 100}}
+{"timestamp": 1784862192.2682595, "time_str": "2026-07-24 06:03:12", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "ANELE.IS: YFinance API deneniyor..."}}
+{"timestamp": 1784862194.9733415, "time_str": "2026-07-24 06:03:14", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "ANELE.IS: YFinance API BAŞARILI (Q=100)"}}
+{"timestamp": 1784862194.9751542, "time_str": "2026-07-24 06:03:14", "event_type": "DATA_FETCH_SUCCESS", "symbol": "ANELE.IS", "details": {"source": "YFinance API", "quality": 100}}
+{"timestamp": 1784862195.3619766, "time_str": "2026-07-24 06:03:15", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^GSPC: YFinance API deneniyor..."}}
+{"timestamp": 1784862195.685654, "time_str": "2026-07-24 06:03:15", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^GSPC: YFinance API BAŞARILI (Q=100)"}}
+{"timestamp": 1784862195.697109, "time_str": "2026-07-24 06:03:15", "event_type": "DATA_FETCH_SUCCESS", "symbol": "^GSPC", "details": {"source": "YFinance API", "quality": 100}}
+{"timestamp": 1784862195.7031953, "time_str": "2026-07-24 06:03:15", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^VIX: YFinance API deneniyor..."}}
+{"timestamp": 1784862199.0271971, "time_str": "2026-07-24 06:03:19", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^VIX: YFinance API veri kalitesi düşük (Q=70), FAILOVER"}}
+{"timestamp": 1784862199.0281274, "time_str": "2026-07-24 06:03:19", "event_type": "FAILOVER_TRIGGERED", "symbol": "^VIX", "details": {"reason": "Low Quality", "source": "YFinance API"}}
+{"timestamp": 1784862199.0584555, "time_str": "2026-07-24 06:03:19", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^VIX: Finnhub API deneniyor..."}}
+{"timestamp": 1784862199.0595486, "time_str": "2026-07-24 06:03:19", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^VIX: Finnhub API boş veri döndü, FAILOVER"}}
+{"timestamp": 1784862199.165333, "time_str": "2026-07-24 06:03:19", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^VIX: Disk Cache FALLBACK"}}
+{"timestamp": 1784862264.7762413, "time_str": "2026-07-24 06:04:24", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "DIRIT.IS: YFinance API deneniyor..."}}
+{"timestamp": 1784862266.768849, "time_str": "2026-07-24 06:04:26", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "DIRIT.IS: YFinance API BAŞARILI (Q=90)"}}
+{"timestamp": 1784862266.7696154, "time_str": "2026-07-24 06:04:26", "event_type": "DATA_FETCH_SUCCESS", "symbol": "DIRIT.IS", "details": {"source": "YFinance API", "quality": 90}}
+{"timestamp": 1784862266.8444493, "time_str": "2026-07-24 06:04:26", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^GSPC: YFinance API deneniyor..."}}
+{"timestamp": 1784862267.5296745, "time_str": "2026-07-24 06:04:27", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^GSPC: YFinance API BAŞARILI (Q=100)"}}
+{"timestamp": 1784862267.530505, "time_str": "2026-07-24 06:04:27", "event_type": "DATA_FETCH_SUCCESS", "symbol": "^GSPC", "details": {"source": "YFinance API", "quality": 100}}
+{"timestamp": 1784862270.1141071, "time_str": "2026-07-24 06:04:30", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "DIRIT.IS: YFinance API deneniyor..."}}
+{"timestamp": 1784862271.103253, "time_str": "2026-07-24 06:04:31", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "DIRIT.IS: YFinance API BAŞARILI (Q=100)"}}
+{"timestamp": 1784862271.104063, "time_str": "2026-07-24 06:04:31", "event_type": "DATA_FETCH_SUCCESS", "symbol": "DIRIT.IS", "details": {"source": "YFinance API", "quality": 100}}
+{"timestamp": 1784862271.614237, "time_str": "2026-07-24 06:04:31", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^GSPC: YFinance API deneniyor..."}}
+{"timestamp": 1784862271.8563795, "time_str": "2026-07-24 06:04:31", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^GSPC: YFinance API BAŞARILI (Q=100)"}}
+{"timestamp": 1784862271.8572276, "time_str": "2026-07-24 06:04:31", "event_type": "DATA_FETCH_SUCCESS", "symbol": "^GSPC", "details": {"source": "YFinance API", "quality": 100}}
+{"timestamp": 1784862271.8595161, "time_str": "2026-07-24 06:04:31", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^VIX: YFinance API deneniyor..."}}
+{"timestamp": 1784862277.8251712, "time_str": "2026-07-24 06:04:37", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^VIX: YFinance API veri kalitesi düşük (Q=70), FAILOVER"}}
+{"timestamp": 1784862277.83364, "time_str": "2026-07-24 06:04:37", "event_type": "FAILOVER_TRIGGERED", "symbol": "^VIX", "details": {"reason": "Low Quality", "source": "YFinance API"}}
+{"timestamp": 1784862277.8527215, "time_str": "2026-07-24 06:04:37", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^VIX: Finnhub API deneniyor..."}}
+{"timestamp": 1784862277.85429, "time_str": "2026-07-24 06:04:37", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^VIX: Finnhub API boş veri döndü, FAILOVER"}}
+{"timestamp": 1784862277.866431, "time_str": "2026-07-24 06:04:37", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^VIX: Disk Cache FALLBACK"}}
+{"timestamp": 1784866740.8449557, "time_str": "2026-07-24 07:19:00", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "EPLAS.IS: YFinance API deneniyor..."}}
+{"timestamp": 1784866747.7565148, "time_str": "2026-07-24 07:19:07", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "EPLAS.IS: YFinance API BAŞARILI (Q=90)"}}
+{"timestamp": 1784866747.7651877, "time_str": "2026-07-24 07:19:07", "event_type": "DATA_FETCH_SUCCESS", "symbol": "EPLAS.IS", "details": {"source": "YFinance API", "quality": 90}}
+{"timestamp": 1784866747.7925692, "time_str": "2026-07-24 07:19:07", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^GSPC: YFinance API deneniyor..."}}
+{"timestamp": 1784866748.4881916, "time_str": "2026-07-24 07:19:08", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^GSPC: YFinance API BAŞARILI (Q=100)"}}
+{"timestamp": 1784866748.493286, "time_str": "2026-07-24 07:19:08", "event_type": "DATA_FETCH_SUCCESS", "symbol": "^GSPC", "details": {"source": "YFinance API", "quality": 100}}
+{"timestamp": 1784866754.5486157, "time_str": "2026-07-24 07:19:14", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "EPLAS.IS: YFinance API deneniyor..."}}
+{"timestamp": 1784866758.1496024, "time_str": "2026-07-24 07:19:18", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "EPLAS.IS: YFinance API BAŞARILI (Q=100)"}}
+{"timestamp": 1784866758.1519313, "time_str": "2026-07-24 07:19:18", "event_type": "DATA_FETCH_SUCCESS", "symbol": "EPLAS.IS", "details": {"source": "YFinance API", "quality": 100}}
+{"timestamp": 1784866759.4662948, "time_str": "2026-07-24 07:19:19", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^GSPC: YFinance API deneniyor..."}}
+{"timestamp": 1784866759.9471774, "time_str": "2026-07-24 07:19:19", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^GSPC: YFinance API BAŞARILI (Q=100)"}}
+{"timestamp": 1784866759.9523664, "time_str": "2026-07-24 07:19:19", "event_type": "DATA_FETCH_SUCCESS", "symbol": "^GSPC", "details": {"source": "YFinance API", "quality": 100}}
+{"timestamp": 1784866759.9559097, "time_str": "2026-07-24 07:19:19", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^VIX: YFinance API deneniyor..."}}
+{"timestamp": 1784866766.9962268, "time_str": "2026-07-24 07:19:26", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^VIX: YFinance API veri kalitesi düşük (Q=70), FAILOVER"}}
+{"timestamp": 1784866766.9971948, "time_str": "2026-07-24 07:19:26", "event_type": "FAILOVER_TRIGGERED", "symbol": "^VIX", "details": {"reason": "Low Quality", "source": "YFinance API"}}
+{"timestamp": 1784866767.001095, "time_str": "2026-07-24 07:19:27", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^VIX: Finnhub API deneniyor..."}}
+{"timestamp": 1784866767.002238, "time_str": "2026-07-24 07:19:27", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^VIX: Finnhub API boş veri döndü, FAILOVER"}}
+{"timestamp": 1784866767.1129441, "time_str": "2026-07-24 07:19:27", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^VIX: Disk Cache FALLBACK"}}

@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
+venv/
+
+# Veritabanı
+*.db
+*.sqlite3
+
+# Cache, Log ve İstatistik Dosyaları
+*.json
+!dashboard_cache.json # Hızlı başlangıç (pre-warm) verisi için dahil et
+!ui/assets/*.json # UI için gerekli json'lar hariç
+*.log
+*.txt
+!requirements.txt # requirements.txt hariç

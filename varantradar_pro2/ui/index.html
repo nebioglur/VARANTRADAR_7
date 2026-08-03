@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VARANTRADAR PRO | FINTECH TERMINAL</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=20260723">
+    <!-- ApexCharts -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    
+    <!-- TradingView Lightweight Charts -->
+    <script src="lightweight-charts.js"></script>
+    
+    <!-- Chart.js for visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    
+    <!-- TOP NAVIGATION BAR -->
+    <header class="top-nav">
+        <div class="logo">
+            <i class="fa-solid fa-layer-group"></i> VARANTRADAR PRO
+        </div>
+        <div class="search-container" style="display:flex; align-items:center;">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" id="symbol-input" placeholder="Hisse veya Varant Ara (Örn: THYAO, AAPL)..." autocomplete="off" onkeypress="if(event.key === 'Enter'){ analyzeSymbol(); }">
+            <button onclick="analyzeSymbol()" style="background:var(--accent-blue); color:#fff; border:none; border-radius:8px; width:34px; height:34px; margin-left:0.5rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);" onmouseover="this.style.transform='scale(1.05)'; this.style.background='#2563eb'" onmouseout="this.style.transform='scale(1)'; this.style.background='var(--accent-blue)'" title="Git"><i class="fa-solid fa-arrow-right"></i></button>
+            <div id="ac-dropdown" class="ac-dropdown"></div>
+        </div>
+        <div class="nav-actions">
+            <button class="nav-btn active" onclick="switchMainTab('home', this)"><i class="fa-solid fa-house"></i> GİRİŞ</button>
+
+            <button class="nav-btn" onclick="switchMainTab('radar', this)">RADAR</button>
+            <button class="nav-btn" onclick="switchMainTab('news', this)">HABERLER (KAP)</button>
+            <div class="status-indicator">
+                <span class="pulse"></span>
+                <span>SİSTEM AKTİF</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- LOADING OVERLAY -->
+    <div id="loading" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <div class="loading-text">Veri Kaynakları Taranıyor...</div>
+        <div class="term-box">
+            <div class="term-content" id="term-logs"></div>
+        </div>
+    </div>
+
+    <!-- HOME WRAPPER (MARKET PULSE) -->
+    <div id="home-wrapper" class="main-wrapper" style="display: block;">
+        <div class="grid-2-col">
+            <!-- MARKET PULSE CLOCK & SUMMARY -->
+            <div style="grid-column: 1 / -1; display:flex; justify-content:space-between; align-items:center; background:linear-gradient(135deg, rgba(15,23,42,0.9), rgba(30,41,59,0.8)); border:1px solid var(--border-color); border-radius:12px; padding:1.5rem; margin-bottom:1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                <div>
+                    <h2 style="margin:0; font-size:1.5rem; color:var(--text-light);"><i class="fa-solid fa-fire text-yellow"></i> Canlı Piyasa Radarı</h2>
+                    <p style="margin:0.5rem 0 0 0; color:var(--text-muted); font-size:0.95rem;">Tüm BIST hisseleri taranarak kategorize edilmektedir.</p>
+                </div>
+                <div style="text-align:right;">
+                    <div id="live-clock" style="font-size:2.5rem; font-weight:800; font-variant-numeric: tabular-nums; background: -webkit-linear-gradient(45deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 20px rgba(56,189,248,0.3); letter-spacing: 2px;">00:00:00</div>
+                    <div id="live-date" style="font-size:0.9rem; color:var(--text-muted); text-transform:uppercase; font-weight:600; letter-spacing:1px; margin-top:0.2rem;">GÜN AY YIL</div>
+                </div>
+            </div>
+
+            <div style="grid-column: 1 / -1; margin-bottom: 1rem; text-align: center;">
+                <span style="font-size: 1.1rem; font-weight: bold; color: var(--accent-green); background: rgba(34,197,94,0.1); padding:0.5rem 1rem; border-radius:20px; border:1px solid rgba(34,197,94,0.3);" id="total-analyzed-counter">RADAR BUGÜNE KADAR 0 VERİYİ ANALİZ ETTİ</span>
+            </div>
+            
+            <!-- MULTI-TABLE GRID -->
+            <div style="grid-column: 1 / -1; display:grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap:1.5rem; margin-bottom:1.5rem;">
+                
+                <!-- Yüksek Tavan Olasılığı -->
+                <div class="card" style="padding:1rem; border:1px solid rgba(239, 68, 68, 0.5); box-shadow: 0 0 15px rgba(239, 68, 68, 0.15); background: linear-gradient(145deg, rgba(239, 68, 68, 0.05) 0%, rgba(15,23,42,1) 100%);">
+                    <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem; color:var(--accent-red);"><i class="fa-solid fa-rocket"></i> Yüksek Tavan Olasılığı <span id="time-tavan-adaylari" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
+                    <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; margin-top:-0.5rem;">AI Tavan Skoru, Hacim Patlaması, OBV ve Para Girişi Taraması.</p>
+                    <div style="max-height:350px; overflow-y:auto;">
+                    <table class="data-table" style="width: 100%;">
+                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>AI Skor</th><th>Analiz Raporu</th><th style="width:60px;"></th></tr></thead>
+                        <tbody id="tb-tavan-adaylari"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
+                    </table>
+                    </div>
+                </div>
+
+                <!-- 1 Saatlik Fırsatlar -->
+                <div class="card" style="padding:1rem; border:1px solid rgba(16, 185, 129, 0.5); box-shadow: 0 0 15px rgba(16,185,129,0.15);">
+                    <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem; color:var(--accent-green);"><i class="fa-solid fa-clock"></i> 1 Saatlik Teknik Fırsatlar <span id="time-opportunities-1h" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
+                    <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; margin-top:-0.5rem;">EMA, MACD, RSI, ADX ve Momentum taraması.</p>
+                    <div style="max-height:350px; overflow-y:auto;">
+                    <table class="data-table" style="width: 100%;">
+                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>Şart (X/5)</th><th>Durum</th><th style="width:60px;"></th></tr></thead>
+                        <tbody id="tb-opportunities-1h"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
+                    </table>
+                    </div>
+                </div>
+                
+                <!-- 5 Dakikalık Kısa Trade Sinyalleri -->
+                <div class="card" style="padding:1rem; border:1px solid rgba(59, 130, 246, 0.5); box-shadow: 0 0 15px rgba(59,130,246,0.15);">
+                    <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem; color:var(--accent-blue);"><i class="fa-solid fa-bolt"></i> 5 Dk Kısa Trade Sinyalleri (RSI) <span id="time-signals-5m" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
+                    <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; margin-top:-0.5rem;">BIST50'de RSI 50/70 kesişimi ile kısa vade AL/SAT fırsatları.</p>
+                    <div style="max-height:350px; overflow-y:auto;">
+                    <table class="data-table" style="width: 100%;">
+                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>RSI</th><th>Sinyal</th><th style="width:60px;"></th></tr></thead>
+                        <tbody id="tb-signals-5m"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
+                    </table>
+                    </div>
+                </div>
+
+                <!-- Fırsatlar (Günlük) -->
+                <div class="card" style="padding:1rem;">
+                    <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem;"><i class="fa-solid fa-bolt text-yellow"></i> Fırsatlar (Günlük) <span id="time-opportunities" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
+                    <div style="max-height:350px; overflow-y:auto;">
+                    <table class="data-table" style="width: 100%;">
+                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>Skor</th><th>Durum</th><th style="width:60px;"></th></tr></thead>
+                        <tbody id="tb-opportunities"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
+                    </table>
+                    </div>
+                </div>
+
+                <!-- Yükselenler -->
+                <div class="card" style="padding:1rem;">
+                    <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem;"><i class="fa-solid fa-arrow-trend-up text-green"></i> Yükselenler <span id="time-gainers" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
+                    <div style="max-height:350px; overflow-y:auto;">
+                    <table class="data-table" style="width: 100%;">
+                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>Skor</th><th>Değişim</th><th style="width:60px;"></th></tr></thead>
+                        <tbody id="tb-gainers"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
+                    </table>
+                    </div>
+                </div>
+
+                <!-- Düşenler -->
+                <div class="card" style="padding:1rem;">
+                    <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem;"><i class="fa-solid fa-arrow-trend-down text-red"></i> Düşenler <span id="time-losers" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
+                    <div style="max-height:350px; overflow-y:auto;">
+                    <table class="data-table" style="width: 100%;">
+                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>Skor</th><th>Değişim</th><th style="width:60px;"></th></tr></thead>
+                        <tbody id="tb-losers"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
+                    </table>
+                    </div>
+                </div>
+
+                <!-- YZ Favorileri -->
+                <div class="card" style="padding:1rem;">
+                    <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem;"><i class="fa-solid fa-star text-blue"></i> YZ Favorileri <span id="time-favorites" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
+                    <div style="max-height:350px; overflow-y:auto;">
+                    <table class="data-table" style="width: 100%;">
+                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>Skor</th><th>Durum</th><th style="width:60px;"></th></tr></thead>
+                        <tbody id="tb-favorites"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
+                    </table>
+                    </div>
+                </div>
+
+                <!-- Hacimli -->
+                <div class="card" style="padding:1rem;">
+                    <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem;"><i class="fa-solid fa-water text-blue"></i> Kurumsal / Hacimli <span id="time-high_volume" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
+                    <div style="max-height:350px; overflow-y:auto;">
+                    <table class="data-table" style="width: 100%;">
+                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>Skor</th><th>Hacim</th><th style="width:60px;"></th></tr></thead>
+                        <tbody id="tb-high_volume"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
+                    </table>
+                    </div>
+                </div>
+
+                <!-- Sığ -->
+                <div class="card" style="padding:1rem;">
+                    <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem;"><i class="fa-solid fa-droplet-slash text-yellow"></i> Sığ Hisseler <span id="time-low_volume" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
+                    <div style="max-height:350px; overflow-y:auto;">
+                    <table class="data-table" style="width: 100%;">
+                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>Skor</th><th>Hacim</th><th style="width:60px;"></th></tr></thead>
+                        <tbody id="tb-low_volume"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Trends & Advice Widget -->
+            <div class="card">
+                <h3 class="card-title"><i class="fa-solid fa-chart-line text-blue"></i> Trend Liderleri & Tavsiyeler</h3>
+                
+                <h4 style="margin-top:1rem; color:var(--text-muted); text-transform:uppercase;">Kısa Vade (Günlük) Trade</h4>
+                <div style="background:var(--bg-base); padding:1rem; border-radius:8px; border:1px solid var(--border-color); margin-top:0.5rem;">
+                    Banka endeksi öncülüğünde momentum güçlü. Gün içi direnç kırılımlarında <b>Piramitleme</b> stratejisi uygulanabilir.
+                </div>
+                
+                <h4 style="margin-top:1.5rem; color:var(--text-muted); text-transform:uppercase;">Uzun Vade (Aylık) Yatırım</h4>
+                <div style="background:var(--bg-base); padding:1rem; border-radius:8px; border:1px solid var(--border-color); margin-top:0.5rem;">
+                    Sınai endeksinde ucuzlayan temel rasyolar birikim (accumulation) bölgesi sunuyor. UZUN vade için Kademeli alıma uygundur.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD WRAPPER -->
+    <div id="dashboard-wrapper" class="main-wrapper" style="display: none;">
+        
+        <!-- TICKER HEADER -->
+        <div class="ticker-header">
+            <div class="th-left">
+                <h1 id="tk-sym">SEMBOL</h1>
+                <span id="tk-price" class="tk-price">0.00</span>
+            </div>
+            <div class="th-right">
+                <div class="badge badge-grade" id="ig-val">DERECE</div>
+                <div class="badge badge-regime" id="score-regime">PİYASA REJİMİ</div>
+                <div class="tk-time" id="tk-time">YYYY-AA-GG</div>
+            </div>
+        </div>
+
+        <div class="dashboard-layout">
+            <!-- SIDEBAR TABS -->
+            <aside class="sidebar-tabs">
+                <button class="s-tab active" onclick="switchSubTab('overview', this)">
+                    <i class="fa-solid fa-chart-pie"></i> CIO Genel Bakış
+                </button>
+                <button class="s-tab" onclick="switchSubTab('chart', this)">
+                    <i class="fa-solid fa-chart-candlestick"></i> Grafik (Chart)
+                </button>
+                <button class="s-tab" onclick="switchSubTab('tech', this)">
+                    <i class="fa-solid fa-wave-square"></i> Teknik Veriler
+                </button>
+                <button class="s-tab" onclick="switchSubTab('fund', this)">
+                    <i class="fa-solid fa-building"></i> Temel & Makro
+                </button>
+                <button class="s-tab" onclick="switchSubTab('news', this)">
+                    <i class="fa-solid fa-newspaper"></i> Hisse Haberleri
+                </button>
+                <button class="s-tab" onclick="switchSubTab('raw', this)">
+                    <i class="fa-solid fa-code"></i> Geliştirici (Raw JSON)
+                </button>
+                <button class="s-tab" onclick="switchSubTab('reasoning', this)">
+                    <i class="fa-solid fa-brain"></i> Yapay Zeka Mantığı (7 Neden)
+                </button>
+                <button class="s-tab" onclick="switchSubTab('akd', this)">
+                    <i class="fa-solid fa-users-viewfinder"></i> AKD & Takas
+                </button>
+            </aside>
+
+            <!-- TAB CONTENT AREA -->
+            <div class="tab-content-area">
+                
+                <!-- AKD & TAKAS TAB -->
+                <div id="tab-akd" class="tab-pane">
+                    <div class="card" style="border: 1px solid var(--accent-blue); background: linear-gradient(145deg, rgba(30,58,138,0.1) 0%, rgba(15,23,42,1) 100%);">
+                        <div class="card-header-flex" style="margin-bottom:1rem;">
+                            <h3 class="card-title" style="color:var(--accent-blue);"><i class="fa-solid fa-users-viewfinder"></i> Aracı Kurum Dağılımı (AKD) ve Saklama Analizi</h3>
+                            <span class="badge badge-regime" style="background:var(--accent-yellow); color:#000;">Yapay Zeka Destekli Tahmin</span>
+                        </div>
+                        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1.5rem;">
+                            Gerçek zamanlı Düzey-2 AKD verisi ücretli BIST lisansı gerektirdiği için, bu ekrandaki veriler hacim, fiyat hareketi ve trend yönüne bakılarak <b>Yapay Zeka Modeli (VarantRadar AI)</b> tarafından tahmin edilmiş simülasyon verileridir. Hangi aracı kurumun net alıcı/satıcı olabileceği ve olası maliyetleri tahmin edilmektedir.
+                        </p>
+                        
+                        <div id="akd-loading" style="text-align:center; padding:2rem;"><div class="spinner small"></div><p style="margin-top:1rem;color:var(--text-muted);">AKD Algoritması Hacim ve Fiyatı Analiz Ediyor...</p></div>
+                        <div id="akd-content" style="display:none;">
+                            <div class="grid-2-col" style="gap:1.5rem;">
+                                <!-- ALICILAR -->
+                                <div>
+                                    <h4 style="color:var(--accent-green); margin-bottom:0.5rem;"><i class="fa-solid fa-arrow-trend-up"></i> Tahmini Net Alıcılar</h4>
+                                    <table class="data-table" style="width:100%; font-size:0.9rem;">
+                                        <thead><tr><th>Kurum</th><th>Net Lot</th><th>% Pay</th><th>Maliyet</th></tr></thead>
+                                        <tbody id="akd-buyers-tbody"></tbody>
+                                    </table>
+                                </div>
+                                
+                                <!-- SATICILAR -->
+                                <div>
+                                    <h4 style="color:var(--accent-red); margin-bottom:0.5rem;"><i class="fa-solid fa-arrow-trend-down"></i> Tahmini Net Satıcılar</h4>
+                                    <table class="data-table" style="width:100%; font-size:0.9rem;">
+                                        <thead><tr><th>Kurum</th><th>Net Lot</th><th>% Pay</th><th>Maliyet</th></tr></thead>
+                                        <tbody id="akd-sellers-tbody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <div style="margin-top:1.5rem; text-align:center; padding:1rem; background:rgba(255,255,255,0.03); border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
+                                <h4 style="color:var(--text-main); margin-bottom:0.5rem;">Net Lot Farkı</h4>
+                                <div id="akd-net-diff" style="font-size:1.5rem; font-weight:800; font-family:monospace;">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 1. OVERVIEW TAB -->
+                <div id="tab-overview" class="tab-pane active">
+                    <div class="grid-2-col">
+                        <!-- AI Scores & Charts -->
+                        <div class="card">
+                            <h3 class="card-title">Güven & Risk Motoru</h3>
+                            <div class="chart-container">
+                                <canvas id="scoreChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Execution Strategy -->
+                        <div class="card">
+                            <h3 class="card-title">İşlem Planı & Strateji</h3>
+                            <div class="data-grid">
+                                <div class="data-item"><span class="d-label">Kasa Büyüklüğü<i class="fa-solid fa-circle-info info-icon" data-tip="Hesaptaki toplam nakit veya bu işlem için ayrılan toplam bakiye."></i></span><span class="d-val" id="pos-amt">-</span></div>
+                                <div class="data-item"><span class="d-label">Kademeler<i class="fa-solid fa-circle-info info-icon" data-tip="Hisseye tek seferde girmek yerine riski bölmek için önerilen alım parçaları (Örn: 3 Parça)."></i></span><span class="d-val" id="pos-scale">-</span></div>
+                                <div class="data-item"><span class="d-label">Giriş 1<i class="fa-solid fa-circle-info info-icon" data-tip="Hisse için önerilen ilk alım (hemen piyasa fiyatından)."></i></span><span class="d-val text-blue" id="pos-e1">-</span></div>
+                                <div class="data-item"><span class="d-label">Giriş 2<i class="fa-solid fa-circle-info info-icon" data-tip="Olası bir düşüşte (geri çekilme) ortalama düşürmek için önerilen 2. alım noktası."></i></span><span class="d-val text-blue" id="pos-e2">-</span></div>
+                                <div class="data-item"><span class="d-label">Zarar Kes (ATR)<i class="fa-solid fa-circle-info info-icon" data-tip="Dinamik ATR (Ortalama Gerçek Aralık) hesaplamasına göre belirlenen, işlemin iptal olduğu (Stop) kesin seviye."></i></span><span class="d-val text-red" id="pos-sl">-</span></div>
+                            </div>
+                            <div class="data-grid mt-3">
+                                <div class="data-item"><span class="d-label">Kar Al (TP1)<i class="fa-solid fa-circle-info info-icon" data-tip="İlk kar alım hedefi. Genelde burada pozisyonun yarısı (veya 1/3'ü) kapatılır."></i></span><span class="d-val text-green" id="ex-tp1">-</span></div>
+                                <div class="data-item"><span class="d-label">Kar Al (TP2)<i class="fa-solid fa-circle-info info-icon" data-tip="Ana hedef. Trendin doygunluğa ulaşabileceği matematiksel seviye."></i></span><span class="d-val text-green" id="ex-tp2">-</span></div>
+                                <div class="data-item"><span class="d-label">Çıkış Stratejisi<i class="fa-solid fa-circle-info info-icon" data-tip="Hedefe ulaşırken izlenecek yol. Örn: 'İzleyen Stop' veya 'Kademeli Satış'."></i></span><span class="d-val" id="ex-strat">-</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CIO Summary & Directives -->
+                    <div class="card mt-3">
+                        <h3 class="card-title">CIO Yönetici Özeti & Operasyonel Veriler</h3>
+                        <p class="summary-text" id="exec-sum">-</p>
+                        
+                        <div class="grid-2-col mt-3" style="margin-bottom:1rem;">
+                            <div class="data-grid full-width">
+                                <div class="data-item full-width"><span class="d-label">Piramitleme (Pyramiding)<i class="fa-solid fa-circle-info info-icon" data-tip="Trend güçlü olduğunda, karda otururken pozisyona yeni eklemeler yapma stratejisi."></i></span><span class="d-val text-blue" id="op-pyramid">-</span></div>
+                                <div class="data-item"><span class="d-label">Kısa Vade Tavsiyesi<i class="fa-solid fa-circle-info info-icon" data-tip="1-5 günlük (Swing) işlemler için algoritmik tavsiye."></i></span><span class="d-val text-yellow" id="op-short">-</span></div>
+                                <div class="data-item"><span class="d-label">Uzun Vade Tavsiyesi<i class="fa-solid fa-circle-info info-icon" data-tip="1-6 Aylık (Yatırım) işlemleri için temel ve trend analizi tavsiyesi."></i></span><span class="d-val text-green" id="op-long">-</span></div>
+                            </div>
+                        </div>
+
+                        <!-- V2.0: AI Generative Narrative -->
+                        <div class="card mt-3" style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2);">
+                            <h4 style="color:var(--accent-green); margin-bottom: 0.5rem;"><i class="fa-solid fa-robot"></i> Otonom Yapay Zeka Özeti (NLP Analizi)</h4>
+                            <p class="summary-text" id="ai-narrative" style="border-left-color: var(--accent-green); font-style: italic;">Yapay zeka analizi yükleniyor...</p>
+                        </div>
+                        
+                        <!-- V2.0: Historical News -->
+                        <div class="card mt-3" style="background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.2);">
+                            <h4 style="color:var(--accent-blue); margin-bottom: 0.5rem;"><i class="fa-solid fa-newspaper"></i> Geçmiş 6 Aylık Haber & Duyarlılık Analizi</h4>
+                            <div id="historical-news-container" style="max-height: 250px; overflow-y: auto; padding-right: 10px;">
+                                <div class="text-muted text-center py-3">Haberler aranıyor...</div>
+                            </div>
+                        </div>
+
+                        <div class="directives-grid mt-3">
+                            <div class="directive-box do-box">
+                                <h4><i class="fa-solid fa-check-circle text-green"></i> Tavsiye Edilen (Yap)</h4>
+                                <ul id="list-dos"></ul>
+                            </div>
+                            <div class="directive-box dont-box">
+                                <h4><i class="fa-solid fa-xmark-circle text-red"></i> Tavsiye Edilmeyen (Yapma)</h4>
+                                <ul id="list-donts"></ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- NEW: AI COMMITTEE VOTES -->
+                    <div class="card mt-3" style="border: 1px solid var(--accent-purple); background: linear-gradient(145deg, rgba(30,41,59,1) 0%, rgba(15,23,42,1) 100%);">
+                        <h3 class="card-title"><i class="fa-solid fa-users-viewfinder text-purple"></i> Otonom Yapay Zeka Komitesi (Self-Training)</h3>
+                        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom: 1rem;">
+                            Sistem, 4 farklı uzman yapay zeka modelinin ortak oylamasıyla karar alır. Her modelin oy ağırlığı (Weight) geçmiş işlemlerine göre dinamik olarak güncellenir.
+                        </p>
+                        <div class="grid-2-col" id="committee-container">
+                            <!-- JS will populate this -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 1.5: CHART (CUSTOM APEX WITH INDICATORS -> LIGHTWEIGHT CHARTS) -->
+                <div id="tab-chart" class="tab-pane" style="display: none;">
+                    <div class="card" style="display:flex; flex-direction:column; gap:10px; padding:10px; background:#0f172a;">
+                        <div style="display: flex; gap: 10px; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; align-items:center; flex-wrap: wrap;">
+                            <span style="color:var(--text-muted); font-size:0.85rem; font-weight:500;">İndikatörler:</span>
+                            <label style="color:#3b82f6; font-size:0.85rem; cursor:pointer;"><input type="checkbox" id="toggle-ema" checked onchange="renderAdvancedChart()"> EMA Crossovers</label>
+                            <label style="color:#10B981; font-size:0.85rem; cursor:pointer;"><input type="checkbox" id="toggle-vol" checked onchange="renderAdvancedChart()"> Volume</label>
+                            <label style="color:#8b5cf6; font-size:0.85rem; cursor:pointer;"><input type="checkbox" id="toggle-macd" checked onchange="renderAdvancedChart()"> MACD Signals</label>
+                            <label style="color:#f59e0b; font-size:0.85rem; cursor:pointer;"><input type="checkbox" id="toggle-adx" checked onchange="renderAdvancedChart()"> ADX Zones</label>
+                            
+
+                            
+                            <div style="margin-left:auto; display:flex; gap:5px;" id="tf-buttons">
+                                <button class="tf-btn" onclick="changeChartInterval('5m')">5m</button>
+                                <button class="tf-btn" onclick="changeChartInterval('15m')">15m</button>
+                                <button class="tf-btn" onclick="changeChartInterval('1h')">1h</button>
+                                <button class="tf-btn" onclick="changeChartInterval('4h')">4h</button>
+                                <button class="tf-btn active" onclick="changeChartInterval('1d')">1G</button>
+                                <button class="tf-btn" onclick="changeChartInterval('1wk')">1H</button>
+                                <button class="tf-btn" onclick="changeChartInterval('1mo')">1A</button>
+                                <button class="tf-btn" onclick="resetChartView()" style="background:var(--accent-blue); color:white; margin-left: 10px;"><i class="fa-solid fa-expand"></i> Sıfırla</button>
+                            </div>
+                        </div>
+                        
+                        <div class="card p-0" style="position:relative; z-index:1; width: 100%;">
+                            <div id="tv-chart" style="height: 75vh; min-height: 650px; max-height: 850px; width: 100%; position:relative; display: flex; flex-direction: column; gap: 4px;">
+                                <!-- FLOATING TOOLTIP -->
+                                <div id="chart-tooltip" style="display:none; position:absolute; top:10px; left:10px; z-index:50; background:rgba(15, 23, 42, 0.85); border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:10px; color:#fff; font-size:0.85rem; pointer-events:none; backdrop-filter:blur(4px); min-width: 150px;">
+                                    <div id="tt-date" style="color:#94a3b8; font-size:0.75rem; margin-bottom:4px;">-</div>
+                                    <div style="display:flex; gap:10px;">
+                                        <span style="color:#94a3b8">A:</span><span id="tt-o">-</span>
+                                        <span style="color:#94a3b8">Y:</span><span id="tt-h">-</span>
+                                        <span style="color:#94a3b8">D:</span><span id="tt-l">-</span>
+                                        <span style="color:#94a3b8">K:</span><span id="tt-c">-</span>
+                                    </div>
+                                    <div id="tt-vol" style="margin-top:4px; color:#64748b;">Hacim: -</div>
+                                </div>
+                            </div>
+                            
+                            <!-- İNDİKATÖR AYAR MODALI -->
+                            <div id="indicator-modal" class="modal" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); background:#1e293b; border:1px solid #3b82f6; border-radius:8px; padding:15px; z-index:100; min-width:300px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                                    <h3 style="margin:0; font-size:1rem; color:var(--accent-blue);"><i class="fa-solid fa-sliders"></i> Gösterge Ayarları</h3>
+                                    <button onclick="document.getElementById('indicator-modal').style.display='none'" style="background:none; border:none; color:white; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+                                </div>
+                                <div id="modal-indicators-list" style="display:flex; flex-direction:column; gap:10px;">
+                                    <!-- JS tarafından doldurulacak -->
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            <!-- TAB 2: TECHNICAL ANALYSIS -->
+            <div id="tab-tech" class="tab-pane" style="display: none;">
+                    
+                    <!-- NEW: KURUMSAL İZLER & EMİR AKIŞI -->
+                    <div class="card mb-3" style="border: 1px solid var(--accent-blue); background: linear-gradient(145deg, rgba(30,41,59,1) 0%, rgba(15,23,42,1) 100%);">
+                        <h3 class="card-title"><i class="fa-solid fa-water text-blue"></i> Kurumsal İzler & Emir Akışı (Smart Money)</h3>
+                        <div class="grid-2-col">
+                            <div>
+                                <h4 style="color:var(--text-muted); margin-bottom:0.5rem; letter-spacing:1px;">EMİR AKIŞI (ORDER FLOW)</h4>
+                                <div class="data-grid">
+                                    <div class="data-item full-width"><span class="d-label">Alıcı/Satıcı Baskısı<i class="fa-solid fa-circle-info info-icon" data-tip="Emir defterindeki derinliği analiz eder. Hissede alıcıların mı yoksa satıcıların mı daha agresif olduğunu gösterir."></i></span><span class="d-val" id="of-pressure">-</span></div>
+                                    <div class="data-item full-width"><span class="d-label">Likidite Avı (Stop Sweep)<i class="fa-solid fa-circle-info info-icon" data-tip="Piyasa yapıcıların (Market Maker) küçük yatırımcıların stoplarını patlatıp likidite sağladığı bölgeleri (ayı tuzağı vb.) gösterir."></i></span><span class="d-val text-red" id="of-sweep">-</span></div>
+                                    <div class="data-item full-width"><span class="d-label">İmbalans Skoru<i class="fa-solid fa-circle-info info-icon" data-tip="Alım ve satım emirleri arasındaki orantısızlığı (dengesizliği) gösterir. Yüksek bir skor, anlık sert fiyat hareketlerinin habercisi olabilir."></i></span><span class="d-val" id="of-imbalance">-</span></div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 style="color:var(--text-muted); margin-bottom:0.5rem; letter-spacing:1px;">AKILLI PARA (SMART MONEY)</h4>
+                                <div class="data-grid">
+                                    <div class="data-item full-width"><span class="d-label">Balina Aksiyonu<i class="fa-solid fa-circle-info info-icon" data-tip="Büyük kurumsal fonların (Balinaların) hissede alımda mı, satımda mı yoksa beklemede mi olduğunu gösterir."></i></span><span class="d-val text-green" id="sm-action">-</span></div>
+                                    <div class="data-item full-width"><span class="d-label">OBV Hacim Trendi<i class="fa-solid fa-circle-info info-icon" data-tip="On-Balance Volume (OBV). Fiyat düşerken hacim artıyorsa mal çıkılıyor, fiyat artarken hacim artıyorsa mal toplanıyor demektir."></i></span><span class="d-val text-blue" id="sm-obv">-</span></div>
+                                    <div class="data-item full-width"><span class="d-label">MFI (Para Akışı) Endeksi<i class="fa-solid fa-circle-info info-icon" data-tip="Hacim ağırlıklı RSI gibidir (0-100). 80 üzeri aşırı alım, 20 altı aşırı satımdır. Yüksek olması hisseye taze para girdiğini gösterir."></i></span><span class="d-val" id="sm-mfi">-</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mb-3">
+                        <h3 class="card-title">Canlı Teknik İndikatörler (RSI & Hareketli Ortalamalar)</h3>
+                        <div class="data-grid">
+                            <div class="data-item"><span class="d-label">RSI (14)</span><span class="d-val" id="ti-rsi">-</span></div>
+                            <div class="data-item"><span class="d-label">EMA (20 Günlük)</span><span class="d-val text-blue" id="ti-ema20">-</span></div>
+                            <div class="data-item"><span class="d-label">EMA (50 Günlük)</span><span class="d-val text-blue" id="ti-ema50">-</span></div>
+                            <div class="data-item"><span class="d-label">EMA (200 Günlük)</span><span class="d-val text-blue" id="ti-ema200">-</span></div>
+                        </div>
+                    </div>
+
+                    <div class="grid-2-col mb-3">
+                        <div class="card" style="border-left: 4px solid var(--accent-purple);">
+                            <h3 class="card-title"><i class="fa-solid fa-chart-pie text-purple"></i> Temel Analiz (Bilanço & Değerleme)</h3>
+                            <div class="data-grid">
+                                <div class="data-item full-width"><span class="d-label">F/K Oranı (P/E)<i class="fa-solid fa-circle-info info-icon" data-tip="Fiyat/Kazanç Oranı. Yatırımcıların şirketin 1 TL'lik kârı için kaç TL ödemeye razı olduğunu gösterir. Düşük olması genellikle ucuz olduğunu gösterir (sektöre bağlıdır)."></i></span><span class="d-val" id="fun-pe">-</span></div>
+                                <div class="data-item full-width"><span class="d-label">Özsermaye Karlılığı (ROE)<i class="fa-solid fa-circle-info info-icon" data-tip="Return on Equity. Şirketin kendi öz sermayesi ile ne kadar kâr üretebildiğini gösterir. %20 ve üzeri gayet iyidir."></i></span><span class="d-val text-blue" id="fun-roe">-</span></div>
+                                <div class="data-item full-width"><span class="d-label">Borç/Özkaynak<i class="fa-solid fa-circle-info info-icon" data-tip="Şirketin borçluluk durumunu gösterir. 1.0 üzeri, borcunun özkaynağından fazla olduğunu gösterir. Bankalarda N/A döner."></i></span><span class="d-val text-yellow" id="fun-debt">-</span></div>
+                                <div class="data-item full-width"><span class="d-label">Temel Analiz Skoru<i class="fa-solid fa-circle-info info-icon" data-tip="Dünya standartlarındaki finansal formüllerle hesaplanmış, şirketin genel temel analiz (bilanço) sağlığı puanıdır (0-100)."></i></span><span class="d-val font-bold text-green" id="fun-score">-</span></div>
+                            </div>
+                        </div>
+                        <div class="card" style="border-left: 4px solid var(--accent-yellow);">
+                            <h3 class="card-title"><i class="fa-solid fa-newspaper text-yellow"></i> Duygu Analizi (Haber & Medya)</h3>
+                            <div class="data-grid">
+                                <div class="data-item full-width"><span class="d-label">Analiz Edilen Haber</span><span class="d-val" id="sen-count">-</span></div>
+                                <div class="data-item full-width"><span class="d-label">Medya Duyarlılığı</span><span class="d-val text-blue" id="sen-status">-</span></div>
+                                <div class="data-item full-width"><span class="d-label">Duygu Skoru</span><span class="d-val font-bold text-green" id="sen-score">-</span></div>
+                                <div class="data-item full-width"><span class="d-label">Gerekçe</span><span class="d-val text-muted" style="font-size:0.8rem; white-space:normal;" id="sen-analysis">-</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-3" style="border: 2px solid var(--accent-blue); background: linear-gradient(145deg, rgba(30,58,138,0.2) 0%, rgba(15,23,42,1) 100%);">
+                        <h3 class="card-title" style="font-size:1.2rem; color:var(--text-main); margin-bottom:1.5rem;"><i class="fa-solid fa-crosshairs text-blue"></i> Operasyon Merkezi (Trade Desk) <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted); float:right; margin-top:5px;">Zarar Kes (ATR): <b id="op-atr" class="text-orange">-</b></span></h3>
+                        
+                        <div class="grid-3-col" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:1rem;">
+                            <!-- Giriş Planı -->
+                            <div style="background: rgba(34, 197, 94, 0.05); border: 1px solid rgba(34, 197, 94, 0.2); border-radius:8px; padding:1rem;">
+                                <h4 style="color:var(--accent-green); margin-bottom:0.5rem; text-align:center;"><i class="fa-solid fa-arrow-right-to-bracket"></i> Giriş (Entry)</h4>
+                                <div class="data-item"><span class="d-label">Giriş 1</span><span class="d-val" id="ent-1">-</span></div>
+                                <div class="data-item"><span class="d-label">Giriş 2</span><span class="d-val" id="ent-2">-</span></div>
+                                <div class="data-item"><span class="d-label">Giriş 3</span><span class="d-val" id="ent-3">-</span></div>
+                                <div class="data-item" style="border-top:1px solid rgba(34, 197, 94, 0.3); margin-top:0.5rem;"><span class="d-label">Ort. Maliyet</span><span class="d-val text-green font-bold" id="ent-avg">-</span></div>
+                            </div>
+                            <!-- Kâr Al Planı -->
+                            <div style="background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.2); border-radius:8px; padding:1rem;">
+                                <h4 style="color:var(--accent-blue); margin-bottom:0.5rem; text-align:center;"><i class="fa-solid fa-sack-dollar"></i> Kâr Al (TP)</h4>
+                                <div class="data-item"><span class="d-label">TP 1 (İlk Kâr)</span><span class="d-val" id="tp-1">-</span></div>
+                                <div class="data-item"><span class="d-label">TP 2 (Ana)</span><span class="d-val text-blue font-bold" id="tp-2">-</span></div>
+                                <div class="data-item"><span class="d-label">TP 3 (Sürüş)</span><span class="d-val" id="tp-3">-</span></div>
+                            </div>
+                            <!-- Stop Planı -->
+                            <div style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); border-radius:8px; padding:1rem;">
+                                <h4 style="color:var(--accent-red); margin-bottom:0.5rem; text-align:center;"><i class="fa-solid fa-shield-cat"></i> Zarar Kes (Stop)</h4>
+                                <div class="data-item"><span class="d-label">Stop 1</span><span class="d-val" id="sl-1">-</span></div>
+                                <div class="data-item"><span class="d-label">Stop 2</span><span class="d-val text-red font-bold" id="sl-2">-</span></div>
+                                <div class="data-item"><span class="d-label">Stop 3</span><span class="d-val" id="sl-3">-</span></div>
+                            </div>
+                        </div>
+
+                        <h4 style="color:var(--text-muted); margin:1.5rem 0 0.5rem 0; letter-spacing:1px; text-align:center;">DESTEK VE DİRENÇ MATRİSİ</h4>
+                        <div class="grid-2-col" style="gap:1rem;">
+                            <!-- Destekler -->
+                            <div>
+                                <table class="data-table" style="background:rgba(255,255,255,0.02); border-radius:8px;">
+                                    <thead><tr><th>1. Seviye Destek</th><th>2. Alt Seviye Destek</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>S1: <span id="sup-s1">-</span></td><td>Sub S1: <span id="sup-sub1">-</span></td></tr>
+                                        <tr><td>S2: <span id="sup-s2">-</span></td><td>Sub S2: <span id="sup-sub2">-</span></td></tr>
+                                        <tr><td>S3: <span id="sup-s3">-</span></td><td>Sub S3: <span id="sup-sub3">-</span></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <!-- Dirençler -->
+                            <div>
+                                <table class="data-table" style="background:rgba(255,255,255,0.02); border-radius:8px;">
+                                    <thead><tr><th>1. Seviye Direnç</th><th>2. Üst Seviye Direnç</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>R1: <span id="res-r1">-</span></td><td>Sup R1: <span id="res-sup1">-</span></td></tr>
+                                        <tr><td>R2: <span id="res-r2">-</span></td><td>Sup R2: <span id="res-sup2">-</span></td></tr>
+                                        <tr><td>R3: <span id="res-r3">-</span></td><td>Sup R3: <span id="res-sup3">-</span></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- PROPHET PRICE PROJECTION CARD -->
+                    <div class="card mb-3" style="border: 1px solid var(--accent-purple); background: linear-gradient(145deg, rgba(30,41,59,1) 0%, rgba(15,23,42,1) 100%);">
+                        <h5 class="mb-3 text-secondary">
+                            <i class="bi bi-robot"></i> LSTM (Derin Öğrenme) AI Gelecek Projeksiyonu
+                        </h5>
+                        <p class="text-muted small">
+                            * Yapay zeka komitesi tarafından saatlik, günlük ve haftalık bazda Yapay Sinir Ağları (LSTM) modeli ile eğitilmiş komite tahminleri ve gerçekleşen fiyat eğrileri.
+                        </p>
+                        
+                        <div style="display: flex; gap: 10px; margin-bottom: 1rem; align-items:center; flex-wrap:wrap;">
+                            <button class="btn-outline active" style="padding:5px 12px; background:rgba(147, 51, 234, 0.2); border:1px solid var(--accent-purple); border-radius:4px; color:var(--text-light); cursor:pointer;" id="btn-proj-hourly" onclick="toggleProjView('hourly')">Saatlik (10-18)</button>
+                            <button class="btn-outline" style="padding:5px 12px; background:transparent; border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:var(--text-muted); cursor:pointer;" id="btn-proj-weekly" onclick="toggleProjView('weekly')">Haftalık (5 Günlük)</button>
+                            <button class="btn-outline" style="padding:5px 12px; background:transparent; border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:var(--text-muted); cursor:pointer;" id="btn-proj-monthly" onclick="toggleProjView('monthly')">Aylık (20 Günlük)</button>
+                            <div style="margin-left:auto; display:flex; gap:10px;">
+                                <div style="background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.3); padding:4px 8px; border-radius:4px; color:var(--accent-green); font-size:0.8rem; font-weight:bold;" id="svr-metric-r2" title="Korelasyon (Doğruluk) Skoru">R²: -</div>
+                                <div style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); padding:4px 8px; border-radius:4px; color:var(--accent-red); font-size:0.8rem; font-weight:bold;" id="svr-metric-rmse" title="Kök Ortalama Kare Hata (Fiyat Sapması)">RMSE: -</div>
+                            </div>
+                        </div>
+
+                        <div class="chart-container" style="height: 300px; margin-bottom: 1.5rem; position:relative;">
+                            <canvas id="svrChart"></canvas>
+                        </div>
+                        
+                        <div class="grid-2-col" style="gap:1rem;">
+                            <div>
+                                <h4 style="color:var(--text-light); font-size:0.9rem; margin-bottom:0.5rem;"><i class="fa-solid fa-clock text-purple"></i> Saatlik Komite Beklentisi (10:00 - 18:00)</h4>
+                                <table class="data-table" style="font-size: 0.85rem;">
+                                    <thead><tr><th>Saat</th><th>Min</th><th>Tahmin (Ort)</th><th>Max</th></tr></thead>
+                                    <tbody id="svr-hourly-body"><tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Veri yükleniyor...</td></tr></tbody>
+                                </table>
+                            </div>
+                            <div>
+                                <h4 style="color:var(--text-light); font-size:0.9rem; margin-bottom:0.5rem;"><i class="fa-solid fa-calendar-days text-purple"></i> Haftalık / Aylık Günlük Hedefler</h4>
+                                <table class="data-table" style="font-size: 0.85rem;">
+                                    <thead><tr><th>Gün</th><th>Tahmini Açılış</th><th>Tahmini Kapanış</th><th>Bant (Min - Max)</th></tr></thead>
+                                    <tbody id="svr-daily-body"><tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Veri yükleniyor...</td></tr></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mb-3">
+                        <h3 class="card-title"><i class="fa-solid fa-layer-group text-purple"></i> Çoklu Zaman Dilimi (MTF) SuperTrend & MA</h3>
+                        <table class="data-table">
+                            <thead>
+                                <tr><th>Periyot</th><th>Trend (SuperTrend)</th><th>MA 8</th><th>MA 21</th><th>MA 50</th><th>MA 200</th></tr>
+                            </thead>
+                            <tbody id="mtf-body">
+                                <!-- JS Dolduracak -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="grid-2-col mt-3">
+                        <div class="card" style="border-left: 4px solid var(--accent-blue);">
+                            <h3 class="card-title"><i class="fa-solid fa-shield-halved text-blue"></i> Sistem Güvenilirliği (Backtest & Risk)</h3>
+                            <div class="data-grid">
+                                <div class="data-item full-width"><span class="d-label">Geçmiş Analoji (6 Ay)<i class="fa-solid fa-circle-info info-icon" data-tip="Algoritmanın onayladığı bu senaryonun geçmiş 6 ayda kaç kere gerçekleştiğini gösterir. Veri ne kadar yüksekse istatistik o kadar güvenilirdir."></i></span><span class="d-val" id="bt-cases">-</span></div>
+                                <div class="data-item full-width"><span class="d-label">Geçmiş Başarı (Hit Rate)<i class="fa-solid fa-circle-info info-icon" data-tip="Geçmişte benzer koşullar oluştuğunda, hissenin 'Stop Loss' seviyesine düşmeden önce 'Take Profit' hedefine ulaşma yüzdesidir. %55 üzeri kârlı kabul edilir."></i></span><span class="d-val text-green font-bold" id="bt-hitrate">-</span></div>
+                                <div class="data-item full-width"><span class="d-label">Monte Carlo İflas Riski<i class="fa-solid fa-circle-info info-icon" data-tip="Monte Carlo simülasyonu ile binlerce rastgele kötü piyasa koşulu test edilir. Bu oran, peş peşe ters giden işlemlerde kasanızın maksimum yüzde kaçının eriyeceğini (Drawdown) gösterir."></i></span><span class="d-val text-red" id="mc-risk">-</span></div>
+                                <div class="data-item full-width"><span class="d-label">Tahmini TP Süresi<i class="fa-solid fa-circle-info info-icon" data-tip="Geçmiş volatiliteye göre, hissenin hedef fiyata (Take Profit) ulaşması için geçmesi beklenen ortalama iş günüdür."></i></span><span class="d-val" id="bt-days">-</span></div>
+                            </div>
+                        </div>
+                        <div class="card" style="border-left: 4px solid var(--accent-orange);">
+                            <h3 class="card-title"><i class="fa-solid fa-bolt text-orange"></i> Varant & Kaldıraç (Opsiyon)</h3>
+                            <div class="data-grid">
+                                <div class="data-item full-width"><span class="d-label">Zımni Volatilite (IV)<i class="fa-solid fa-circle-info info-icon" data-tip="Zımni Volatilite (Implied Volatility), piyasanın hisse için gelecekte beklediği dalgalanma oranıdır. Yüksek IV varant primini pahalı yapar."></i></span><span class="d-val" id="op-iv">-</span></div>
+                                <div class="data-item full-width"><span class="d-label">Theta (Zaman) Riski<i class="fa-solid fa-circle-info info-icon" data-tip="Varantların zaman değeri vardır (Theta). Hisse yatay kalırsa paranız erir. Bu metrik, hissenin yatay kalma riskini analiz eder."></i></span><span class="d-val text-yellow" id="op-theta">-</span></div>
+                                <div class="data-item full-width"><span class="d-label">Kaldıraç Uygunluğu<i class="fa-solid fa-circle-info info-icon" data-tip="Spot piyasa (Hisse) yerine, yüksek kaldıraçlı bir Varant alımının mantıklı olup olmadığını gösterir."></i></span><span class="d-val font-bold text-orange" id="op-suit">-</span></div>
+                                <div class="data-item full-width"><span class="d-label">Volatilite Skoru<i class="fa-solid fa-circle-info info-icon" data-tip="Hissenin opsiyon işlemleri için genel uygunluk puanıdır (0-100)."></i></span><span class="d-val" id="op-score">-</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. FUNDAMENTAL & MACRO TAB -->
+                <div id="tab-fund" class="tab-pane" style="display: none;">
+                    <div class="card mb-3">
+                        <h3 class="card-title">Değerleme Rasyoları ve Temel Analiz</h3>
+                        <div class="data-grid">
+                            <div class="data-item full-width" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:10px;">
+                                <span class="d-label">Sektör / Endüstri</span>
+                                <span class="d-val text-purple" id="fa-sector" style="font-weight:600;">-</span>
+                            </div>
+                            <div class="data-item"><span class="d-label">F/K Oranı (P/E)</span><span class="d-val text-blue" id="fa-pe">-</span></div>
+                            <div class="data-item"><span class="d-label">PD/DD Oranı (P/B)</span><span class="d-val text-blue" id="fa-pb">-</span></div>
+                            <div class="data-item"><span class="d-label">Özkaynak Karlılığı (ROE)</span><span class="d-val text-green" id="fa-roe">-</span></div>
+                            <div class="data-item"><span class="d-label">Borç / Özkaynak</span><span class="d-val text-yellow" id="fa-debt">-</span></div>
+                            <div class="data-item full-width"><span class="d-label">Kar Marjı</span><span class="d-val text-green" id="fa-margin">-</span></div>
+                        </div>
+                    </div>
+
+                    <div class="grid-2-col">
+                        <div class="card">
+                            <h3 class="card-title">Portföy Uyumu & Korelasyon</h3>
+                            <div class="data-grid">
+                                <div class="data-item full-width"><span class="d-label">Portföy Uyumu</span><span class="d-val" id="pa-fit">-</span></div>
+                                <div class="data-item full-width"><span class="d-label">Korelasyon</span><span class="d-val" id="pa-corr">-</span></div>
+                                <div class="data-item full-width"><span class="d-label">Sektör Uyarısı</span><span class="d-val text-yellow" id="pa-warn">-</span></div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <h3 class="card-title">Makro & Erken Uyarı Sistemi</h3>
+                            <div class="data-grid">
+                                <div class="data-item full-width"><span class="d-label">VIX (Korku) Seviyesi</span><span class="d-val text-yellow" id="mac-vix">-</span></div>
+                                <div class="data-item full-width"><span class="d-label">Piyasa Rejimi</span><span class="d-val text-blue" id="mac-regime">-</span></div>
+                                <div class="data-item full-width"><span class="d-label">Piyasa Trendi</span><span class="d-val" id="mac-trend">-</span></div>
+                                <div class="data-item full-width"><span class="d-label">Risk Uyarısı</span><span class="d-val text-red" id="ew-risk">-</span></div>
+                                <div class="data-item full-width"><span class="d-label">Fırsat Radarı</span><span class="d-val text-green" id="ew-opp">-</span></div>
+                                <div class="data-item full-width"><span class="d-label">Canlı Monitör</span><span class="d-val" id="lm-alert">-</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-3">
+                        <h3 class="card-title">Sistem Güvenilirliği (Validasyon)</h3>
+                        <div class="data-grid">
+                            <div class="data-item"><span class="d-label">Tarihsel Örneklem</span><span class="d-val" id="sr-ana">-</span></div>
+                            <div class="data-item"><span class="d-label">Backtest Başarısı</span><span class="d-val text-blue" id="sr-hit">-</span></div>
+                            <div class="data-item"><span class="d-label">Monte Carlo Maks. Çöküş</span><span class="d-val text-red" id="sr-risk">-</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. REASONING TAB (7 WHYS & COMMITTEE) -->
+                <div id="tab-reasoning" class="tab-pane" style="display: none;">
+                    <div class="card">
+                        <h3 class="card-title">Yapay Zeka Komite Oyları</h3>
+                        <table class="data-table">
+                            <thead>
+                                <tr><th>Yapay Zeka Ajanı</th><th>Oy</th><th>Skor</th><th>Karar Gerekçesi</th></tr>
+                            </thead>
+                            <tbody id="com-body"></tbody>
+                        </table>
+                        <div class="cio-verdict-box mt-3">
+                            <i class="fa-solid fa-gavel"></i>
+                            <div>
+                                <div class="cv-title">CIO NİHAİ KARARI</div>
+                                <div class="cv-text" id="cio-verdict">-</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-3">
+                        <h3 class="card-title">7 Neden Analizi (Karar Zekası)</h3>
+                        <div class="whys-container" id="whys-container"></div>
+                    </div>
+                </div>
+
+                <!-- 5. RAW JSON -->
+                <div id="tab-raw" class="tab-pane" style="display: none;">
+                    <div class="card">
+                        <h3 class="card-title">Ham JSON Çıktısı (Developer)</h3>
+                        <pre id="raw-json-output" style="background:var(--bg-base); padding:1rem; border-radius:8px; overflow-x:auto; color:var(--accent-green);">-</pre>
+                    </div>
+                </div>
+
+                <!-- 6. TICKER NEWS -->
+                <div id="tab-news" class="tab-pane" style="display: none;">
+                    <div class="card">
+                        <h3 class="card-title"><i class="fa-solid fa-newspaper text-blue"></i> Şirket Haberleri (Yahoo Finance)</h3>
+                        <div id="ticker-news-content" style="display:flex; flex-direction:column; gap:1rem; margin-top:1rem;">
+                            <p style="color:var(--text-muted)">Bu varlığa ait haber bulunamadı.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div> <!-- END TAB CONTENT AREA -->
+        </div>
+    </div> <!-- END DASHBOARD WRAPPER -->
+
+    <!-- NEWS WRAPPER -->
+    <div id="news-wrapper" class="main-wrapper" style="display: none;">
+        <div class="card">
+            <h2 style="margin-bottom: 0.5rem;"><i class="fa-solid fa-earth-americas text-blue"></i> Finans & Ekonomi Dergisi</h2>
+            <p style="color:var(--text-muted); margin-bottom: 2rem;">Türkiye ve Dünya piyasalarından güncel KAP ve Ekonomi haberleri zaman sırasına göre derlenmektedir.</p>
+            <div id="global-news-content" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+                <div style="text-align:center; padding: 2rem 0; grid-column: 1 / -1;"><div class="spinner small"></div><p style="margin-top:1rem;color:var(--text-muted)">Haberler derleniyor...</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RADAR WRAPPER -->
+    <div id="radar-wrapper" class="main-wrapper" style="display: none;">
+        <div class="dashboard-layout">
+            <aside class="sidebar-tabs">
+                <button class="s-tab active" onclick="switchRadarTab('hisse', this)">
+                    <i class="fa-solid fa-building"></i> Hisse Radarı (BIST30)
+                </button>
+                <button class="s-tab" onclick="switchRadarTab('allbist', this)">
+                    <i class="fa-solid fa-globe"></i> Tüm BIST (600+)
+                </button>
+                <button class="s-tab" onclick="switchRadarTab('opportunities1h', this)">
+                    <i class="fa-solid fa-clock"></i> 1 Saatlik Fırsatlar
+                </button>
+                <button class="s-tab" onclick="switchRadarTab('fx', this)">
+                    <i class="fa-solid fa-money-bill-trend-up"></i> Döviz (FX)
+                </button>
+                <button class="s-tab" onclick="switchRadarTab('commodity', this)">
+                    <i class="fa-solid fa-coins"></i> Emtia & Maden
+                </button>
+                <button class="s-tab" onclick="switchRadarTab('crypto', this)">
+                    <i class="fa-brands fa-bitcoin"></i> Kripto Para
+                </button>
+                <button class="s-tab" onclick="switchRadarTab('varant', this)">
+                    <i class="fa-solid fa-bolt"></i> Varant Radarı
+                </button>
+            </aside>
+            
+            <div class="tab-content-area">
+                <!-- 1 SAATLİK FIRSATLAR RADARI -->
+                <div id="rtab-opportunities1h" class="tab-pane">
+                    <div class="card" style="border:1px solid rgba(16, 185, 129, 0.5); box-shadow: 0 0 15px rgba(16,185,129,0.15);">
+                        <div class="card-header-flex">
+                            <h3 class="card-title" style="color:var(--accent-green);"><i class="fa-solid fa-clock"></i> 1 Saatlik Teknik Fırsatlar (Tüm BIST)</h3>
+                        </div>
+                        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1rem;">EMA Kesişimi, MACD Sinyali, RSI > 50, Güçlü ADX ve Pozitif Momentum analizine göre filtrelenmiştir.</p>
+                        <table class="data-table" id="opp1h-results">
+                            <thead><tr><th>Sembol</th><th>Fiyat</th><th>Şart (X/5)</th><th>Detaylar</th><th>Aksiyon</th></tr></thead>
+                            <tbody id="opp1h-tbody"><tr><td colspan="5" class="text-muted text-center">Giriş sayfasındaki veriler bekleniyor...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- HISSE RADAR -->
+                <div id="rtab-hisse" class="tab-pane active">
+                    <div class="card">
+                        <div class="card-header-flex">
+                            <h3 class="card-title">BIST30 Evreni Taraması</h3>
+                            <button class="btn-primary" onclick="startRadar('hisse')">TARAMAYI BAŞLAT</button>
+                        </div>
+                        <div id="hisse-loading" class="scan-loading" style="display: none;">
+                            <div class="spinner small"></div> BIST30 Taranıyor... Lütfen bekleyin.
+                        </div>
+                        <table class="data-table mt-3" id="hisse-results" style="display: none;">
+                            <thead><tr><th>Sembol</th><th>Güven Skoru</th><th>Trend</th><th>Aksiyon</th></tr></thead>
+                            <tbody id="hisse-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ALL BIST RADAR -->
+                <div id="rtab-allbist" class="tab-pane">
+                    <div class="card">
+                        <div class="card-header-flex">
+                            <h3 class="card-title">Tüm BIST Evreni Taraması (600+ Hisse)</h3>
+                            <button class="btn-primary" onclick="startRadar('allbist')">TARAMAYI BAŞLAT (Zaman Alabilir)</button>
+                        </div>
+                        <div id="allbist-loading" class="scan-loading" style="display: none;">
+                            <div class="spinner small"></div> Tüm BIST Taranıyor (Yaklaşık 15-20 saniye)...
+                        </div>
+                        <table class="data-table mt-3" id="allbist-results" style="display: none;">
+                            <thead><tr><th>Sembol</th><th>Güven Skoru</th><th>Trend</th><th>Aksiyon</th></tr></thead>
+                            <tbody id="allbist-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- FX RADAR -->
+                <div id="rtab-fx" class="tab-pane">
+                    <div class="card">
+                        <div class="card-header-flex">
+                            <h3 class="card-title">Döviz (FX) Taraması</h3>
+                            <button class="btn-primary" onclick="startRadar('fx')">TARAMAYI BAŞLAT</button>
+                        </div>
+                        <div id="fx-loading" class="scan-loading" style="display: none;">
+                            <div class="spinner small"></div> Pariteler Taranıyor...
+                        </div>
+                        <table class="data-table mt-3" id="fx-results" style="display: none;">
+                            <thead><tr><th>Sembol</th><th>Güven Skoru</th><th>Trend</th><th>Aksiyon</th></tr></thead>
+                            <tbody id="fx-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- COMMODITY RADAR -->
+                <div id="rtab-commodity" class="tab-pane">
+                    <div class="card">
+                        <div class="card-header-flex">
+                            <h3 class="card-title">Emtia ve Maden Taraması</h3>
+                            <button class="btn-primary" onclick="startRadar('commodity')">TARAMAYI BAŞLAT</button>
+                        </div>
+                        <div id="commodity-loading" class="scan-loading" style="display: none;">
+                            <div class="spinner small"></div> Emtialar Taranıyor...
+                        </div>
+                        <table class="data-table mt-3" id="commodity-results" style="display: none;">
+                            <thead><tr><th>Sembol</th><th>Güven Skoru</th><th>Trend</th><th>Aksiyon</th></tr></thead>
+                            <tbody id="commodity-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- CRYPTO RADAR -->
+                <div id="rtab-crypto" class="tab-pane">
+                    <div class="card">
+                        <div class="card-header-flex">
+                            <h3 class="card-title">Kripto Para Taraması</h3>
+                            <button class="btn-primary" onclick="startRadar('crypto')">TARAMAYI BAŞLAT</button>
+                        </div>
+                        <div id="crypto-loading" class="scan-loading" style="display: none;">
+                            <div class="spinner small"></div> Kripto Varlıklar Taranıyor...
+                        </div>
+                        <table class="data-table mt-3" id="crypto-results" style="display: none;">
+                            <thead><tr><th>Sembol</th><th>Güven Skoru</th><th>Trend</th><th>Aksiyon</th></tr></thead>
+                            <tbody id="crypto-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- VARANT RADAR -->
+                <div id="rtab-varant" class="tab-pane">
+                    <div class="card">
+                        <div class="card-header-flex">
+                            <h3 class="card-title">Varant Evreni Taraması</h3>
+                            <button class="btn-primary" onclick="startRadar('varant')">TARAMAYI BAŞLAT</button>
+                        </div>
+                        <div id="varant-loading" class="scan-loading" style="display: none;">
+                            <div class="spinner small"></div> Varantlar Taranıyor... Lütfen bekleyin.
+                        </div>
+                        <table class="data-table mt-3" id="varant-results" style="display: none;">
+                            <thead><tr><th>Sembol</th><th>Güven Skoru</th><th>Trend</th><th>Aksiyon</th></tr></thead>
+                            <tbody id="varant-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js?v=20260724_v10"></script>
+</body>
+</html>
