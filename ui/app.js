@@ -1706,6 +1706,17 @@ function renderAllDashboardTables() {
                 let phaseIcon = phaseColor === 'red' ? 'fa-lock' : (phaseColor === 'yellow' ? 'fa-bolt' : 'fa-seedling');
                 let evreStr = `<span style="background:${phaseBg}; color:${phaseTxtColor}; padding:3px 7px; border-radius:4px; font-weight:700; font-size:0.72rem; white-space:nowrap;"><i class="fa-solid ${phaseIcon}"></i> ${phaseBadge}</span>`;
                 
+                // 🛡️ Anti-Trap Shield (Tuzak Önleme Rozeti) & Teyit Skoru
+                if (res.Anti_Trap_Badge) {
+                    let atColor = res.Anti_Trap_Color || '#10b981';
+                    let atBg = atColor === '#10b981' ? 'rgba(16, 185, 129, 0.15)' : (atColor === '#ef4444' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(234, 179, 8, 0.15)');
+                    evreStr += `<div style="margin-top:3px;"><span style="background:${atBg}; color:${atColor}; border:1px solid ${atColor}; padding:2px 5px; border-radius:3px; font-size:0.68rem; font-weight:700; white-space:nowrap;">${res.Anti_Trap_Badge}</span></div>`;
+                }
+
+                if (res.ORB_Breakout) {
+                    evreStr += `<div style="margin-top:2px;"><span style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; border:1px solid #38bdf8; padding:1px 4px; border-radius:3px; font-size:0.66rem; font-weight:700;"><i class="fa-solid fa-bullseye"></i> ORB Açılış Kırılımı</span></div>`;
+                }
+
                 if (res.V_Reversal) {
                     evreStr += `<div style="margin-top:3px;"><span style="background:rgba(168, 85, 247, 0.2); color:#c084fc; padding:2px 5px; border-radius:3px; font-size:0.68rem; font-weight:700;"><i class="fa-solid fa-bolt-lightning"></i> V-Dönüş +%${res.V_Power}</span></div>`;
                 }
@@ -1725,11 +1736,15 @@ function renderAllDashboardTables() {
                                 <div style="font-size:0.75rem; color:var(--text-muted);">Kalan: <b style="color:var(--accent-blue);">+${distPct}%</b></div>
                                 <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;" title="Tahmini Tavan Saati"><i class="fa-regular fa-clock"></i> ${etaVal}</div>`;
                 
-                // Hacim Katlama & Mum Gücü & Domino
+                // Hacim Katlama & Mum Gücü & VWAP & Domino
                 let volM = res.Vol_Multiplier !== undefined && !isNaN(parseFloat(res.Vol_Multiplier)) ? parseFloat(res.Vol_Multiplier).toFixed(1) : "1.0";
                 let volColor = volM >= 2.5 ? 'var(--accent-green)' : (volM >= 1.5 ? 'var(--accent-yellow)' : 'var(--text-muted)');
                 let hacimStr = `<span style="color:${volColor}; font-weight:700; font-size:0.75rem;"><i class="fa-solid fa-fire"></i> ${volM}x Hacim</span>`;
                 
+                if (res.VWAP) {
+                    hacimStr += `<div style="font-size:0.68rem; color:var(--text-muted); margin-top:2px;" title="Hacim Ağırlıklı Ortalama Fiyat">⚖️ VWAP: ₺${parseFloat(res.VWAP).toFixed(2)}</div>`;
+                }
+
                 if (res.Breakdown_Risk) {
                     hacimStr += `<br><span style="background:rgba(239, 68, 68, 0.25); color:var(--accent-red); padding:1px 5px; border-radius:3px; font-size:0.68rem; font-weight:800;"><i class="fa-solid fa-triangle-exclamation"></i> ÇÖZÜLME RİSKİ</span>`;
                 } else if (res.Trap_Risk) {
@@ -1743,8 +1758,12 @@ function renderAllDashboardTables() {
                     hacimStr += `<div style="font-size:0.68rem; color:#94a3b8; margin-top:2px;" title="Sektörel Domino Kardeş Hisseleri"><i class="fa-solid fa-chess-knight"></i> ${res.Domino_Sector}: ${pStr}</div>`;
                 }
                 
-                // AI Skor, Çift Tavan ve Varant Eşleşmesi
+                // AI Skor, Teyit Skoru, Çift Tavan ve Varant Eşleşmesi
                 let scoreStr = `<div style="color:${scoreColor}; font-weight:800; font-size:0.85rem;">${scoreValue}/100</div>`;
+                if (res.Teyit_Score) {
+                    let tcColor = res.Teyit_Score >= 80 ? '#10b981' : (res.Teyit_Score >= 60 ? '#facc15' : '#ef4444');
+                    scoreStr += `<div style="font-size:0.68rem; color:${tcColor}; font-weight:700;" title="Kurumsal Para ve Mum Teyit Skoru"><i class="fa-solid fa-shield-check"></i> %${res.Teyit_Score} Teyit</div>`;
+                }
                 if (res.Streak_Score) {
                     scoreStr += `<div style="font-size:0.68rem; color:#38bdf8;" title="Çift Tavan İhtimali"><i class="fa-solid fa-link"></i> %${res.Streak_Score} Seri</div>`;
                 }

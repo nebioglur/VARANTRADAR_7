@@ -645,9 +645,9 @@ class TechnicalEngine(BaseEngine):
                 elif current_vol > avg_vol_20 * 1.5:
                     score += 15
                     details.append(f"Yüksek Hacim Girişi ({vol_multiplier}x).")
-                    
+
             # ==========================================
-            # 2. Mum Gövde Gücü & Sahte Kırılım (Tuzak) Filtresi
+            # 2. 🛡️ TUZAK ÖNLEYİCİ KALKAN (Anti-Trap Shield) & Mum Gücü
             # ==========================================
             candle_range = current_high - current_low
             candle_body = abs(current_price - current_open)
@@ -660,18 +660,29 @@ class TechnicalEngine(BaseEngine):
                 upper_wick_ratio = upper_wick / candle_range
                 body_ratio = candle_body / candle_range
                 
-                if upper_wick_ratio > 0.40:
+                if upper_wick_ratio > 0.35:
                     trap_risk = True
-                    score -= 10
-                    candle_strength = "Satış Baskılı (Üst Fitil)"
-                    details.append("⚠️ Dikkat: Üst fitil uzun (Satış Baskısı / Tuzak Riski).")
-                elif upper_wick_ratio <= 0.15 and body_ratio >= 0.65:
-                    score += 10
+                    score -= 20
+                    candle_strength = "Satış Baskılı (Üst Fitil Tuzağı)"
+                    details.append("⚠️ Dikkat: Uzun üst fitil (Satış Baskısı / Boğa Tuzağı Riski).")
+                elif upper_wick_ratio <= 0.18 and body_ratio >= 0.65:
+                    score += 15
                     candle_strength = "Güçlü Boğa (Marubozu)"
                     details.append("💪 Güçlü Boğa Mumu (Alıcılar Hakim).")
-                    
+
             # ==========================================
-            # 3. OBV (Yeni Zirve) (20 Puan)
+            # 3. 🎯 ORB (Opening Range Breakout - Açılış Zirvesi Kırılımı)
+            # ==========================================
+            orb_breakout = False
+            if len(high) >= 6:
+                morning_range_high = float(high.iloc[-6:-1].max())
+                if current_price >= morning_range_high and vol_multiplier >= 1.4:
+                    orb_breakout = True
+                    score += 15
+                    details.append("🎯 ORB Kırılımı: Sabah açılış bandı tepe seviyesi hacimle yukarı kırıldı!")
+
+            # ==========================================
+            # 4. OBV (Yeni Zirve & Para Girişi) (15 Puan)
             # ==========================================
             delta_price = close.diff()
             direction = np.where(delta_price > 0, 1, np.where(delta_price < 0, -1, 0))
@@ -680,11 +691,11 @@ class TechnicalEngine(BaseEngine):
             max_obv_20 = float(obv.iloc[-21:-1].max()) if len(obv) > 20 else float(obv.iloc[:-1].max())
             
             if current_obv >= max_obv_20:
-                score += 20
-                details.append("OBV yeni zirvede (Para Girişi).")
+                score += 15
+                details.append("OBV yeni zirvede (Kurumsal Para Girişi).")
                 
             # ==========================================
-            # 4. VWAP Üzeri (15 Puan)
+            # 5. ⚖️ KESİN VWAP ŞARTI (Mal Dağıtımı / Tuzak Filtresi)
             # ==========================================
             typical_price = (high + low + close) / 3
             if hasattr(df.index, 'date'):
@@ -693,12 +704,16 @@ class TechnicalEngine(BaseEngine):
                 vwap = (typical_price * volume).cumsum() / volume.cumsum()
                 
             current_vwap = float(vwap.iloc[-1])
-            if current_price > current_vwap:
+            if current_price >= current_vwap:
                 score += 15
-                details.append("VWAP üzerinde.")
+                details.append("VWAP üzerinde (Kurumsal Alım Güvenli Bölge).")
+            else:
+                trap_risk = True
+                score -= 25
+                details.append("🛑 UYARI: Fiyat VWAP altında (Mal Dağıtım Tuzağı Riski!).")
                 
             # ==========================================
-            # 5. EMA50 > EMA200 (Günlük Trend) (10 Puan)
+            # 6. EMA50 > EMA200 (Günlük Trend) (10 Puan)
             # ==========================================
             if daily_stats:
                 e50 = daily_stats.get("Daily_EMA50", float('inf'))
@@ -708,7 +723,7 @@ class TechnicalEngine(BaseEngine):
                     details.append("EMA50 > EMA200 (Pozitif Trend).")
                     
             # ==========================================
-            # 6. Direnç Kırılımı (10 Puan)
+            # 7. Direnç Kırılımı (10 Puan)
             # ==========================================
             highest_close_20 = float(close.iloc[-21:-1].max()) if len(close) > 20 else float(close.iloc[:-1].max())
             if current_price > highest_close_20:
@@ -716,7 +731,7 @@ class TechnicalEngine(BaseEngine):
                 details.append("Direnç hacimli kırıldı.")
                 
             # ==========================================
-            # 7. MFI & CMF (10 Puan)
+            # 8. MFI & CMF (Para Girişi & Akışı Teyidi)
             # ==========================================
             raw_money_flow = typical_price * volume
             dir_mf = np.where(typical_price > typical_price.shift(1), 1, np.where(typical_price < typical_price.shift(1), -1, 0))
@@ -732,8 +747,13 @@ class TechnicalEngine(BaseEngine):
             mfv = ((close - low) - (high - close)) / (high - low).replace(0, np.nan) * volume
             cmf = mfv.rolling(20).sum() / volume.rolling(20).sum()
             current_cmf = float(cmf.iloc[-1])
-            if current_cmf > 0.1:
-                score += 5
+            if current_cmf > 0.08:
+                score += 8
+                details.append("CMF Pozitif (Net Para Girişi Teyitli).")
+            elif current_cmf < -0.05:
+                trap_risk = True
+                score -= 15
+                details.append("⚠️ CMF Negatif (Yükselişte Para Çıkışı / Dağıtım Riski).")
                 
             # ==========================================
             # 8. RSI & MACD (10 Puan Toplam)
@@ -907,6 +927,20 @@ class TechnicalEngine(BaseEngine):
             
         score = min(100, max(0, score))
         report = " ".join(details)
+
+        # 🛡️ Anti-Trap Shield & Teyit Skoru Hesaplama
+        if not trap_risk and current_price >= current_vwap and vol_multiplier >= 1.4:
+            anti_trap_badge = "🛡️ TEYİTLİ TAVAN"
+            anti_trap_color = "#10b981"
+            teyit_score = min(99, max(75, int(score * 0.95 + (8 if orb_breakout else 0) + (5 if current_cmf > 0.08 else 0))))
+        elif trap_risk or current_price < current_vwap:
+            anti_trap_badge = "⚠️ TUZAK / FİTİL RİSKİ"
+            anti_trap_color = "#ef4444"
+            teyit_score = max(25, int(score * 0.55))
+        else:
+            anti_trap_badge = "🟡 GÖZLEM / NÖTR"
+            anti_trap_color = "#facc15"
+            teyit_score = max(50, int(score * 0.75))
         
         return {
             "Symbol": symbol,
@@ -920,6 +954,11 @@ class TechnicalEngine(BaseEngine):
             "Vol_Multiplier": vol_multiplier,
             "Candle_Strength": candle_strength,
             "Trap_Risk": trap_risk,
+            "Anti_Trap_Badge": anti_trap_badge,
+            "Anti_Trap_Color": anti_trap_color,
+            "Teyit_Score": teyit_score,
+            "ORB_Breakout": orb_breakout,
+            "VWAP": round(current_vwap, 2),
             "V_Reversal": v_reversal,
             "V_Power": v_power,
             "ETA": eta_str,
