@@ -313,3 +313,226 @@ body {
     border-color: var(--accent-blue);
     color: var(--text-light);
 }
+
+/* ========================================================
+   📱 MOBILE-FIRST RESPONSIVE & SLIDER NAVIGATION CONTROLS
+   ======================================================== */
+
+.mobile-slider-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    background: rgba(15, 23, 42, 0.85);
+    padding: 0.6rem 0.8rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+.slider-nav-btn {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #fff;
+    border: none;
+    padding: 0.55rem 1rem;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 3px 10px rgba(37, 99, 235, 0.35);
+    white-space: nowrap;
+    min-height: 40px;
+}
+
+.slider-nav-btn:hover {
+    transform: scale(1.04);
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.slider-nav-btn:active {
+    transform: scale(0.97);
+}
+
+.slider-indicators {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 2px 4px;
+}
+
+.slider-indicators::-webkit-scrollbar {
+    display: none;
+}
+
+.indicator-dot {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 0.4rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.indicator-dot:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+}
+
+.indicator-dot.active {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.35), rgba(139, 92, 246, 0.35));
+    border-color: #38bdf8;
+    color: #38bdf8;
+    font-weight: 700;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+
+/* Sabit Alt Mobil Navigasyon Çubuğu */
+.bottom-mobile-bar {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 62px;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    z-index: 99999;
+    padding: 4px 8px;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.bm-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    flex: 1;
+    max-width: 75px;
+}
+
+.bm-btn i {
+    font-size: 1.15rem;
+}
+
+.bm-btn:hover, .bm-btn.active {
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.12);
+}
+
+.bm-btn.active i {
+    filter: drop-shadow(0 0 6px #38bdf8);
+}
+
+/* ========================================================
+   📱 TELEFON VE KÜÇÜK EKRAN OPTİMİZASYONU (@media)
+   ======================================================== */
+@media (max-width: 850px) {
+    body {
+        padding-bottom: 75px; /* Alt bar için boşluk */
+    }
+
+    .bottom-mobile-bar {
+        display: flex;
+    }
+
+    .top-nav {
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        padding: 0.75rem;
+    }
+
+    .top-nav .logo {
+        font-size: 1.15rem;
+    }
+
+    .search-container {
+        width: 100% !important;
+        order: 3;
+        margin-top: 0.3rem;
+    }
+
+    .search-container input {
+        font-size: 0.95rem !important;
+        padding: 0.65rem 0.8rem 0.65rem 2.4rem !important;
+        height: 42px;
+    }
+
+    .nav-actions {
+        order: 2;
+        gap: 0.4rem;
+    }
+
+    .nav-btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+    }
+
+    /* Radar Grid Tek Sütun ve Kolay Okunur */
+    #radar-cards-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1.25rem !important;
+    }
+
+    .card {
+        padding: 1.1rem !important;
+        border-radius: 12px;
+    }
+
+    .card-title {
+        font-size: 1.1rem !important;
+    }
+
+    /* Tablolar Mobilde Ferah ve Okunaklı */
+    .data-table {
+        font-size: 0.88rem !important;
+    }
+
+    .data-table th, .data-table td {
+        padding: 0.65rem 0.5rem !important;
+    }
+
+    .data-table td {
+        font-size: 0.85rem;
+    }
+
+    /* İncele ve Aksiyon Butonları */
+    .data-table .btn, .btn-primary {
+        padding: 0.5rem 0.8rem !important;
+        font-size: 0.85rem !important;
+        font-weight: 700 !important;
+        border-radius: 6px !important;
+    }
+
+    #live-clock {
+        font-size: 1.8rem !important;
+    }
+}

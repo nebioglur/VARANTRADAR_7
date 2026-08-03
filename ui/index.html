@@ -65,15 +65,29 @@
                 </div>
             </div>
 
-            <div style="grid-column: 1 / -1; margin-bottom: 1rem; text-align: center;">
-                <span style="font-size: 1.1rem; font-weight: bold; color: var(--accent-green); background: rgba(34,197,94,0.1); padding:0.5rem 1rem; border-radius:20px; border:1px solid rgba(34,197,94,0.3);" id="total-analyzed-counter">RADAR BUGÜNE KADAR 0 VERİYİ ANALİZ ETTİ</span>
+            <div style="grid-column: 1 / -1; margin-bottom: 0.8rem; text-align: center;">
+                <span style="font-size: 1rem; font-weight: bold; color: var(--accent-green); background: rgba(34,197,94,0.1); padding:0.4rem 0.9rem; border-radius:20px; border:1px solid rgba(34,197,94,0.3);" id="total-analyzed-counter">RADAR BUGÜNE KADAR 0 VERİYİ ANALİZ ETTİ</span>
             </div>
             
+            <!-- 📱 MOBİL VE HIZLI GEÇİŞ KONTROLLERİ (GERİ / İLERİ TUŞLARI) -->
+            <div class="mobile-slider-controls" style="grid-column: 1 / -1;">
+                <button type="button" class="slider-nav-btn prev-card-btn" onclick="navigateCard(-1)"><i class="fa-solid fa-chevron-left"></i> Geri</button>
+                <div class="slider-indicators" id="slider-indicators">
+                    <button type="button" class="indicator-dot active" onclick="jumpToCard(0)"><i class="fa-solid fa-rocket"></i> Tavan Radarı</button>
+                    <button type="button" class="indicator-dot" onclick="jumpToCard(1)"><i class="fa-solid fa-clock"></i> 1S Fırsat</button>
+                    <button type="button" class="indicator-dot" onclick="jumpToCard(2)"><i class="fa-solid fa-bolt"></i> 5D RSI</button>
+                    <button type="button" class="indicator-dot" onclick="jumpToCard(3)"><i class="fa-solid fa-chart-line"></i> Günlük</button>
+                    <button type="button" class="indicator-dot" onclick="jumpToCard(4)"><i class="fa-solid fa-arrow-trend-up"></i> Yükselen</button>
+                    <button type="button" class="indicator-dot" onclick="jumpToCard(5)"><i class="fa-solid fa-arrow-trend-down"></i> Düşen</button>
+                </div>
+                <button type="button" class="slider-nav-btn next-card-btn" onclick="navigateCard(1)">İleri <i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+
             <!-- MULTI-TABLE GRID -->
-            <div style="grid-column: 1 / -1; display:grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap:1.5rem; margin-bottom:1.5rem;">
+            <div id="radar-cards-grid" style="grid-column: 1 / -1; display:grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap:1.5rem; margin-bottom:1.5rem;">
                 
                 <!-- Yüksek Tavan Olasılığı -->
-                <div class="card" style="padding:1rem; border:1px solid rgba(239, 68, 68, 0.5); box-shadow: 0 0 15px rgba(239, 68, 68, 0.15); background: linear-gradient(145deg, rgba(239, 68, 68, 0.05) 0%, rgba(15,23,42,1) 100%);">
+                <div class="card" id="radar-card-0" style="padding:1rem; border:1px solid rgba(239, 68, 68, 0.5); box-shadow: 0 0 15px rgba(239, 68, 68, 0.15); background: linear-gradient(145deg, rgba(239, 68, 68, 0.05) 0%, rgba(15,23,42,1) 100%);">
                     <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem; color:var(--accent-red);"><i class="fa-solid fa-rocket"></i> Yüksek Tavan Adayları (Pro Radar) <span id="time-tavan-adaylari" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
                     <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; margin-top:-0.5rem;">AI Tavan Radarı: Kesin Tavan Marjı, Evre Rozeti, Hacim Katlama ve Dinamik İz Süren Stop.</p>
                     <div style="max-height:380px; overflow-y:auto;">
@@ -85,7 +99,7 @@
                 </div>
 
                 <!-- 1 Saatlik Fırsatlar -->
-                <div class="card" style="padding:1rem; border:1px solid rgba(16, 185, 129, 0.5); box-shadow: 0 0 15px rgba(16,185,129,0.15);">
+                <div class="card" id="radar-card-1" style="padding:1rem; border:1px solid rgba(16, 185, 129, 0.5); box-shadow: 0 0 15px rgba(16,185,129,0.15);">
                     <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem; color:var(--accent-green);"><i class="fa-solid fa-clock"></i> 1 Saatlik Teknik Fırsatlar <span id="time-opportunities-1h" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
                     <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; margin-top:-0.5rem;">EMA, MACD, RSI, ADX ve Momentum taraması.</p>
                     <div style="max-height:350px; overflow-y:auto;">
@@ -97,7 +111,7 @@
                 </div>
                 
                 <!-- 5 Dakikalık Kısa Trade Sinyalleri -->
-                <div class="card" style="padding:1rem; border:1px solid rgba(59, 130, 246, 0.5); box-shadow: 0 0 15px rgba(59,130,246,0.15);">
+                <div class="card" id="radar-card-2" style="padding:1rem; border:1px solid rgba(59, 130, 246, 0.5); box-shadow: 0 0 15px rgba(59,130,246,0.15);">
                     <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem; color:var(--accent-blue);"><i class="fa-solid fa-bolt"></i> 5 Dk Kısa Trade Sinyalleri (RSI) <span id="time-signals-5m" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
                     <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; margin-top:-0.5rem;">BIST50'de RSI 50/70 kesişimi ile kısa vade AL/SAT fırsatları.</p>
                     <div style="max-height:350px; overflow-y:auto;">
@@ -109,7 +123,7 @@
                 </div>
 
                 <!-- Fırsatlar (Günlük) -->
-                <div class="card" style="padding:1rem;">
+                <div class="card" id="radar-card-3" style="padding:1rem;">
                     <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem;"><i class="fa-solid fa-bolt text-yellow"></i> Fırsatlar (Günlük) <span id="time-opportunities" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
                     <div style="max-height:350px; overflow-y:auto;">
                     <table class="data-table" style="width: 100%;">
@@ -120,7 +134,7 @@
                 </div>
 
                 <!-- Yükselenler -->
-                <div class="card" style="padding:1rem;">
+                <div class="card" id="radar-card-4" style="padding:1rem;">
                     <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem;"><i class="fa-solid fa-arrow-trend-up text-green"></i> Yükselenler <span id="time-gainers" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
                     <div style="max-height:350px; overflow-y:auto;">
                     <table class="data-table" style="width: 100%;">
@@ -131,7 +145,7 @@
                 </div>
 
                 <!-- Düşenler -->
-                <div class="card" style="padding:1rem;">
+                <div class="card" id="radar-card-5" style="padding:1rem;">
                     <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem;"><i class="fa-solid fa-arrow-trend-down text-red"></i> Düşenler <span id="time-losers" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
                     <div style="max-height:350px; overflow-y:auto;">
                     <table class="data-table" style="width: 100%;">
@@ -853,8 +867,30 @@
                 </div>
             </div>
         </div>
+    <!-- 📱 SABİT ALT MOBİL NAVİGASYON (GERİ / İLERİ VE HIZLI ERİŞİM) -->
+    <div class="bottom-mobile-bar">
+        <button type="button" class="bm-btn" onclick="navigateCard(-1)" title="Önceki Kart">
+            <i class="fa-solid fa-circle-chevron-left" style="color:var(--accent-blue);"></i>
+            <span>Geri</span>
+        </button>
+        <button type="button" class="bm-btn active" id="bm-tavan" onclick="jumpToCard(0)" title="Tavan Radarı">
+            <i class="fa-solid fa-rocket" style="color:var(--accent-red);"></i>
+            <span>Tavan</span>
+        </button>
+        <button type="button" class="bm-btn" id="bm-1h" onclick="jumpToCard(1)" title="1 Saatlik">
+            <i class="fa-solid fa-clock" style="color:var(--accent-green);"></i>
+            <span>1 Saatlik</span>
+        </button>
+        <button type="button" class="bm-btn" id="bm-5m" onclick="jumpToCard(2)" title="5 Dk RSI">
+            <i class="fa-solid fa-bolt" style="color:var(--accent-blue);"></i>
+            <span>5D RSI</span>
+        </button>
+        <button type="button" class="bm-btn" onclick="navigateCard(1)" title="Sonraki Kart">
+            <i class="fa-solid fa-circle-chevron-right" style="color:var(--accent-blue);"></i>
+            <span>İleri</span>
+        </button>
     </div>
 
-    <script src="app.js?v=20260724_v10"></script>
+    <script src="app.js?v=20260724_v11"></script>
 </body>
 </html>

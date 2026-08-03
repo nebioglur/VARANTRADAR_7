@@ -1541,15 +1541,22 @@ function renderAllDashboardTables() {
                 }
                 
                 // Tavan Fiyatı, Kalan % ve ETA
-                let tavanP = res.Ceiling_Price ? "₺" + parseFloat(res.Ceiling_Price).toFixed(2) : (res.Position && res.Position.TP2 ? "₺" + parseFloat(res.Position.TP2).toFixed(2) : "-");
-                let distPct = res.Distance_To_Ceiling_Pct !== undefined ? parseFloat(res.Distance_To_Ceiling_Pct).toFixed(1) : "-";
+                let tavanPVal = res.Ceiling_Price || (res.Position && res.Position.TP2 ? res.Position.TP2 : null);
+                let curPVal = res.Price || (res.Position && res.Position.Entry ? res.Position.Entry : null);
+                let distPct = "-";
+                if (res.Distance_To_Ceiling_Pct !== undefined && !isNaN(parseFloat(res.Distance_To_Ceiling_Pct))) {
+                    distPct = parseFloat(res.Distance_To_Ceiling_Pct).toFixed(1);
+                } else if (tavanPVal && curPVal && curPVal > 0) {
+                    distPct = (((tavanPVal - curPVal) / curPVal) * 100).toFixed(1);
+                }
+                let tavanP = tavanPVal ? "₺" + parseFloat(tavanPVal).toFixed(2) : "-";
                 let etaVal = res.ETA || (res.Position ? res.Position.Projection : "-");
-                let tavanStr = `<div style="font-size:0.8rem; font-weight:700; color:var(--accent-green); font-family:monospace;">${tavanP}</div>
-                                <div style="font-size:0.7rem; color:var(--text-muted);">Kalan: <b style="color:var(--accent-blue);">+${distPct}%</b></div>
-                                <div style="font-size:0.68rem; color:var(--text-muted);" title="Tahmini Tavan Saati"><i class="fa-regular fa-clock"></i> ${etaVal}</div>`;
+                let tavanStr = `<div style="font-size:0.88rem; font-weight:700; color:var(--accent-green); font-family:monospace;">${tavanP}</div>
+                                <div style="font-size:0.75rem; color:var(--text-muted);">Kalan: <b style="color:var(--accent-blue);">+${distPct}%</b></div>
+                                <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;" title="Tahmini Tavan Saati"><i class="fa-regular fa-clock"></i> ${etaVal}</div>`;
                 
                 // Hacim Katlama & Mum Gücü & Domino
-                let volM = res.Vol_Multiplier !== undefined ? res.Vol_Multiplier : 1.0;
+                let volM = res.Vol_Multiplier !== undefined && !isNaN(parseFloat(res.Vol_Multiplier)) ? parseFloat(res.Vol_Multiplier).toFixed(1) : "1.0";
                 let volColor = volM >= 2.5 ? 'var(--accent-green)' : (volM >= 1.5 ? 'var(--accent-yellow)' : 'var(--text-muted)');
                 let hacimStr = `<span style="color:${volColor}; font-weight:700; font-size:0.75rem;"><i class="fa-solid fa-fire"></i> ${volM}x Hacim</span>`;
                 
@@ -1842,5 +1849,59 @@ function updateSvrChart(mode) {
             }
         }
     });
+}
+
+// ========================================================
+// 📱 MOBİL KART NAVİGASYONU (GERİ / İLERİ & KAYDIRMA)
+// ========================================================
+let currentCardIndex = 0;
+const totalCards = 6;
+
+function jumpToCard(cardIdx) {
+    if (cardIdx < 0) cardIdx = 0;
+    if (cardIdx >= totalCards) cardIdx = totalCards - 1;
+    currentCardIndex = cardIdx;
+    
+    // Slider Butonlarını Güncelle
+    const indicators = document.querySelectorAll('#slider-indicators .indicator-dot');
+    indicators.forEach((dot, idx) => {
+        if (idx === cardIdx) {
+            dot.classList.add('active');
+            try { dot.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); } catch(e){}
+        } else {
+            dot.classList.remove('active');
+        }
+    });
+
+    // Alt Mobil Bar Butonlarını Güncelle
+    const bms = ['bm-tavan', 'bm-1h', 'bm-5m'];
+    bms.forEach((id, idx) => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (idx === cardIdx) el.classList.add('active');
+            else el.classList.remove('active');
+        }
+    });
+
+    // Hedef Karta Yumuşak Kaydır
+    const targetCard = document.getElementById(`radar-card-${cardIdx}`);
+    if (targetCard) {
+        targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        targetCard.style.transition = 'box-shadow 0.4s ease, border-color 0.4s ease';
+        const origBorder = targetCard.style.borderColor;
+        targetCard.style.borderColor = '#38bdf8';
+        targetCard.style.boxShadow = '0 0 25px rgba(56, 189, 248, 0.45)';
+        setTimeout(() => {
+            targetCard.style.borderColor = origBorder;
+            targetCard.style.boxShadow = '';
+        }, 1400);
+    }
+}
+
+function navigateCard(direction) {
+    let nextIdx = currentCardIndex + direction;
+    if (nextIdx < 0) nextIdx = totalCards - 1;
+    if (nextIdx >= totalCards) nextIdx = 0;
+    jumpToCard(nextIdx);
 }
 
