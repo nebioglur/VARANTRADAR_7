@@ -651,6 +651,19 @@ def api_tavan_tracker():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/api/tavan_history', methods=['GET'])
+def api_tavan_history():
+    """1 Ağustos 2026'dan itibaren veya istenen aralıkta uzun vadeli kümülatif tavan ve +%5 başarı arşivi."""
+    start_date = request.args.get('start_date', '2026-08-01')
+    end_date = request.args.get('end_date', None)
+    symbol_filter = request.args.get('symbol', None)
+    try:
+        from services.tavan_tracker import TavanAuditTracker
+        data = TavanAuditTracker.get_long_term_history(start_date=start_date, end_date=end_date, symbol_filter=symbol_filter)
+        return jsonify(sanitize_for_json(data))
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 
 if __name__ == "__main__":
 

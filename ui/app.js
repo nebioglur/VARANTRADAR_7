@@ -2577,6 +2577,160 @@ async function fetchTavanAuditData(dateStr = '') {
     } catch (e) {
         if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="text-red text-center" style="padding:2rem;">Bağlantı hatası: ${e.message}</td></tr>`;
     }
+// ==========================================
+// 🏆 UZUN VADELİ TAVAN & +%5 KÂR ARŞİVİ KONTROLCÜSÜ (1 AĞUSTOS 2026'DAN İTİBAREN)
+// ==========================================
+function openLongTermHistoryModal() {
+    const modal = document.getElementById('long-term-history-modal');
+    if (modal) {
+        modal.style.display = 'block';
+        fetchLongTermHistoryData();
+    }
+}
+
+function closeLongTermHistoryModal() {
+    const modal = document.getElementById('long-term-history-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+function applyLongTermFilter() {
+    const startDate = document.getElementById('hist-start-date')?.value || '2026-08-01';
+    const endDate = document.getElementById('hist-end-date')?.value || '';
+    const symbol = document.getElementById('hist-symbol-search')?.value || '';
+    fetchLongTermHistoryData(startDate, endDate, symbol);
+}
+
+function openTavanAuditForDate(dateStr) {
+    closeLongTermHistoryModal();
+    openTavanAuditModal();
+    const select = document.getElementById('tavan-audit-date-select');
+    if (select) {
+        select.value = dateStr;
+    }
+    fetchTavanAuditData(dateStr);
+}
+
+async function fetchLongTermHistoryData(startDate = '2026-08-01', endDate = '', symbol = '') {
+    const dailyTbody = document.getElementById('hist-daily-tbody');
+    const hofTbody = document.getElementById('hist-hall-of-fame-tbody');
+
+    if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="7" class="text-muted text-center" style="padding:1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Tarihsel performans arşivi taranıyor...</td></tr>`;
+    if (hofTbody) hofTbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center" style="padding:1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Yıldızlar hesaplanıyor...</td></tr>`;
+
+    try {
+        let url = `/api/tavan_history?start_date=${encodeURIComponent(startDate)}`;
+        if (endDate) url += `&end_date=${encodeURIComponent(endDate)}`;
+        if (symbol) url += `&symbol=${encodeURIComponent(symbol)}`;
+
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            const summ = data.summary || {};
+            
+            // 5 KPI Kartlarını Doldur
+            const elDays = document.getElementById('hist-total-days');
+            const elDaysSub = document.getElementById('hist-total-candidates-sub');
+            const elTavan = document.getElementById('hist-tavan-rate');
+            const elTavanSub = document.getElementById('hist-tavan-cnt-sub');
+            const elPlus5 = document.getElementById('hist-plus5-rate');
+            const elPlus5Sub = document.getElementById('hist-plus5-cnt-sub');
+            const elMaxGain = document.getElementById('hist-avg-max-gain');
+            const elCloseSub = document.getElementById('hist-avg-close-sub');
+            const elWarrant = document.getElementById('hist-warrant-avg-gain');
+
+            if (elDays) elDays.innerText = `${summ.total_days_tracked || 0} Seans`;
+            if (elDaysSub) elDaysSub.innerText = `Toplam ${summ.total_candidates_tracked || 0} Aday`;
+            if (elTavan) elTavan.innerText = `%${summ.tavan_success_pct || 0}`;
+            if (elTavanSub) elTavanSub.innerText = `${summ.total_hit_ceiling || 0} / ${summ.total_candidates_tracked || 0} Tavan`;
+            if (elPlus5) elPlus5.innerText = `%${summ.plus5_success_pct || 0}`;
+            if (elPlus5Sub) elPlus5Sub.innerText = `${summ.total_hit_plus5 || 0} / ${summ.total_candidates_tracked || 0} Kazandırdı`;
+            if (elMaxGain) elMaxGain.innerText = `+ %${summ.cumulative_avg_max_gain_pct || 0}`;
+            if (elCloseSub) elCloseSub.innerText = `Kapanış Ort: +%${summ.cumulative_avg_closing_gain_pct || 0}`;
+            if (elWarrant) elWarrant.innerText = `+ %${summ.ahlatci_warrant_avg_gain_pct || 0}`;
+
+            // 1. Günlük Seans Tablosunu Render Et
+            if (dailyTbody) {
+                dailyTbody.innerHTML = '';
+                const dailyList = data.daily_breakdown || [];
+                if (dailyList.length === 0) {
+                    dailyTbody.innerHTML = `<tr><td colspan="7" class="text-muted text-center" style="padding:1.5rem;">Filtreye uygun işlem günü bulunamadı.</td></tr>`;
+                } else {
+                    dailyList.forEach(d => {
+                        const tr = document.createElement('tr');
+                        const tavanPctCol = d.hit_ceiling_pct >= 70 ? '#10b981' : (d.hit_ceiling_pct >= 50 ? '#facc15' : '#ef4444');
+                        const plus5PctCol = d.hit_plus5_pct >= 80 ? '#38bdf8' : (d.hit_plus5_pct >= 60 ? '#10b981' : '#facc15');
+
+                        tr.innerHTML = `
+                            <td>
+                                <div style="font-weight:800; color:#fff; font-size:0.88rem;"><i class="fa-regular fa-calendar text-muted"></i> ${d.date}</div>
+                                <div style="font-size:0.68rem; color:#10b981; font-weight:700;"><i class="fa-solid fa-check"></i> ${d.status}</div>
+                            </td>
+                            <td style="font-weight:bold; color:var(--text-light); text-align:center;">${d.total_candidates}</td>
+                            <td>
+                                <span style="color:${tavanPctCol}; font-weight:800; font-size:0.88rem;">%${d.hit_ceiling_pct}</span>
+                                <div style="font-size:0.7rem; color:var(--text-muted);">${d.hit_ceiling_count}/${d.total_candidates} Hisse</div>
+                            </td>
+                            <td>
+                                <span style="color:${plus5PctCol}; font-weight:800; font-size:0.88rem;">%${d.hit_plus5_pct}</span>
+                                <div style="font-size:0.7rem; color:var(--text-muted);">${d.hit_plus5_count}/${d.total_candidates} Hisse</div>
+                            </td>
+                            <td style="color:#facc15; font-weight:800; font-size:0.9rem;">+ %${d.avg_max_gain_pct}</td>
+                            <td>
+                                <div style="font-weight:800; color:#38bdf8; font-size:0.82rem;">🌟 ${d.star_stock}</div>
+                                <div style="font-size:0.72rem; color:#c084fc; font-weight:700;">🏛️ ${d.star_warrant}: <span style="color:#10b981;">${d.star_warrant_gain}</span></div>
+                            </td>
+                            <td>
+                                <button onclick="openTavanAuditForDate('${d.date}')" class="btn-primary" style="background:rgba(239,68,68,0.25); color:#fca5a5; border:1px solid rgba(239,68,68,0.4); padding:3px 7px; font-size:0.72rem; border-radius:4px;" title="${d.date} Gününün Tam 10:15 Listesini Aç">
+                                    <i class="fa-solid fa-folder-open"></i> Aç
+                                </button>
+                            </td>
+                        `;
+                        dailyTbody.appendChild(tr);
+                    });
+                }
+            }
+
+            // 2. Hall of Fame (Yıldız Hisseler) Tablosunu Render Et
+            if (hofTbody) {
+                hofTbody.innerHTML = '';
+                const hofList = data.hall_of_fame || [];
+                if (hofList.length === 0) {
+                    hofTbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center" style="padding:1.5rem;">Kayıt bulunamadı.</td></tr>`;
+                } else {
+                    hofList.forEach((h, idx) => {
+                        const tr = document.createElement('tr');
+                        const rankIcon = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `#${idx+1}`));
+
+                        tr.innerHTML = `
+                            <td>
+                                <div style="font-weight:800; color:#fff; font-size:0.88rem;">${rankIcon} ${h.symbol}</div>
+                            </td>
+                            <td style="color:var(--text-muted); font-weight:bold; text-align:center;">${h.appearances} Gün</td>
+                            <td>
+                                <span style="color:#10b981; font-weight:800; font-size:0.85rem;">%${h.tavan_success_pct}</span>
+                                <div style="font-size:0.68rem; color:var(--text-muted);">${h.tavan_hits} Kez Tavan</div>
+                            </td>
+                            <td>
+                                <span style="color:#38bdf8; font-weight:800; font-size:0.85rem;">%${h.plus5_success_pct}</span>
+                                <div style="font-size:0.68rem; color:var(--text-muted);">${h.plus5_hits} Kez +%5</div>
+                            </td>
+                            <td style="color:#facc15; font-weight:800;">+ %${h.avg_max_gain_pct}</td>
+                            <td>
+                                <div style="font-weight:800; color:#c084fc; font-size:0.82rem;">🏛️ ${h.ahlatci_warrant}</div>
+                            </td>
+                        `;
+                        hofTbody.appendChild(tr);
+                    });
+                }
+            }
+
+        } else {
+            if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="7" class="text-red text-center" style="padding:1.5rem;">Veri alınamadı: ${data.message || 'Bilinmeyen hata'}</td></tr>`;
+        }
+    } catch (e) {
+        if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="7" class="text-red text-center" style="padding:1.5rem;">Bağlantı hatası: ${e.message}</td></tr>`;
+    }
 }
 
 
