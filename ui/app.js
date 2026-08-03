@@ -120,12 +120,17 @@ function switchMainTab(tabName, btnElement) {
     document.getElementById('dashboard-wrapper').style.display = tabName === 'dashboard' ? 'block' : 'none';
     document.getElementById('radar-wrapper').style.display = tabName === 'radar' ? 'block' : 'none';
     document.getElementById('news-wrapper').style.display = tabName === 'news' ? 'block' : 'none';
+    const statsWrapper = document.getElementById('stats-wrapper');
+    if (statsWrapper) statsWrapper.style.display = tabName === 'stats' ? 'block' : 'none';
     
     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
     if(btnElement) btnElement.classList.add('active');
     
     if (tabName === 'news') {
         fetchGlobalNews();
+    }
+    if (tabName === 'stats') {
+        fetchStatsTabData();
     }
 }
 
@@ -2578,8 +2583,10 @@ async function fetchTavanAuditData(dateStr = '') {
         if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="text-red text-center" style="padding:2rem;">Bağlantı hatası: ${e.message}</td></tr>`;
     }
 // ==========================================
-// 🏆 UZUN VADELİ TAVAN & +%5 KÂR ARŞİVİ KONTROLCÜSÜ (1 AĞUSTOS 2026'DAN İTİBAREN)
+// 🏆 UZUN VADELİ TAVAN & +%5 KÂR ARŞİVİ KONTROLCÜSÜ (05 AĞUSTOS 2026'DAN İTİBAREN)
 // ==========================================
+}
+
 function openLongTermHistoryModal() {
     const modal = document.getElementById('long-term-history-modal');
     if (modal) {
@@ -2594,10 +2601,11 @@ function closeLongTermHistoryModal() {
 }
 
 function applyLongTermFilter() {
-    const startDate = document.getElementById('hist-start-date')?.value || '2026-08-01';
+    const startDate = document.getElementById('hist-start-date')?.value || '2026-08-05';
     const endDate = document.getElementById('hist-end-date')?.value || '';
     const symbol = document.getElementById('hist-symbol-search')?.value || '';
-    fetchLongTermHistoryData(startDate, endDate, symbol);
+    const time = document.getElementById('hist-time-filter')?.value || '';
+    fetchLongTermHistoryData(startDate, endDate, symbol, time);
 }
 
 function openTavanAuditForDate(dateStr) {
@@ -2610,9 +2618,10 @@ function openTavanAuditForDate(dateStr) {
     fetchTavanAuditData(dateStr);
 }
 
-async function fetchLongTermHistoryData(startDate = '2026-08-01', endDate = '', symbol = '') {
+async function fetchLongTermHistoryData(startDate = '2026-08-05', endDate = '', symbol = '', time = '') {
     const dailyTbody = document.getElementById('hist-daily-tbody');
     const hofTbody = document.getElementById('hist-hall-of-fame-tbody');
+    const hourlyContainer = document.getElementById('hist-hourly-cards-container');
 
     if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="7" class="text-muted text-center" style="padding:1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Tarihsel performans arşivi taranıyor...</td></tr>`;
     if (hofTbody) hofTbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center" style="padding:1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Yıldızlar hesaplanıyor...</td></tr>`;
@@ -2621,117 +2630,210 @@ async function fetchLongTermHistoryData(startDate = '2026-08-01', endDate = '', 
         let url = `/api/tavan_history?start_date=${encodeURIComponent(startDate)}`;
         if (endDate) url += `&end_date=${encodeURIComponent(endDate)}`;
         if (symbol) url += `&symbol=${encodeURIComponent(symbol)}`;
+        if (time) url += `&time=${encodeURIComponent(time)}`;
 
         const res = await fetch(url);
         const data = await res.json();
 
         if (data.status === 'success') {
-            const summ = data.summary || {};
-            
-            // 5 KPI Kartlarını Doldur
-            const elDays = document.getElementById('hist-total-days');
-            const elDaysSub = document.getElementById('hist-total-candidates-sub');
-            const elTavan = document.getElementById('hist-tavan-rate');
-            const elTavanSub = document.getElementById('hist-tavan-cnt-sub');
-            const elPlus5 = document.getElementById('hist-plus5-rate');
-            const elPlus5Sub = document.getElementById('hist-plus5-cnt-sub');
-            const elMaxGain = document.getElementById('hist-avg-max-gain');
-            const elCloseSub = document.getElementById('hist-avg-close-sub');
-            const elWarrant = document.getElementById('hist-warrant-avg-gain');
-
-            if (elDays) elDays.innerText = `${summ.total_days_tracked || 0} Seans`;
-            if (elDaysSub) elDaysSub.innerText = `Toplam ${summ.total_candidates_tracked || 0} Aday`;
-            if (elTavan) elTavan.innerText = `%${summ.tavan_success_pct || 0}`;
-            if (elTavanSub) elTavanSub.innerText = `${summ.total_hit_ceiling || 0} / ${summ.total_candidates_tracked || 0} Tavan`;
-            if (elPlus5) elPlus5.innerText = `%${summ.plus5_success_pct || 0}`;
-            if (elPlus5Sub) elPlus5Sub.innerText = `${summ.total_hit_plus5 || 0} / ${summ.total_candidates_tracked || 0} Kazandırdı`;
-            if (elMaxGain) elMaxGain.innerText = `+ %${summ.cumulative_avg_max_gain_pct || 0}`;
-            if (elCloseSub) elCloseSub.innerText = `Kapanış Ort: +%${summ.cumulative_avg_closing_gain_pct || 0}`;
-            if (elWarrant) elWarrant.innerText = `+ %${summ.ahlatci_warrant_avg_gain_pct || 0}`;
-
-            // 1. Günlük Seans Tablosunu Render Et
-            if (dailyTbody) {
-                dailyTbody.innerHTML = '';
-                const dailyList = data.daily_breakdown || [];
-                if (dailyList.length === 0) {
-                    dailyTbody.innerHTML = `<tr><td colspan="7" class="text-muted text-center" style="padding:1.5rem;">Filtreye uygun işlem günü bulunamadı.</td></tr>`;
-                } else {
-                    dailyList.forEach(d => {
-                        const tr = document.createElement('tr');
-                        const tavanPctCol = d.hit_ceiling_pct >= 70 ? '#10b981' : (d.hit_ceiling_pct >= 50 ? '#facc15' : '#ef4444');
-                        const plus5PctCol = d.hit_plus5_pct >= 80 ? '#38bdf8' : (d.hit_plus5_pct >= 60 ? '#10b981' : '#facc15');
-
-                        tr.innerHTML = `
-                            <td>
-                                <div style="font-weight:800; color:#fff; font-size:0.88rem;"><i class="fa-regular fa-calendar text-muted"></i> ${d.date}</div>
-                                <div style="font-size:0.68rem; color:#10b981; font-weight:700;"><i class="fa-solid fa-check"></i> ${d.status}</div>
-                            </td>
-                            <td style="font-weight:bold; color:var(--text-light); text-align:center;">${d.total_candidates}</td>
-                            <td>
-                                <span style="color:${tavanPctCol}; font-weight:800; font-size:0.88rem;">%${d.hit_ceiling_pct}</span>
-                                <div style="font-size:0.7rem; color:var(--text-muted);">${d.hit_ceiling_count}/${d.total_candidates} Hisse</div>
-                            </td>
-                            <td>
-                                <span style="color:${plus5PctCol}; font-weight:800; font-size:0.88rem;">%${d.hit_plus5_pct}</span>
-                                <div style="font-size:0.7rem; color:var(--text-muted);">${d.hit_plus5_count}/${d.total_candidates} Hisse</div>
-                            </td>
-                            <td style="color:#facc15; font-weight:800; font-size:0.9rem;">+ %${d.avg_max_gain_pct}</td>
-                            <td>
-                                <div style="font-weight:800; color:#38bdf8; font-size:0.82rem;">🌟 ${d.star_stock}</div>
-                                <div style="font-size:0.72rem; color:#c084fc; font-weight:700;">🏛️ ${d.star_warrant}: <span style="color:#10b981;">${d.star_warrant_gain}</span></div>
-                            </td>
-                            <td>
-                                <button onclick="openTavanAuditForDate('${d.date}')" class="btn-primary" style="background:rgba(239,68,68,0.25); color:#fca5a5; border:1px solid rgba(239,68,68,0.4); padding:3px 7px; font-size:0.72rem; border-radius:4px;" title="${d.date} Gününün Tam 10:15 Listesini Aç">
-                                    <i class="fa-solid fa-folder-open"></i> Aç
-                                </button>
-                            </td>
-                        `;
-                        dailyTbody.appendChild(tr);
-                    });
-                }
-            }
-
-            // 2. Hall of Fame (Yıldız Hisseler) Tablosunu Render Et
-            if (hofTbody) {
-                hofTbody.innerHTML = '';
-                const hofList = data.hall_of_fame || [];
-                if (hofList.length === 0) {
-                    hofTbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center" style="padding:1.5rem;">Kayıt bulunamadı.</td></tr>`;
-                } else {
-                    hofList.forEach((h, idx) => {
-                        const tr = document.createElement('tr');
-                        const rankIcon = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `#${idx+1}`));
-
-                        tr.innerHTML = `
-                            <td>
-                                <div style="font-weight:800; color:#fff; font-size:0.88rem;">${rankIcon} ${h.symbol}</div>
-                            </td>
-                            <td style="color:var(--text-muted); font-weight:bold; text-align:center;">${h.appearances} Gün</td>
-                            <td>
-                                <span style="color:#10b981; font-weight:800; font-size:0.85rem;">%${h.tavan_success_pct}</span>
-                                <div style="font-size:0.68rem; color:var(--text-muted);">${h.tavan_hits} Kez Tavan</div>
-                            </td>
-                            <td>
-                                <span style="color:#38bdf8; font-weight:800; font-size:0.85rem;">%${h.plus5_success_pct}</span>
-                                <div style="font-size:0.68rem; color:var(--text-muted);">${h.plus5_hits} Kez +%5</div>
-                            </td>
-                            <td style="color:#facc15; font-weight:800;">+ %${h.avg_max_gain_pct}</td>
-                            <td>
-                                <div style="font-weight:800; color:#c084fc; font-size:0.82rem;">🏛️ ${h.ahlatci_warrant}</div>
-                            </td>
-                        `;
-                        hofTbody.appendChild(tr);
-                    });
-                }
-            }
-
+            renderHistoryKpis(data.summary, 'hist-');
+            renderHourlyCards(data.hourly_summary || [], hourlyContainer);
+            renderDailyBreakdown(data.daily_breakdown || [], dailyTbody, 'hist-');
+            renderHallOfFame(data.hall_of_fame || [], hofTbody);
         } else {
             if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="7" class="text-red text-center" style="padding:1.5rem;">Veri alınamadı: ${data.message || 'Bilinmeyen hata'}</td></tr>`;
         }
     } catch (e) {
-        if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="7" class="text-red text-center" style="padding:1.5rem;">Bağlantı hatası: ${e.message}</td></tr>`;
+        if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="7" class="text-red text-center" style="padding:1.5rem;">Baglanti hatasi: ${e.message}</td></tr>`;
     }
 }
+
+// ============================================================
+// 📊 İSTATİSTİKLER SEKMESİ - ANA FONKSİYONLARI
+// ============================================================
+
+function applyStatsTabFilter() {
+    const startDate = document.getElementById('stats-tab-start-date')?.value || '2026-08-05';
+    const endDate = document.getElementById('stats-tab-end-date')?.value || '';
+    const symbol = document.getElementById('stats-tab-symbol-search')?.value || '';
+    const time = document.getElementById('stats-tab-time-filter')?.value || '';
+    fetchStatsTabData(startDate, endDate, symbol, time);
+}
+
+async function fetchStatsTabData(startDate = '2026-08-05', endDate = '', symbol = '', time = '') {
+    const dailyTbody = document.getElementById('stats-tab-daily-tbody');
+    const hofTbody = document.getElementById('stats-tab-hall-of-fame-tbody');
+    const hourlyContainer = document.getElementById('stats-tab-hourly-cards-container');
+
+    if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="7" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> 05 Agustos 2026 baslangicli performans arsivi taranıyor...</td></tr>`;
+    if (hofTbody) hofTbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Yıldız hisseler hesaplanıyor...</td></tr>`;
+    if (hourlyContainer) hourlyContainer.innerHTML = `<div style="color:var(--text-muted); font-size:0.85rem; padding:1rem;"><i class="fa-solid fa-spinner fa-spin"></i> Saatlik veriler yukleniyor...</div>`;
+
+    try {
+        // İstatistikler sekmesindeki input değerlerini kullan
+        const tabStartDate = document.getElementById('stats-tab-start-date')?.value || startDate;
+        const tabEndDate = document.getElementById('stats-tab-end-date')?.value || endDate;
+        const tabSymbol = document.getElementById('stats-tab-symbol-search')?.value || symbol;
+        const tabTime = document.getElementById('stats-tab-time-filter')?.value || time;
+
+        let url = `/api/tavan_history?start_date=${encodeURIComponent(tabStartDate || '2026-08-05')}`;
+        if (tabEndDate) url += `&end_date=${encodeURIComponent(tabEndDate)}`;
+        if (tabSymbol) url += `&symbol=${encodeURIComponent(tabSymbol)}`;
+        if (tabTime) url += `&time=${encodeURIComponent(tabTime)}`;
+
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            renderHistoryKpis(data.summary, 'stats-tab-');
+            renderHourlyCards(data.hourly_summary || [], hourlyContainer);
+            renderDailyBreakdown(data.daily_breakdown || [], dailyTbody, 'stats-tab-');
+            renderHallOfFame(data.hall_of_fame || [], hofTbody);
+        } else {
+            if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="7" class="text-red text-center" style="padding:2rem;">Veri alinamadi: ${data.message || 'Bilinmeyen hata'}</td></tr>`;
+            if (hofTbody) hofTbody.innerHTML = `<tr><td colspan="6" class="text-red text-center" style="padding:2rem;">-</td></tr>`;
+        }
+    } catch (e) {
+        if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="7" class="text-red text-center" style="padding:2rem;">Baglanti hatasi: ${e.message}</td></tr>`;
+    }
+}
+
+// ============================================================
+// 🔧 ORTAK RENDER YARDIMCILARI (Hem Modal hem Sekme İçin)
+// ============================================================
+
+function renderHistoryKpis(summ, prefix) {
+    if (!summ) return;
+    const el = (id) => document.getElementById(prefix + id);
+    if (el('total-days')) el('total-days').innerText = `${summ.total_days_tracked || 0} Seans`;
+    if (el('total-candidates-sub')) el('total-candidates-sub').innerText = `Toplam ${summ.total_candidates_tracked || 0} Oneri`;
+    if (el('tavan-rate')) el('tavan-rate').innerText = `%${summ.tavan_success_pct || 0}`;
+    if (el('tavan-cnt-sub')) el('tavan-cnt-sub').innerText = `${summ.total_hit_ceiling || 0} / ${summ.total_candidates_tracked || 0} Tavan`;
+    if (el('plus5-rate')) el('plus5-rate').innerText = `%${summ.plus5_success_pct || 0}`;
+    if (el('plus5-cnt-sub')) el('plus5-cnt-sub').innerText = `${summ.total_hit_plus5 || 0} / ${summ.total_candidates_tracked || 0} Kazandirdi`;
+    if (el('avg-max-gain')) el('avg-max-gain').innerText = `+ %${summ.cumulative_avg_max_gain_pct || 0}`;
+    if (el('avg-close-sub')) el('avg-close-sub').innerText = `Kapanis Ort: +%${summ.cumulative_avg_closing_gain_pct || 0}`;
+    if (el('warrant-avg-gain')) el('warrant-avg-gain').innerText = `+ %${summ.ahlatci_warrant_avg_gain_pct || 0}`;
+}
+
+function renderHourlyCards(hourlyList, container) {
+    if (!container) return;
+    if (!hourlyList || hourlyList.length === 0) {
+        container.innerHTML = `<div style="color:var(--text-muted); font-size:0.85rem; padding:1rem;">Saatlik veri bulunamadi.</div>`;
+        return;
+    }
+
+    // Saatlere göre sırala
+    const sortOrder = { '10:15': 1, '11:30': 2, '14:00': 3, '16:00': 4 };
+    hourlyList.sort((a, b) => (sortOrder[a.time] || 9) - (sortOrder[b.time] || 9));
+
+    const colorMap = {
+        '10:15': { bg: 'rgba(251, 146, 60, 0.1)', border: 'rgba(251, 146, 60, 0.4)', text: '#fb923c', icon: 'fa-sun' },
+        '11:30': { bg: 'rgba(250, 204, 21, 0.1)', border: 'rgba(250, 204, 21, 0.35)', text: '#facc15', icon: 'fa-cloud-sun' },
+        '14:00': { bg: 'rgba(56, 189, 248, 0.1)', border: 'rgba(56, 189, 248, 0.35)', text: '#38bdf8', icon: 'fa-circle-half-stroke' },
+        '16:00': { bg: 'rgba(168, 85, 247, 0.1)', border: 'rgba(168, 85, 247, 0.35)', text: '#c084fc', icon: 'fa-moon' },
+    };
+
+    container.innerHTML = hourlyList.map(h => {
+        const c = colorMap[h.time] || { bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.15)', text: '#94a3b8', icon: 'fa-clock' };
+        const tavanColor = h.tavan_pct >= 75 ? '#10b981' : (h.tavan_pct >= 50 ? '#facc15' : '#ef4444');
+        const plus5Color = h.plus5_pct >= 80 ? '#38bdf8' : (h.plus5_pct >= 60 ? '#10b981' : '#facc15');
+        const bestTime = hourlyList.reduce((a, b) => (a.tavan_pct > b.tavan_pct ? a : b), hourlyList[0]);
+        const isBest = h.time === bestTime.time;
+
+        return `
+            <div style="background:${c.bg}; border:1px solid ${c.border}; border-radius:10px; padding:1rem; position:relative; ${isBest ? 'box-shadow: 0 0 18px ' + c.border + ';' : ''}">
+                ${isBest ? `<div style="position:absolute; top:-10px; right:10px; background:${c.text}; color:#000; font-size:0.65rem; font-weight:800; padding:2px 8px; border-radius:4px;">EN BASARILI</div>` : ''}
+                <div style="font-size:1.1rem; font-weight:800; color:${c.text}; display:flex; align-items:center; gap:8px; margin-bottom:0.7rem;">
+                    <i class="fa-solid ${c.icon}"></i> ${h.label || h.time}
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                    <div style="background:rgba(255,255,255,0.04); border-radius:6px; padding:0.5rem; text-align:center;">
+                        <div style="font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; font-weight:600;">Tavan Kilidi</div>
+                        <div style="font-size:1.3rem; font-weight:800; color:${tavanColor};">%${h.tavan_pct}</div>
+                        <div style="font-size:0.65rem; color:var(--text-muted);">${h.tavan_hits}/${h.candidates} hisse</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.04); border-radius:6px; padding:0.5rem; text-align:center;">
+                        <div style="font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; font-weight:600;">+%5 Kar</div>
+                        <div style="font-size:1.3rem; font-weight:800; color:${plus5Color};">%${h.plus5_pct}</div>
+                        <div style="font-size:0.65rem; color:var(--text-muted);">${h.plus5_hits}/${h.candidates} hisse</div>
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-top:0.6rem; font-size:0.78rem;">
+                    <div style="color:var(--text-muted);">Ort. Zirve: <span style="color:#facc15; font-weight:800;">+%${h.avg_max_gain_pct}</span></div>
+                    <div style="color:var(--text-muted);">Varant: <span style="color:#c084fc; font-weight:800;">+%${h.warrant_gain_pct}</span></div>
+                </div>
+                <div style="margin-top:0.5rem; font-size:0.7rem; color:var(--text-muted); text-align:right;">${h.candidates} oneri tarama yapildi</div>
+            </div>`;
+    }).join('');
+}
+
+function renderDailyBreakdown(dailyList, tbody, prefix) {
+    if (!tbody) return;
+    if (!dailyList || dailyList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-muted text-center" style="padding:2rem;">Filtreye uygun islem gunu bulunamadi.</td></tr>`;
+        return;
+    }
+    tbody.innerHTML = '';
+    dailyList.forEach(d => {
+        const tr = document.createElement('tr');
+        const tavanPctCol = d.hit_ceiling_pct >= 70 ? '#10b981' : (d.hit_ceiling_pct >= 50 ? '#facc15' : '#ef4444');
+        const plus5PctCol = d.hit_plus5_pct >= 80 ? '#38bdf8' : (d.hit_plus5_pct >= 60 ? '#10b981' : '#facc15');
+        tr.innerHTML = `
+            <td>
+                <div style="font-weight:800; color:#fff; font-size:0.88rem;"><i class="fa-regular fa-calendar text-muted"></i> ${d.date}</div>
+                <div style="font-size:0.68rem; color:#10b981; font-weight:700;"><i class="fa-solid fa-check"></i> ${d.status === 'COMPLETED' ? 'Tamamlandi' : 'Canli'}</div>
+            </td>
+            <td style="font-weight:bold; color:var(--text-light); text-align:center;">${d.total_candidates}</td>
+            <td>
+                <span style="color:${tavanPctCol}; font-weight:800; font-size:0.88rem;">%${d.hit_ceiling_pct}</span>
+                <div style="font-size:0.7rem; color:var(--text-muted);">${d.hit_ceiling_count}/${d.total_candidates} Hisse</div>
+            </td>
+            <td>
+                <span style="color:${plus5PctCol}; font-weight:800; font-size:0.88rem;">%${d.hit_plus5_pct}</span>
+                <div style="font-size:0.7rem; color:var(--text-muted);">${d.hit_plus5_count}/${d.total_candidates} Hisse</div>
+            </td>
+            <td style="color:#facc15; font-weight:800; font-size:0.9rem;">+ %${d.avg_max_gain_pct}</td>
+            <td>
+                <div style="font-weight:800; color:#38bdf8; font-size:0.82rem;">${d.star_stock || '-'}</div>
+                <div style="font-size:0.72rem; color:#c084fc; font-weight:700;">${d.star_warrant || ''}: <span style="color:#10b981;">${d.star_warrant_gain || ''}</span></div>
+            </td>
+            <td>
+                <button onclick="openTavanAuditForDate('${d.date}')" class="btn-primary" style="background:rgba(239,68,68,0.25); color:#fca5a5; border:1px solid rgba(239,68,68,0.4); padding:3px 7px; font-size:0.72rem; border-radius:4px;">
+                    <i class="fa-solid fa-folder-open"></i> Ac
+                </button>
+            </td>`;
+        tbody.appendChild(tr);
+    });
+}
+
+function renderHallOfFame(hofList, tbody) {
+    if (!tbody) return;
+    if (!hofList || hofList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;">Kayit bulunamadi.</td></tr>`;
+        return;
+    }
+    tbody.innerHTML = '';
+    hofList.forEach((h, idx) => {
+        const tr = document.createElement('tr');
+        const rankIcon = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `#${idx + 1}`));
+        tr.innerHTML = `
+            <td><div style="font-weight:800; color:#fff; font-size:0.88rem;">${rankIcon} ${h.symbol}</div></td>
+            <td style="color:var(--text-muted); font-weight:bold; text-align:center;">${h.appearances} Gun</td>
+            <td>
+                <span style="color:#10b981; font-weight:800; font-size:0.85rem;">%${h.tavan_success_pct}</span>
+                <div style="font-size:0.68rem; color:var(--text-muted);">${h.tavan_hits} Kez Tavan</div>
+            </td>
+            <td>
+                <span style="color:#38bdf8; font-weight:800; font-size:0.85rem;">%${h.plus5_success_pct}</span>
+                <div style="font-size:0.68rem; color:var(--text-muted);">${h.plus5_hits} Kez +%5</div>
+            </td>
+            <td style="color:#facc15; font-weight:800;">+ %${h.avg_max_gain_pct}</td>
+            <td><div style="font-weight:800; color:#c084fc; font-size:0.82rem;">${h.ahlatci_warrant || '-'}</div></td>`;
+        tbody.appendChild(tr);
+    });
+}
+
 
 
 

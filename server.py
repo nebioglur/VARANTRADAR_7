@@ -203,15 +203,15 @@ def background_scanner():
                         GLOBAL_DASHBOARD_CACHE["tavan_adaylari"] = sanitize_for_json(tavan_candidates)
                         save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
                         
-                        # 10:15 Sabah Tavan Listesi Bellek Kaydı & 18:10 Kapanış Denetimi
+                        # Belirli Saatlerdeki Tavan Listesi Bellek Kaydı & 18:10 Kapanış Denetimi
                         try:
                             from services.tavan_tracker import TavanAuditTracker
-                            TavanAuditTracker.record_morning_snapshot(tavan_candidates)
+                            TavanAuditTracker.record_snapshot(tavan_candidates)
                             TavanAuditTracker.update_daily_progress(daily_stats)
                         except Exception as e_audit:
                             print(f"[BACKGROUND] Tavan Audit Tracker hatası: {e_audit}")
                             
-                        print("[BACKGROUND] 1h ve Tavan taraması tamamlandı, 10:15 denetçisine kaydedildi.")
+                        print("[BACKGROUND] 1h ve Tavan taraması tamamlandı, saatlik tavan denetçisine kaydedildi.")
                 except Exception as e_1h:
                     print(f"[BACKGROUND] 1h Tarama hatası: {e_1h}")
                 
@@ -653,13 +653,14 @@ def api_tavan_tracker():
 
 @app.route('/api/tavan_history', methods=['GET'])
 def api_tavan_history():
-    """1 Ağustos 2026'dan itibaren veya istenen aralıkta uzun vadeli kümülatif tavan ve +%5 başarı arşivi."""
-    start_date = request.args.get('start_date', '2026-08-01')
+    """05 Ağustos 2026'dan itibaren veya istenen aralıkta uzun vadeli kümülatif tavan ve saat bazlı başarı arşivi."""
+    start_date = request.args.get('start_date', '2026-08-05')
     end_date = request.args.get('end_date', None)
     symbol_filter = request.args.get('symbol', None)
+    time_filter = request.args.get('time', None)
     try:
         from services.tavan_tracker import TavanAuditTracker
-        data = TavanAuditTracker.get_long_term_history(start_date=start_date, end_date=end_date, symbol_filter=symbol_filter)
+        data = TavanAuditTracker.get_long_term_history(start_date=start_date, end_date=end_date, symbol_filter=symbol_filter, time_filter=time_filter)
         return jsonify(sanitize_for_json(data))
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500

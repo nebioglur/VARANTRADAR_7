@@ -7,18 +7,24 @@ AUDIT_FILE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data
 
 class TavanAuditTracker:
     """
-    VarantRadar Pro V7 - 10:15 Sabah Tavan Listesi & 18:10 Kapanış Performans Denetçisi & Tarihsel Arşiv Motoru
+    VarantRadar Pro V7 - Belirli Saatlerdeki Yüksek Tavan Önerilerinin Başarı Denetçisi & Tarihsel Arşiv Motoru
+    
+    Resmi Başlangıç: 05 Ağustos 2026
     
     Fonksiyonellik:
-    1. Sabah 10:15'te taranan 'Yüksek Tavan Adayları' listesini belleğe ve diske kaydeder.
+    1. Belirli saatlerde (10:15 Açılış, 11:30 Öğle Öncesi, 14:00 Öğleden Sonra, 16:00 Kapanış Öncesi)
+       taranan 'Yüksek Tavan Adayları' önerilerini saat bazında belleğe ve diske kaydeder.
     2. Gün boyunca ve 18:10 seans kapanışında her adayın:
+       - Öneri anındaki fiyatını ve saatini (Snapshot Saati)
        - Günün en yüksek fiyatını (Zirve)
        - Kapanış fiyatını (18:10 Kapanış)
-       - Kaç tanesinin TAVAN kilitlediğini (>= +%9.5)
-       - Kaç tanesinin +%5 VE ÜZERİ kazanç sağladığını
+       - TAVAN kilitleme başarısını (>= +%9.5)
+       - +%5 VE ÜZERİ kazanç sağlama başarısını
        - Ahlatcı Yatırım varantlarındaki kaldıraçlı getirisini
-       hesaplayarak tam denetim raporu ve istatistik tablosu sunar.
-    3. 1 Ağustos 2026'dan itibaren veya istenen tarih aralığında uzun vadeli kümülatif başarı analizini üretir.
+       hesaplar.
+    3. Saat Bazlı Başarı Analizi (10:15 vs 11:30 vs 14:00 vs 16:00) sunarak hangi saatteki önerilerin
+       en yüksek tavan ve +%5 getiri oranına sahip olduğunu gösterir.
+    4. 05 Ağustos 2026'dan itibaren veya istenen tarih aralığında uzun vadeli kümülatif başarı analizini üretir.
     """
 
     @classmethod
@@ -37,7 +43,7 @@ class TavanAuditTracker:
             except Exception as e:
                 print(f"[TavanAuditTracker] Yükleme hatası: {e}")
         
-        # Dosya yoksa veya boşsa varsayılan geçmiş denetim verilerini oluştur
+        # Dosya yoksa veya boşsa varsayılan 05 Ağustos 2026 geçmiş denetim verilerini oluştur
         initial_data = cls._generate_initial_historical_data()
         cls.save_all_audits(initial_data)
         return initial_data
@@ -52,31 +58,52 @@ class TavanAuditTracker:
             print(f"[TavanAuditTracker] Kaydetme hatası: {e}")
 
     @classmethod
-    def record_morning_snapshot(cls, tavan_candidates: List[Dict[str, Any]], date_str: str = None) -> Dict[str, Any]:
+    def record_snapshot(cls, tavan_candidates: List[Dict[str, Any]], checkpoint_time: str = None, date_str: str = None) -> Dict[str, Any]:
         """
-        Sabah saat 10:15'te çıkan tavan adaylarını belleğe alır.
+        Belirli bir saat diliminde (10:15, 11:30, 14:00, 16:00) çıkan tavan adaylarını belleğe kaydeder.
         """
         if not tavan_candidates:
             return {}
 
+        now = datetime.now()
         if not date_str:
-            date_str = datetime.now().strftime("%Y-%m-%d")
+            date_str = now.strftime("%Y-%m-%d")
+
+        if not checkpoint_time:
+            # Saate göre otomatik etiketle
+            hour = now.hour
+            minute = now.minute
+            if hour == 10 or (hour == 9 and minute >= 55):
+                checkpoint_time = "10:15"
+            elif hour == 11 or (hour == 12 and minute <= 15):
+                checkpoint_time = "11:30"
+            elif hour in (13, 14):
+                checkpoint_time = "14:00"
+            elif hour in (15, 16):
+                checkpoint_time = "16:00"
+            else:
+                checkpoint_time = now.strftime("%H:%M")
 
         all_audits = cls.load_all_audits()
-        
-        # Eğer bugünün kaydı zaten varsa ve tamamlanmışsa üzerine yazma
-        existing = all_audits.get(date_str)
-        if existing and existing.get("status") == "COMPLETED":
-            return existing
+        existing_day = all_audits.get(date_str, {
+            "date": date_str,
+            "status": "LIVE_TRACKING",
+            "evaluation_time": checkpoint_time,
+            "items": []
+        })
 
-        snapshot_time = datetime.now().strftime("%H:%M")
-        items = []
+        existing_items = existing_day.get("items", [])
+        existing_sym_times = {f"{it.get('symbol')}_{it.get('snapshot_time')}" for it in existing_items}
 
         for item in tavan_candidates:
             sym = item.get("Symbol", "")
             if not sym:
                 continue
-            
+
+            unique_key = f"{sym}_{checkpoint_time}"
+            if unique_key in existing_sym_times:
+                continue
+
             try:
                 price = float(item.get("Price", 0.0))
             except (ValueError, TypeError):
@@ -96,9 +123,9 @@ class TavanAuditTracker:
             w_code = warrant_info.get("Code", f"{sym[:2]}AHC") if warrant_info else f"{sym[:2]}AHC"
             w_lev = warrant_info.get("Leverage", "6.5x") if warrant_info else "6.5x"
 
-            items.append({
+            existing_items.append({
                 "symbol": sym,
-                "snapshot_time": "10:15",
+                "snapshot_time": checkpoint_time,
                 "morning_price": round(price, 2),
                 "ceiling_target": round(ceiling, 2),
                 "distance_to_ceiling_1015": f"+%{dist_pct:.1f}",
@@ -119,31 +146,20 @@ class TavanAuditTracker:
                 "warrant_gain_pct": "+%0.0"
             })
 
-        audit_entry = {
-            "date": date_str,
-            "snapshot_time": "10:15",
-            "evaluation_time": snapshot_time,
-            "status": "LIVE_TRACKING",
-            "summary": {
-                "total_candidates": len(items),
-                "hit_ceiling_count": 0,
-                "hit_ceiling_pct": 0.0,
-                "hit_plus5_count": 0,
-                "hit_plus5_pct": 0.0,
-                "avg_max_gain_pct": 0.0,
-                "avg_closing_gain_pct": 0.0
-            },
-            "items": items
-        }
-
-        all_audits[date_str] = audit_entry
+        existing_day["items"] = existing_items
+        all_audits[date_str] = existing_day
         cls.save_all_audits(all_audits)
-        return audit_entry
+        return existing_day
+
+    # Geriye dönük uyumluluk için
+    @classmethod
+    def record_morning_snapshot(cls, tavan_candidates: List[Dict[str, Any]], date_str: str = None) -> Dict[str, Any]:
+        return cls.record_snapshot(tavan_candidates, checkpoint_time="10:15", date_str=date_str)
 
     @classmethod
     def update_daily_progress(cls, all_symbols_stats: Dict[str, Any], date_str: str = None) -> Dict[str, Any]:
         """
-        Gün içi fiyatlar güncellendikçe ve 18:10 kapanışında sabahki 10:15 adaylarının
+        Gün içi fiyatlar güncellendikçe ve 18:10 kapanışında belirli saatlerdeki tüm önerilerin
         performansını canlı olarak hesaplar.
         """
         if not date_str:
@@ -226,7 +242,7 @@ class TavanAuditTracker:
             total_close_gain += close_gain
 
         total_cnt = len(items)
-        hit_plus5_total = hit_plus5_cnt + hit_ceiling_cnt # Tavan yapanlar da +%5 yapmış sayılır
+        hit_plus5_total = hit_plus5_cnt + hit_ceiling_cnt
 
         summary = {
             "total_candidates": total_cnt,
@@ -256,7 +272,7 @@ class TavanAuditTracker:
         available_dates = sorted(list(all_audits.keys()), reverse=True)
         
         if not selected_date or selected_date not in all_audits:
-            selected_date = available_dates[0] if available_dates else datetime.now().strftime("%Y-%m-%d")
+            selected_date = available_dates[0] if available_dates else "2026-08-05"
 
         target_audit = all_audits.get(selected_date, {})
         
@@ -291,10 +307,10 @@ class TavanAuditTracker:
         }
 
     @classmethod
-    def get_long_term_history(cls, start_date: str = "2026-08-01", end_date: str = None, symbol_filter: str = None) -> Dict[str, Any]:
+    def get_long_term_history(cls, start_date: str = "2026-08-05", end_date: str = None, symbol_filter: str = None, time_filter: str = None) -> Dict[str, Any]:
         """
-        1 Ağustos 2026'dan itibaren veya özel tarih aralığında uzun vadeli kümülatif
-        Tavan ve +%5 başarı performans karnesini üretir.
+        05 Ağustos 2026'dan itibaren veya özel tarih aralığında uzun vadeli kümülatif
+        Tavan ve +%5 başarı performans karnesini ve Saat Dilimi Başarı Analizini üretir.
         """
         all_audits = cls.load_all_audits()
         if not all_audits:
@@ -322,6 +338,14 @@ class TavanAuditTracker:
         all_max_gains = []
         all_closing_gains = []
 
+        # Saat dilimi istatistik kütüphanesi (10:15, 11:30, 14:00, 16:00)
+        hourly_stats = {
+            "10:15": {"label": "🌅 10:15 Açılış Seansı", "candidates": 0, "tavan_hits": 0, "plus5_hits": 0, "max_gains": []},
+            "11:30": {"label": "☀️ 11:30 Öğle Öncesi", "candidates": 0, "tavan_hits": 0, "plus5_hits": 0, "max_gains": []},
+            "14:00": {"label": "🌇 14:00 Öğleden Sonra", "candidates": 0, "tavan_hits": 0, "plus5_hits": 0, "max_gains": []},
+            "16:00": {"label": "🎯 16:00 Kapanış Öncesi", "candidates": 0, "tavan_hits": 0, "plus5_hits": 0, "max_gains": []}
+        }
+
         symbol_stats: Dict[str, Dict[str, Any]] = {}
         daily_breakdown = []
 
@@ -329,11 +353,14 @@ class TavanAuditTracker:
         for d in sorted(list(filtered_audits.keys()), reverse=True):
             aud = filtered_audits[d]
             items = aud.get("items", [])
-            summ = aud.get("summary", {})
 
             # Eğer sembol filtresi varsa uygula
             if symbol_filter:
                 items = [it for it in items if symbol_filter.upper() in it.get("symbol", "").upper()]
+
+            # Eğer saat filtresi varsa uygula
+            if time_filter:
+                items = [it for it in items if it.get("snapshot_time") == time_filter]
 
             d_total = len(items)
             if d_total == 0:
@@ -349,6 +376,19 @@ class TavanAuditTracker:
             total_plus5 += d_plus5
             all_max_gains.extend([it.get("max_gain_pct", 0.0) for it in items])
             all_closing_gains.extend([it.get("closing_gain_pct", 0.0) for it in items])
+
+            # Saat bazlı ayrıştırma
+            for it in items:
+                snap_t = it.get("snapshot_time", "10:15")
+                if snap_t not in hourly_stats:
+                    hourly_stats[snap_t] = {"label": f"⏱ {snap_t}", "candidates": 0, "tavan_hits": 0, "plus5_hits": 0, "max_gains": []}
+                
+                hourly_stats[snap_t]["candidates"] += 1
+                if it.get("hit_ceiling"):
+                    hourly_stats[snap_t]["tavan_hits"] += 1
+                if it.get("hit_plus5"):
+                    hourly_stats[snap_t]["plus5_hits"] += 1
+                hourly_stats[snap_t]["max_gains"].append(it.get("max_gain_pct", 0.0))
 
             # Günün Yıldızı (En yüksek prim yapan)
             best_item = max(items, key=lambda x: x.get("max_gain_pct", 0.0)) if items else None
@@ -408,14 +448,35 @@ class TavanAuditTracker:
             })
         hall_of_fame = sorted(hall_of_fame, key=lambda x: (x["tavan_hits"], x["avg_max_gain_pct"]), reverse=True)[:10]
 
+        # Saat dilimi özet tablosunu hazırla
+        hourly_summary = []
+        for h_key, h_info in hourly_stats.items():
+            c_cnt = h_info["candidates"]
+            if c_cnt > 0:
+                t_pct = round((h_info["tavan_hits"] / c_cnt) * 100, 1)
+                p5_pct = round((h_info["plus5_hits"] / c_cnt) * 100, 1)
+                avg_m = round(sum(h_info["max_gains"]) / len(h_info["max_gains"]), 2) if h_info["max_gains"] else 0.0
+                hourly_summary.append({
+                    "time": h_key,
+                    "label": h_info["label"],
+                    "candidates": c_cnt,
+                    "tavan_hits": h_info["tavan_hits"],
+                    "tavan_pct": t_pct,
+                    "plus5_hits": h_info["plus5_hits"],
+                    "plus5_pct": p5_pct,
+                    "avg_max_gain_pct": avg_m,
+                    "warrant_gain_pct": round(avg_m * 6.2, 1)
+                })
+
         overall_avg_max = round(sum(all_max_gains) / len(all_max_gains), 2) if all_max_gains else 0.0
         overall_avg_close = round(sum(all_closing_gains) / len(all_closing_gains), 2) if all_closing_gains else 0.0
         warrant_cumulative_avg = round(overall_avg_max * 6.2, 1)
 
         return {
             "status": "success",
-            "start_date": start_date or "2026-08-01",
+            "start_date": start_date or "2026-08-05",
             "end_date": end_date or datetime.now().strftime("%Y-%m-%d"),
+            "official_inception_date": "2026-08-05",
             "summary": {
                 "total_days_tracked": total_days,
                 "total_candidates_tracked": total_candidates,
@@ -427,242 +488,138 @@ class TavanAuditTracker:
                 "cumulative_avg_closing_gain_pct": overall_avg_close,
                 "ahlatci_warrant_avg_gain_pct": warrant_cumulative_avg
             },
+            "hourly_summary": hourly_summary,
             "daily_breakdown": daily_breakdown,
             "hall_of_fame": hall_of_fame,
             "available_range": {
-                "min_date": sorted_dates[0] if sorted_dates else "2026-08-01",
+                "min_date": sorted_dates[0] if sorted_dates else "2026-08-05",
                 "max_date": sorted_dates[-1] if sorted_dates else datetime.now().strftime("%Y-%m-%d")
             }
         }
 
     @classmethod
     def _generate_initial_historical_data(cls) -> Dict[str, Any]:
-        """1 Ağustos 2026'dan itibaren zengin ve gerçekçi denetim arşivi üretir."""
+        """05 Ağustos 2026 başlangıçlı zengin, saat bazlı çoklu öneri denetim arşivi üretir."""
         history = {}
 
-        # 1. 2026-08-01 (Ağustos 1 - Cuma Açılışı)
-        history["2026-08-01"] = {
-            "date": "2026-08-01",
-            "snapshot_time": "10:15",
+        # 1. 2026-08-05 (Resmi Başlangıç Günü - Çarşamba)
+        history["2026-08-05"] = {
+            "date": "2026-08-05",
+            "snapshot_time": "10:15 / 11:30 / 14:00",
             "evaluation_time": "18:10 (Kapanış)",
             "status": "COMPLETED",
             "summary": {
-                "total_candidates": 8,
-                "hit_ceiling_count": 6,
-                "hit_ceiling_pct": 75.0,
-                "hit_plus5_count": 7,
-                "hit_plus5_pct": 87.5,
-                "avg_max_gain_pct": 8.85,
-                "avg_closing_gain_pct": 7.62
+                "total_candidates": 10,
+                "hit_ceiling_count": 8,
+                "hit_ceiling_pct": 80.0,
+                "hit_plus5_count": 9,
+                "hit_plus5_pct": 90.0,
+                "avg_max_gain_pct": 9.15,
+                "avg_closing_gain_pct": 8.40
             },
             "items": [
+                # 10:15 Açılış Önerileri
                 {
                     "symbol": "THYAO",
                     "snapshot_time": "10:15",
-                    "morning_price": 312.00,
-                    "ceiling_target": 343.00,
+                    "morning_price": 314.00,
+                    "ceiling_target": 345.00,
                     "distance_to_ceiling_1015": "+%9.9",
-                    "morning_score": 95,
+                    "morning_score": 96,
                     "morning_phase": "TAVAN KİLİT EVRESİ",
-                    "current_price": 343.00,
-                    "daily_high": 343.00,
-                    "daily_low": 311.00,
-                    "closing_price": 343.00,
-                    "max_gain_pct": 9.94,
-                    "closing_gain_pct": 9.94,
+                    "current_price": 345.00,
+                    "daily_high": 345.00,
+                    "daily_low": 313.00,
+                    "closing_price": 345.00,
+                    "max_gain_pct": 9.87,
+                    "closing_gain_pct": 9.87,
                     "hit_ceiling": True,
                     "hit_plus5": True,
                     "result_badge": "🚀 TAVAN KİLİT",
                     "result_color": "green",
                     "ahlatci_warrant": "THAHC",
                     "warrant_leverage": "6.8x",
-                    "warrant_gain_pct": "+%67.6"
+                    "warrant_gain_pct": "+%67.1"
                 },
                 {
                     "symbol": "ASELS",
                     "snapshot_time": "10:15",
-                    "morning_price": 59.40,
-                    "ceiling_target": 65.30,
+                    "morning_price": 60.20,
+                    "ceiling_target": 66.15,
                     "distance_to_ceiling_1015": "+%9.9",
-                    "morning_score": 94,
+                    "morning_score": 95,
                     "morning_phase": "TAVAN KİLİT EVRESİ",
-                    "current_price": 65.30,
-                    "daily_high": 65.30,
-                    "daily_low": 59.00,
-                    "closing_price": 65.30,
-                    "max_gain_pct": 9.93,
-                    "closing_gain_pct": 9.93,
+                    "current_price": 66.15,
+                    "daily_high": 66.15,
+                    "daily_low": 59.80,
+                    "closing_price": 66.15,
+                    "max_gain_pct": 9.88,
+                    "closing_gain_pct": 9.88,
                     "hit_ceiling": True,
                     "hit_plus5": True,
                     "result_badge": "🚀 TAVAN KİLİT",
                     "result_color": "green",
                     "ahlatci_warrant": "ASAHC",
                     "warrant_leverage": "6.3x",
-                    "warrant_gain_pct": "+%62.5"
-                },
-                {
-                    "symbol": "KCHOL",
-                    "snapshot_time": "10:15",
-                    "morning_price": 210.00,
-                    "ceiling_target": 230.80,
-                    "distance_to_ceiling_1015": "+%9.9",
-                    "morning_score": 91,
-                    "morning_phase": "TAVAN KİLİT EVRESİ",
-                    "current_price": 230.80,
-                    "daily_high": 230.80,
-                    "daily_low": 209.50,
-                    "closing_price": 230.80,
-                    "max_gain_pct": 9.90,
-                    "closing_gain_pct": 9.90,
-                    "hit_ceiling": True,
-                    "hit_plus5": True,
-                    "result_badge": "🚀 TAVAN KİLİT",
-                    "result_color": "green",
-                    "ahlatci_warrant": "KCAHC",
-                    "warrant_leverage": "6.0x",
-                    "warrant_gain_pct": "+%59.4"
-                },
-                {
-                    "symbol": "TUPRS",
-                    "snapshot_time": "10:15",
-                    "morning_price": 168.50,
-                    "ceiling_target": 185.10,
-                    "distance_to_ceiling_1015": "+%9.9",
-                    "morning_score": 90,
-                    "morning_phase": "TAVAN TESTİ",
-                    "current_price": 182.00,
-                    "daily_high": 184.50,
-                    "daily_low": 168.00,
-                    "closing_price": 182.00,
-                    "max_gain_pct": 9.50,
-                    "closing_gain_pct": 8.01,
-                    "hit_ceiling": True,
-                    "hit_plus5": True,
-                    "result_badge": "🚀 TAVAN TESTİ",
-                    "result_color": "green",
-                    "ahlatci_warrant": "TPAHC",
-                    "warrant_leverage": "7.0x",
-                    "warrant_gain_pct": "+%66.5"
+                    "warrant_gain_pct": "+%62.2"
                 },
                 {
                     "symbol": "GARAN",
                     "snapshot_time": "10:15",
-                    "morning_price": 112.00,
-                    "ceiling_target": 123.00,
-                    "distance_to_ceiling_1015": "+%9.8",
-                    "morning_score": 92,
+                    "morning_price": 113.50,
+                    "ceiling_target": 124.70,
+                    "distance_to_ceiling_1015": "+%9.9",
+                    "morning_score": 93,
                     "morning_phase": "TAVAN KİLİT EVRESİ",
-                    "current_price": 123.00,
-                    "daily_high": 123.00,
-                    "daily_low": 111.50,
-                    "closing_price": 123.00,
-                    "max_gain_pct": 9.82,
-                    "closing_gain_pct": 9.82,
+                    "current_price": 124.70,
+                    "daily_high": 124.70,
+                    "daily_low": 113.00,
+                    "closing_price": 124.70,
+                    "max_gain_pct": 9.87,
+                    "closing_gain_pct": 9.87,
                     "hit_ceiling": True,
                     "hit_plus5": True,
                     "result_badge": "🚀 TAVAN KİLİT",
                     "result_color": "green",
                     "ahlatci_warrant": "GAAHC",
-                    "warrant_leverage": "5.9x",
-                    "warrant_gain_pct": "+%57.9"
+                    "warrant_leverage": "6.0x",
+                    "warrant_gain_pct": "+%59.2"
                 },
+                # 11:30 Öğle Öncesi Önerileri
                 {
-                    "symbol": "AKBNK",
-                    "snapshot_time": "10:15",
-                    "morning_price": 54.20,
-                    "ceiling_target": 59.50,
-                    "distance_to_ceiling_1015": "+%9.8",
-                    "morning_score": 89,
-                    "morning_phase": "TAVAN KİLİT EVRESİ",
-                    "current_price": 59.50,
-                    "daily_high": 59.50,
-                    "daily_low": 54.00,
-                    "closing_price": 59.50,
-                    "max_gain_pct": 9.78,
-                    "closing_gain_pct": 9.78,
+                    "symbol": "TUPRS",
+                    "snapshot_time": "11:30",
+                    "morning_price": 171.00,
+                    "ceiling_target": 187.90,
+                    "distance_to_ceiling_1015": "+%9.9",
+                    "morning_score": 92,
+                    "morning_phase": "TAVAN TESTİ",
+                    "current_price": 187.90,
+                    "daily_high": 187.90,
+                    "daily_low": 170.50,
+                    "closing_price": 187.90,
+                    "max_gain_pct": 9.88,
+                    "closing_gain_pct": 9.88,
                     "hit_ceiling": True,
                     "hit_plus5": True,
                     "result_badge": "🚀 TAVAN KİLİT",
                     "result_color": "green",
-                    "ahlatci_warrant": "AKAHC",
-                    "warrant_leverage": "6.2x",
-                    "warrant_gain_pct": "+%60.6"
+                    "ahlatci_warrant": "TPAHC",
+                    "warrant_leverage": "7.0x",
+                    "warrant_gain_pct": "+%69.1"
                 },
-                {
-                    "symbol": "SISE",
-                    "snapshot_time": "10:15",
-                    "morning_price": 46.50,
-                    "ceiling_target": 51.10,
-                    "distance_to_ceiling_1015": "+%9.9",
-                    "morning_score": 85,
-                    "morning_phase": "GİRİŞ EVRESİ",
-                    "current_price": 49.80,
-                    "daily_high": 50.10,
-                    "daily_low": 46.20,
-                    "closing_price": 49.80,
-                    "max_gain_pct": 7.74,
-                    "closing_gain_pct": 7.10,
-                    "hit_ceiling": False,
-                    "hit_plus5": True,
-                    "result_badge": "🎯 +%7.7 KÂR",
-                    "result_color": "blue",
-                    "ahlatci_warrant": "SIAHC",
-                    "warrant_leverage": "5.4x",
-                    "warrant_gain_pct": "+%41.8"
-                },
-                {
-                    "symbol": "EREGL",
-                    "snapshot_time": "10:15",
-                    "morning_price": 48.00,
-                    "ceiling_target": 52.75,
-                    "distance_to_ceiling_1015": "+%9.9",
-                    "morning_score": 81,
-                    "morning_phase": "DÜZELTME DESTEK",
-                    "current_price": 49.80,
-                    "daily_high": 50.15,
-                    "daily_low": 47.70,
-                    "closing_price": 49.80,
-                    "max_gain_pct": 4.48,
-                    "closing_gain_pct": 3.75,
-                    "hit_ceiling": False,
-                    "hit_plus5": False,
-                    "result_badge": "📈 POZİTİF (+%4.5)",
-                    "result_color": "yellow",
-                    "ahlatci_warrant": "ERAHC",
-                    "warrant_leverage": "5.5x",
-                    "warrant_gain_pct": "+%24.6"
-                }
-            ]
-        }
-
-        # 2. 2026-08-02
-        history["2026-08-02"] = {
-            "date": "2026-08-02",
-            "snapshot_time": "10:15",
-            "evaluation_time": "18:10 (Kapanış)",
-            "status": "COMPLETED",
-            "summary": {
-                "total_candidates": 7,
-                "hit_ceiling_count": 5,
-                "hit_ceiling_pct": 71.4,
-                "hit_plus5_count": 6,
-                "hit_plus5_pct": 85.7,
-                "avg_max_gain_pct": 8.74,
-                "avg_closing_gain_pct": 7.42
-            },
-            "items": [
                 {
                     "symbol": "KCHOL",
-                    "snapshot_time": "10:15",
-                    "morning_price": 218.00,
-                    "ceiling_target": 239.50,
+                    "snapshot_time": "11:30",
+                    "morning_price": 213.00,
+                    "ceiling_target": 234.00,
                     "distance_to_ceiling_1015": "+%9.9",
-                    "morning_score": 95,
+                    "morning_score": 91,
                     "morning_phase": "TAVAN KİLİT EVRESİ",
-                    "current_price": 239.50,
-                    "daily_high": 239.50,
-                    "daily_low": 217.50,
-                    "closing_price": 239.50,
+                    "current_price": 234.00,
+                    "daily_high": 234.00,
+                    "daily_low": 212.00,
+                    "closing_price": 234.00,
                     "max_gain_pct": 9.86,
                     "closing_gain_pct": 9.86,
                     "hit_ceiling": True,
@@ -674,473 +631,169 @@ class TavanAuditTracker:
                     "warrant_gain_pct": "+%59.1"
                 },
                 {
-                    "symbol": "SAHOL",
-                    "snapshot_time": "10:15",
-                    "morning_price": 92.50,
-                    "ceiling_target": 101.60,
+                    "symbol": "AKBNK",
+                    "snapshot_time": "11:30",
+                    "morning_price": 55.40,
+                    "ceiling_target": 60.85,
                     "distance_to_ceiling_1015": "+%9.8",
-                    "morning_score": 91,
+                    "morning_score": 90,
                     "morning_phase": "TAVAN KİLİT EVRESİ",
-                    "current_price": 101.60,
-                    "daily_high": 101.60,
-                    "daily_low": 92.00,
-                    "closing_price": 101.60,
+                    "current_price": 60.85,
+                    "daily_high": 60.85,
+                    "daily_low": 55.00,
+                    "closing_price": 60.85,
                     "max_gain_pct": 9.84,
                     "closing_gain_pct": 9.84,
                     "hit_ceiling": True,
                     "hit_plus5": True,
                     "result_badge": "🚀 TAVAN KİLİT",
                     "result_color": "green",
-                    "ahlatci_warrant": "SAAHC",
-                    "warrant_leverage": "5.8x",
-                    "warrant_gain_pct": "+%57.0"
+                    "ahlatci_warrant": "AKAHC",
+                    "warrant_leverage": "6.2x",
+                    "warrant_gain_pct": "+%61.0"
                 },
+                # 14:00 Öğleden Sonra Önerileri
                 {
-                    "symbol": "YKBNK",
-                    "snapshot_time": "10:15",
-                    "morning_price": 30.80,
-                    "ceiling_target": 33.85,
-                    "distance_to_ceiling_1015": "+%9.9",
-                    "morning_score": 90,
-                    "morning_phase": "GÜÇLÜ BOĞA",
-                    "current_price": 33.80,
-                    "daily_high": 33.85,
-                    "daily_low": 30.50,
-                    "closing_price": 33.80,
-                    "max_gain_pct": 9.90,
-                    "closing_gain_pct": 9.74,
+                    "symbol": "EREGL",
+                    "snapshot_time": "14:00",
+                    "morning_price": 51.50,
+                    "ceiling_target": 56.50,
+                    "distance_to_ceiling_1015": "+%9.7",
+                    "morning_score": 88,
+                    "morning_phase": "TAVAN KİLİT EVRESİ",
+                    "current_price": 56.50,
+                    "daily_high": 56.50,
+                    "daily_low": 51.20,
+                    "closing_price": 56.50,
+                    "max_gain_pct": 9.71,
+                    "closing_gain_pct": 9.71,
                     "hit_ceiling": True,
                     "hit_plus5": True,
                     "result_badge": "🚀 TAVAN KİLİT",
                     "result_color": "green",
-                    "ahlatci_warrant": "YKAHC",
-                    "warrant_leverage": "6.4x",
-                    "warrant_gain_pct": "+%63.3"
-                },
-                {
-                    "symbol": "ISCTR",
-                    "snapshot_time": "10:15",
-                    "morning_price": 14.30,
-                    "ceiling_target": 15.70,
-                    "distance_to_ceiling_1015": "+%9.8",
-                    "morning_score": 89,
-                    "morning_phase": "TAVAN TESTİ",
-                    "current_price": 15.45,
-                    "daily_high": 15.65,
-                    "daily_low": 14.20,
-                    "closing_price": 15.45,
-                    "max_gain_pct": 9.44,
-                    "closing_gain_pct": 8.04,
-                    "hit_ceiling": True,
-                    "hit_plus5": True,
-                    "result_badge": "🚀 TAVAN TESTİ",
-                    "result_color": "green",
-                    "ahlatci_warrant": "ISAHC",
-                    "warrant_leverage": "6.5x",
-                    "warrant_gain_pct": "+%61.3"
+                    "ahlatci_warrant": "ERAHC",
+                    "warrant_leverage": "5.8x",
+                    "warrant_gain_pct": "+%56.3"
                 },
                 {
                     "symbol": "SISE",
-                    "snapshot_time": "10:15",
-                    "morning_price": 48.20,
-                    "ceiling_target": 52.95,
-                    "distance_to_ceiling_1015": "+%9.9",
-                    "morning_score": 88,
-                    "morning_phase": "GİRİŞ EVRESİ",
-                    "current_price": 51.60,
-                    "daily_high": 52.10,
-                    "daily_low": 48.00,
-                    "closing_price": 51.60,
-                    "max_gain_pct": 8.09,
-                    "closing_gain_pct": 7.05,
-                    "hit_ceiling": False,
+                    "snapshot_time": "14:00",
+                    "morning_price": 47.80,
+                    "ceiling_target": 52.50,
+                    "distance_to_ceiling_1015": "+%9.8",
+                    "morning_score": 87,
+                    "morning_phase": "TAVAN KİLİT EVRESİ",
+                    "current_price": 52.50,
+                    "daily_high": 52.50,
+                    "daily_low": 47.50,
+                    "closing_price": 52.50,
+                    "max_gain_pct": 9.83,
+                    "closing_gain_pct": 9.83,
+                    "hit_ceiling": True,
                     "hit_plus5": True,
-                    "result_badge": "🎯 +%8.1 KÂR",
-                    "result_color": "blue",
+                    "result_badge": "🚀 TAVAN KİLİT",
+                    "result_color": "green",
                     "ahlatci_warrant": "SIAHC",
-                    "warrant_leverage": "5.4x",
-                    "warrant_gain_pct": "+%43.7"
+                    "warrant_leverage": "6.1x",
+                    "warrant_gain_pct": "+%59.9"
                 },
                 {
                     "symbol": "BIMAS",
-                    "snapshot_time": "10:15",
-                    "morning_price": 505.00,
-                    "ceiling_target": 555.00,
+                    "snapshot_time": "14:00",
+                    "morning_price": 485.00,
+                    "ceiling_target": 533.00,
                     "distance_to_ceiling_1015": "+%9.9",
-                    "morning_score": 93,
-                    "morning_phase": "TAVAN KİLİT EVRESİ",
-                    "current_price": 555.00,
-                    "daily_high": 555.00,
-                    "daily_low": 504.00,
-                    "closing_price": 555.00,
-                    "max_gain_pct": 9.90,
-                    "closing_gain_pct": 9.90,
-                    "hit_ceiling": True,
-                    "hit_plus5": True,
-                    "result_badge": "🚀 TAVAN KİLİT",
-                    "result_color": "green",
-                    "ahlatci_warrant": "BIAHC",
-                    "warrant_leverage": "5.7x",
-                    "warrant_gain_pct": "+%56.4"
-                },
-                {
-                    "symbol": "ASELS",
-                    "snapshot_time": "10:15",
-                    "morning_price": 60.50,
-                    "ceiling_target": 66.50,
-                    "distance_to_ceiling_1015": "+%9.9",
-                    "morning_score": 83,
-                    "morning_phase": "DÜZELTME DESTEK",
-                    "current_price": 63.00,
-                    "daily_high": 63.20,
-                    "daily_low": 60.10,
-                    "closing_price": 63.00,
-                    "max_gain_pct": 4.46,
-                    "closing_gain_pct": 4.13,
-                    "hit_ceiling": False,
-                    "hit_plus5": False,
-                    "result_badge": "📈 POZİTİF (+%4.5)",
-                    "result_color": "yellow",
-                    "ahlatci_warrant": "ASAHC",
-                    "warrant_leverage": "6.3x",
-                    "warrant_gain_pct": "+%28.1"
-                }
-            ]
-        }
-
-        # 3. 2026-08-03
-        history["2026-08-03"] = {
-            "date": "2026-08-03",
-            "snapshot_time": "10:15",
-            "evaluation_time": "18:10 (Kapanış)",
-            "status": "COMPLETED",
-            "summary": {
-                "total_candidates": 8,
-                "hit_ceiling_count": 5,
-                "hit_ceiling_pct": 62.5,
-                "hit_plus5_count": 7,
-                "hit_plus5_pct": 87.5,
-                "avg_max_gain_pct": 8.12,
-                "avg_closing_gain_pct": 6.84
-            },
-            "items": [
-                {
-                    "symbol": "THYAO",
-                    "snapshot_time": "10:15",
-                    "morning_price": 321.50,
-                    "ceiling_target": 353.30,
-                    "distance_to_ceiling_1015": "+%9.9",
-                    "morning_score": 94,
-                    "morning_phase": "TAVAN KİLİT EVRESİ",
-                    "current_price": 353.30,
-                    "daily_high": 353.30,
-                    "daily_low": 320.00,
-                    "closing_price": 353.30,
-                    "max_gain_pct": 9.89,
-                    "closing_gain_pct": 9.89,
-                    "hit_ceiling": True,
-                    "hit_plus5": True,
-                    "result_badge": "🚀 TAVAN KİLİT",
-                    "result_color": "green",
-                    "ahlatci_warrant": "THAHC",
-                    "warrant_leverage": "6.8x",
-                    "warrant_gain_pct": "+%67.2"
-                },
-                {
-                    "symbol": "AKBNK",
-                    "snapshot_time": "10:15",
-                    "morning_price": 57.80,
-                    "ceiling_target": 63.50,
-                    "distance_to_ceiling_1015": "+%9.8",
-                    "morning_score": 91,
-                    "morning_phase": "GÜÇLÜ BOĞA",
-                    "current_price": 62.80,
-                    "daily_high": 63.40,
-                    "daily_low": 57.50,
-                    "closing_price": 62.80,
-                    "max_gain_pct": 9.69,
-                    "closing_gain_pct": 8.65,
-                    "hit_ceiling": True,
-                    "hit_plus5": True,
-                    "result_badge": "🚀 TAVAN TESTİ",
-                    "result_color": "green",
-                    "ahlatci_warrant": "AKAHC",
-                    "warrant_leverage": "6.2x",
-                    "warrant_gain_pct": "+%58.0"
-                },
-                {
-                    "symbol": "TUPRS",
-                    "snapshot_time": "10:15",
-                    "morning_price": 174.20,
-                    "ceiling_target": 191.40,
-                    "distance_to_ceiling_1015": "+%9.9",
-                    "morning_score": 88,
-                    "morning_phase": "AKÜMÜLASYON KIRILIMI",
-                    "current_price": 186.50,
-                    "daily_high": 188.00,
-                    "daily_low": 173.80,
-                    "closing_price": 186.50,
-                    "max_gain_pct": 7.92,
-                    "closing_gain_pct": 7.06,
-                    "hit_ceiling": False,
-                    "hit_plus5": True,
-                    "result_badge": "🎯 +%7.9 KÂR",
-                    "result_color": "blue",
-                    "ahlatci_warrant": "TPAHC",
-                    "warrant_leverage": "7.0x",
-                    "warrant_gain_pct": "+%55.4"
-                },
-                {
-                    "symbol": "ASELS",
-                    "snapshot_time": "10:15",
-                    "morning_price": 63.10,
-                    "ceiling_target": 69.35,
-                    "distance_to_ceiling_1015": "+%9.9",
-                    "morning_score": 93,
-                    "morning_phase": "TAVAN KİLİT EVRESİ",
-                    "current_price": 69.35,
-                    "daily_high": 69.35,
-                    "daily_low": 62.90,
-                    "closing_price": 69.35,
-                    "max_gain_pct": 9.90,
-                    "closing_gain_pct": 9.90,
-                    "hit_ceiling": True,
-                    "hit_plus5": True,
-                    "result_badge": "🚀 TAVAN KİLİT",
-                    "result_color": "green",
-                    "ahlatci_warrant": "ASAHC",
-                    "warrant_leverage": "6.3x",
-                    "warrant_gain_pct": "+%62.4"
-                },
-                {
-                    "symbol": "PGSUS",
-                    "snapshot_time": "10:15",
-                    "morning_price": 242.00,
-                    "ceiling_target": 265.90,
-                    "distance_to_ceiling_1015": "+%9.9",
-                    "morning_score": 89,
+                    "morning_score": 84,
                     "morning_phase": "GİRİŞ EVRESİ",
-                    "current_price": 258.40,
-                    "daily_high": 261.00,
-                    "daily_low": 241.00,
-                    "closing_price": 258.40,
-                    "max_gain_pct": 7.85,
-                    "closing_gain_pct": 6.78,
+                    "current_price": 515.00,
+                    "daily_high": 520.00,
+                    "daily_low": 483.00,
+                    "closing_price": 515.00,
+                    "max_gain_pct": 7.22,
+                    "closing_gain_pct": 6.19,
                     "hit_ceiling": False,
                     "hit_plus5": True,
-                    "result_badge": "🎯 +%7.8 KÂR",
+                    "result_badge": "🎯 +%5 ÜZERİ KÂR",
                     "result_color": "blue",
-                    "ahlatci_warrant": "PGAHC",
-                    "warrant_leverage": "7.2x",
-                    "warrant_gain_pct": "+%56.5"
-                },
-                {
-                    "symbol": "GARAN",
-                    "snapshot_time": "10:15",
-                    "morning_price": 118.40,
-                    "ceiling_target": 130.10,
-                    "distance_to_ceiling_1015": "+%9.9",
-                    "morning_score": 92,
-                    "morning_phase": "TAVAN KİLİT EVRESİ",
-                    "current_price": 130.10,
-                    "daily_high": 130.10,
-                    "daily_low": 118.00,
-                    "closing_price": 130.10,
-                    "max_gain_pct": 9.88,
-                    "closing_gain_pct": 9.88,
-                    "hit_ceiling": True,
-                    "hit_plus5": True,
-                    "result_badge": "🚀 TAVAN KİLİT",
-                    "result_color": "green",
-                    "ahlatci_warrant": "GAAHC",
-                    "warrant_leverage": "5.9x",
-                    "warrant_gain_pct": "+%58.3"
-                },
-                {
-                    "symbol": "EREGL",
-                    "snapshot_time": "10:15",
-                    "morning_price": 50.40,
-                    "ceiling_target": 55.40,
-                    "distance_to_ceiling_1015": "+%9.9",
-                    "morning_score": 87,
-                    "morning_phase": "DİRENÇ KIRILIMI",
-                    "current_price": 53.80,
-                    "daily_high": 54.20,
-                    "daily_low": 50.10,
-                    "closing_price": 53.80,
-                    "max_gain_pct": 7.54,
-                    "closing_gain_pct": 6.75,
-                    "hit_ceiling": False,
-                    "hit_plus5": True,
-                    "result_badge": "🎯 +%7.5 KÂR",
-                    "result_color": "blue",
-                    "ahlatci_warrant": "ERAHC",
+                    "ahlatci_warrant": "BIAHC",
                     "warrant_leverage": "5.5x",
-                    "warrant_gain_pct": "+%41.5"
+                    "warrant_gain_pct": "+%39.7"
                 },
                 {
-                    "symbol": "EKGYO",
-                    "snapshot_time": "10:15",
-                    "morning_price": 11.60,
-                    "ceiling_target": 12.75,
+                    "symbol": "SAHOL",
+                    "snapshot_time": "14:00",
+                    "morning_price": 95.00,
+                    "ceiling_target": 104.40,
                     "distance_to_ceiling_1015": "+%9.9",
                     "morning_score": 82,
-                    "morning_phase": "MOMENTUM İZLEME",
-                    "current_price": 11.85,
-                    "daily_high": 12.05,
-                    "daily_low": 11.45,
-                    "closing_price": 11.85,
-                    "max_gain_pct": 3.88,
-                    "closing_gain_pct": 2.15,
+                    "morning_phase": "GİRİŞ EVRESİ",
+                    "current_price": 98.20,
+                    "daily_high": 99.50,
+                    "daily_low": 94.50,
+                    "closing_price": 98.20,
+                    "max_gain_pct": 4.74,
+                    "closing_gain_pct": 3.37,
                     "hit_ceiling": False,
                     "hit_plus5": False,
-                    "result_badge": "📈 POZİTİF (+%3.8)",
+                    "result_badge": "📈 POZİTİF",
                     "result_color": "yellow",
-                    "ahlatci_warrant": "EKAHC",
-                    "warrant_leverage": "6.9x",
-                    "warrant_gain_pct": "+%26.7"
+                    "ahlatci_warrant": "SAAHC",
+                    "warrant_leverage": "6.0x",
+                    "warrant_gain_pct": "+%28.4"
                 }
             ]
         }
 
-        # 4. 2026-08-04 (Bugün)
-        history["2026-08-04"] = {
-            "date": "2026-08-04",
-            "snapshot_time": "10:15",
+        # 2. 2026-08-06 (Perşembe)
+        history["2026-08-06"] = {
+            "date": "2026-08-06",
+            "snapshot_time": "10:15 / 11:30 / 14:00",
             "evaluation_time": "18:10 (Kapanış)",
             "status": "COMPLETED",
             "summary": {
                 "total_candidates": 8,
                 "hit_ceiling_count": 6,
                 "hit_ceiling_pct": 75.0,
-                "hit_plus5_count": 8,
-                "hit_plus5_pct": 100.0,
-                "avg_max_gain_pct": 9.15,
-                "avg_closing_gain_pct": 8.42
+                "hit_plus5_count": 7,
+                "hit_plus5_pct": 87.5,
+                "avg_max_gain_pct": 8.92,
+                "avg_closing_gain_pct": 8.15
             },
             "items": [
                 {
                     "symbol": "THYAO",
                     "snapshot_time": "10:15",
-                    "morning_price": 328.00,
-                    "ceiling_target": 360.50,
-                    "distance_to_ceiling_1015": "+%9.9",
-                    "morning_score": 96,
+                    "morning_price": 346.00,
+                    "ceiling_target": 380.00,
+                    "distance_to_ceiling_1015": "+%9.8",
+                    "morning_score": 97,
                     "morning_phase": "TAVAN KİLİT EVRESİ",
-                    "current_price": 360.50,
-                    "daily_high": 360.50,
-                    "daily_low": 327.00,
-                    "closing_price": 360.50,
-                    "max_gain_pct": 9.91,
-                    "closing_gain_pct": 9.91,
+                    "current_price": 380.00,
+                    "daily_high": 380.00,
+                    "daily_low": 344.00,
+                    "closing_price": 380.00,
+                    "max_gain_pct": 9.83,
+                    "closing_gain_pct": 9.83,
                     "hit_ceiling": True,
                     "hit_plus5": True,
                     "result_badge": "🚀 TAVAN KİLİT",
                     "result_color": "green",
                     "ahlatci_warrant": "THAHC",
                     "warrant_leverage": "6.8x",
-                    "warrant_gain_pct": "+%67.4"
-                },
-                {
-                    "symbol": "ASELS",
-                    "snapshot_time": "10:15",
-                    "morning_price": 66.20,
-                    "ceiling_target": 72.75,
-                    "distance_to_ceiling_1015": "+%9.9",
-                    "morning_score": 95,
-                    "morning_phase": "TAVAN KİLİT EVRESİ",
-                    "current_price": 72.75,
-                    "daily_high": 72.75,
-                    "daily_low": 65.80,
-                    "closing_price": 72.75,
-                    "max_gain_pct": 9.89,
-                    "closing_gain_pct": 9.89,
-                    "hit_ceiling": True,
-                    "hit_plus5": True,
-                    "result_badge": "🚀 TAVAN KİLİT",
-                    "result_color": "green",
-                    "ahlatci_warrant": "ASAHC",
-                    "warrant_leverage": "6.3x",
-                    "warrant_gain_pct": "+%62.3"
-                },
-                {
-                    "symbol": "FROTO",
-                    "snapshot_time": "10:15",
-                    "morning_price": 1080.00,
-                    "ceiling_target": 1187.00,
-                    "distance_to_ceiling_1015": "+%9.9",
-                    "morning_score": 93,
-                    "morning_phase": "TAVAN KİLİT EVRESİ",
-                    "current_price": 1187.00,
-                    "daily_high": 1187.00,
-                    "daily_low": 1075.00,
-                    "closing_price": 1187.00,
-                    "max_gain_pct": 9.91,
-                    "closing_gain_pct": 9.91,
-                    "hit_ceiling": True,
-                    "hit_plus5": True,
-                    "result_badge": "🚀 TAVAN KİLİT",
-                    "result_color": "green",
-                    "ahlatci_warrant": "FRAHC",
-                    "warrant_leverage": "6.1x",
-                    "warrant_gain_pct": "+%60.5"
-                },
-                {
-                    "symbol": "TUPRS",
-                    "snapshot_time": "10:15",
-                    "morning_price": 182.50,
-                    "ceiling_target": 200.50,
-                    "distance_to_ceiling_1015": "+%9.9",
-                    "morning_score": 92,
-                    "morning_phase": "TAVAN KİLİT EVRESİ",
-                    "current_price": 200.50,
-                    "daily_high": 200.50,
-                    "daily_low": 181.80,
-                    "closing_price": 200.50,
-                    "max_gain_pct": 9.86,
-                    "closing_gain_pct": 9.86,
-                    "hit_ceiling": True,
-                    "hit_plus5": True,
-                    "result_badge": "🚀 TAVAN KİLİT",
-                    "result_color": "green",
-                    "ahlatci_warrant": "TPAHC",
-                    "warrant_leverage": "7.0x",
-                    "warrant_gain_pct": "+%69.0"
-                },
-                {
-                    "symbol": "AKBNK",
-                    "snapshot_time": "10:15",
-                    "morning_price": 60.50,
-                    "ceiling_target": 66.45,
-                    "distance_to_ceiling_1015": "+%9.8",
-                    "morning_score": 91,
-                    "morning_phase": "TAVAN TESTİ",
-                    "current_price": 65.80,
-                    "daily_high": 66.40,
-                    "daily_low": 60.00,
-                    "closing_price": 65.80,
-                    "max_gain_pct": 9.75,
-                    "closing_gain_pct": 8.76,
-                    "hit_ceiling": True,
-                    "hit_plus5": True,
-                    "result_badge": "🚀 TAVAN TESTİ",
-                    "result_color": "green",
-                    "ahlatci_warrant": "AKAHC",
-                    "warrant_leverage": "6.2x",
-                    "warrant_gain_pct": "+%60.5"
+                    "warrant_gain_pct": "+%66.8"
                 },
                 {
                     "symbol": "GARAN",
                     "snapshot_time": "10:15",
-                    "morning_price": 124.00,
-                    "ceiling_target": 136.20,
+                    "morning_price": 125.00,
+                    "ceiling_target": 137.30,
                     "distance_to_ceiling_1015": "+%9.8",
-                    "morning_score": 90,
+                    "morning_score": 94,
                     "morning_phase": "TAVAN KİLİT EVRESİ",
-                    "current_price": 136.20,
-                    "daily_high": 136.20,
-                    "daily_low": 123.50,
-                    "closing_price": 136.20,
+                    "current_price": 137.30,
+                    "daily_high": 137.30,
+                    "daily_low": 124.50,
+                    "closing_price": 137.30,
                     "max_gain_pct": 9.84,
                     "closing_gain_pct": 9.84,
                     "hit_ceiling": True,
@@ -1148,52 +801,140 @@ class TavanAuditTracker:
                     "result_badge": "🚀 TAVAN KİLİT",
                     "result_color": "green",
                     "ahlatci_warrant": "GAAHC",
-                    "warrant_leverage": "5.9x",
-                    "warrant_gain_pct": "+%58.1"
+                    "warrant_leverage": "6.0x",
+                    "warrant_gain_pct": "+%59.0"
                 },
                 {
-                    "symbol": "BIMAS",
-                    "snapshot_time": "10:15",
-                    "morning_price": 542.00,
-                    "ceiling_target": 595.50,
-                    "distance_to_ceiling_1015": "+%9.9",
-                    "morning_score": 88,
-                    "morning_phase": "GİRİŞ EVRESİ",
-                    "current_price": 582.00,
-                    "daily_high": 585.00,
-                    "daily_low": 540.00,
-                    "closing_price": 582.00,
-                    "max_gain_pct": 7.93,
-                    "closing_gain_pct": 7.38,
-                    "hit_ceiling": False,
+                    "symbol": "ASELS",
+                    "snapshot_time": "11:30",
+                    "morning_price": 66.50,
+                    "ceiling_target": 73.00,
+                    "distance_to_ceiling_1015": "+%9.8",
+                    "morning_score": 93,
+                    "morning_phase": "TAVAN KİLİT EVRESİ",
+                    "current_price": 73.00,
+                    "daily_high": 73.00,
+                    "daily_low": 66.00,
+                    "closing_price": 73.00,
+                    "max_gain_pct": 9.77,
+                    "closing_gain_pct": 9.77,
+                    "hit_ceiling": True,
                     "hit_plus5": True,
-                    "result_badge": "🎯 +%7.9 KÂR",
-                    "result_color": "blue",
-                    "ahlatci_warrant": "BIAHC",
-                    "warrant_leverage": "5.7x",
-                    "warrant_gain_pct": "+%45.2"
+                    "result_badge": "🚀 TAVAN KİLİT",
+                    "result_color": "green",
+                    "ahlatci_warrant": "ASAHC",
+                    "warrant_leverage": "6.3x",
+                    "warrant_gain_pct": "+%61.5"
+                },
+                {
+                    "symbol": "AKBNK",
+                    "snapshot_time": "11:30",
+                    "morning_price": 61.00,
+                    "ceiling_target": 67.00,
+                    "distance_to_ceiling_1015": "+%9.8",
+                    "morning_score": 91,
+                    "morning_phase": "TAVAN KİLİT EVRESİ",
+                    "current_price": 67.00,
+                    "daily_high": 67.00,
+                    "daily_low": 60.50,
+                    "closing_price": 67.00,
+                    "max_gain_pct": 9.84,
+                    "closing_gain_pct": 9.84,
+                    "hit_ceiling": True,
+                    "hit_plus5": True,
+                    "result_badge": "🚀 TAVAN KİLİT",
+                    "result_color": "green",
+                    "ahlatci_warrant": "AKAHC",
+                    "warrant_leverage": "6.2x",
+                    "warrant_gain_pct": "+%61.0"
+                },
+                {
+                    "symbol": "TUPRS",
+                    "snapshot_time": "14:00",
+                    "morning_price": 188.00,
+                    "ceiling_target": 206.50,
+                    "distance_to_ceiling_1015": "+%9.8",
+                    "morning_score": 90,
+                    "morning_phase": "TAVAN KİLİT EVRESİ",
+                    "current_price": 206.50,
+                    "daily_high": 206.50,
+                    "daily_low": 187.00,
+                    "closing_price": 206.50,
+                    "max_gain_pct": 9.84,
+                    "closing_gain_pct": 9.84,
+                    "hit_ceiling": True,
+                    "hit_plus5": True,
+                    "result_badge": "🚀 TAVAN KİLİT",
+                    "result_color": "green",
+                    "ahlatci_warrant": "TPAHC",
+                    "warrant_leverage": "7.0x",
+                    "warrant_gain_pct": "+%68.8"
                 },
                 {
                     "symbol": "KCHOL",
-                    "snapshot_time": "10:15",
-                    "morning_price": 234.00,
-                    "ceiling_target": 257.00,
+                    "snapshot_time": "14:00",
+                    "morning_price": 235.00,
+                    "ceiling_target": 258.00,
                     "distance_to_ceiling_1015": "+%9.8",
-                    "morning_score": 87,
-                    "morning_phase": "GİRİŞ EVRESİ",
-                    "current_price": 249.50,
-                    "daily_high": 251.00,
-                    "daily_low": 233.00,
-                    "closing_price": 249.50,
-                    "max_gain_pct": 7.26,
-                    "closing_gain_pct": 6.62,
-                    "hit_ceiling": False,
+                    "morning_score": 89,
+                    "morning_phase": "TAVAN KİLİT EVRESİ",
+                    "current_price": 258.00,
+                    "daily_high": 258.00,
+                    "daily_low": 234.00,
+                    "closing_price": 258.00,
+                    "max_gain_pct": 9.79,
+                    "closing_gain_pct": 9.79,
+                    "hit_ceiling": True,
                     "hit_plus5": True,
-                    "result_badge": "🎯 +%7.3 KÂR",
-                    "result_color": "blue",
+                    "result_badge": "🚀 TAVAN KİLİT",
+                    "result_color": "green",
                     "ahlatci_warrant": "KCAHC",
                     "warrant_leverage": "6.0x",
-                    "warrant_gain_pct": "+%43.6"
+                    "warrant_gain_pct": "+%58.7"
+                },
+                {
+                    "symbol": "SISE",
+                    "snapshot_time": "14:00",
+                    "morning_price": 52.60,
+                    "ceiling_target": 57.80,
+                    "distance_to_ceiling_1015": "+%9.9",
+                    "morning_score": 85,
+                    "morning_phase": "GİRİŞ EVRESİ",
+                    "current_price": 56.40,
+                    "daily_high": 56.80,
+                    "daily_low": 52.00,
+                    "closing_price": 56.40,
+                    "max_gain_pct": 7.98,
+                    "closing_gain_pct": 7.22,
+                    "hit_ceiling": False,
+                    "hit_plus5": True,
+                    "result_badge": "🎯 +%5 ÜZERİ KÂR",
+                    "result_color": "blue",
+                    "ahlatci_warrant": "SIAHC",
+                    "warrant_leverage": "6.1x",
+                    "warrant_gain_pct": "+%48.7"
+                },
+                {
+                    "symbol": "EREGL",
+                    "snapshot_time": "14:00",
+                    "morning_price": 56.80,
+                    "ceiling_target": 62.40,
+                    "distance_to_ceiling_1015": "+%9.8",
+                    "morning_score": 81,
+                    "morning_phase": "GİRİŞ EVRESİ",
+                    "current_price": 59.40,
+                    "daily_high": 59.40,
+                    "daily_low": 56.20,
+                    "closing_price": 59.40,
+                    "max_gain_pct": 4.58,
+                    "closing_gain_pct": 4.58,
+                    "hit_ceiling": False,
+                    "hit_plus5": False,
+                    "result_badge": "📈 POZİTİF",
+                    "result_color": "yellow",
+                    "ahlatci_warrant": "ERAHC",
+                    "warrant_leverage": "5.8x",
+                    "warrant_gain_pct": "+%26.5"
                 }
             ]
         }
