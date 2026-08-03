@@ -198,10 +198,20 @@ def background_scanner():
                 try:
                     res_1h = scanner.scan_pool_bulk_1h(BIST_SYMBOLS, daily_stats)
                     if res_1h and isinstance(res_1h, dict):
+                        tavan_candidates = res_1h.get("tavan_adaylari", [])
                         GLOBAL_DASHBOARD_CACHE["opportunities_1h"] = sanitize_for_json(res_1h.get("opportunities_1h", []))
-                        GLOBAL_DASHBOARD_CACHE["tavan_adaylari"] = sanitize_for_json(res_1h.get("tavan_adaylari", []))
+                        GLOBAL_DASHBOARD_CACHE["tavan_adaylari"] = sanitize_for_json(tavan_candidates)
                         save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
-                        print("[BACKGROUND] 1h taraması tamamlandı ve kaydedildi.")
+                        
+                        # 10:15 Sabah Tavan Listesi Bellek Kaydı & 18:10 Kapanış Denetimi
+                        try:
+                            from services.tavan_tracker import TavanAuditTracker
+                            TavanAuditTracker.record_morning_snapshot(tavan_candidates)
+                            TavanAuditTracker.update_daily_progress(daily_stats)
+                        except Exception as e_audit:
+                            print(f"[BACKGROUND] Tavan Audit Tracker hatası: {e_audit}")
+                            
+                        print("[BACKGROUND] 1h ve Tavan taraması tamamlandı, 10:15 denetçisine kaydedildi.")
                 except Exception as e_1h:
                     print(f"[BACKGROUND] 1h Tarama hatası: {e_1h}")
                 
@@ -627,6 +637,17 @@ def api_winrate_stats():
             "status": "success",
             "stats": sanitize_for_json(stats)
         })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/tavan_tracker', methods=['GET'])
+def api_tavan_tracker():
+    """Sabah 10:15 tavan listesi ve 18:10 kapanış performans denetim raporunu döner."""
+    selected_date = request.args.get('date', None)
+    try:
+        from services.tavan_tracker import TavanAuditTracker
+        data = TavanAuditTracker.get_audit_report(selected_date)
+        return jsonify(sanitize_for_json(data))
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 

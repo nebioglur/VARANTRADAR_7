@@ -2392,6 +2392,174 @@ function navigateCard(direction) {
     jumpToCard(currentActiveCardIdx);
 }
 
+// ================================================================
+// 📊 10:15 SABAH TAVAN LİSTESİ & 18:10 SEANS KAPANIŞ KARNESİ JS
+// ================================================================
+
+function openTavanAuditModal() {
+    const modal = document.getElementById('tavan-audit-modal');
+    if (modal) {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        fetchTavanAuditData();
+    }
+}
+
+function closeTavanAuditModal() {
+    const modal = document.getElementById('tavan-audit-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
+
+// ESC tuşuna basınca veya modal dışına tıklayınca kapatma
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeTavanAuditModal();
+});
+window.addEventListener('click', (e) => {
+    const modal = document.getElementById('tavan-audit-modal');
+    if (e.target === modal) closeTavanAuditModal();
+});
+
+async function fetchTavanAuditData(dateStr = '') {
+    const tbody = document.getElementById('tavan-audit-tbody');
+    const dateSelect = document.getElementById('tavan-audit-date-select');
+    
+    if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;"><div class="spinner small" style="display:inline-block; margin-right:8px;"></div> 10:15 Sabah Adayları & 18:10 Kapanış Denetimi yükleniyor...</td></tr>`;
+    }
+
+    try {
+        const url = dateStr ? `/api/tavan_tracker?date=${encodeURIComponent(dateStr)}` : '/api/tavan_tracker';
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.status === 'success' && data.audit) {
+            const audit = data.audit;
+            const summary = audit.summary || {};
+            const items = audit.items || [];
+            const overall = data.overall_stats || {};
+
+            // 1. Tarih Seçiciyi Doldur
+            if (dateSelect && data.available_dates) {
+                dateSelect.innerHTML = '';
+                data.available_dates.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d;
+                    opt.innerText = (d === new Date().toISOString().slice(0, 10)) ? `📅 Bugün (${d})` : `📅 ${d}`;
+                    if (d === data.selected_date) opt.selected = true;
+                    dateSelect.appendChild(opt);
+                });
+            }
+
+            // 2. Durum Rozeti
+            const isCompleted = audit.status === 'COMPLETED';
+            const badgeEl = document.getElementById('tavan-audit-status-badge');
+            if (badgeEl) {
+                badgeEl.style.background = isCompleted ? 'rgba(16,185,129,0.2)' : 'rgba(56,189,248,0.2)';
+                badgeEl.style.color = isCompleted ? '#10b981' : '#38bdf8';
+                badgeEl.style.borderColor = isCompleted ? 'rgba(16,185,129,0.4)' : 'rgba(56,189,248,0.4)';
+                badgeEl.innerHTML = isCompleted ? '<i class="fa-solid fa-check-double"></i> 18:10 KAPANIŞ DENETİMİ TAMAMLANDI' : '<i class="fa-solid fa-circle-notch fa-spin"></i> SEANS SÜRÜYOR (CANLI TAKİP)';
+            }
+
+            const evalTimeEl = document.getElementById('tavan-audit-eval-time');
+            if (evalTimeEl) {
+                evalTimeEl.innerText = `Kayıt: ${audit.snapshot_time || '10:15'} | Denetim: ${audit.evaluation_time || '18:10'}`;
+            }
+
+            // 3. Kümülatif Başarı Barı
+            const cumBanner = document.getElementById('tavan-audit-cum-banner');
+            if (cumBanner && overall) {
+                cumBanner.innerHTML = `🎯 <b>30 Günlük Kümülatif:</b> 10:15 Tavan Adaylarının <span style="color:#10b981; font-weight:800;">%${overall.cumulative_tavan_success_pct}'i Tavana</span>, <span style="color:#facc15; font-weight:800;">%${overall.cumulative_plus5_success_pct}'i +%5 Üzeri Kazanca</span> ulaştı. (Ort. Max: +%${overall.cumulative_avg_max_gain_pct})`;
+            }
+
+            // 4. KPI Kartları
+            const totalCnt = summary.total_candidates || items.length || 0;
+            const tavanCnt = summary.hit_ceiling_count || 0;
+            const tavanPct = summary.hit_ceiling_pct || 0;
+            const plus5Cnt = summary.hit_plus5_count || 0;
+            const plus5Pct = summary.hit_plus5_pct || 0;
+            const avgMax = summary.avg_max_gain_pct || 0.0;
+            const avgClose = summary.avg_closing_gain_pct || 0.0;
+            const avgWarrant = (avgMax * 6.2).toFixed(1);
+
+            setElText('aud-total-cnt', `${totalCnt} Hisse`);
+            setElText('aud-tavan-cnt', `${tavanCnt} / ${totalCnt} (%${tavanPct})`);
+            setElText('aud-plus5-cnt', `${plus5Cnt} / ${totalCnt} (%${plus5Pct})`);
+            setElText('aud-avg-max', `+%${avgMax}`);
+            setElText('aud-avg-close', `+%${avgClose}`);
+            setElText('aud-warrant-avg', `+%${avgWarrant}`);
+
+            // 5. Tablo Satırları
+            if (tbody) {
+                if (items.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;">Bu tarihe ait 10:15 tavan adayı kaydı bulunmamaktadır.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                items.forEach(it => {
+                    const tr = document.createElement('tr');
+                    const isTavan = it.hit_ceiling;
+                    const isPlus5 = it.hit_plus5;
+                    
+                    let badgeBg = 'rgba(255,255,255,0.05)';
+                    let badgeColor = 'var(--text-muted)';
+                    if (isTavan) {
+                        badgeBg = 'rgba(16,185,129,0.2)';
+                        badgeColor = '#10b981';
+                    } else if (isPlus5) {
+                        badgeBg = 'rgba(56,189,248,0.2)';
+                        badgeColor = '#38bdf8';
+                    } else if (it.max_gain_pct > 0) {
+                        badgeBg = 'rgba(234,179,8,0.2)';
+                        badgeColor = '#facc15';
+                    } else {
+                        badgeBg = 'rgba(239,68,68,0.2)';
+                        badgeColor = '#ef4444';
+                    }
+
+                    const closeGainSign = it.closing_gain_pct >= 0 ? '+' : '';
+                    const maxGainSign = it.max_gain_pct >= 0 ? '+' : '';
+                    const closeGainCol = it.closing_gain_pct >= 5 ? '#38bdf8' : (it.closing_gain_pct >= 0 ? '#10b981' : '#ef4444');
+                    const maxGainCol = it.max_gain_pct >= 9 ? '#10b981' : (it.max_gain_pct >= 5 ? '#38bdf8' : '#facc15');
+
+                    tr.innerHTML = `
+                        <td>
+                            <div style="font-weight:800; color:var(--text-light); font-size:0.95rem;">${it.symbol}</div>
+                            <div style="font-size:0.7rem; color:var(--accent-yellow); font-weight:600;">${it.morning_phase || 'GİRİŞ'} (Puan: ${it.morning_score})</div>
+                        </td>
+                        <td style="font-weight:bold; color:#fff;">₺${parseFloat(it.morning_price).toFixed(2)}</td>
+                        <td style="color:var(--accent-red); font-weight:bold;">₺${parseFloat(it.ceiling_target).toFixed(2)} <span style="font-size:0.72rem; color:var(--text-muted);">(${it.distance_to_ceiling_1015})</span></td>
+                        <td style="color:#facc15; font-weight:800;">₺${parseFloat(it.daily_high).toFixed(2)}</td>
+                        <td style="font-weight:bold; color:var(--text-light);">₺${parseFloat(it.closing_price).toFixed(2)}</td>
+                        <td style="color:${closeGainCol}; font-weight:bold;">${closeGainSign}%${parseFloat(it.closing_gain_pct).toFixed(2)}</td>
+                        <td style="color:${maxGainCol}; font-weight:800; font-size:0.95rem;">${maxGainSign}%${parseFloat(it.max_gain_pct).toFixed(2)}</td>
+                        <td>
+                            <span style="background:${badgeBg}; color:${badgeColor}; border:1px solid ${badgeColor}; padding:3px 8px; border-radius:6px; font-weight:700; font-size:0.75rem; white-space:nowrap;">
+                                ${it.result_badge}
+                            </span>
+                        </td>
+                        <td>
+                            <div style="font-weight:800; color:#c084fc; font-size:0.85rem;">🏛️ ${it.ahlatci_warrant}</div>
+                            <div style="font-size:0.72rem; color:#10b981; font-weight:700;">${it.warrant_gain_pct} <span style="color:var(--text-muted); font-size:0.68rem;">(${it.warrant_leverage})</span></div>
+                        </td>
+                        <td>
+                            <button onclick="closeTavanAuditModal(); analyzeSymbol('${it.symbol}')" class="btn-primary" style="padding:3px 8px; font-size:0.75rem;" title="Hisse Analizini Aç">İncele</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        } else {
+            if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="text-red text-center" style="padding:2rem;">Denetim verisi alınamadı.</td></tr>`;
+        }
+    } catch (e) {
+        if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="text-red text-center" style="padding:2rem;">Bağlantı hatası: ${e.message}</td></tr>`;
+    }
+}
+
 
 
 
