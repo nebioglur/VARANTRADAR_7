@@ -6,15 +6,15 @@ __pycache__/
 
 # Virtual Environment
 venv/
+.venv/
 
 # Veritabanı
 *.db
 *.sqlite3
 
-# Cache, Log ve İstatistik Dosyaları
-*.json
-!dashboard_cache.json # Hızlı başlangıç (pre-warm) verisi için dahil et
-!ui/assets/*.json # UI için gerekli json'lar hariç
+# Loglar ve Geçici Dosyalar
 *.log
-*.txt
-!requirements.txt # requirements.txt hariç
+demo_output.txt
+output.txt
+test.txt
+logs-*.txt

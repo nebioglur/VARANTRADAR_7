@@ -1,0 +1,30 @@
+{
+    "BOGA": {
+        "Technical": 0.35,
+        "SmartMoney": 0.3,
+        "Fundamental": 0.15,
+        "Sentiment": 0.1,
+        "Macro": 0.1
+    },
+    "AYI": {
+        "Fundamental": 0.3511,
+        "SmartMoney": 0.2614,
+        "Technical": 0.1804,
+        "Macro": 0.1023,
+        "Sentiment": 0.1048
+    },
+    "YATAY": {
+        "Technical": 0.1302,
+        "SmartMoney": 0.3687,
+        "Fundamental": 0.1691,
+        "Sentiment": 0.2149,
+        "Macro": 0.1171
+    },
+    "BO\u011eA": {
+        "Technical": 0.2152,
+        "SmartMoney": 0.302,
+        "Fundamental": 0.2697,
+        "Sentiment": 0.1204,
+        "Macro": 0.0927
+    }
+}

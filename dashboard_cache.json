@@ -1,0 +1,5647 @@
+{
+  "opportunities": [
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 70.18",
+      "Indicators": {
+        "RSI_14": 70.18,
+        "EMA_20": 34.04,
+        "EMA_50": 33.53,
+        "EMA_200": 31.59
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 33.79,
+          "MA21": 32.38,
+          "MA50": 30.58,
+          "MA200": 30.53,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 32.48,
+          "MA21": 30.46,
+          "MA50": 30.46,
+          "MA200": 30.46,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 32.8,
+          "MA21": 32.8,
+          "MA50": 32.8,
+          "MA200": 32.8,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 33.5324515850455,
+      "Daily_EMA200": 31.593281408459287,
+      "Daily_Close": 35.400001525878906,
+      "Symbol": "AGHOL.IS",
+      "Change_Pct": 2.97,
+      "Volume": 1875375.0,
+      "Money_Volume": 66388277.861595154,
+      "Price": 35.4
+    },
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 83.79",
+      "Indicators": {
+        "RSI_14": 83.79,
+        "EMA_20": 161.43,
+        "EMA_50": 153.67,
+        "EMA_200": 136.3
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 158.89,
+          "MA21": 144.19,
+          "MA50": 128.45,
+          "MA200": 127.8,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 141.65,
+          "MA21": 132.22,
+          "MA50": 132.22,
+          "MA200": 132.22,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 145.53,
+          "MA21": 145.53,
+          "MA50": 145.53,
+          "MA200": 145.53,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 153.67176673631795,
+      "Daily_EMA200": 136.29935490115963,
+      "Daily_Close": 177.60000610351562,
+      "Symbol": "ALCTL.IS",
+      "Change_Pct": 1.2,
+      "Volume": 115708.0,
+      "Money_Volume": 20549741.506225586,
+      "Price": 177.6
+    },
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 73.96",
+      "Indicators": {
+        "RSI_14": 73.96,
+        "EMA_20": 384.98,
+        "EMA_50": 365.62,
+        "EMA_200": 279.42
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 368.06,
+          "MA21": 358.65,
+          "MA50": 240.03,
+          "MA200": 230.45,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 316.58,
+          "MA21": 227.01,
+          "MA50": 227.01,
+          "MA200": 227.01,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 238.63,
+          "MA21": 238.63,
+          "MA50": 238.63,
+          "MA200": 238.63,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 365.61517143520757,
+      "Daily_EMA200": 279.41962237244445,
+      "Daily_Close": 398.25,
+      "Symbol": "ALKLC.IS",
+      "Change_Pct": 0.06,
+      "Volume": 266651.0,
+      "Money_Volume": 106193760.75,
+      "Price": 398.25
+    },
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 73.38",
+      "Indicators": {
+        "RSI_14": 73.38,
+        "EMA_20": 256.5,
+        "EMA_50": 247.44,
+        "EMA_200": 227.66
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 241.31,
+          "MA21": 252.55,
+          "MA50": 219.71,
+          "MA200": 215.96,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 236.58,
+          "MA21": 213.09,
+          "MA50": 213.09,
+          "MA200": 213.09,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 217.58,
+          "MA21": 217.58,
+          "MA50": 217.58,
+          "MA200": 217.58,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 247.43884845093731,
+      "Daily_EMA200": 227.6609757884616,
+      "Daily_Close": 268.75,
+      "Symbol": "AYGAZ.IS",
+      "Change_Pct": 0.84,
+      "Volume": 193513.0,
+      "Money_Volume": 52006618.75,
+      "Price": 268.75
+    },
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 74.52",
+      "Indicators": {
+        "RSI_14": 74.52,
+        "EMA_20": 44.15,
+        "EMA_50": 42.65,
+        "EMA_200": 39.94
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 42.94,
+          "MA21": 43.0,
+          "MA50": 38.53,
+          "MA200": 38.28,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 40.8,
+          "MA21": 38.13,
+          "MA50": 38.13,
+          "MA200": 38.13,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 40.46,
+          "MA21": 40.46,
+          "MA50": 40.46,
+          "MA200": 40.46,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 42.64638997240409,
+      "Daily_EMA200": 39.936750782017185,
+      "Daily_Close": 46.15999984741211,
+      "Symbol": "CATES.IS",
+      "Change_Pct": 0.17,
+      "Volume": 513858.0,
+      "Money_Volume": 23719685.20159149,
+      "Price": 46.16
+    },
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 83.71",
+      "Indicators": {
+        "RSI_14": 83.71,
+        "EMA_20": 41.11,
+        "EMA_50": 38.45,
+        "EMA_200": 28.11
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 40.33,
+          "MA21": 34.84,
+          "MA50": 24.27,
+          "MA200": 23.23,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 31.16,
+          "MA21": 23.47,
+          "MA50": 23.47,
+          "MA200": 23.47,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 24.74,
+          "MA21": 24.74,
+          "MA50": 24.74,
+          "MA200": 24.74,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 38.44523022175188,
+      "Daily_EMA200": 28.110312791208163,
+      "Daily_Close": 45.060001373291016,
+      "Symbol": "CRDFA.IS",
+      "Change_Pct": 0.99,
+      "Volume": 323112.0,
+      "Money_Volume": 14559427.163726807,
+      "Price": 45.06
+    },
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 70.08",
+      "Indicators": {
+        "RSI_14": 70.08,
+        "EMA_20": 153.35,
+        "EMA_50": 148.87,
+        "EMA_200": 132.41
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 152.55,
+          "MA21": 143.65,
+          "MA50": 126.14,
+          "MA200": 123.92,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 134.48,
+          "MA21": 120.34,
+          "MA50": 120.34,
+          "MA200": 120.34,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 124.53,
+          "MA21": 124.53,
+          "MA50": 124.53,
+          "MA200": 124.53,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 148.86681197169847,
+      "Daily_EMA200": 132.41380617792754,
+      "Daily_Close": 159.8000030517578,
+      "Symbol": "CRFSA.IS",
+      "Change_Pct": 2.17,
+      "Volume": 346605.0,
+      "Money_Volume": 55387480.05775452,
+      "Price": 159.8
+    },
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 72.42",
+      "Indicators": {
+        "RSI_14": 72.42,
+        "EMA_20": 81.98,
+        "EMA_50": 79.42,
+        "EMA_200": 68.28
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 80.81,
+          "MA21": 74.85,
+          "MA50": 64.14,
+          "MA200": 63.27,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 68.68,
+          "MA21": 62.7,
+          "MA50": 62.7,
+          "MA200": 62.7,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 63.78,
+          "MA21": 63.78,
+          "MA50": 63.78,
+          "MA200": 63.78,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 79.41764131964396,
+      "Daily_EMA200": 68.28235781942553,
+      "Daily_Close": 83.5,
+      "Symbol": "EBEBK.IS",
+      "Change_Pct": -1.18,
+      "Volume": 87028.0,
+      "Money_Volume": 7266838.0,
+      "Price": 83.5
+    },
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 91.85",
+      "Indicators": {
+        "RSI_14": 91.85,
+        "EMA_20": 205.8,
+        "EMA_50": 164.28,
+        "EMA_200": 94.89
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 177.53,
+          "MA21": 123.8,
+          "MA50": 73.99,
+          "MA200": 70.28,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 101.18,
+          "MA21": 73.16,
+          "MA50": 73.16,
+          "MA200": 73.16,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 99.77,
+          "MA21": 99.77,
+          "MA50": 99.77,
+          "MA200": 99.77,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 164.27658023698785,
+      "Daily_EMA200": 94.89003230531742,
+      "Daily_Close": 258.75,
+      "Symbol": "HEDEF.IS",
+      "Change_Pct": 7.81,
+      "Volume": 432495.0,
+      "Money_Volume": 111908081.25,
+      "Price": 258.75
+    },
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 77.54",
+      "Indicators": {
+        "RSI_14": 77.54,
+        "EMA_20": 157.14,
+        "EMA_50": 141.1,
+        "EMA_200": 95.79
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 149.65,
+          "MA21": 119.07,
+          "MA50": 79.93,
+          "MA200": 76.17,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 106.48,
+          "MA21": 76.98,
+          "MA50": 76.98,
+          "MA200": 76.98,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 84.81,
+          "MA21": 84.81,
+          "MA50": 84.81,
+          "MA200": 84.81,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 141.1006220676554,
+      "Daily_EMA200": 95.79187210911768,
+      "Daily_Close": 166.10000610351562,
+      "Symbol": "IEYHO.IS",
+      "Change_Pct": 0.12,
+      "Volume": 391111.0,
+      "Money_Volume": 64963539.4871521,
+      "Price": 166.1
+    },
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 77.81",
+      "Indicators": {
+        "RSI_14": 77.81,
+        "EMA_20": 660.93,
+        "EMA_50": 639.7,
+        "EMA_200": 498.31
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 663.88,
+          "MA21": 587.76,
+          "MA50": 443.04,
+          "MA200": 441.75,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 490.08,
+          "MA21": 438.76,
+          "MA50": 438.76,
+          "MA200": 438.76,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 430.37,
+          "MA21": 430.37,
+          "MA50": 430.37,
+          "MA200": 430.37,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 639.7015892461964,
+      "Daily_EMA200": 498.30620954486557,
+      "Daily_Close": 689.0,
+      "Symbol": "INVES.IS",
+      "Change_Pct": 1.4,
+      "Volume": 3377.0,
+      "Money_Volume": 2326753.0,
+      "Price": 689.0
+    },
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 74.15",
+      "Indicators": {
+        "RSI_14": 74.15,
+        "EMA_20": 196.81,
+        "EMA_50": 163.43,
+        "EMA_200": 114.03
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 173.12,
+          "MA21": 123.88,
+          "MA50": 99.86,
+          "MA200": 99.34,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 109.54,
+          "MA21": 100.68,
+          "MA50": 100.68,
+          "MA200": 100.68,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 129.8,
+          "MA21": 129.8,
+          "MA50": 129.8,
+          "MA200": 129.8,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 163.43134300748352,
+      "Daily_EMA200": 114.02893858685074,
+      "Daily_Close": 221.6999969482422,
+      "Symbol": "KARTN.IS",
+      "Change_Pct": 0.77,
+      "Volume": 436246.0,
+      "Money_Volume": 96715736.86868286,
+      "Price": 221.7
+    },
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 75.24",
+      "Indicators": {
+        "RSI_14": 75.24,
+        "EMA_20": 6.86,
+        "EMA_50": 6.26,
+        "EMA_200": 4.35
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 6.82,
+          "MA21": 5.31,
+          "MA50": 3.68,
+          "MA200": 3.62,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 4.27,
+          "MA21": 3.62,
+          "MA50": 3.62,
+          "MA200": 3.62,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 4.04,
+          "MA21": 4.04,
+          "MA50": 4.04,
+          "MA200": 4.04,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 6.260747505870207,
+      "Daily_EMA200": 4.346588977906772,
+      "Daily_Close": 7.889999866485596,
+      "Symbol": "KERVN.IS",
+      "Change_Pct": 1.15,
+      "Volume": 41489.0,
+      "Money_Volume": 327348.2044606209,
+      "Price": 7.89
+    },
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 73.65",
+      "Indicators": {
+        "RSI_14": 73.65,
+        "EMA_20": 142.94,
+        "EMA_50": 141.87,
+        "EMA_200": 133.49
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 143.89,
+          "MA21": 140.77,
+          "MA50": 136.76,
+          "MA200": 134.04,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 134.96,
+          "MA21": 130.23,
+          "MA50": 130.23,
+          "MA200": 130.23,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 122.93,
+          "MA21": 122.93,
+          "MA50": 122.93,
+          "MA200": 122.93,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 141.86887066903196,
+      "Daily_EMA200": 133.48693859605814,
+      "Daily_Close": 157.0,
+      "Symbol": "KUVVA.IS",
+      "Change_Pct": -2.48,
+      "Volume": 136029.0,
+      "Money_Volume": 21356553.0,
+      "Price": 157.0
+    },
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 89.28",
+      "Indicators": {
+        "RSI_14": 89.28,
+        "EMA_20": 2680.32,
+        "EMA_50": 1999.63,
+        "EMA_200": 938.5
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 2241.75,
+          "MA21": 1216.17,
+          "MA50": 622.42,
+          "MA200": 600.28,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 952.57,
+          "MA21": 668.98,
+          "MA50": 668.98,
+          "MA200": 668.98,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 1313.13,
+          "MA21": 1313.13,
+          "MA50": 1313.13,
+          "MA200": 1313.13,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 1999.6291811628482,
+      "Daily_EMA200": 938.4991462850495,
+      "Daily_Close": 3545.0,
+      "Symbol": "OZATD.IS",
+      "Change_Pct": -5.97,
+      "Volume": 134260.0,
+      "Money_Volume": 475951700.0,
+      "Price": 3545.0
+    },
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 79.91",
+      "Indicators": {
+        "RSI_14": 79.91,
+        "EMA_20": 32.84,
+        "EMA_50": 31.96,
+        "EMA_200": 29.01
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 32.15,
+          "MA21": 31.9,
+          "MA50": 27.04,
+          "MA200": 26.85,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 30.12,
+          "MA21": 26.78,
+          "MA50": 26.78,
+          "MA200": 26.78,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 29.88,
+          "MA21": 29.88,
+          "MA50": 29.88,
+          "MA200": 29.88,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 31.95606860031941,
+      "Daily_EMA200": 29.00506764341393,
+      "Daily_Close": 38.47999954223633,
+      "Symbol": "RYGYO.IS",
+      "Change_Pct": 3.44,
+      "Volume": 1995932.0,
+      "Money_Volume": 76803462.44633484,
+      "Price": 38.48
+    },
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 73.48",
+      "Indicators": {
+        "RSI_14": 73.48,
+        "EMA_20": 50.89,
+        "EMA_50": 50.07,
+        "EMA_200": 49.83
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 49.28,
+          "MA21": 50.42,
+          "MA50": 49.75,
+          "MA200": 49.09,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 53.31,
+          "MA21": 48.52,
+          "MA50": 48.52,
+          "MA200": 48.52,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 51.67,
+          "MA21": 51.67,
+          "MA50": 51.67,
+          "MA200": 51.67,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 50.065314844136374,
+      "Daily_EMA200": 49.8345065544345,
+      "Daily_Close": 52.849998474121094,
+      "Symbol": "SOKM.IS",
+      "Change_Pct": -0.94,
+      "Volume": 1232369.0,
+      "Money_Volume": 65130699.76955414,
+      "Price": 52.85
+    },
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 70.04",
+      "Indicators": {
+        "RSI_14": 70.04,
+        "EMA_20": 138.49,
+        "EMA_50": 135.47,
+        "EMA_200": 103.43
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 139.25,
+          "MA21": 122.2,
+          "MA50": 87.65,
+          "MA200": 85.69,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 112.43,
+          "MA21": 88.35,
+          "MA50": 88.35,
+          "MA200": 88.35,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 93.17,
+          "MA21": 93.17,
+          "MA50": 93.17,
+          "MA200": 93.17,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 135.46775682555057,
+      "Daily_EMA200": 103.4325227752203,
+      "Daily_Close": 140.39999389648438,
+      "Symbol": "TCKRC.IS",
+      "Change_Pct": 0.21,
+      "Volume": 164627.0,
+      "Money_Volume": 23113629.795196533,
+      "Price": 140.4
+    },
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 95.5",
+      "Indicators": {
+        "RSI_14": 95.5,
+        "EMA_20": 41.09,
+        "EMA_50": 36.35,
+        "EMA_200": 28.14
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 39.17,
+          "MA21": 29.48,
+          "MA50": 28.8,
+          "MA200": 28.35,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 26.83,
+          "MA21": 28.53,
+          "MA50": 28.53,
+          "MA200": 28.53,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 25.77,
+          "MA21": 25.77,
+          "MA50": 25.77,
+          "MA200": 25.77,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 36.35204682220837,
+      "Daily_EMA200": 28.139752201576034,
+      "Daily_Close": 45.7599983215332,
+      "Symbol": "TEHOL.IS",
+      "Change_Pct": 4.67,
+      "Volume": 7049706.0,
+      "Money_Volume": 322594534.72730255,
+      "Price": 45.76
+    },
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 84.82",
+      "Indicators": {
+        "RSI_14": 84.82,
+        "EMA_20": 143.8,
+        "EMA_50": 138.27,
+        "EMA_200": 114.1
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 142.32,
+          "MA21": 128.71,
+          "MA50": 100.21,
+          "MA200": 100.34,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 110.52,
+          "MA21": 102.16,
+          "MA50": 102.16,
+          "MA200": 102.16,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 110.98,
+          "MA21": 110.98,
+          "MA50": 110.98,
+          "MA200": 110.98,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 138.26677400806315,
+      "Daily_EMA200": 114.1035415534616,
+      "Daily_Close": 148.89999389648438,
+      "Symbol": "TKFEN.IS",
+      "Change_Pct": -1.26,
+      "Volume": 791819.0,
+      "Money_Volume": 117901844.26712036,
+      "Price": 148.9
+    }
+  ],
+  "gainers": [
+    {
+      "Score": 85.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "NÖTR",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: N/A",
+      "Indicators": {
+        "RSI_14": "N/A",
+        "EMA_20": 112.25,
+        "EMA_50": 110.39,
+        "EMA_200": 105.53
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 113.24,
+          "MA21": 110.68,
+          "MA50": 106.64,
+          "MA200": 105.2,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 113.24,
+          "MA21": 104.33,
+          "MA50": 104.33,
+          "MA200": 104.33,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 107.72,
+          "MA21": 107.72,
+          "MA50": 107.72,
+          "MA200": 107.72,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 110.39214014958485,
+      "Daily_EMA200": 105.52576610113353,
+      "Daily_Close": 142.1999969482422,
+      "Symbol": "DUNYH.IS",
+      "Change_Pct": 30.34,
+      "Volume": 114805.0,
+      "Money_Volume": 16325270.649642944,
+      "Price": 142.2
+    },
+    {
+      "Score": 50.0,
+      "Status": "UNKNOWN",
+      "Trend": "UNKNOWN",
+      "Momentum": "UNKNOWN",
+      "Analysis": "Yetersiz Veri",
+      "Symbol": "ISVEA.IS",
+      "Change_Pct": 20.96,
+      "Volume": 18650352.0,
+      "Money_Volume": 809425305.2581787,
+      "Price": 43.4
+    },
+    {
+      "Score": 76.5,
+      "Status": "AL",
+      "Trend": "YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: YÜKSELİŞ, RSI: 76.32",
+      "Indicators": {
+        "RSI_14": 76.32,
+        "EMA_20": 130.99,
+        "EMA_50": 129.86,
+        "EMA_200": 132.38
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 131.45,
+          "MA21": 130.7,
+          "MA50": 138.45,
+          "MA200": 139.07,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 133.85,
+          "MA21": 140.38,
+          "MA50": 140.38,
+          "MA200": 140.38,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 136.34,
+          "MA21": 136.34,
+          "MA50": 136.34,
+          "MA200": 136.34,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 129.86182906298413,
+      "Daily_EMA200": 132.37599597210797,
+      "Daily_Close": 160.10000610351562,
+      "Symbol": "PSDTC.IS",
+      "Change_Pct": 20.92,
+      "Volume": 500934.0,
+      "Money_Volume": 80199536.4574585,
+      "Price": 160.1
+    },
+    {
+      "Score": 72.0,
+      "Status": "AL",
+      "Trend": "YÜKSELİŞ",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: YÜKSELİŞ, RSI: 55.54",
+      "Indicators": {
+        "RSI_14": 55.54,
+        "EMA_20": 291.53,
+        "EMA_50": 268.08,
+        "EMA_200": 290.51
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 273.92,
+          "MA21": 247.8,
+          "MA50": 303.21,
+          "MA200": 311.21,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 272.81,
+          "MA21": 334.67,
+          "MA50": 334.67,
+          "MA200": 334.67,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 369.33,
+          "MA21": 369.33,
+          "MA50": 369.33,
+          "MA200": 369.33,
+          "SuperTrend": "DÜŞÜŞ"
+        }
+      },
+      "Daily_EMA50": 268.0762313674226,
+      "Daily_EMA200": 290.5113780006337,
+      "Daily_Close": 346.0,
+      "Symbol": "BIGTK.IS",
+      "Change_Pct": 15.24,
+      "Volume": 654108.0,
+      "Money_Volume": 226321368.0,
+      "Price": 346.0
+    },
+    {
+      "Score": 59.0,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: YATAY, RSI: 76.53",
+      "Indicators": {
+        "RSI_14": 76.53,
+        "EMA_20": 21.56,
+        "EMA_50": 21.73,
+        "EMA_200": 19.69
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 22.34,
+          "MA21": 21.16,
+          "MA50": 18.22,
+          "MA200": 18.32,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 19.98,
+          "MA21": 18.23,
+          "MA50": 18.23,
+          "MA200": 18.23,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 19.95,
+          "MA21": 19.95,
+          "MA50": 19.95,
+          "MA200": 19.95,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 21.727214849011723,
+      "Daily_EMA200": 19.690645009104347,
+      "Daily_Close": 24.399999618530273,
+      "Symbol": "RYSAS.IS",
+      "Change_Pct": 10.71,
+      "Volume": 5784735.0,
+      "Money_Volume": 141147531.79329872,
+      "Price": 24.4
+    },
+    {
+      "Score": 54.5,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: YATAY, RSI: 67.6",
+      "Indicators": {
+        "RSI_14": 67.6,
+        "EMA_20": 6.21,
+        "EMA_50": 6.34,
+        "EMA_200": 6.14
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 6.3,
+          "MA21": 6.78,
+          "MA50": 6.11,
+          "MA200": 6.02,
+          "SuperTrend": "DÜŞÜŞ"
+        },
+        "Monthly": {
+          "MA8": 6.36,
+          "MA21": 5.98,
+          "MA50": 5.98,
+          "MA200": 5.98,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 5.6,
+          "MA21": 5.6,
+          "MA50": 5.6,
+          "MA200": 5.6,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 6.335845196440143,
+      "Daily_EMA200": 6.138556533035048,
+      "Daily_Close": 6.739999771118164,
+      "Symbol": "MSGYO.IS",
+      "Change_Pct": 10.67,
+      "Volume": 6484214.0,
+      "Money_Volume": 43703600.875881195,
+      "Price": 6.74
+    },
+    {
+      "Score": 72.0,
+      "Status": "AL",
+      "Trend": "YÜKSELİŞ",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: YÜKSELİŞ, RSI: 67.73",
+      "Indicators": {
+        "RSI_14": 67.73,
+        "EMA_20": 298.46,
+        "EMA_50": 272.91,
+        "EMA_200": 284.79
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 276.61,
+          "MA21": 259.69,
+          "MA50": 291.63,
+          "MA200": 300.8,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 267.19,
+          "MA21": 303.25,
+          "MA50": 303.25,
+          "MA200": 303.25,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 345.08,
+          "MA21": 345.08,
+          "MA50": 345.08,
+          "MA200": 345.08,
+          "SuperTrend": "DÜŞÜŞ"
+        }
+      },
+      "Daily_EMA50": 272.9053042271533,
+      "Daily_EMA200": 284.78610108649474,
+      "Daily_Close": 334.0,
+      "Symbol": "INTEK.IS",
+      "Change_Pct": 10.6,
+      "Volume": 2202.0,
+      "Money_Volume": 735468.0,
+      "Price": 334.0
+    },
+    {
+      "Score": 50.0,
+      "Status": "UNKNOWN",
+      "Trend": "UNKNOWN",
+      "Momentum": "UNKNOWN",
+      "Analysis": "Yetersiz Veri",
+      "Symbol": "ISKUR.IS",
+      "Change_Pct": 10.0,
+      "Volume": 2.0,
+      "Money_Volume": 8250000.0,
+      "Price": 4125000.0
+    },
+    {
+      "Score": 76.5,
+      "Status": "AL",
+      "Trend": "YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: YÜKSELİŞ, RSI: 90.34",
+      "Indicators": {
+        "RSI_14": 90.34,
+        "EMA_20": 111.32,
+        "EMA_50": 111.05,
+        "EMA_200": 118.51
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 112.41,
+          "MA21": 115.58,
+          "MA50": 125.99,
+          "MA200": 123.89,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 127.5,
+          "MA21": 123.68,
+          "MA50": 123.68,
+          "MA200": 123.68,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 126.8,
+          "MA21": 126.8,
+          "MA50": 126.8,
+          "MA200": 126.8,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 111.05433546225228,
+      "Daily_EMA200": 118.50644554698277,
+      "Daily_Close": 139.5,
+      "Symbol": "PASEU.IS",
+      "Change_Pct": 9.84,
+      "Volume": 1968375.0,
+      "Money_Volume": 274588312.5,
+      "Price": 139.5
+    },
+    {
+      "Score": 80.5,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "NEGATİF",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 47.57",
+      "Indicators": {
+        "RSI_14": 47.57,
+        "EMA_20": 110.7,
+        "EMA_50": 99.17,
+        "EMA_200": 75.9
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 106.88,
+          "MA21": 78.59,
+          "MA50": 71.19,
+          "MA200": 70.16,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 73.62,
+          "MA21": 71.32,
+          "MA50": 71.32,
+          "MA200": 71.32,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 74.7,
+          "MA21": 74.7,
+          "MA50": 74.7,
+          "MA200": 74.7,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 99.17470273313245,
+      "Daily_EMA200": 75.9041895684385,
+      "Daily_Close": 111.30000305175781,
+      "Symbol": "ATSYH.IS",
+      "Change_Pct": 9.12,
+      "Volume": 1576.0,
+      "Money_Volume": 175408.8048095703,
+      "Price": 111.3
+    },
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 91.85",
+      "Indicators": {
+        "RSI_14": 91.85,
+        "EMA_20": 205.8,
+        "EMA_50": 164.28,
+        "EMA_200": 94.89
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 177.53,
+          "MA21": 123.8,
+          "MA50": 73.99,
+          "MA200": 70.28,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 101.18,
+          "MA21": 73.16,
+          "MA50": 73.16,
+          "MA200": 73.16,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 99.77,
+          "MA21": 99.77,
+          "MA50": 99.77,
+          "MA200": 99.77,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 164.27658023698785,
+      "Daily_EMA200": 94.89003230531742,
+      "Daily_Close": 258.75,
+      "Symbol": "HEDEF.IS",
+      "Change_Pct": 7.81,
+      "Volume": 432495.0,
+      "Money_Volume": 111908081.25,
+      "Price": 258.75
+    },
+    {
+      "Score": 54.5,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: YATAY, RSI: 64.61",
+      "Indicators": {
+        "RSI_14": 64.61,
+        "EMA_20": 4.66,
+        "EMA_50": 4.69,
+        "EMA_200": 4.71
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 4.78,
+          "MA21": 4.69,
+          "MA50": 4.68,
+          "MA200": 4.7,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 4.64,
+          "MA21": 4.72,
+          "MA50": 4.72,
+          "MA200": 4.72,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 4.96,
+          "MA21": 4.96,
+          "MA50": 4.96,
+          "MA200": 4.96,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 4.685642709011639,
+      "Daily_EMA200": 4.706621753604805,
+      "Daily_Close": 5.099999904632568,
+      "Symbol": "ENTRA.IS",
+      "Change_Pct": 7.37,
+      "Volume": 34167000.0,
+      "Money_Volume": 174251696.74158096,
+      "Price": 5.1
+    },
+    {
+      "Score": 89.5,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 51.19",
+      "Indicators": {
+        "RSI_14": 51.19,
+        "EMA_20": 87.55,
+        "EMA_50": 77.26,
+        "EMA_200": 50.48
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 82.43,
+          "MA21": 63.5,
+          "MA50": 40.25,
+          "MA200": 39.29,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 50.03,
+          "MA21": 39.82,
+          "MA50": 39.82,
+          "MA200": 39.82,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 45.8,
+          "MA21": 45.8,
+          "MA50": 45.8,
+          "MA200": 45.8,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 77.26331476645494,
+      "Daily_EMA200": 50.48156673527289,
+      "Daily_Close": 91.8499984741211,
+      "Symbol": "AKFIS.IS",
+      "Change_Pct": 7.24,
+      "Volume": 1411167.0,
+      "Money_Volume": 129615686.79673004,
+      "Price": 91.85
+    },
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 75.79",
+      "Indicators": {
+        "RSI_14": 75.79,
+        "EMA_20": 1697.28,
+        "EMA_50": 1591.43,
+        "EMA_200": 1101.29
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 1651.75,
+          "MA21": 1403.38,
+          "MA50": 899.08,
+          "MA200": 860.36,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 1185.25,
+          "MA21": 859.38,
+          "MA50": 859.38,
+          "MA200": 859.38,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 914.0,
+          "MA21": 914.0,
+          "MA50": 914.0,
+          "MA200": 914.0,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 1591.4254860198498,
+      "Daily_EMA200": 1101.2867325651832,
+      "Daily_Close": 1875.0,
+      "Symbol": "TRHOL.IS",
+      "Change_Pct": 7.08,
+      "Volume": 18625.0,
+      "Money_Volume": 34921875.0,
+      "Price": 1875.0
+    },
+    {
+      "Score": 54.5,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: YATAY, RSI: 54.58",
+      "Indicators": {
+        "RSI_14": 54.58,
+        "EMA_20": 8.02,
+        "EMA_50": 8.21,
+        "EMA_200": 7.15
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 8.43,
+          "MA21": 7.68,
+          "MA50": 6.52,
+          "MA200": 6.57,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 6.66,
+          "MA21": 6.62,
+          "MA50": 6.62,
+          "MA200": 6.62,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 6.88,
+          "MA21": 6.88,
+          "MA50": 6.88,
+          "MA200": 6.88,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 8.205904076214942,
+      "Daily_EMA200": 7.145009628259937,
+      "Daily_Close": 8.130000114440918,
+      "Symbol": "DGNMO.IS",
+      "Change_Pct": 5.58,
+      "Volume": 1288442.0,
+      "Money_Volume": 10475033.607450485,
+      "Price": 8.13
+    },
+    {
+      "Score": 59.0,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: YATAY, RSI: 81.1",
+      "Indicators": {
+        "RSI_14": 81.1,
+        "EMA_20": 37.73,
+        "EMA_50": 37.74,
+        "EMA_200": 31.32
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 39.01,
+          "MA21": 37.04,
+          "MA50": 27.35,
+          "MA200": 27.04,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 31.52,
+          "MA21": 27.51,
+          "MA50": 27.51,
+          "MA200": 27.51,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 27.92,
+          "MA21": 27.92,
+          "MA50": 27.92,
+          "MA200": 27.92,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 37.73848346616376,
+      "Daily_EMA200": 31.324094616255657,
+      "Daily_Close": 42.060001373291016,
+      "Symbol": "GEREL.IS",
+      "Change_Pct": 4.99,
+      "Volume": 1658695.0,
+      "Money_Volume": 69764713.97787094,
+      "Price": 42.06
+    },
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 95.5",
+      "Indicators": {
+        "RSI_14": 95.5,
+        "EMA_20": 41.09,
+        "EMA_50": 36.35,
+        "EMA_200": 28.14
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 39.17,
+          "MA21": 29.48,
+          "MA50": 28.8,
+          "MA200": 28.35,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 26.83,
+          "MA21": 28.53,
+          "MA50": 28.53,
+          "MA200": 28.53,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 25.77,
+          "MA21": 25.77,
+          "MA50": 25.77,
+          "MA200": 25.77,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 36.35204682220837,
+      "Daily_EMA200": 28.139752201576034,
+      "Daily_Close": 45.7599983215332,
+      "Symbol": "TEHOL.IS",
+      "Change_Pct": 4.67,
+      "Volume": 7049706.0,
+      "Money_Volume": 322594534.72730255,
+      "Price": 45.76
+    },
+    {
+      "Score": 89.5,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 55.5",
+      "Indicators": {
+        "RSI_14": 55.5,
+        "EMA_20": 10.81,
+        "EMA_50": 10.01,
+        "EMA_200": 7.12
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 10.61,
+          "MA21": 8.66,
+          "MA50": 5.85,
+          "MA200": 5.72,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 7.14,
+          "MA21": 5.71,
+          "MA50": 5.71,
+          "MA200": 5.71,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 6.14,
+          "MA21": 6.14,
+          "MA50": 6.14,
+          "MA200": 6.14,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 10.012212816473571,
+      "Daily_EMA200": 7.117707294005823,
+      "Daily_Close": 11.289999961853027,
+      "Symbol": "SEKUR.IS",
+      "Change_Pct": 4.54,
+      "Volume": 614581.0,
+      "Money_Volume": 6938619.466555595,
+      "Price": 11.29
+    },
+    {
+      "Score": 59.0,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: YATAY, RSI: 72.95",
+      "Indicators": {
+        "RSI_14": 72.95,
+        "EMA_20": 495.11,
+        "EMA_50": 519.66,
+        "EMA_200": 442.07
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 528.81,
+          "MA21": 512.71,
+          "MA50": 390.18,
+          "MA200": 389.57,
+          "SuperTrend": "DÜŞÜŞ"
+        },
+        "Monthly": {
+          "MA8": 446.73,
+          "MA21": 399.22,
+          "MA50": 399.22,
+          "MA200": 399.22,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 373.83,
+          "MA21": 373.83,
+          "MA50": 373.83,
+          "MA200": 373.83,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 519.65947684527,
+      "Daily_EMA200": 442.06963354003767,
+      "Daily_Close": 506.5,
+      "Symbol": "VERUS.IS",
+      "Change_Pct": 4.43,
+      "Volume": 8231.0,
+      "Money_Volume": 4169001.5,
+      "Price": 506.5
+    },
+    {
+      "Score": 37.0,
+      "Status": "BEKLE",
+      "Trend": "DÜŞÜŞ",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: DÜŞÜŞ, RSI: 62.24",
+      "Indicators": {
+        "RSI_14": 62.24,
+        "EMA_20": 35.55,
+        "EMA_50": 35.68,
+        "EMA_200": 29.68
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 35.86,
+          "MA21": 35.96,
+          "MA50": 26.27,
+          "MA200": 25.57,
+          "SuperTrend": "DÜŞÜŞ"
+        },
+        "Monthly": {
+          "MA8": 31.9,
+          "MA21": 25.33,
+          "MA50": 25.33,
+          "MA200": 25.33,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 25.57,
+          "MA21": 25.57,
+          "MA50": 25.57,
+          "MA200": 25.57,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 35.676057833853925,
+      "Daily_EMA200": 29.676612843012748,
+      "Daily_Close": 35.52000045776367,
+      "Symbol": "BSOKE.IS",
+      "Change_Pct": 4.35,
+      "Volume": 1252835.0,
+      "Money_Volume": 44500699.77350235,
+      "Price": 35.52
+    }
+  ],
+  "losers": [
+    {
+      "Score": 45.5,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "NEGATİF",
+      "Analysis": "Trend: YATAY, RSI: 47.13",
+      "Indicators": {
+        "RSI_14": 47.13,
+        "EMA_20": 2066.72,
+        "EMA_50": 1684.94,
+        "EMA_200": 912.27
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 1791.5,
+          "MA21": 1240.14,
+          "MA50": 633.78,
+          "MA200": 601.93,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 921.66,
+          "MA21": 606.85,
+          "MA50": 606.85,
+          "MA200": 606.85,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 735.12,
+          "MA21": 735.12,
+          "MA50": 735.12,
+          "MA200": 735.12,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 1684.9382764315915,
+      "Daily_EMA200": 912.2694046400047,
+      "Daily_Close": 1918.0,
+      "Symbol": "GUNDG.IS",
+      "Change_Pct": -18.97,
+      "Volume": 21836.0,
+      "Money_Volume": 41881448.0,
+      "Price": 1918.0
+    },
+    {
+      "Score": 54.5,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: YATAY, RSI: 56.35",
+      "Indicators": {
+        "RSI_14": 56.35,
+        "EMA_20": 104.92,
+        "EMA_50": 80.86,
+        "EMA_200": 38.92
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 92.41,
+          "MA21": 48.82,
+          "MA50": 26.4,
+          "MA200": 25.59,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 36.39,
+          "MA21": 26.71,
+          "MA50": 26.71,
+          "MA200": 26.71,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 41.51,
+          "MA21": 41.51,
+          "MA50": 41.51,
+          "MA200": 41.51,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 80.85524857799065,
+      "Daily_EMA200": 38.92386012376041,
+      "Daily_Close": 103.30000305175781,
+      "Symbol": "BIGEN.IS",
+      "Change_Pct": -18.92,
+      "Volume": 335190.0,
+      "Money_Volume": 34625128.0229187,
+      "Price": 103.3
+    },
+    {
+      "Score": 54.5,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: YATAY, RSI: 50.17",
+      "Indicators": {
+        "RSI_14": 50.17,
+        "EMA_20": 63.64,
+        "EMA_50": 63.23,
+        "EMA_200": 56.0
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 62.93,
+          "MA21": 61.71,
+          "MA50": 51.24,
+          "MA200": 50.92,
+          "SuperTrend": "DÜŞÜŞ"
+        },
+        "Monthly": {
+          "MA8": 59.37,
+          "MA21": 51.2,
+          "MA50": 51.2,
+          "MA200": 51.2,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 53.22,
+          "MA21": 53.22,
+          "MA50": 53.22,
+          "MA200": 53.22,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 63.22618529755192,
+      "Daily_EMA200": 55.99664041505353,
+      "Daily_Close": 60.5,
+      "Symbol": "IZFAS.IS",
+      "Change_Pct": -15.56,
+      "Volume": 1780371.0,
+      "Money_Volume": 107712445.5,
+      "Price": 60.5
+    },
+    {
+      "Score": 89.5,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 64.73",
+      "Indicators": {
+        "RSI_14": 64.73,
+        "EMA_20": 2164.16,
+        "EMA_50": 1822.82,
+        "EMA_200": 1034.56
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 1964.0,
+          "MA21": 1377.1,
+          "MA50": 740.37,
+          "MA200": 705.9,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 1084.81,
+          "MA21": 733.37,
+          "MA50": 733.37,
+          "MA200": 733.37,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 911.67,
+          "MA21": 911.67,
+          "MA50": 911.67,
+          "MA200": 911.67,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 1822.82203789578,
+      "Daily_EMA200": 1034.5565027014798,
+      "Daily_Close": 2259.0,
+      "Symbol": "ODINE.IS",
+      "Change_Pct": -13.12,
+      "Volume": 85477.0,
+      "Money_Volume": 193092543.0,
+      "Price": 2259.0
+    },
+    {
+      "Score": 89.5,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 60.08",
+      "Indicators": {
+        "RSI_14": 60.08,
+        "EMA_20": 11.01,
+        "EMA_50": 9.64,
+        "EMA_200": 7.82
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 9.79,
+          "MA21": 8.16,
+          "MA50": 7.46,
+          "MA200": 7.36,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 7.76,
+          "MA21": 7.22,
+          "MA50": 7.22,
+          "MA200": 7.22,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 8.06,
+          "MA21": 8.06,
+          "MA50": 8.06,
+          "MA200": 8.06,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 9.637812622279686,
+      "Daily_EMA200": 7.816012492677613,
+      "Daily_Close": 11.119999885559082,
+      "Symbol": "IZMDC.IS",
+      "Change_Pct": -11.75,
+      "Volume": 7326732.0,
+      "Money_Volume": 81473259.00152206,
+      "Price": 11.12
+    },
+    {
+      "Score": 45.5,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "NEGATİF",
+      "Analysis": "Trend: YATAY, RSI: 34.14",
+      "Indicators": {
+        "RSI_14": 34.14,
+        "EMA_20": 39.63,
+        "EMA_50": 39.02,
+        "EMA_200": 30.8
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 39.27,
+          "MA21": 37.31,
+          "MA50": 30.88,
+          "MA200": 30.88,
+          "SuperTrend": "DÜŞÜŞ"
+        },
+        "Monthly": {
+          "MA8": 32.02,
+          "MA21": 30.88,
+          "MA50": 30.88,
+          "MA200": 30.88,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 31.35,
+          "MA21": 31.35,
+          "MA50": 31.35,
+          "MA200": 31.35,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 39.01568127074264,
+      "Daily_EMA200": 30.7962034290915,
+      "Daily_Close": 33.31999969482422,
+      "Symbol": "ECOGR.IS",
+      "Change_Pct": -9.31,
+      "Volume": 3303169.0,
+      "Money_Volume": 110061590.07195282,
+      "Price": 33.32
+    },
+    {
+      "Score": 28.0,
+      "Status": "SAT",
+      "Trend": "DÜŞÜŞ",
+      "Momentum": "NEGATİF",
+      "Analysis": "Trend: DÜŞÜŞ, RSI: 44.53",
+      "Indicators": {
+        "RSI_14": 44.53,
+        "EMA_20": 13.46,
+        "EMA_50": 13.47,
+        "EMA_200": 10.94
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 13.65,
+          "MA21": 13.05,
+          "MA50": 10.02,
+          "MA200": 9.62,
+          "SuperTrend": "DÜŞÜŞ"
+        },
+        "Monthly": {
+          "MA8": 11.54,
+          "MA21": 9.44,
+          "MA50": 9.44,
+          "MA200": 9.44,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 8.63,
+          "MA21": 8.63,
+          "MA50": 8.63,
+          "MA200": 8.63,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 13.468266123649373,
+      "Daily_EMA200": 10.944200968711517,
+      "Daily_Close": 12.039999961853027,
+      "Symbol": "CEMZY.IS",
+      "Change_Pct": -8.72,
+      "Volume": 1766308.0,
+      "Money_Volume": 21266348.252620697,
+      "Price": 12.04
+    },
+    {
+      "Score": 50.0,
+      "Status": "UNKNOWN",
+      "Trend": "UNKNOWN",
+      "Momentum": "UNKNOWN",
+      "Analysis": "Yetersiz Veri",
+      "Symbol": "EKDMR.IS",
+      "Change_Pct": -7.83,
+      "Volume": 4130575.0,
+      "Money_Volume": 193971798.21834564,
+      "Price": 46.96
+    },
+    {
+      "Score": 50.0,
+      "Status": "UNKNOWN",
+      "Trend": "UNKNOWN",
+      "Momentum": "UNKNOWN",
+      "Analysis": "Yetersiz Veri",
+      "Symbol": "EKIM.IS",
+      "Change_Pct": -7.55,
+      "Volume": 5360575.0,
+      "Money_Volume": 105067272.04489708,
+      "Price": 19.6
+    },
+    {
+      "Score": 23.5,
+      "Status": "SAT",
+      "Trend": "DÜŞÜŞ",
+      "Momentum": "AŞIRI SATIM (Oversold)",
+      "Analysis": "Trend: DÜŞÜŞ, RSI: 12.94",
+      "Indicators": {
+        "RSI_14": 12.94,
+        "EMA_20": 157.39,
+        "EMA_50": 157.81,
+        "EMA_200": 123.86
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 160.69,
+          "MA21": 142.66,
+          "MA50": 115.86,
+          "MA200": 115.86,
+          "SuperTrend": "DÜŞÜŞ"
+        },
+        "Monthly": {
+          "MA8": 123.91,
+          "MA21": 116.74,
+          "MA50": 116.74,
+          "MA200": 116.74,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 122.93,
+          "MA21": 122.93,
+          "MA50": 122.93,
+          "MA200": 122.93,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 157.81286580120351,
+      "Daily_EMA200": 123.8622153533278,
+      "Daily_Close": 128.8000030517578,
+      "Symbol": "DOFRB.IS",
+      "Change_Pct": -7.54,
+      "Volume": 1087516.0,
+      "Money_Volume": 140072064.11883545,
+      "Price": 128.8
+    },
+    {
+      "Score": 45.5,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "NEGATİF",
+      "Analysis": "Trend: YATAY, RSI: 40.91",
+      "Indicators": {
+        "RSI_14": 40.91,
+        "EMA_20": 12.92,
+        "EMA_50": 12.57,
+        "EMA_200": 11.23
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 12.7,
+          "MA21": 12.08,
+          "MA50": 10.78,
+          "MA200": 10.59,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 11.44,
+          "MA21": 10.38,
+          "MA50": 10.38,
+          "MA200": 10.38,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 10.02,
+          "MA21": 10.02,
+          "MA50": 10.02,
+          "MA200": 10.02,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 12.572099049914733,
+      "Daily_EMA200": 11.23457280953001,
+      "Daily_Close": 12.199999809265137,
+      "Symbol": "OZYSR.IS",
+      "Change_Pct": -7.51,
+      "Volume": 702536.0,
+      "Money_Volume": 8570939.066001892,
+      "Price": 12.2
+    },
+    {
+      "Score": 89.5,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 60.33",
+      "Indicators": {
+        "RSI_14": 60.33,
+        "EMA_20": 98.88,
+        "EMA_50": 90.87,
+        "EMA_200": 74.27
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 91.67,
+          "MA21": 84.27,
+          "MA50": 67.76,
+          "MA200": 66.31,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 79.12,
+          "MA21": 65.65,
+          "MA50": 65.65,
+          "MA200": 65.65,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 70.88,
+          "MA21": 70.88,
+          "MA50": 70.88,
+          "MA200": 70.88,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 90.87296821227866,
+      "Daily_EMA200": 74.27429818632072,
+      "Daily_Close": 99.0999984741211,
+      "Symbol": "AKSEN.IS",
+      "Change_Pct": -7.3,
+      "Volume": 1249268.0,
+      "Money_Volume": 123802456.89376831,
+      "Price": 99.1
+    },
+    {
+      "Score": 23.5,
+      "Status": "SAT",
+      "Trend": "DÜŞÜŞ",
+      "Momentum": "AŞIRI SATIM (Oversold)",
+      "Analysis": "Trend: DÜŞÜŞ, RSI: 28.18",
+      "Indicators": {
+        "RSI_14": 28.18,
+        "EMA_20": 142.66,
+        "EMA_50": 147.87,
+        "EMA_200": 114.93
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 148.25,
+          "MA21": 149.11,
+          "MA50": 137.25,
+          "MA200": 137.25,
+          "SuperTrend": "DÜŞÜŞ"
+        },
+        "Monthly": {
+          "MA8": 132.67,
+          "MA21": 132.67,
+          "MA50": 132.67,
+          "MA200": 132.67,
+          "SuperTrend": "DÜŞÜŞ"
+        },
+        "Month_6": {
+          "MA8": 106.37,
+          "MA21": 106.37,
+          "MA50": 106.37,
+          "MA200": 106.37,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 147.8658742497867,
+      "Daily_EMA200": 114.93185454198915,
+      "Daily_Close": 122.9000015258789,
+      "Symbol": "NETCD.IS",
+      "Change_Pct": -7.25,
+      "Volume": 929030.0,
+      "Money_Volume": 114177788.41758728,
+      "Price": 122.9
+    },
+    {
+      "Score": 54.5,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: YATAY, RSI: 59.04",
+      "Indicators": {
+        "RSI_14": 59.04,
+        "EMA_20": 74.5,
+        "EMA_50": 75.97,
+        "EMA_200": 66.34
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 76.51,
+          "MA21": 77.49,
+          "MA50": 60.38,
+          "MA200": 58.72,
+          "SuperTrend": "DÜŞÜŞ"
+        },
+        "Monthly": {
+          "MA8": 73.13,
+          "MA21": 58.79,
+          "MA50": 58.79,
+          "MA200": 58.79,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 56.95,
+          "MA21": 56.95,
+          "MA50": 56.95,
+          "MA200": 56.95,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 75.9748675923497,
+      "Daily_EMA200": 66.33856006446283,
+      "Daily_Close": 75.44999694824219,
+      "Symbol": "MEGMT.IS",
+      "Change_Pct": -6.91,
+      "Volume": 2412280.0,
+      "Money_Volume": 182006518.63830566,
+      "Price": 75.45
+    },
+    {
+      "Score": 28.0,
+      "Status": "SAT",
+      "Trend": "DÜŞÜŞ",
+      "Momentum": "NEGATİF",
+      "Analysis": "Trend: DÜŞÜŞ, RSI: 37.78",
+      "Indicators": {
+        "RSI_14": 37.78,
+        "EMA_20": 30.71,
+        "EMA_50": 31.12,
+        "EMA_200": 25.5
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 29.99,
+          "MA21": 32.46,
+          "MA50": 21.86,
+          "MA200": 21.13,
+          "SuperTrend": "DÜŞÜŞ"
+        },
+        "Monthly": {
+          "MA8": 27.62,
+          "MA21": 20.98,
+          "MA50": 20.98,
+          "MA200": 20.98,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 18.16,
+          "MA21": 18.16,
+          "MA50": 18.16,
+          "MA200": 18.16,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 31.119329647046914,
+      "Daily_EMA200": 25.503375898803707,
+      "Daily_Close": 28.0,
+      "Symbol": "OZRDN.IS",
+      "Change_Pct": -6.67,
+      "Volume": 29272.0,
+      "Money_Volume": 819616.0,
+      "Price": 28.0
+    },
+    {
+      "Score": 50.0,
+      "Status": "UNKNOWN",
+      "Trend": "UNKNOWN",
+      "Momentum": "UNKNOWN",
+      "Analysis": "Yetersiz Veri",
+      "Symbol": "SOHOE.IS",
+      "Change_Pct": -6.46,
+      "Volume": 5811974.0,
+      "Money_Volume": 63118035.64461708,
+      "Price": 10.86
+    },
+    {
+      "Score": 89.5,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 65.66",
+      "Indicators": {
+        "RSI_14": 65.66,
+        "EMA_20": 4.52,
+        "EMA_50": 3.79,
+        "EMA_200": 3.03
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 3.93,
+          "MA21": 3.09,
+          "MA50": 2.91,
+          "MA200": 2.89,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 3.08,
+          "MA21": 2.99,
+          "MA50": 2.99,
+          "MA200": 2.99,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 3.63,
+          "MA21": 3.63,
+          "MA50": 3.63,
+          "MA200": 3.63,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 3.785076007099202,
+      "Daily_EMA200": 3.0256603807100086,
+      "Daily_Close": 5.519999980926514,
+      "Symbol": "KOCMT.IS",
+      "Change_Pct": -6.44,
+      "Volume": 22318222.0,
+      "Money_Volume": 123196585.0143137,
+      "Price": 5.52
+    },
+    {
+      "Score": 37.0,
+      "Status": "BEKLE",
+      "Trend": "DÜŞÜŞ",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: DÜŞÜŞ, RSI: 55.66",
+      "Indicators": {
+        "RSI_14": 55.66,
+        "EMA_20": 261.36,
+        "EMA_50": 266.99,
+        "EMA_200": 248.85
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 258.5,
+          "MA21": 272.98,
+          "MA50": 243.85,
+          "MA200": 236.55,
+          "SuperTrend": "DÜŞÜŞ"
+        },
+        "Monthly": {
+          "MA8": 271.41,
+          "MA21": 226.85,
+          "MA50": 226.85,
+          "MA200": 226.85,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 219.37,
+          "MA21": 219.37,
+          "MA50": 219.37,
+          "MA200": 219.37,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 266.9879461172483,
+      "Daily_EMA200": 248.84673202497862,
+      "Daily_Close": 257.25,
+      "Symbol": "ONCSM.IS",
+      "Change_Pct": -6.28,
+      "Volume": 73245.0,
+      "Money_Volume": 18842276.25,
+      "Price": 257.25
+    },
+    {
+      "Score": 54.5,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: YATAY, RSI: 54.65",
+      "Indicators": {
+        "RSI_14": 54.65,
+        "EMA_20": 31.17,
+        "EMA_50": 30.24,
+        "EMA_200": 28.7
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 29.9,
+          "MA21": 29.89,
+          "MA50": 28.29,
+          "MA200": 28.09,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 29.3,
+          "MA21": 28.04,
+          "MA50": 28.04,
+          "MA200": 28.04,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 28.84,
+          "MA21": 28.84,
+          "MA50": 28.84,
+          "MA200": 28.84,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 30.240920352726775,
+      "Daily_EMA200": 28.697709544044287,
+      "Daily_Close": 30.5,
+      "Symbol": "EGEGY.IS",
+      "Change_Pct": -6.15,
+      "Volume": 212927.0,
+      "Money_Volume": 6494273.5,
+      "Price": 30.5
+    },
+    {
+      "Score": 89.5,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 57.93",
+      "Indicators": {
+        "RSI_14": 57.93,
+        "EMA_20": 3.51,
+        "EMA_50": 3.37,
+        "EMA_200": 2.98
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 3.49,
+          "MA21": 3.09,
+          "MA50": 2.92,
+          "MA200": 2.92,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 2.88,
+          "MA21": 2.87,
+          "MA50": 2.87,
+          "MA200": 2.87,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 2.96,
+          "MA21": 2.96,
+          "MA50": 2.96,
+          "MA200": 2.96,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 3.370367916330518,
+      "Daily_EMA200": 2.9831092287259353,
+      "Daily_Close": 3.509999990463257,
+      "Symbol": "PSGYO.IS",
+      "Change_Pct": -6.15,
+      "Volume": 35303733.0,
+      "Money_Volume": 123916102.49331737,
+      "Price": 3.51
+    }
+  ],
+  "high_volume": [
+    {
+      "Score": 28.0,
+      "Status": "SAT",
+      "Trend": "DÜŞÜŞ",
+      "Momentum": "NEGATİF",
+      "Analysis": "Trend: DÜŞÜŞ, RSI: 37.05",
+      "Indicators": {
+        "RSI_14": 37.05,
+        "EMA_20": 365.59,
+        "EMA_50": 372.05,
+        "EMA_200": 323.14
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 372.84,
+          "MA21": 377.45,
+          "MA50": 292.63,
+          "MA200": 286.15,
+          "SuperTrend": "DÜŞÜŞ"
+        },
+        "Monthly": {
+          "MA8": 333.62,
+          "MA21": 280.02,
+          "MA50": 280.02,
+          "MA200": 280.02,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 278.75,
+          "MA21": 278.75,
+          "MA50": 278.75,
+          "MA200": 278.75,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 372.0522113444624,
+      "Daily_EMA200": 323.14360712206377,
+      "Daily_Close": 346.25,
+      "Symbol": "ASELS.IS",
+      "Change_Pct": -3.28,
+      "Volume": 5783930.0,
+      "Money_Volume": 2002685762.5,
+      "Price": 346.25
+    },
+    {
+      "Score": 45.5,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "NEGATİF",
+      "Analysis": "Trend: YATAY, RSI: 37.63",
+      "Indicators": {
+        "RSI_14": 37.63,
+        "EMA_20": 322.85,
+        "EMA_50": 319.48,
+        "EMA_200": 306.7
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 324.94,
+          "MA21": 311.88,
+          "MA50": 304.46,
+          "MA200": 304.67,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 302.44,
+          "MA21": 301.18,
+          "MA50": 301.18,
+          "MA200": 301.18,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 301.1,
+          "MA21": 301.1,
+          "MA50": 301.1,
+          "MA200": 301.1,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 319.47838546706413,
+      "Daily_EMA200": 306.7010846076427,
+      "Daily_Close": 314.25,
+      "Symbol": "THYAO.IS",
+      "Change_Pct": -1.49,
+      "Volume": 6241131.0,
+      "Money_Volume": 1961275416.75,
+      "Price": 314.25
+    },
+    {
+      "Score": 45.5,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "NEGATİF",
+      "Analysis": "Trend: YATAY, RSI: 35.02",
+      "Indicators": {
+        "RSI_14": 35.02,
+        "EMA_20": 298.03,
+        "EMA_50": 294.27,
+        "EMA_200": 222.32
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 294.28,
+          "MA21": 270.49,
+          "MA50": 184.79,
+          "MA200": 180.35,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 226.12,
+          "MA21": 178.2,
+          "MA50": 178.2,
+          "MA200": 178.2,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 179.66,
+          "MA21": 179.66,
+          "MA50": 179.66,
+          "MA200": 179.66,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 294.26951840730806,
+      "Daily_EMA200": 222.32234458197678,
+      "Daily_Close": 276.0,
+      "Symbol": "ASTOR.IS",
+      "Change_Pct": -0.54,
+      "Volume": 4783505.0,
+      "Money_Volume": 1320247380.0,
+      "Price": 276.0
+    },
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 74.13",
+      "Indicators": {
+        "RSI_14": 74.13,
+        "EMA_20": 281.22,
+        "EMA_50": 262.25,
+        "EMA_200": 229.13
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 260.82,
+          "MA21": 255.87,
+          "MA50": 217.73,
+          "MA200": 213.99,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 239.14,
+          "MA21": 214.18,
+          "MA50": 214.18,
+          "MA200": 214.18,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 229.72,
+          "MA21": 229.72,
+          "MA50": 229.72,
+          "MA200": 229.72,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 262.25205495056645,
+      "Daily_EMA200": 229.13149410454434,
+      "Daily_Close": 298.0,
+      "Symbol": "TUPRS.IS",
+      "Change_Pct": 1.53,
+      "Volume": 4113596.0,
+      "Money_Volume": 1225851608.0,
+      "Price": 298.0
+    },
+    {
+      "Score": 41.0,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "AŞIRI SATIM (Oversold)",
+      "Analysis": "Trend: YATAY, RSI: 28.35",
+      "Indicators": {
+        "RSI_14": 28.35,
+        "EMA_20": 48.96,
+        "EMA_50": 48.24,
+        "EMA_200": 43.31
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 48.77,
+          "MA21": 46.65,
+          "MA50": 41.24,
+          "MA200": 40.22,
+          "SuperTrend": "DÜŞÜŞ"
+        },
+        "Monthly": {
+          "MA8": 46.8,
+          "MA21": 39.1,
+          "MA50": 39.1,
+          "MA200": 39.1,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 40.61,
+          "MA21": 40.61,
+          "MA50": 40.61,
+          "MA200": 40.61,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 48.237297681595074,
+      "Daily_EMA200": 43.31219979711495,
+      "Daily_Close": 44.36000061035156,
+      "Symbol": "TRALT.IS",
+      "Change_Pct": -4.52,
+      "Volume": 26276966.0,
+      "Money_Volume": 1165646227.7981873,
+      "Price": 44.36
+    },
+    {
+      "Score": 89.5,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 58.64",
+      "Indicators": {
+        "RSI_14": 58.64,
+        "EMA_20": 42.15,
+        "EMA_50": 40.17,
+        "EMA_200": 33.48
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 41.24,
+          "MA21": 36.54,
+          "MA50": 30.82,
+          "MA200": 30.6,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 33.43,
+          "MA21": 30.99,
+          "MA50": 30.99,
+          "MA200": 30.99,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 32.15,
+          "MA21": 32.15,
+          "MA50": 32.15,
+          "MA200": 32.15,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 40.16824743238245,
+      "Daily_EMA200": 33.483444754748376,
+      "Daily_Close": 42.279998779296875,
+      "Symbol": "EREGL.IS",
+      "Change_Pct": -3.6,
+      "Volume": 24532284.0,
+      "Money_Volume": 1037224937.5733643,
+      "Price": 42.28
+    },
+    {
+      "Score": 89.5,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 55.3",
+      "Indicators": {
+        "RSI_14": 55.3,
+        "EMA_20": 383.78,
+        "EMA_50": 378.7,
+        "EMA_200": 341.54
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 377.38,
+          "MA21": 372.68,
+          "MA50": 321.39,
+          "MA200": 317.81,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 345.19,
+          "MA21": 313.66,
+          "MA50": 313.66,
+          "MA200": 313.66,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 325.78,
+          "MA21": 325.78,
+          "MA50": 325.78,
+          "MA200": 325.78,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 378.69563157419327,
+      "Daily_EMA200": 341.53631861733635,
+      "Daily_Close": 387.5,
+      "Symbol": "BIMAS.IS",
+      "Change_Pct": -0.51,
+      "Volume": 2147157.0,
+      "Money_Volume": 832023337.5,
+      "Price": 387.5
+    },
+    {
+      "Score": 50.0,
+      "Status": "UNKNOWN",
+      "Trend": "UNKNOWN",
+      "Momentum": "UNKNOWN",
+      "Analysis": "Yetersiz Veri",
+      "Symbol": "ISVEA.IS",
+      "Change_Pct": 20.96,
+      "Volume": 18650352.0,
+      "Money_Volume": 809425305.2581787,
+      "Price": 43.4
+    },
+    {
+      "Score": 41.0,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "AŞIRI SATIM (Oversold)",
+      "Analysis": "Trend: YATAY, RSI: 22.49",
+      "Indicators": {
+        "RSI_14": 22.49,
+        "EMA_20": 171.43,
+        "EMA_50": 159.85,
+        "EMA_200": 94.39
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 173.77,
+          "MA21": 127.33,
+          "MA50": 66.02,
+          "MA200": 62.8,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 92.64,
+          "MA21": 61.93,
+          "MA50": 61.93,
+          "MA200": 61.93,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 65.34,
+          "MA21": 65.34,
+          "MA50": 65.34,
+          "MA200": 65.34,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 159.84735988838736,
+      "Daily_EMA200": 94.3897108430441,
+      "Daily_Close": 148.3000030517578,
+      "Symbol": "KTLEV.IS",
+      "Change_Pct": -5.72,
+      "Volume": 4315011.0,
+      "Money_Volume": 639916144.4683685,
+      "Price": 148.3
+    },
+    {
+      "Score": 41.0,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "AŞIRI SATIM (Oversold)",
+      "Analysis": "Trend: YATAY, RSI: 28.64",
+      "Indicators": {
+        "RSI_14": 28.64,
+        "EMA_20": 38.7,
+        "EMA_50": 38.29,
+        "EMA_200": 32.29
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 38.26,
+          "MA21": 35.96,
+          "MA50": 29.96,
+          "MA200": 29.17,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 33.81,
+          "MA21": 28.9,
+          "MA50": 28.9,
+          "MA200": 28.9,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 28.01,
+          "MA21": 28.01,
+          "MA50": 28.01,
+          "MA200": 28.01,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 38.28887556767751,
+      "Daily_EMA200": 32.292411744654096,
+      "Daily_Close": 36.08000183105469,
+      "Symbol": "CWENE.IS",
+      "Change_Pct": -5.05,
+      "Volume": 16334009.0,
+      "Money_Volume": 589331074.6284637,
+      "Price": 36.08
+    },
+    {
+      "Score": 54.5,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: YATAY, RSI: 62.86",
+      "Indicators": {
+        "RSI_14": 62.86,
+        "EMA_20": 195.28,
+        "EMA_50": 194.67,
+        "EMA_200": 188.15
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 193.88,
+          "MA21": 195.93,
+          "MA50": 183.33,
+          "MA200": 182.79,
+          "SuperTrend": "DÜŞÜŞ"
+        },
+        "Monthly": {
+          "MA8": 190.99,
+          "MA21": 182.45,
+          "MA50": 182.45,
+          "MA200": 182.45,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 188.68,
+          "MA21": 188.68,
+          "MA50": 188.68,
+          "MA200": 188.68,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 194.67183191425417,
+      "Daily_EMA200": 188.1483219785906,
+      "Daily_Close": 193.0,
+      "Symbol": "KCHOL.IS",
+      "Change_Pct": -1.03,
+      "Volume": 2664708.0,
+      "Money_Volume": 514288644.0,
+      "Price": 193.0
+    },
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 89.28",
+      "Indicators": {
+        "RSI_14": 89.28,
+        "EMA_20": 2680.32,
+        "EMA_50": 1999.63,
+        "EMA_200": 938.5
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 2241.75,
+          "MA21": 1216.17,
+          "MA50": 622.42,
+          "MA200": 600.28,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 952.57,
+          "MA21": 668.98,
+          "MA50": 668.98,
+          "MA200": 668.98,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 1313.13,
+          "MA21": 1313.13,
+          "MA50": 1313.13,
+          "MA200": 1313.13,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 1999.6291811628482,
+      "Daily_EMA200": 938.4991462850495,
+      "Daily_Close": 3545.0,
+      "Symbol": "OZATD.IS",
+      "Change_Pct": -5.97,
+      "Volume": 134260.0,
+      "Money_Volume": 475951700.0,
+      "Price": 3545.0
+    },
+    {
+      "Score": 54.5,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: YATAY, RSI: 67.02",
+      "Indicators": {
+        "RSI_14": 67.02,
+        "EMA_20": 41.14,
+        "EMA_50": 39.94,
+        "EMA_200": 34.55
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 40.38,
+          "MA21": 37.8,
+          "MA50": 31.99,
+          "MA200": 31.76,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 34.58,
+          "MA21": 31.9,
+          "MA50": 31.9,
+          "MA200": 31.9,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 32.54,
+          "MA21": 32.54,
+          "MA50": 32.54,
+          "MA200": 32.54,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 39.93622814238933,
+      "Daily_EMA200": 34.55108945997385,
+      "Daily_Close": 40.84000015258789,
+      "Symbol": "KRDMD.IS",
+      "Change_Pct": -3.68,
+      "Volume": 10044453.0,
+      "Money_Volume": 410215462.0526619,
+      "Price": 40.84
+    },
+    {
+      "Score": 50.0,
+      "Status": "UNKNOWN",
+      "Trend": "UNKNOWN",
+      "Momentum": "UNKNOWN",
+      "Analysis": "Yetersiz Veri",
+      "Symbol": "BETAE.IS",
+      "Change_Pct": -0.75,
+      "Volume": 4880973.0,
+      "Money_Volume": 389745686.60222626,
+      "Price": 79.85
+    },
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 95.5",
+      "Indicators": {
+        "RSI_14": 95.5,
+        "EMA_20": 41.09,
+        "EMA_50": 36.35,
+        "EMA_200": 28.14
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 39.17,
+          "MA21": 29.48,
+          "MA50": 28.8,
+          "MA200": 28.35,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 26.83,
+          "MA21": 28.53,
+          "MA50": 28.53,
+          "MA200": 28.53,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 25.77,
+          "MA21": 25.77,
+          "MA50": 25.77,
+          "MA200": 25.77,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 36.35204682220837,
+      "Daily_EMA200": 28.139752201576034,
+      "Daily_Close": 45.7599983215332,
+      "Symbol": "TEHOL.IS",
+      "Change_Pct": 4.67,
+      "Volume": 7049706.0,
+      "Money_Volume": 322594534.72730255,
+      "Price": 45.76
+    },
+    {
+      "Score": 76.5,
+      "Status": "AL",
+      "Trend": "YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: YÜKSELİŞ, RSI: 80.04",
+      "Indicators": {
+        "RSI_14": 80.04,
+        "EMA_20": 17.41,
+        "EMA_50": 15.53,
+        "EMA_200": 17.14
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 16.69,
+          "MA21": 13.08,
+          "MA50": 18.97,
+          "MA200": 19.22,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 17.11,
+          "MA21": 19.23,
+          "MA50": 19.23,
+          "MA200": 19.23,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 22.56,
+          "MA21": 22.56,
+          "MA50": 22.56,
+          "MA200": 22.56,
+          "SuperTrend": "DÜŞÜŞ"
+        }
+      },
+      "Daily_EMA50": 15.532125921947808,
+      "Daily_EMA200": 17.14446586223686,
+      "Daily_Close": 21.31999969482422,
+      "Symbol": "EFOR.IS",
+      "Change_Pct": 3.39,
+      "Volume": 13011557.0,
+      "Money_Volume": 277406391.2691879,
+      "Price": 21.32
+    },
+    {
+      "Score": 50.0,
+      "Status": "UNKNOWN",
+      "Trend": "UNKNOWN",
+      "Momentum": "UNKNOWN",
+      "Analysis": "Yetersiz Veri",
+      "Symbol": "ORZAX.IS",
+      "Change_Pct": -2.93,
+      "Volume": 2688663.0,
+      "Money_Volume": 276394564.6051483,
+      "Price": 102.8
+    },
+    {
+      "Score": 76.5,
+      "Status": "AL",
+      "Trend": "YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: YÜKSELİŞ, RSI: 90.34",
+      "Indicators": {
+        "RSI_14": 90.34,
+        "EMA_20": 111.32,
+        "EMA_50": 111.05,
+        "EMA_200": 118.51
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 112.41,
+          "MA21": 115.58,
+          "MA50": 125.99,
+          "MA200": 123.89,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 127.5,
+          "MA21": 123.68,
+          "MA50": 123.68,
+          "MA200": 123.68,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 126.8,
+          "MA21": 126.8,
+          "MA50": 126.8,
+          "MA200": 126.8,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 111.05433546225228,
+      "Daily_EMA200": 118.50644554698277,
+      "Daily_Close": 139.5,
+      "Symbol": "PASEU.IS",
+      "Change_Pct": 9.84,
+      "Volume": 1968375.0,
+      "Money_Volume": 274588312.5,
+      "Price": 139.5
+    },
+    {
+      "Score": 28.0,
+      "Status": "SAT",
+      "Trend": "DÜŞÜŞ",
+      "Momentum": "NEGATİF",
+      "Analysis": "Trend: DÜŞÜŞ, RSI: 45.16",
+      "Indicators": {
+        "RSI_14": 45.16,
+        "EMA_20": 638.1,
+        "EMA_50": 648.26,
+        "EMA_200": 610.73
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 649.0,
+          "MA21": 644.47,
+          "MA50": 576.45,
+          "MA200": 572.94,
+          "SuperTrend": "DÜŞÜŞ"
+        },
+        "Monthly": {
+          "MA8": 623.0,
+          "MA21": 567.94,
+          "MA50": 567.94,
+          "MA200": 567.94,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 592.31,
+          "MA21": 592.31,
+          "MA50": 592.31,
+          "MA200": 592.31,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 648.2619898999776,
+      "Daily_EMA200": 610.7301519303614,
+      "Daily_Close": 627.5,
+      "Symbol": "MGROS.IS",
+      "Change_Pct": -1.03,
+      "Volume": 386825.0,
+      "Money_Volume": 242732687.5,
+      "Price": 627.5
+    },
+    {
+      "Score": 89.5,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 60.0",
+      "Indicators": {
+        "RSI_14": 60.0,
+        "EMA_20": 14.62,
+        "EMA_50": 14.25,
+        "EMA_200": 12.55
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 14.23,
+          "MA21": 14.14,
+          "MA50": 12.21,
+          "MA200": 11.89,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 13.53,
+          "MA21": 11.66,
+          "MA50": 11.66,
+          "MA200": 11.66,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 10.03,
+          "MA21": 10.03,
+          "MA50": 10.03,
+          "MA200": 10.03,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 14.254761446703759,
+      "Daily_EMA200": 12.549134111510554,
+      "Daily_Close": 14.699999809265137,
+      "Symbol": "PEKGY.IS",
+      "Change_Pct": -0.68,
+      "Volume": 15405531.0,
+      "Money_Volume": 226461302.76162815,
+      "Price": 14.7
+    }
+  ],
+  "low_volume": [
+    {
+      "Score": 28.0,
+      "Status": "SAT",
+      "Trend": "DÜŞÜŞ",
+      "Momentum": "NEGATİF",
+      "Analysis": "Trend: DÜŞÜŞ, RSI: 34.23",
+      "Indicators": {
+        "RSI_14": 34.23,
+        "EMA_20": 31.84,
+        "EMA_50": 32.08,
+        "EMA_200": 26.97
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 32.65,
+          "MA21": 31.88,
+          "MA50": 23.6,
+          "MA200": 23.25,
+          "SuperTrend": "DÜŞÜŞ"
+        },
+        "Monthly": {
+          "MA8": 27.78,
+          "MA21": 23.21,
+          "MA50": 23.21,
+          "MA200": 23.21,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 22.42,
+          "MA21": 22.42,
+          "MA50": 22.42,
+          "MA200": 22.42,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 32.080178165859394,
+      "Daily_EMA200": 26.97445058213489,
+      "Daily_Close": 30.81999969482422,
+      "Symbol": "AYES.IS",
+      "Change_Pct": 2.26,
+      "Volume": 1126.0,
+      "Money_Volume": 34703.31965637207,
+      "Price": 30.82
+    },
+    {
+      "Score": 54.5,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: YATAY, RSI: 66.67",
+      "Indicators": {
+        "RSI_14": 66.67,
+        "EMA_20": 302.4,
+        "EMA_50": 301.9,
+        "EMA_200": 299.58
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 295.97,
+          "MA21": 309.87,
+          "MA50": 289.62,
+          "MA200": 288.58,
+          "SuperTrend": "DÜŞÜŞ"
+        },
+        "Monthly": {
+          "MA8": 310.69,
+          "MA21": 291.88,
+          "MA50": 291.88,
+          "MA200": 291.88,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 311.25,
+          "MA21": 311.25,
+          "MA50": 311.25,
+          "MA200": 311.25,
+          "SuperTrend": "DÜŞÜŞ"
+        }
+      },
+      "Daily_EMA50": 301.8958449344429,
+      "Daily_EMA200": 299.5825896818075,
+      "Daily_Close": 300.0,
+      "Symbol": "GATEG.IS",
+      "Change_Pct": -2.6,
+      "Volume": 163.0,
+      "Money_Volume": 48900.0,
+      "Price": 300.0
+    },
+    {
+      "Score": 89.5,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 52.07",
+      "Indicators": {
+        "RSI_14": 52.07,
+        "EMA_20": 17.91,
+        "EMA_50": 15.76,
+        "EMA_200": 12.7
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 17.15,
+          "MA21": 12.2,
+          "MA50": 13.5,
+          "MA200": 13.38,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 11.22,
+          "MA21": 12.7,
+          "MA50": 12.7,
+          "MA200": 12.7,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 12.05,
+          "MA21": 12.05,
+          "MA50": 12.05,
+          "MA200": 12.05,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 15.763039051342577,
+      "Daily_EMA200": 12.704815029490918,
+      "Daily_Close": 17.950000762939453,
+      "Symbol": "BRMEN.IS",
+      "Change_Pct": 0.45,
+      "Volume": 5804.0,
+      "Money_Volume": 104181.80442810059,
+      "Price": 17.95
+    },
+    {
+      "Score": 80.5,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "NEGATİF",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 47.57",
+      "Indicators": {
+        "RSI_14": 47.57,
+        "EMA_20": 110.7,
+        "EMA_50": 99.17,
+        "EMA_200": 75.9
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 106.88,
+          "MA21": 78.59,
+          "MA50": 71.19,
+          "MA200": 70.16,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 73.62,
+          "MA21": 71.32,
+          "MA50": 71.32,
+          "MA200": 71.32,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 74.7,
+          "MA21": 74.7,
+          "MA50": 74.7,
+          "MA200": 74.7,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 99.17470273313245,
+      "Daily_EMA200": 75.9041895684385,
+      "Daily_Close": 111.30000305175781,
+      "Symbol": "ATSYH.IS",
+      "Change_Pct": 9.12,
+      "Volume": 1576.0,
+      "Money_Volume": 175408.8048095703,
+      "Price": 111.3
+    },
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 75.24",
+      "Indicators": {
+        "RSI_14": 75.24,
+        "EMA_20": 6.86,
+        "EMA_50": 6.26,
+        "EMA_200": 4.35
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 6.82,
+          "MA21": 5.31,
+          "MA50": 3.68,
+          "MA200": 3.62,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 4.27,
+          "MA21": 3.62,
+          "MA50": 3.62,
+          "MA200": 3.62,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 4.04,
+          "MA21": 4.04,
+          "MA50": 4.04,
+          "MA200": 4.04,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 6.260747505870207,
+      "Daily_EMA200": 4.346588977906772,
+      "Daily_Close": 7.889999866485596,
+      "Symbol": "KERVN.IS",
+      "Change_Pct": 1.15,
+      "Volume": 41489.0,
+      "Money_Volume": 327348.2044606209,
+      "Price": 7.89
+    },
+    {
+      "Score": 89.5,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 56.55",
+      "Indicators": {
+        "RSI_14": 56.55,
+        "EMA_20": 12.55,
+        "EMA_50": 11.18,
+        "EMA_200": 8.05
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 11.94,
+          "MA21": 9.28,
+          "MA50": 7.0,
+          "MA200": 6.87,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 8.26,
+          "MA21": 7.0,
+          "MA50": 7.0,
+          "MA200": 7.0,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 7.74,
+          "MA21": 7.74,
+          "MA50": 7.74,
+          "MA200": 7.74,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 11.182257602640885,
+      "Daily_EMA200": 8.053340954216026,
+      "Daily_Close": 12.770000457763672,
+      "Symbol": "EUKYO.IS",
+      "Change_Pct": -3.11,
+      "Volume": 30326.0,
+      "Money_Volume": 387263.0338821411,
+      "Price": 12.77
+    },
+    {
+      "Score": 45.5,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "NEGATİF",
+      "Analysis": "Trend: YATAY, RSI: 35.37",
+      "Indicators": {
+        "RSI_14": 35.37,
+        "EMA_20": 120.5,
+        "EMA_50": 115.67,
+        "EMA_200": 102.23
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 121.81,
+          "MA21": 106.58,
+          "MA50": 98.16,
+          "MA200": 97.42,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 111.49,
+          "MA21": 99.32,
+          "MA50": 99.32,
+          "MA200": 99.32,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 90.73,
+          "MA21": 90.73,
+          "MA50": 90.73,
+          "MA200": 90.73,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 115.67451505055479,
+      "Daily_EMA200": 102.22987154670547,
+      "Daily_Close": 114.9000015258789,
+      "Symbol": "ATEKS.IS",
+      "Change_Pct": -0.61,
+      "Volume": 3545.0,
+      "Money_Volume": 407320.5054092407,
+      "Price": 114.9
+    },
+    {
+      "Score": 28.0,
+      "Status": "SAT",
+      "Trend": "DÜŞÜŞ",
+      "Momentum": "NEGATİF",
+      "Analysis": "Trend: DÜŞÜŞ, RSI: 46.76",
+      "Indicators": {
+        "RSI_14": 46.76,
+        "EMA_20": 23.71,
+        "EMA_50": 24.35,
+        "EMA_200": 22.48
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 24.26,
+          "MA21": 24.85,
+          "MA50": 21.31,
+          "MA200": 21.13,
+          "SuperTrend": "DÜŞÜŞ"
+        },
+        "Monthly": {
+          "MA8": 22.06,
+          "MA21": 20.67,
+          "MA50": 20.67,
+          "MA200": 20.67,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 19.47,
+          "MA21": 19.47,
+          "MA50": 19.47,
+          "MA200": 19.47,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 24.353307245379646,
+      "Daily_EMA200": 22.484414091320744,
+      "Daily_Close": 23.219999313354492,
+      "Symbol": "ERSU.IS",
+      "Change_Pct": 1.4,
+      "Volume": 19402.0,
+      "Money_Volume": 450514.42667770386,
+      "Price": 23.22
+    },
+    {
+      "Score": 45.5,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "NEGATİF",
+      "Analysis": "Trend: YATAY, RSI: 40.55",
+      "Indicators": {
+        "RSI_14": 40.55,
+        "EMA_20": 496490.96,
+        "EMA_50": 472808.96,
+        "EMA_200": 454768.85
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 476099.06,
+          "MA21": 438506.72,
+          "MA50": 463705.01,
+          "MA200": 463306.38,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 441575.15,
+          "MA21": 463814.31,
+          "MA50": 463814.31,
+          "MA200": 463814.31,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 461995.11,
+          "MA21": 461995.11,
+          "MA50": 461995.11,
+          "MA200": 461995.11,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 472808.9604129621,
+      "Daily_EMA200": 454768.849172368,
+      "Daily_Close": 469992.5,
+      "Symbol": "ISBTR.IS",
+      "Change_Pct": -2.09,
+      "Volume": 1.0,
+      "Money_Volume": 469992.5,
+      "Price": 469992.5
+    },
+    {
+      "Score": 72.0,
+      "Status": "AL",
+      "Trend": "YÜKSELİŞ",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: YÜKSELİŞ, RSI: 67.73",
+      "Indicators": {
+        "RSI_14": 67.73,
+        "EMA_20": 298.46,
+        "EMA_50": 272.91,
+        "EMA_200": 284.79
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 276.61,
+          "MA21": 259.69,
+          "MA50": 291.63,
+          "MA200": 300.8,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 267.19,
+          "MA21": 303.25,
+          "MA50": 303.25,
+          "MA200": 303.25,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 345.08,
+          "MA21": 345.08,
+          "MA50": 345.08,
+          "MA200": 345.08,
+          "SuperTrend": "DÜŞÜŞ"
+        }
+      },
+      "Daily_EMA50": 272.9053042271533,
+      "Daily_EMA200": 284.78610108649474,
+      "Daily_Close": 334.0,
+      "Symbol": "INTEK.IS",
+      "Change_Pct": 10.6,
+      "Volume": 2202.0,
+      "Money_Volume": 735468.0,
+      "Price": 334.0
+    },
+    {
+      "Score": 28.0,
+      "Status": "SAT",
+      "Trend": "DÜŞÜŞ",
+      "Momentum": "NEGATİF",
+      "Analysis": "Trend: DÜŞÜŞ, RSI: 37.78",
+      "Indicators": {
+        "RSI_14": 37.78,
+        "EMA_20": 30.71,
+        "EMA_50": 31.12,
+        "EMA_200": 25.5
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 29.99,
+          "MA21": 32.46,
+          "MA50": 21.86,
+          "MA200": 21.13,
+          "SuperTrend": "DÜŞÜŞ"
+        },
+        "Monthly": {
+          "MA8": 27.62,
+          "MA21": 20.98,
+          "MA50": 20.98,
+          "MA200": 20.98,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 18.16,
+          "MA21": 18.16,
+          "MA50": 18.16,
+          "MA200": 18.16,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 31.119329647046914,
+      "Daily_EMA200": 25.503375898803707,
+      "Daily_Close": 28.0,
+      "Symbol": "OZRDN.IS",
+      "Change_Pct": -6.67,
+      "Volume": 29272.0,
+      "Money_Volume": 819616.0,
+      "Price": 28.0
+    },
+    {
+      "Score": 41.0,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "AŞIRI SATIM (Oversold)",
+      "Analysis": "Trend: YATAY, RSI: 27.27",
+      "Indicators": {
+        "RSI_14": 27.27,
+        "EMA_20": 13.18,
+        "EMA_50": 12.19,
+        "EMA_200": 9.42
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 13.43,
+          "MA21": 10.23,
+          "MA50": 8.83,
+          "MA200": 8.63,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 9.34,
+          "MA21": 8.51,
+          "MA50": 8.51,
+          "MA200": 8.51,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 8.72,
+          "MA21": 8.72,
+          "MA50": 8.72,
+          "MA200": 8.72,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 12.192907771781137,
+      "Daily_EMA200": 9.416236749831082,
+      "Daily_Close": 12.800000190734863,
+      "Symbol": "ETYAT.IS",
+      "Change_Pct": -3.76,
+      "Volume": 67670.0,
+      "Money_Volume": 866176.0129070282,
+      "Price": 12.8
+    },
+    {
+      "Score": 45.5,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "NEGATİF",
+      "Analysis": "Trend: YATAY, RSI: 41.69",
+      "Indicators": {
+        "RSI_14": 41.69,
+        "EMA_20": 71.95,
+        "EMA_50": 64.52,
+        "EMA_200": 46.44
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 69.54,
+          "MA21": 50.25,
+          "MA50": 41.01,
+          "MA200": 40.31,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 44.0,
+          "MA21": 39.16,
+          "MA50": 39.16,
+          "MA200": 39.16,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 41.69,
+          "MA21": 41.69,
+          "MA50": 41.69,
+          "MA200": 41.69,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 64.52443689142385,
+      "Daily_EMA200": 46.44330058634231,
+      "Daily_Close": 63.95000076293945,
+      "Symbol": "SANEL.IS",
+      "Change_Pct": -5.47,
+      "Volume": 15719.0,
+      "Money_Volume": 1005230.0619926453,
+      "Price": 63.95
+    },
+    {
+      "Score": 54.5,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: YATAY, RSI: 59.38",
+      "Indicators": {
+        "RSI_14": 59.38,
+        "EMA_20": 1640.4,
+        "EMA_50": 1594.64,
+        "EMA_200": 1504.24
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 1618.0,
+          "MA21": 1546.48,
+          "MA50": 1489.09,
+          "MA200": 1466.67,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 1586.75,
+          "MA21": 1497.62,
+          "MA50": 1497.62,
+          "MA200": 1497.62,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 1404.67,
+          "MA21": 1404.67,
+          "MA50": 1404.67,
+          "MA200": 1404.67,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 1594.6393315645648,
+      "Daily_EMA200": 1504.2361091687264,
+      "Daily_Close": 1599.0,
+      "Symbol": "UFUK.IS",
+      "Change_Pct": -1.3,
+      "Volume": 666.0,
+      "Money_Volume": 1064934.0,
+      "Price": 1599.0
+    },
+    {
+      "Score": 45.5,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "NEGATİF",
+      "Analysis": "Trend: YATAY, RSI: 42.34",
+      "Indicators": {
+        "RSI_14": 42.34,
+        "EMA_20": 9.45,
+        "EMA_50": 9.35,
+        "EMA_200": 8.49
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 9.48,
+          "MA21": 9.1,
+          "MA50": 8.15,
+          "MA200": 8.08,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 8.57,
+          "MA21": 8.05,
+          "MA50": 8.05,
+          "MA200": 8.05,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 8.07,
+          "MA21": 8.07,
+          "MA50": 8.07,
+          "MA200": 8.07,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 9.352475899749619,
+      "Daily_EMA200": 8.493012116840156,
+      "Daily_Close": 9.1899995803833,
+      "Symbol": "AKSGY.IS",
+      "Change_Pct": -1.39,
+      "Volume": 121215.0,
+      "Money_Volume": 1113965.7991361618,
+      "Price": 9.19
+    },
+    {
+      "Score": 54.5,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: YATAY, RSI: 58.37",
+      "Indicators": {
+        "RSI_14": 58.37,
+        "EMA_20": 43.95,
+        "EMA_50": 43.69,
+        "EMA_200": 41.72
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 42.86,
+          "MA21": 43.11,
+          "MA50": 40.89,
+          "MA200": 40.43,
+          "SuperTrend": "DÜŞÜŞ"
+        },
+        "Monthly": {
+          "MA8": 43.11,
+          "MA21": 39.98,
+          "MA50": 39.98,
+          "MA200": 39.98,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 40.1,
+          "MA21": 40.1,
+          "MA50": 40.1,
+          "MA200": 40.1,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 43.68677124711513,
+      "Daily_EMA200": 41.722669790764336,
+      "Daily_Close": 43.060001373291016,
+      "Symbol": "TRCAS.IS",
+      "Change_Pct": -2.09,
+      "Volume": 36425.0,
+      "Money_Volume": 1568460.5500221252,
+      "Price": 43.06
+    },
+    {
+      "Score": 45.5,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "NEGATİF",
+      "Analysis": "Trend: YATAY, RSI: 50.0",
+      "Indicators": {
+        "RSI_14": 50.0,
+        "EMA_20": 92.24,
+        "EMA_50": 90.99,
+        "EMA_200": 74.33
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 92.75,
+          "MA21": 87.74,
+          "MA50": 64.95,
+          "MA200": 63.69,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 74.7,
+          "MA21": 63.12,
+          "MA50": 63.12,
+          "MA200": 63.12,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 63.08,
+          "MA21": 63.08,
+          "MA50": 63.08,
+          "MA200": 63.08,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 90.98584805926943,
+      "Daily_EMA200": 74.33164324239394,
+      "Daily_Close": 89.0,
+      "Symbol": "VANGD.IS",
+      "Change_Pct": -1.66,
+      "Volume": 17947.0,
+      "Money_Volume": 1597283.0,
+      "Price": 89.0
+    },
+    {
+      "Score": 89.5,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 52.43",
+      "Indicators": {
+        "RSI_14": 52.43,
+        "EMA_20": 159.05,
+        "EMA_50": 147.43,
+        "EMA_200": 115.5
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 155.64,
+          "MA21": 134.27,
+          "MA50": 104.91,
+          "MA200": 102.92,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 116.86,
+          "MA21": 102.94,
+          "MA50": 102.94,
+          "MA200": 102.94,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 106.57,
+          "MA21": 106.57,
+          "MA50": 106.57,
+          "MA200": 106.57,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 147.4254051991591,
+      "Daily_EMA200": 115.49937277766281,
+      "Daily_Close": 163.1999969482422,
+      "Symbol": "PAGYO.IS",
+      "Change_Pct": -5.12,
+      "Volume": 11903.0,
+      "Money_Volume": 1942569.5636749268,
+      "Price": 163.2
+    },
+    {
+      "Score": 41.0,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "AŞIRI SATIM (Oversold)",
+      "Analysis": "Trend: YATAY, RSI: 18.35",
+      "Indicators": {
+        "RSI_14": 18.35,
+        "EMA_20": 49.88,
+        "EMA_50": 49.39,
+        "EMA_200": 44.3
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 51.01,
+          "MA21": 46.63,
+          "MA50": 42.15,
+          "MA200": 41.95,
+          "SuperTrend": "DÜŞÜŞ"
+        },
+        "Monthly": {
+          "MA8": 42.79,
+          "MA21": 41.07,
+          "MA50": 41.07,
+          "MA200": 41.07,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 40.97,
+          "MA21": 40.97,
+          "MA50": 40.97,
+          "MA200": 40.97,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 49.38876330659676,
+      "Daily_EMA200": 44.302593261324105,
+      "Daily_Close": 45.560001373291016,
+      "Symbol": "BAKAB.IS",
+      "Change_Pct": -0.18,
+      "Volume": 49632.0,
+      "Money_Volume": 2261233.9881591797,
+      "Price": 45.56
+    },
+    {
+      "Score": 45.5,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "NEGATİF",
+      "Analysis": "Trend: YATAY, RSI: 40.46",
+      "Indicators": {
+        "RSI_14": 40.46,
+        "EMA_20": 15.45,
+        "EMA_50": 14.8,
+        "EMA_200": 13.21
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 15.18,
+          "MA21": 13.55,
+          "MA50": 13.16,
+          "MA200": 13.09,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 12.23,
+          "MA21": 12.54,
+          "MA50": 12.54,
+          "MA200": 12.54,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 11.71,
+          "MA21": 11.71,
+          "MA50": 11.71,
+          "MA200": 11.71,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 14.795586112120144,
+      "Daily_EMA200": 13.20734442614544,
+      "Daily_Close": 13.869999885559082,
+      "Symbol": "AVGYO.IS",
+      "Change_Pct": -5.9,
+      "Volume": 164144.0,
+      "Money_Volume": 2276677.26121521,
+      "Price": 13.87
+    }
+  ],
+  "favorites": [
+    {
+      "Score": 94.0,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "AŞIRI ALIM (Overbought)",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 74.13",
+      "Indicators": {
+        "RSI_14": 74.13,
+        "EMA_20": 281.22,
+        "EMA_50": 262.25,
+        "EMA_200": 229.13
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 260.82,
+          "MA21": 255.87,
+          "MA50": 217.73,
+          "MA200": 213.99,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 239.14,
+          "MA21": 214.18,
+          "MA50": 214.18,
+          "MA200": 214.18,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 229.72,
+          "MA21": 229.72,
+          "MA50": 229.72,
+          "MA200": 229.72,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 262.25205495056645,
+      "Daily_EMA200": 229.13149410454434,
+      "Daily_Close": 298.0,
+      "Symbol": "TUPRS.IS",
+      "Change_Pct": 1.53,
+      "Volume": 4113596.0,
+      "Money_Volume": 1225851608.0,
+      "Price": 298.0
+    },
+    {
+      "Score": 89.5,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 55.3",
+      "Indicators": {
+        "RSI_14": 55.3,
+        "EMA_20": 383.78,
+        "EMA_50": 378.7,
+        "EMA_200": 341.54
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 377.38,
+          "MA21": 372.68,
+          "MA50": 321.39,
+          "MA200": 317.81,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 345.19,
+          "MA21": 313.66,
+          "MA50": 313.66,
+          "MA200": 313.66,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 325.78,
+          "MA21": 325.78,
+          "MA50": 325.78,
+          "MA200": 325.78,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 378.69563157419327,
+      "Daily_EMA200": 341.53631861733635,
+      "Daily_Close": 387.5,
+      "Symbol": "BIMAS.IS",
+      "Change_Pct": -0.51,
+      "Volume": 2147157.0,
+      "Money_Volume": 832023337.5,
+      "Price": 387.5
+    },
+    {
+      "Score": 89.5,
+      "Status": "AL",
+      "Trend": "GÜÇLÜ YÜKSELİŞ",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: GÜÇLÜ YÜKSELİŞ, RSI: 58.64",
+      "Indicators": {
+        "RSI_14": 58.64,
+        "EMA_20": 42.15,
+        "EMA_50": 40.17,
+        "EMA_200": 33.48
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 41.24,
+          "MA21": 36.54,
+          "MA50": 30.82,
+          "MA200": 30.6,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 33.43,
+          "MA21": 30.99,
+          "MA50": 30.99,
+          "MA200": 30.99,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 32.15,
+          "MA21": 32.15,
+          "MA50": 32.15,
+          "MA200": 32.15,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 40.16824743238245,
+      "Daily_EMA200": 33.483444754748376,
+      "Daily_Close": 42.279998779296875,
+      "Symbol": "EREGL.IS",
+      "Change_Pct": -3.6,
+      "Volume": 24532284.0,
+      "Money_Volume": 1037224937.5733643,
+      "Price": 42.28
+    },
+    {
+      "Score": 54.5,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "POZİTİF",
+      "Analysis": "Trend: YATAY, RSI: 62.86",
+      "Indicators": {
+        "RSI_14": 62.86,
+        "EMA_20": 195.28,
+        "EMA_50": 194.67,
+        "EMA_200": 188.15
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 193.88,
+          "MA21": 195.93,
+          "MA50": 183.33,
+          "MA200": 182.79,
+          "SuperTrend": "DÜŞÜŞ"
+        },
+        "Monthly": {
+          "MA8": 190.99,
+          "MA21": 182.45,
+          "MA50": 182.45,
+          "MA200": 182.45,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 188.68,
+          "MA21": 188.68,
+          "MA50": 188.68,
+          "MA200": 188.68,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 194.67183191425417,
+      "Daily_EMA200": 188.1483219785906,
+      "Daily_Close": 193.0,
+      "Symbol": "KCHOL.IS",
+      "Change_Pct": -1.03,
+      "Volume": 2664708.0,
+      "Money_Volume": 514288644.0,
+      "Price": 193.0
+    },
+    {
+      "Score": 45.5,
+      "Status": "BEKLE",
+      "Trend": "YATAY",
+      "Momentum": "NEGATİF",
+      "Analysis": "Trend: YATAY, RSI: 37.63",
+      "Indicators": {
+        "RSI_14": 37.63,
+        "EMA_20": 322.85,
+        "EMA_50": 319.48,
+        "EMA_200": 306.7
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 324.94,
+          "MA21": 311.88,
+          "MA50": 304.46,
+          "MA200": 304.67,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Monthly": {
+          "MA8": 302.44,
+          "MA21": 301.18,
+          "MA50": 301.18,
+          "MA200": 301.18,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 301.1,
+          "MA21": 301.1,
+          "MA50": 301.1,
+          "MA200": 301.1,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 319.47838546706413,
+      "Daily_EMA200": 306.7010846076427,
+      "Daily_Close": 314.25,
+      "Symbol": "THYAO.IS",
+      "Change_Pct": -1.49,
+      "Volume": 6241131.0,
+      "Money_Volume": 1961275416.75,
+      "Price": 314.25
+    },
+    {
+      "Score": 28.0,
+      "Status": "SAT",
+      "Trend": "DÜŞÜŞ",
+      "Momentum": "NEGATİF",
+      "Analysis": "Trend: DÜŞÜŞ, RSI: 37.05",
+      "Indicators": {
+        "RSI_14": 37.05,
+        "EMA_20": 365.59,
+        "EMA_50": 372.05,
+        "EMA_200": 323.14
+      },
+      "MTF_Indicators": {
+        "Weekly": {
+          "MA8": 372.84,
+          "MA21": 377.45,
+          "MA50": 292.63,
+          "MA200": 286.15,
+          "SuperTrend": "DÜŞÜŞ"
+        },
+        "Monthly": {
+          "MA8": 333.62,
+          "MA21": 280.02,
+          "MA50": 280.02,
+          "MA200": 280.02,
+          "SuperTrend": "YÜKSELİŞ"
+        },
+        "Month_6": {
+          "MA8": 278.75,
+          "MA21": 278.75,
+          "MA50": 278.75,
+          "MA200": 278.75,
+          "SuperTrend": "YÜKSELİŞ"
+        }
+      },
+      "Daily_EMA50": 372.0522113444624,
+      "Daily_EMA200": 323.14360712206377,
+      "Daily_Close": 346.25,
+      "Symbol": "ASELS.IS",
+      "Change_Pct": -3.28,
+      "Volume": 5783930.0,
+      "Money_Volume": 2002685762.5,
+      "Price": 346.25
+    }
+  ],
+  "all_symbols_stats": {
+    "AEFES.IS": {
+      "Daily_EMA50": 20.52975896548134,
+      "Daily_EMA200": 18.566364458960994,
+      "Daily_Close": 21.6200008392334
+    },
+    "AGESA.IS": {
+      "Daily_EMA50": 240.98264923758907,
+      "Daily_EMA200": 222.9338959880369,
+      "Daily_Close": 237.89999389648438
+    },
+    "AGHOL.IS": {
+      "Daily_EMA50": 33.5324515850455,
+      "Daily_EMA200": 31.593281408459287,
+      "Daily_Close": 35.400001525878906
+    },
+    "AHGAZ.IS": {
+      "Daily_EMA50": 33.983188170605615,
+      "Daily_EMA200": 29.666804862526185,
+      "Daily_Close": 33.380001068115234
+    },
+    "AHSGY.IS": {
+      "Daily_EMA50": 20.06893172635898,
+      "Daily_EMA200": 17.94046444033512,
+      "Daily_Close": 19.100000381469727
+    },
+    "AKCNS.IS": {
+      "Daily_EMA50": 222.6929289374026,
+      "Daily_EMA200": 192.84836414109736,
+      "Daily_Close": 236.60000610351562
+    },
+    "AKFIS.IS": {
+      "Daily_EMA50": 77.26331476645494,
+      "Daily_EMA200": 50.48156673527289,
+      "Daily_Close": 91.8499984741211
+    },
+    "AKFYE.IS": {
+      "Daily_EMA50": 24.28605663244008,
+      "Daily_EMA200": 21.436211393555105,
+      "Daily_Close": 24.0
+    },
+    "AKHAN.IS": {
+      "Daily_EMA50": 35.55578303875294,
+      "Daily_EMA200": 29.2551668760483,
+      "Daily_Close": 42.08000183105469
+    },
+    "AKSA.IS": {
+      "Daily_EMA50": 11.640967458287584,
+      "Daily_EMA200": 10.700712446770385,
+      "Daily_Close": 12.25
+    },
+    "AKSEN.IS": {
+      "Daily_EMA50": 90.87296821227866,
+      "Daily_EMA200": 74.27429818632072,
+      "Daily_Close": 99.0999984741211
+    },
+    "AKSGY.IS": {
+      "Daily_EMA50": 9.352475899749619,
+      "Daily_EMA200": 8.493012116840156,
+      "Daily_Close": 9.1899995803833
+    },
+    "AKSUE.IS": {
+      "Daily_EMA50": 41.07904401332409,
+      "Daily_EMA200": 31.266242338603234,
+      "Daily_Close": 47.52000045776367
+    },
+    "ALARK.IS": {
+      "Daily_EMA50": 102.32433094248836,
+      "Daily_EMA200": 98.23705283046917,
+      "Daily_Close": 101.19999694824219
+    },
+    "ALCTL.IS": {
+      "Daily_EMA50": 153.67176673631795,
+      "Daily_EMA200": 136.29935490115963,
+      "Daily_Close": 177.60000610351562
+    },
+    "ALKLC.IS": {
+      "Daily_EMA50": 365.61517143520757,
+      "Daily_EMA200": 279.41962237244445,
+      "Daily_Close": 398.25
+    },
+    "ANELE.IS": {
+      "Daily_EMA50": 99.01669998955839,
+      "Daily_EMA200": 56.087593532008164,
+      "Daily_Close": 122.0999984741211
+    },
+    "ANHYT.IS": {
+      "Daily_EMA50": 103.98323063143255,
+      "Daily_EMA200": 101.10904818228275,
+      "Daily_Close": 110.9000015258789
+    },
+    "ANSGR.IS": {
+      "Daily_EMA50": 27.65705739869667,
+      "Daily_EMA200": 26.083659775940678,
+      "Daily_Close": 26.65999984741211
+    },
+    "ARASE.IS": {
+      "Daily_EMA50": 115.23761320411077,
+      "Daily_EMA200": 93.01831669505647,
+      "Daily_Close": 107.0999984741211
+    },
+    "ARDYZ.IS": {
+      "Daily_EMA50": 62.15768807981597,
+      "Daily_EMA200": 48.6008949941893,
+      "Daily_Close": 66.8499984741211
+    },
+    "ARFYE.IS": {
+      "Daily_EMA50": 30.406685134849045,
+      "Daily_EMA200": 27.64698830932814,
+      "Daily_Close": 29.920000076293945
+    },
+    "ARMGD.IS": {
+      "Daily_EMA50": 168.95392986391727,
+      "Daily_EMA200": 113.70244224512336,
+      "Daily_Close": 204.3000030517578
+    },
+    "ASELS.IS": {
+      "Daily_EMA50": 372.0522113444624,
+      "Daily_EMA200": 323.14360712206377,
+      "Daily_Close": 346.25
+    },
+    "ASTOR.IS": {
+      "Daily_EMA50": 294.26951840730806,
+      "Daily_EMA200": 222.32234458197678,
+      "Daily_Close": 276.0
+    },
+    "ATATP.IS": {
+      "Daily_EMA50": 216.7896924690078,
+      "Daily_EMA200": 173.80632236582403,
+      "Daily_Close": 221.0
+    },
+    "ATEKS.IS": {
+      "Daily_EMA50": 115.67451505055479,
+      "Daily_EMA200": 102.22987154670547,
+      "Daily_Close": 114.9000015258789
+    },
+    "ATSYH.IS": {
+      "Daily_EMA50": 99.17470273313245,
+      "Daily_EMA200": 75.9041895684385,
+      "Daily_Close": 111.30000305175781
+    },
+    "AVGYO.IS": {
+      "Daily_EMA50": 14.795586112120144,
+      "Daily_EMA200": 13.20734442614544,
+      "Daily_Close": 13.869999885559082
+    },
+    "AYEN.IS": {
+      "Daily_EMA50": 35.2135045939767,
+      "Daily_EMA200": 31.554054683531337,
+      "Daily_Close": 31.739999771118164
+    },
+    "AYES.IS": {
+      "Daily_EMA50": 32.080178165859394,
+      "Daily_EMA200": 26.97445058213489,
+      "Daily_Close": 30.81999969482422
+    },
+    "AYGAZ.IS": {
+      "Daily_EMA50": 247.43884845093731,
+      "Daily_EMA200": 227.6609757884616,
+      "Daily_Close": 268.75
+    },
+    "BAHKM.IS": {
+      "Daily_EMA50": 117.79658481358128,
+      "Daily_EMA200": 103.59596019666655,
+      "Daily_Close": 119.5
+    },
+    "BAKAB.IS": {
+      "Daily_EMA50": 49.38876330659676,
+      "Daily_EMA200": 44.302593261324105,
+      "Daily_Close": 45.560001373291016
+    },
+    "BESTE.IS": {
+      "Daily_EMA50": 32.75833546006146,
+      "Daily_EMA200": 26.16534690438035,
+      "Daily_Close": 28.479999542236328
+    },
+    "BIGEN.IS": {
+      "Daily_EMA50": 80.85524857799065,
+      "Daily_EMA200": 38.92386012376041,
+      "Daily_Close": 103.30000305175781
+    },
+    "BIGTK.IS": {
+      "Daily_EMA50": 268.0762313674226,
+      "Daily_EMA200": 290.5113780006337,
+      "Daily_Close": 346.0
+    },
+    "BIMAS.IS": {
+      "Daily_EMA50": 378.69563157419327,
+      "Daily_EMA200": 341.53631861733635,
+      "Daily_Close": 387.5
+    },
+    "BINBN.IS": {
+      "Daily_EMA50": 175.9459905077992,
+      "Daily_EMA200": 176.26850854603342,
+      "Daily_Close": 180.39999389648438
+    },
+    "BJKAS.IS": {
+      "Daily_EMA50": 1.6995736401343768,
+      "Daily_EMA200": 1.7121598519289405,
+      "Daily_Close": 1.8200000524520874
+    },
+    "BMSTL.IS": {
+      "Daily_EMA50": 43.937230561355115,
+      "Daily_EMA200": 41.89252074540061,
+      "Daily_Close": 42.880001068115234
+    },
+    "BRMEN.IS": {
+      "Daily_EMA50": 15.763039051342577,
+      "Daily_EMA200": 12.704815029490918,
+      "Daily_Close": 17.950000762939453
+    },
+    "BSOKE.IS": {
+      "Daily_EMA50": 35.676057833853925,
+      "Daily_EMA200": 29.676612843012748,
+      "Daily_Close": 35.52000045776367
+    },
+    "BYDNR.IS": {
+      "Daily_EMA50": 38.79929192175828,
+      "Daily_EMA200": 34.71216560691317,
+      "Daily_Close": 38.400001525878906
+    },
+    "CATES.IS": {
+      "Daily_EMA50": 42.64638997240409,
+      "Daily_EMA200": 39.936750782017185,
+      "Daily_Close": 46.15999984741211
+    },
+    "CCOLA.IS": {
+      "Daily_EMA50": 83.81107677368786,
+      "Daily_EMA200": 71.85234768550109,
+      "Daily_Close": 91.6500015258789
+    },
+    "CELHA.IS": {
+      "Daily_EMA50": 19.405688601372887,
+      "Daily_EMA200": 14.22765051139681,
+      "Daily_Close": 24.520000457763672
+    },
+    "CEMZY.IS": {
+      "Daily_EMA50": 13.468266123649373,
+      "Daily_EMA200": 10.944200968711517,
+      "Daily_Close": 12.039999961853027
+    },
+    "CRDFA.IS": {
+      "Daily_EMA50": 38.44523022175188,
+      "Daily_EMA200": 28.110312791208163,
+      "Daily_Close": 45.060001373291016
+    },
+    "CRFSA.IS": {
+      "Daily_EMA50": 148.86681197169847,
+      "Daily_EMA200": 132.41380617792754,
+      "Daily_Close": 159.8000030517578
+    },
+    "CVKMD.IS": {
+      "Daily_EMA50": 39.23981884093498,
+      "Daily_EMA200": 32.99166998782305,
+      "Daily_Close": 35.68000030517578
+    },
+    "CWENE.IS": {
+      "Daily_EMA50": 38.28887556767751,
+      "Daily_EMA200": 32.292411744654096,
+      "Daily_Close": 36.08000183105469
+    },
+    "DAGI.IS": {
+      "Daily_EMA50": 8.468666716080332,
+      "Daily_EMA200": 7.289022508352342,
+      "Daily_Close": 8.670000076293945
+    },
+    "DCTTR.IS": {
+      "Daily_EMA50": 12.135812750410073,
+      "Daily_EMA200": 11.150598622359261,
+      "Daily_Close": 11.380000114440918
+    },
+    "DEVA.IS": {
+      "Daily_EMA50": 70.55465556707159,
+      "Daily_EMA200": 67.54823311875164,
+      "Daily_Close": 71.3499984741211
+    },
+    "DGATE.IS": {
+      "Daily_EMA50": 107.44272686371964,
+      "Daily_EMA200": 91.52504842656177,
+      "Daily_Close": 101.9000015258789
+    },
+    "DGNMO.IS": {
+      "Daily_EMA50": 8.205904076214942,
+      "Daily_EMA200": 7.145009628259937,
+      "Daily_Close": 8.130000114440918
+    },
+    "DMRGD.IS": {
+      "Daily_EMA50": 11.066115726824577,
+      "Daily_EMA200": 7.178571794062642,
+      "Daily_Close": 11.65999984741211
+    },
+    "DOCO.IS": {
+      "Daily_EMA50": 10803.140283658413,
+      "Daily_EMA200": 10163.250941379047,
+      "Daily_Close": 10990.0
+    },
+    "DOFRB.IS": {
+      "Daily_EMA50": 157.81286580120351,
+      "Daily_EMA200": 123.8622153533278,
+      "Daily_Close": 128.8000030517578
+    },
+    "DOGUB.IS": {
+      "Daily_EMA50": 91.13346974707729,
+      "Daily_EMA200": 73.6159936422739,
+      "Daily_Close": 80.80000305175781
+    },
+    "DOHOL.IS": {
+      "Daily_EMA50": 21.47782905367628,
+      "Daily_EMA200": 20.411345479264003,
+      "Daily_Close": 21.700000762939453
+    },
+    "DUNYH.IS": {
+      "Daily_EMA50": 110.39214014958485,
+      "Daily_EMA200": 105.52576610113353,
+      "Daily_Close": 142.1999969482422
+    },
+    "DURDO.IS": {
+      "Daily_EMA50": 5.0247196879796725,
+      "Daily_EMA200": 4.448040402665622,
+      "Daily_Close": 4.78000020980835
+    },
+    "EBEBK.IS": {
+      "Daily_EMA50": 79.41764131964396,
+      "Daily_EMA200": 68.28235781942553,
+      "Daily_Close": 83.5
+    },
+    "ECOGR.IS": {
+      "Daily_EMA50": 39.01568127074264,
+      "Daily_EMA200": 30.7962034290915,
+      "Daily_Close": 33.31999969482422
+    },
+    "EDATA.IS": {
+      "Daily_EMA50": 18.10221612058351,
+      "Daily_EMA200": 14.140086547463966,
+      "Daily_Close": 16.6200008392334
+    },
+    "EFOR.IS": {
+      "Daily_EMA50": 15.532125921947808,
+      "Daily_EMA200": 17.14446586223686,
+      "Daily_Close": 21.31999969482422
+    },
+    "EGEGY.IS": {
+      "Daily_EMA50": 30.240920352726775,
+      "Daily_EMA200": 28.697709544044287,
+      "Daily_Close": 30.5
+    },
+    "EGEPO.IS": {
+      "Daily_EMA50": 18.4949360513475,
+      "Daily_EMA200": 14.598855053466567,
+      "Daily_Close": 18.049999237060547
+    },
+    "EGPRO.IS": {
+      "Daily_EMA50": 37.108939262770534,
+      "Daily_EMA200": 32.15299282928651,
+      "Daily_Close": 33.97999954223633
+    },
+    "ENJSA.IS": {
+      "Daily_EMA50": 107.14389876182933,
+      "Daily_EMA200": 99.7278533014455,
+      "Daily_Close": 108.5999984741211
+    },
+    "ENTRA.IS": {
+      "Daily_EMA50": 4.685642709011639,
+      "Daily_EMA200": 4.706621753604805,
+      "Daily_Close": 5.099999904632568
+    },
+    "EREGL.IS": {
+      "Daily_EMA50": 40.16824743238245,
+      "Daily_EMA200": 33.483444754748376,
+      "Daily_Close": 42.279998779296875
+    },
+    "ERSU.IS": {
+      "Daily_EMA50": 24.353307245379646,
+      "Daily_EMA200": 22.484414091320744,
+      "Daily_Close": 23.219999313354492
+    },
+    "ESCAR.IS": {
+      "Daily_EMA50": 47.76949117706751,
+      "Daily_EMA200": 40.507947847284576,
+      "Daily_Close": 47.060001373291016
+    },
+    "ESCOM.IS": {
+      "Daily_EMA50": 5.550620031033675,
+      "Daily_EMA200": 4.762567182760581,
+      "Daily_Close": 5.300000190734863
+    },
+    "ETILR.IS": {
+      "Daily_EMA50": 5.7934277061915065,
+      "Daily_EMA200": 5.320832499739295,
+      "Daily_Close": 5.829999923706055
+    },
+    "ETYAT.IS": {
+      "Daily_EMA50": 12.192907771781137,
+      "Daily_EMA200": 9.416236749831082,
+      "Daily_Close": 12.800000190734863
+    },
+    "EUKYO.IS": {
+      "Daily_EMA50": 11.182257602640885,
+      "Daily_EMA200": 8.053340954216026,
+      "Daily_Close": 12.770000457763672
+    },
+    "EUPWR.IS": {
+      "Daily_EMA50": 83.96931567534446,
+      "Daily_EMA200": 57.62779260042608,
+      "Daily_Close": 85.75
+    },
+    "FADE.IS": {
+      "Daily_EMA50": 15.801843452374541,
+      "Daily_EMA200": 15.241080032521927,
+      "Daily_Close": 15.5
+    },
+    "FONET.IS": {
+      "Daily_EMA50": 5.2409176795167305,
+      "Daily_EMA200": 4.375031404321464,
+      "Daily_Close": 5.119999885559082
+    },
+    "FORTE.IS": {
+      "Daily_EMA50": 98.26889959945198,
+      "Daily_EMA200": 91.8574847599394,
+      "Daily_Close": 101.5
+    },
+    "GATEG.IS": {
+      "Daily_EMA50": 301.8958449344429,
+      "Daily_EMA200": 299.5825896818075,
+      "Daily_Close": 300.0
+    },
+    "GEREL.IS": {
+      "Daily_EMA50": 37.73848346616376,
+      "Daily_EMA200": 31.324094616255657,
+      "Daily_Close": 42.060001373291016
+    },
+    "GESAN.IS": {
+      "Daily_EMA50": 75.0813743773283,
+      "Daily_EMA200": 60.59776850456312,
+      "Daily_Close": 73.8499984741211
+    },
+    "GLYHO.IS": {
+      "Daily_EMA50": 16.781637896236504,
+      "Daily_EMA200": 14.503459540843702,
+      "Daily_Close": 16.139999389648438
+    },
+    "GMTAS.IS": {
+      "Daily_EMA50": 44.472490691318406,
+      "Daily_EMA200": 33.60776605992737,
+      "Daily_Close": 46.900001525878906
+    },
+    "GOZDE.IS": {
+      "Daily_EMA50": 22.443515136987216,
+      "Daily_EMA200": 22.06430400200465,
+      "Daily_Close": 23.239999771118164
+    },
+    "GRSEL.IS": {
+      "Daily_EMA50": 318.31123636367687,
+      "Daily_EMA200": 321.5345713967232,
+      "Daily_Close": 361.5
+    },
+    "GSDDE.IS": {
+      "Daily_EMA50": 13.088141925187736,
+      "Daily_EMA200": 11.510278222972655,
+      "Daily_Close": 12.720000267028809
+    },
+    "GUNDG.IS": {
+      "Daily_EMA50": 1684.9382764315915,
+      "Daily_EMA200": 912.2694046400047,
+      "Daily_Close": 1918.0
+    },
+    "HATEK.IS": {
+      "Daily_EMA50": 15.951188355321023,
+      "Daily_EMA200": 16.25039181410612,
+      "Daily_Close": 16.729999542236328
+    },
+    "HATSN.IS": {
+      "Daily_EMA50": 55.654362551980654,
+      "Daily_EMA200": 48.41974125202155,
+      "Daily_Close": 59.29999923706055
+    },
+    "HEDEF.IS": {
+      "Daily_EMA50": 164.27658023698785,
+      "Daily_EMA200": 94.89003230531742,
+      "Daily_Close": 258.75
+    },
+    "HRKET.IS": {
+      "Daily_EMA50": 98.21572277359903,
+      "Daily_EMA200": 85.29929765538132,
+      "Daily_Close": 95.3499984741211
+    },
+    "HURGZ.IS": {
+      "Daily_EMA50": 6.778635321404711,
+      "Daily_EMA200": 6.697898487629405,
+      "Daily_Close": 7.03000020980835
+    },
+    "ICBCT.IS": {
+      "Daily_EMA50": 21.057685501526766,
+      "Daily_EMA200": 17.705928541682898,
+      "Daily_Close": 21.719999313354492
+    },
+    "ICUGS.IS": {
+      "Daily_EMA50": 5.575283161016206,
+      "Daily_EMA200": 4.439544172922718,
+      "Daily_Close": 5.909999847412109
+    },
+    "IEYHO.IS": {
+      "Daily_EMA50": 141.1006220676554,
+      "Daily_EMA200": 95.79187210911768,
+      "Daily_Close": 166.10000610351562
+    },
+    "INDES.IS": {
+      "Daily_EMA50": 10.844019954632675,
+      "Daily_EMA200": 9.47025720207423,
+      "Daily_Close": 10.100000381469727
+    },
+    "INFO.IS": {
+      "Daily_EMA50": 5.741348933257607,
+      "Daily_EMA200": 4.516481332637122,
+      "Daily_Close": 5.920000076293945
+    },
+    "INTEK.IS": {
+      "Daily_EMA50": 272.9053042271533,
+      "Daily_EMA200": 284.78610108649474,
+      "Daily_Close": 334.0
+    },
+    "INVES.IS": {
+      "Daily_EMA50": 639.7015892461964,
+      "Daily_EMA200": 498.30620954486557,
+      "Daily_Close": 689.0
+    },
+    "ISBTR.IS": {
+      "Daily_EMA50": 472808.9604129621,
+      "Daily_EMA200": 454768.849172368,
+      "Daily_Close": 469992.5
+    },
+    "ISDMR.IS": {
+      "Daily_EMA50": 55.12809681324239,
+      "Daily_EMA200": 46.23505558272461,
+      "Daily_Close": 54.150001525878906
+    },
+    "ISFIN.IS": {
+      "Daily_EMA50": 19.739517790671613,
+      "Daily_EMA200": 19.40198528350807,
+      "Daily_Close": 19.690000534057617
+    },
+    "ISGYO.IS": {
+      "Daily_EMA50": 24.119204806355896,
+      "Daily_EMA200": 21.733641495814926,
+      "Daily_Close": 25.34000015258789
+    },
+    "IZFAS.IS": {
+      "Daily_EMA50": 63.22618529755192,
+      "Daily_EMA200": 55.99664041505353,
+      "Daily_Close": 60.5
+    },
+    "IZMDC.IS": {
+      "Daily_EMA50": 9.637812622279686,
+      "Daily_EMA200": 7.816012492677613,
+      "Daily_Close": 11.119999885559082
+    },
+    "KARTN.IS": {
+      "Daily_EMA50": 163.43134300748352,
+      "Daily_EMA200": 114.02893858685074,
+      "Daily_Close": 221.6999969482422
+    },
+    "KBORU.IS": {
+      "Daily_EMA50": 25.515828444559265,
+      "Daily_EMA200": 21.15101166493802,
+      "Daily_Close": 25.239999771118164
+    },
+    "KCAER.IS": {
+      "Daily_EMA50": 14.03069330759382,
+      "Daily_EMA200": 12.916572605044374,
+      "Daily_Close": 14.970000267028809
+    },
+    "KCHOL.IS": {
+      "Daily_EMA50": 194.67183191425417,
+      "Daily_EMA200": 188.1483219785906,
+      "Daily_Close": 193.0
+    },
+    "KERVN.IS": {
+      "Daily_EMA50": 6.260747505870207,
+      "Daily_EMA200": 4.346588977906772,
+      "Daily_Close": 7.889999866485596
+    },
+    "KGYO.IS": {
+      "Daily_EMA50": 10.471351678744863,
+      "Daily_EMA200": 8.627991003297163,
+      "Daily_Close": 9.960000038146973
+    },
+    "KLSYN.IS": {
+      "Daily_EMA50": 13.373206838259144,
+      "Daily_EMA200": 10.437534515519626,
+      "Daily_Close": 12.220000267028809
+    },
+    "KMPUR.IS": {
+      "Daily_EMA50": 19.667579566070224,
+      "Daily_EMA200": 18.167989725892195,
+      "Daily_Close": 20.18000030517578
+    },
+    "KOCMT.IS": {
+      "Daily_EMA50": 3.785076007099202,
+      "Daily_EMA200": 3.0256603807100086,
+      "Daily_Close": 5.519999980926514
+    },
+    "KORDS.IS": {
+      "Daily_EMA50": 73.9348061297946,
+      "Daily_EMA200": 65.76959163930087,
+      "Daily_Close": 69.75
+    },
+    "KRDMA.IS": {
+      "Daily_EMA50": 40.141591645451264,
+      "Daily_EMA200": 35.328918691293445,
+      "Daily_Close": 41.619998931884766
+    },
+    "KRDMB.IS": {
+      "Daily_EMA50": 120.87090421766551,
+      "Daily_EMA200": 76.17262259663887,
+      "Daily_Close": 132.10000610351562
+    },
+    "KRDMD.IS": {
+      "Daily_EMA50": 39.93622814238933,
+      "Daily_EMA200": 34.55108945997385,
+      "Daily_Close": 40.84000015258789
+    },
+    "KRONT.IS": {
+      "Daily_EMA50": 22.20085577656034,
+      "Daily_EMA200": 18.82357896071206,
+      "Daily_Close": 22.299999237060547
+    },
+    "KRPLS.IS": {
+      "Daily_EMA50": 9.120258261860974,
+      "Daily_EMA200": 8.749007254151094,
+      "Daily_Close": 8.789999961853027
+    },
+    "KTLEV.IS": {
+      "Daily_EMA50": 159.84735988838736,
+      "Daily_EMA200": 94.3897108430441,
+      "Daily_Close": 148.3000030517578
+    },
+    "KTSKR.IS": {
+      "Daily_EMA50": 101.40233244474705,
+      "Daily_EMA200": 89.98712690506386,
+      "Daily_Close": 90.9000015258789
+    },
+    "KUVVA.IS": {
+      "Daily_EMA50": 141.86887066903196,
+      "Daily_EMA200": 133.48693859605814,
+      "Daily_Close": 157.0
+    },
+    "LIDER.IS": {
+      "Daily_EMA50": 105.16234521730611,
+      "Daily_EMA200": 92.73533829503809,
+      "Daily_Close": 94.4000015258789
+    },
+    "LYDHO.IS": {
+      "Daily_EMA50": 185.69834315023928,
+      "Daily_EMA200": 177.14155614777553,
+      "Daily_Close": 185.0
+    },
+    "MANAS.IS": {
+      "Daily_EMA50": 28.78677300067572,
+      "Daily_EMA200": 21.398954303739714,
+      "Daily_Close": 27.139999389648438
+    },
+    "MARKA.IS": {
+      "Daily_EMA50": 75.29873354552372,
+      "Daily_EMA200": 57.55966414239701,
+      "Daily_Close": 78.0999984741211
+    },
+    "MEGMT.IS": {
+      "Daily_EMA50": 75.9748675923497,
+      "Daily_EMA200": 66.33856006446283,
+      "Daily_Close": 75.44999694824219
+    },
+    "METRO.IS": {
+      "Daily_EMA50": 8.254107667020412,
+      "Daily_EMA200": 6.556220744744487,
+      "Daily_Close": 7.639999866485596
+    },
+    "MGROS.IS": {
+      "Daily_EMA50": 648.2619898999776,
+      "Daily_EMA200": 610.7301519303614,
+      "Daily_Close": 627.5
+    },
+    "MOBTL.IS": {
+      "Daily_EMA50": 14.1928003824894,
+      "Daily_EMA200": 11.93688048017506,
+      "Daily_Close": 14.130000114440918
+    },
+    "MOGAN.IS": {
+      "Daily_EMA50": 15.106851423321867,
+      "Daily_EMA200": 12.352331758283027,
+      "Daily_Close": 16.68000030517578
+    },
+    "MSGYO.IS": {
+      "Daily_EMA50": 6.335845196440143,
+      "Daily_EMA200": 6.138556533035048,
+      "Daily_Close": 6.739999771118164
+    },
+    "MTRKS.IS": {
+      "Daily_EMA50": 27.813879666031855,
+      "Daily_EMA200": 25.295626684475803,
+      "Daily_Close": 26.959999084472656
+    },
+    "NETCD.IS": {
+      "Daily_EMA50": 147.8658742497867,
+      "Daily_EMA200": 114.93185454198915,
+      "Daily_Close": 122.9000015258789
+    },
+    "OBASE.IS": {
+      "Daily_EMA50": 40.803495556014234,
+      "Daily_EMA200": 38.2662961012413,
+      "Daily_Close": 40.400001525878906
+    },
+    "ODAS.IS": {
+      "Daily_EMA50": 8.126706347534734,
+      "Daily_EMA200": 6.870232223232673,
+      "Daily_Close": 8.8100004196167
+    },
+    "ODINE.IS": {
+      "Daily_EMA50": 1822.82203789578,
+      "Daily_EMA200": 1034.5565027014798,
+      "Daily_Close": 2259.0
+    },
+    "ONCSM.IS": {
+      "Daily_EMA50": 266.9879461172483,
+      "Daily_EMA200": 248.84673202497862,
+      "Daily_Close": 257.25
+    },
+    "ORGE.IS": {
+      "Daily_EMA50": 106.0445465042332,
+      "Daily_EMA200": 88.39234226916119,
+      "Daily_Close": 101.9000015258789
+    },
+    "OZATD.IS": {
+      "Daily_EMA50": 1999.6291811628482,
+      "Daily_EMA200": 938.4991462850495,
+      "Daily_Close": 3545.0
+    },
+    "OZRDN.IS": {
+      "Daily_EMA50": 31.119329647046914,
+      "Daily_EMA200": 25.503375898803707,
+      "Daily_Close": 28.0
+    },
+    "OZSUB.IS": {
+      "Daily_EMA50": 30.162031937397185,
+      "Daily_EMA200": 24.85685214151141,
+      "Daily_Close": 32.2400016784668
+    },
+    "OZYSR.IS": {
+      "Daily_EMA50": 12.572099049914733,
+      "Daily_EMA200": 11.23457280953001,
+      "Daily_Close": 12.199999809265137
+    },
+    "PAGYO.IS": {
+      "Daily_EMA50": 147.4254051991591,
+      "Daily_EMA200": 115.49937277766281,
+      "Daily_Close": 163.1999969482422
+    },
+    "PASEU.IS": {
+      "Daily_EMA50": 111.05433546225228,
+      "Daily_EMA200": 118.50644554698277,
+      "Daily_Close": 139.5
+    },
+    "PCILT.IS": {
+      "Daily_EMA50": 32.674508204203235,
+      "Daily_EMA200": 28.250698254940513,
+      "Daily_Close": 30.899999618530273
+    },
+    "PEKGY.IS": {
+      "Daily_EMA50": 14.254761446703759,
+      "Daily_EMA200": 12.549134111510554,
+      "Daily_Close": 14.699999809265137
+    },
+    "PKART.IS": {
+      "Daily_EMA50": 129.52218812997262,
+      "Daily_EMA200": 105.41021218275353,
+      "Daily_Close": 122.4000015258789
+    },
+    "PNLSN.IS": {
+      "Daily_EMA50": 45.5067847743157,
+      "Daily_EMA200": 43.670911759908016,
+      "Daily_Close": 46.34000015258789
+    },
+    "POLHO.IS": {
+      "Daily_EMA50": 20.910655252023634,
+      "Daily_EMA200": 18.116384486965703,
+      "Daily_Close": 20.719999313354492
+    },
+    "PRZMA.IS": {
+      "Daily_EMA50": 58.404130658233726,
+      "Daily_EMA200": 34.11235869494788,
+      "Daily_Close": 69.44999694824219
+    },
+    "PSDTC.IS": {
+      "Daily_EMA50": 129.86182906298413,
+      "Daily_EMA200": 132.37599597210797,
+      "Daily_Close": 160.10000610351562
+    },
+    "PSGYO.IS": {
+      "Daily_EMA50": 3.370367916330518,
+      "Daily_EMA200": 2.9831092287259353,
+      "Daily_Close": 3.509999990463257
+    },
+    "RALYH.IS": {
+      "Daily_EMA50": 231.02414823804463,
+      "Daily_EMA200": 211.8745201715796,
+      "Daily_Close": 236.5
+    },
+    "RGYAS.IS": {
+      "Daily_EMA50": 195.81376372987344,
+      "Daily_EMA200": 173.3999460526611,
+      "Daily_Close": 200.89999389648438
+    },
+    "RYGYO.IS": {
+      "Daily_EMA50": 31.95606860031941,
+      "Daily_EMA200": 29.00506764341393,
+      "Daily_Close": 38.47999954223633
+    },
+    "RYSAS.IS": {
+      "Daily_EMA50": 21.727214849011723,
+      "Daily_EMA200": 19.690645009104347,
+      "Daily_Close": 24.399999618530273
+    },
+    "SANEL.IS": {
+      "Daily_EMA50": 64.52443689142385,
+      "Daily_EMA200": 46.44330058634231,
+      "Daily_Close": 63.95000076293945
+    },
+    "SANFM.IS": {
+      "Daily_EMA50": 9.13495078818127,
+      "Daily_EMA200": 8.269434407807719,
+      "Daily_Close": 8.970000267028809
+    },
+    "SDTTR.IS": {
+      "Daily_EMA50": 246.58110380410918,
+      "Daily_EMA200": 224.73696271716497,
+      "Daily_Close": 233.5
+    },
+    "SEGMN.IS": {
+      "Daily_EMA50": 52.657485845243784,
+      "Daily_EMA200": 45.16546319130757,
+      "Daily_Close": 45.20000076293945
+    },
+    "SEKUR.IS": {
+      "Daily_EMA50": 10.012212816473571,
+      "Daily_EMA200": 7.117707294005823,
+      "Daily_Close": 11.289999961853027
+    },
+    "SELEC.IS": {
+      "Daily_EMA50": 183.60547145453972,
+      "Daily_EMA200": 122.93665736589269,
+      "Daily_Close": 216.89999389648438
+    },
+    "SKYMD.IS": {
+      "Daily_EMA50": 14.211966465640984,
+      "Daily_EMA200": 13.787120578956271,
+      "Daily_Close": 14.470000267028809
+    },
+    "SMRTG.IS": {
+      "Daily_EMA50": 11.27527244761082,
+      "Daily_EMA200": 9.86877460813779,
+      "Daily_Close": 11.390000343322754
+    },
+    "SOKE.IS": {
+      "Daily_EMA50": 17.12587862756749,
+      "Daily_EMA200": 15.29180330463407,
+      "Daily_Close": 16.6200008392334
+    },
+    "SOKM.IS": {
+      "Daily_EMA50": 50.065314844136374,
+      "Daily_EMA200": 49.8345065544345,
+      "Daily_Close": 52.849998474121094
+    },
+    "SUNTK.IS": {
+      "Daily_EMA50": 34.84938324753414,
+      "Daily_EMA200": 37.033539552041226,
+      "Daily_Close": 42.720001220703125
+    },
+    "SURGY.IS": {
+      "Daily_EMA50": 69.45358858681554,
+      "Daily_EMA200": 62.5581096462118,
+      "Daily_Close": 68.0
+    },
+    "SVGYO.IS": {
+      "Daily_EMA50": 16.590686691910648,
+      "Daily_EMA200": 12.04182639378543,
+      "Daily_Close": 12.569999694824219
+    },
+    "TARKM.IS": {
+      "Daily_EMA50": 496.34053010445854,
+      "Daily_EMA200": 443.23301447188425,
+      "Daily_Close": 469.5
+    },
+    "TATGD.IS": {
+      "Daily_EMA50": 19.13746206946774,
+      "Daily_EMA200": 16.908300728740784,
+      "Daily_Close": 18.59000015258789
+    },
+    "TCKRC.IS": {
+      "Daily_EMA50": 135.46775682555057,
+      "Daily_EMA200": 103.4325227752203,
+      "Daily_Close": 140.39999389648438
+    },
+    "TEHOL.IS": {
+      "Daily_EMA50": 36.35204682220837,
+      "Daily_EMA200": 28.139752201576034,
+      "Daily_Close": 45.7599983215332
+    },
+    "TGSAS.IS": {
+      "Daily_EMA50": 177.66074694783865,
+      "Daily_EMA200": 171.65917907730596,
+      "Daily_Close": 181.10000610351562
+    },
+    "THYAO.IS": {
+      "Daily_EMA50": 319.47838546706413,
+      "Daily_EMA200": 306.7010846076427,
+      "Daily_Close": 314.25
+    },
+    "TKFEN.IS": {
+      "Daily_EMA50": 138.26677400806315,
+      "Daily_EMA200": 114.1035415534616,
+      "Daily_Close": 148.89999389648438
+    },
+    "TMPOL.IS": {
+      "Daily_EMA50": 434.9433428374446,
+      "Daily_EMA200": 387.8296565440046,
+      "Daily_Close": 413.75
+    },
+    "TNZTP.IS": {
+      "Daily_EMA50": 24.901079047650786,
+      "Daily_EMA200": 25.09349791355641,
+      "Daily_Close": 27.579999923706055
+    },
+    "TRALT.IS": {
+      "Daily_EMA50": 48.237297681595074,
+      "Daily_EMA200": 43.31219979711495,
+      "Daily_Close": 44.36000061035156
+    },
+    "TRCAS.IS": {
+      "Daily_EMA50": 43.68677124711513,
+      "Daily_EMA200": 41.722669790764336,
+      "Daily_Close": 43.060001373291016
+    },
+    "TRENJ.IS": {
+      "Daily_EMA50": 92.25300968264337,
+      "Daily_EMA200": 88.5513830566329,
+      "Daily_Close": 91.1500015258789
+    },
+    "TRGYO.IS": {
+      "Daily_EMA50": 96.42331813810806,
+      "Daily_EMA200": 85.80938108114098,
+      "Daily_Close": 93.8499984741211
+    },
+    "TRHOL.IS": {
+      "Daily_EMA50": 1591.4254860198498,
+      "Daily_EMA200": 1101.2867325651832,
+      "Daily_Close": 1875.0
+    },
+    "TRMET.IS": {
+      "Daily_EMA50": 120.59094566135722,
+      "Daily_EMA200": 115.6348208138534,
+      "Daily_Close": 124.9000015258789
+    },
+    "TUPRS.IS": {
+      "Daily_EMA50": 262.25205495056645,
+      "Daily_EMA200": 229.13149410454434,
+      "Daily_Close": 298.0
+    },
+    "TURSG.IS": {
+      "Daily_EMA50": 6.458422125051716,
+      "Daily_EMA200": 6.188449784801919,
+      "Daily_Close": 6.320000171661377
+    },
+    "UFUK.IS": {
+      "Daily_EMA50": 1594.6393315645648,
+      "Daily_EMA200": 1504.2361091687264,
+      "Daily_Close": 1599.0
+    },
+    "ULUSE.IS": {
+      "Daily_EMA50": 293.4154700382689,
+      "Daily_EMA200": 242.6576528337759,
+      "Daily_Close": 272.75
+    },
+    "ULUUN.IS": {
+      "Daily_EMA50": 8.939503187805887,
+      "Daily_EMA200": 8.210984636463387,
+      "Daily_Close": 8.460000038146973
+    },
+    "VANGD.IS": {
+      "Daily_EMA50": 90.98584805926943,
+      "Daily_EMA200": 74.33164324239394,
+      "Daily_Close": 89.0
+    },
+    "VBTYZ.IS": {
+      "Daily_EMA50": 28.892391201462903,
+      "Daily_EMA200": 24.160496935897005,
+      "Daily_Close": 30.059999465942383
+    },
+    "VERUS.IS": {
+      "Daily_EMA50": 519.65947684527,
+      "Daily_EMA200": 442.06963354003767,
+      "Daily_Close": 506.5
+    },
+    "YEOTK.IS": {
+      "Daily_EMA50": 95.14529268624906,
+      "Daily_EMA200": 69.18858868584066,
+      "Daily_Close": 94.44999694824219
+    },
+    "YGGYO.IS": {
+      "Daily_EMA50": 223.61235154204127,
+      "Daily_EMA200": 183.1294831515726,
+      "Daily_Close": 215.0
+    },
+    "YUNSA.IS": {
+      "Daily_EMA50": 9.385212158650749,
+      "Daily_EMA200": 8.607266820826734,
+      "Daily_Close": 8.819999694824219
+    },
+    "ZGYO.IS": {
+      "Daily_EMA50": 37.02026481742794,
+      "Daily_EMA200": 27.356258574257385,
+      "Daily_Close": 36.099998474121094
+    }
+  },
+  "opportunities_1h": [],
+  "tavan_adaylari": [
+    {
+      "Symbol": "CRDFA.IS",
+      "Price": 45.1,
+      "Score": 75,
+      "Report": "OBV yeni zirve yaptı. VWAP üzerinde. EMA50 > EMA200. Direnç hacimli kırıldı. BB daralma evresinde. AI Puanı: 75/100.",
+      "Position": {
+        "Entry": 45.1,
+        "SL": 44.65,
+        "TP1": 45.41,
+        "TP2": 49.19,
+        "Projection": "4-8 Saat (Yavaş İvme)"
+      },
+      "Time_Label": "ŞİMDİ (Sıcak)",
+      "Bars_Ago": 0
+    },
+    {
+      "Symbol": "DOCO.IS",
+      "Price": 10970.0,
+      "Score": 70,
+      "Report": "OBV yeni zirve yaptı. VWAP üzerinde. EMA50 > EMA200. Direnç hacimli kırıldı. BB daralma evresinde. AI Puanı: 70/100.",
+      "Position": {
+        "Entry": 10970.0,
+        "SL": 10909.55,
+        "TP1": 11059.5,
+        "TP2": 11943.5,
+        "Projection": "4-8 Saat (Yavaş İvme)"
+      },
+      "Time_Label": "25 Saat Önce",
+      "Bars_Ago": 25
+    },
+    {
+      "Symbol": "TNZTP.IS",
+      "Price": 27.84,
+      "Score": 70,
+      "Report": "OBV yeni zirve yaptı. VWAP üzerinde. Direnç hacimli kırıldı. BB daralma evresinde. ATR volatilite patlaması. AI Puanı: 70/100.",
+      "Position": {
+        "Entry": 27.84,
+        "SL": 27.38,
+        "TP1": 28.68,
+        "TP2": 29.89,
+        "Projection": "4-8 Saat (Yavaş İvme)"
+      },
+      "Time_Label": "3 Saat Önce",
+      "Bars_Ago": 3
+    },
+    {
+      "Symbol": "BAGFS.IS",
+      "Price": 25.3,
+      "Score": 65,
+      "Report": "Hacim patlaması (5.9x). VWAP üzerinde. ATR volatilite patlaması. AI Puanı: 65/100.",
+      "Position": {
+        "Entry": 25.3,
+        "SL": 24.74,
+        "TP1": 25.67,
+        "TP2": 27.7,
+        "Projection": "1-2 Saat (Hızlı Kopuş)"
+      },
+      "Time_Label": "ŞİMDİ (Sıcak)",
+      "Bars_Ago": 0
+    },
+    {
+      "Symbol": "TERA.IS",
+      "Price": 167.8,
+      "Score": 60,
+      "Report": "OBV yeni zirve yaptı. VWAP üzerinde. Direnç hacimli kırıldı. BB daralma evresinde. AI Puanı: 60/100.",
+      "Position": {
+        "Entry": 167.8,
+        "SL": 166.42,
+        "TP1": 169.07,
+        "TP2": 182.71,
+        "Projection": "4-8 Saat (Yavaş İvme)"
+      },
+      "Time_Label": "ŞİMDİ (Sıcak)",
+      "Bars_Ago": 0
+    },
+    {
+      "Symbol": "BIGTK.IS",
+      "Price": 346.25,
+      "Score": 55,
+      "Report": "OBV yeni zirve yaptı. VWAP üzerinde. Direnç hacimli kırıldı. ATR volatilite patlaması. AI Puanı: 55/100.",
+      "Position": {
+        "Entry": 346.25,
+        "SL": 339.71,
+        "TP1": 356.64,
+        "TP2": 362.61,
+        "Projection": "4-8 Saat (Yavaş İvme)"
+      },
+      "Time_Label": "15 Saat Önce",
+      "Bars_Ago": 15
+    },
+    {
+      "Symbol": "RYSAS.IS",
+      "Price": 24.54,
+      "Score": 55,
+      "Report": "OBV yeni zirve yaptı. EMA50 > EMA200. Direnç hacimli kırıldı. AI Puanı: 55/100.",
+      "Position": {
+        "Entry": 24.54,
+        "SL": 24.42,
+        "TP1": 25.28,
+        "TP2": 26.35,
+        "Projection": "4-8 Saat (Yavaş İvme)"
+      },
+      "Time_Label": "23 Saat Önce",
+      "Bars_Ago": 23
+    },
+    {
+      "Symbol": "AKYHO.IS",
+      "Price": 2.27,
+      "Score": 50,
+      "Report": "Hacim patlaması (2.6x). VWAP üzerinde. ATR volatilite patlaması. AI Puanı: 50/100.",
+      "Position": {
+        "Entry": 2.27,
+        "SL": 2.25,
+        "TP1": 2.46,
+        "TP2": 2.54,
+        "Projection": "2-4 Saat (İstikrarlı Trend)"
+      },
+      "Time_Label": "26 Saat Önce",
+      "Bars_Ago": 26
+    },
+    {
+      "Symbol": "DOHOL.IS",
+      "Price": 21.56,
+      "Score": 50,
+      "Report": "Hacim patlaması (3.1x). EMA50 > EMA200. ATR volatilite patlaması. AI Puanı: 50/100.",
+      "Position": {
+        "Entry": 21.56,
+        "SL": 21.13,
+        "TP1": 22.16,
+        "TP2": 23.37,
+        "Projection": "1-2 Saat (Hızlı Kopuş)"
+      },
+      "Time_Label": "1 Saat Önce",
+      "Bars_Ago": 1
+    },
+    {
+      "Symbol": "EFOR.IS",
+      "Price": 21.36,
+      "Score": 50,
+      "Report": "OBV yeni zirve yaptı. VWAP üzerinde. Direnç hacimli kırıldı. AI Puanı: 50/100.",
+      "Position": {
+        "Entry": 21.36,
+        "SL": 21.24,
+        "TP1": 21.53,
+        "TP2": 23.08,
+        "Projection": "4-8 Saat (Yavaş İvme)"
+      },
+      "Time_Label": "35 Saat Önce",
+      "Bars_Ago": 35
+    },
+    {
+      "Symbol": "KERVN.IS",
+      "Price": 7.89,
+      "Score": 50,
+      "Report": "OBV yeni zirve yaptı. EMA50 > EMA200. ATR volatilite patlaması. AI Puanı: 50/100.",
+      "Position": {
+        "Entry": 7.89,
+        "SL": NaN,
+        "TP1": 8.36,
+        "TP2": 8.64,
+        "Projection": "4-8 Saat (Yavaş İvme)"
+      },
+      "Time_Label": "ŞİMDİ (Sıcak)",
+      "Bars_Ago": 0
+    },
+    {
+      "Symbol": "KRONT.IS",
+      "Price": 22.34,
+      "Score": 50,
+      "Report": "OBV yeni zirve yaptı. VWAP üzerinde. EMA50 > EMA200. BB daralma evresinde. AI Puanı: 50/100.",
+      "Position": {
+        "Entry": 22.34,
+        "SL": 22.02,
+        "TP1": 23.61,
+        "TP2": 24.31,
+        "Projection": "4-8 Saat (Yavaş İvme)"
+      },
+      "Time_Label": "39 Saat Önce",
+      "Bars_Ago": 39
+    }
+  ],
+  "signals_5m": [
+    {
+      "Symbol": "THYAO.IS",
+      "Price": 313.75,
+      "RSI": 51.16,
+      "Signal": "AL",
+      "Time": "11:00",
+      "Time_Label": "26 Bar Önce",
+      "Bars_Ago": 26
+    },
+    {
+      "Symbol": "GESAN.IS",
+      "Price": 73.8,
+      "RSI": 50.0,
+      "Signal": "AL",
+      "Time": "11:00",
+      "Time_Label": "15 Bar Önce",
+      "Bars_Ago": 15
+    }
+  ]
+}

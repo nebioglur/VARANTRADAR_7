@@ -1,0 +1,15 @@
+flask
+flask-cors
+yfinance
+pandas
+numpy
+scikit-learn
+xgboost
+ta
+requests
+feedparser
+gnews
+textblob
+cryptography
+gunicorn
+google-generativeai
