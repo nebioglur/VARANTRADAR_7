@@ -2086,13 +2086,15 @@ function navigateCard(direction) {
 async function runVarantSimulation() {
     const symSelect = document.getElementById('sim-symbol-select');
     const symbol = symSelect ? symSelect.value : 'THYAO';
+    const issuerSelect = document.getElementById('sim-issuer-select');
+    const issuer = issuerSelect ? issuerSelect.value : 'ALL';
     const resBox = document.getElementById('sim-result-box');
     if (!resBox) return;
 
-    resBox.innerHTML = `<div style="text-align:center; padding:1rem; color:var(--text-muted);"><div class="spinner small" style="display:inline-block; margin-right:8px;"></div> Black-Scholes Greeks ve kâr simülasyonu hesaplanıyor...</div>`;
+    resBox.innerHTML = `<div style="text-align:center; padding:1rem; color:var(--text-muted);"><div class="spinner small" style="display:inline-block; margin-right:8px;"></div> ${issuer !== 'ALL' ? issuer + ' ' : ''}Varantları ve Black-Scholes kâr hesabı yapılıyor...</div>`;
 
     try {
-        const response = await fetch(`/api/varant_simulator?symbol=${symbol}`);
+        const response = await fetch(`/api/varant_simulator?symbol=${symbol}&issuer=${encodeURIComponent(issuer)}`);
         const data = await response.json();
         
         if (data.status === 'success' && data.warrants && data.warrants.length > 0) {
@@ -2106,12 +2108,13 @@ async function runVarantSimulation() {
                 <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:8px; padding:0.6rem; display:flex; justify-content:space-between; align-items:center;">
                     <div>
                         <div style="display:flex; align-items:center; gap:6px;">
-                            <span style="font-weight:800; color:var(--text-light);">${w.code}</span>
-                            <span style="background:${badgeBg}; color:${badgeColor}; font-size:0.7rem; font-weight:bold; padding:2px 6px; border-radius:4px;">${w.type} (${w.issuer})</span>
-                            <span style="font-size:0.75rem; color:var(--text-muted);">Vade: ${w.maturity_days} Gün</span>
+                            <span style="font-weight:800; color:var(--text-light); font-size:0.95rem;">${w.code}</span>
+                            <span style="background:${badgeBg}; color:${badgeColor}; font-size:0.7rem; font-weight:bold; padding:2px 6px; border-radius:4px;">${w.type}</span>
+                            <span style="font-size:0.72rem; color:var(--accent-yellow); font-weight:600;">🏛️ ${w.issuer}</span>
+                            <span style="font-size:0.72rem; color:var(--text-muted);">Vade: ${w.maturity_days}G</span>
                         </div>
                         <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">
-                            Giriş: <b>${w.current_warrant_price}</b> | Hedef: <b style="color:var(--accent-green);">${w.target_warrant_price}</b> | Delta: <b>${w.delta}</b>
+                            Giriş: <b>${w.current_warrant_price}</b> | Hedef: <b style="color:var(--accent-green);">${w.target_warrant_price}</b> | Kaldıraç: <b>${w.gearing}</b> | Δ: <b>${w.delta}</b>
                         </div>
                     </div>
                     <div style="text-align:right;">
@@ -2124,7 +2127,7 @@ async function runVarantSimulation() {
             html += `</div>`;
             resBox.innerHTML = html;
         } else {
-            resBox.innerHTML = `<div style="text-align:center; padding:1rem; color:var(--text-muted);">Bu hisse için aktif varant eşleşmesi bulunamadı.</div>`;
+            resBox.innerHTML = `<div style="text-align:center; padding:1rem; color:var(--text-muted);">Bu hisse ve seçilen kurum (${issuer}) için aktif varant bulunamadı.</div>`;
         }
     } catch (e) {
         resBox.innerHTML = `<div style="text-align:center; padding:1rem; color:var(--accent-red);">Simülasyon yüklenirken hata: ${e.message}</div>`;
@@ -2178,6 +2181,8 @@ async function fetchWinRateScorecard() {
 async function loadDetailedVarantSim(symbol, spotPrice) {
     const spotEl = document.getElementById('dt-sim-spot');
     const targetInput = document.getElementById('dt-sim-target-input');
+    const issuerSelect = document.getElementById('dt-sim-issuer-select');
+    const issuer = issuerSelect ? issuerSelect.value : 'ALL';
     const tbody = document.getElementById('dt-varantsim-tbody');
     
     if (spotEl) spotEl.innerText = `₺${parseFloat(spotPrice || 100).toFixed(2)}`;
@@ -2185,11 +2190,11 @@ async function loadDetailedVarantSim(symbol, spotPrice) {
     if (targetInput) targetInput.value = defaultTarget;
 
     if (!tbody) return;
-    tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;"><div class="spinner small" style="display:inline-block; margin-right:8px;"></div> Varantlar ve Greeks matrisi hesaplanıyor...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;"><div class="spinner small" style="display:inline-block; margin-right:8px;"></div> ${issuer !== 'ALL' ? issuer + ' ' : ''}Varantları ve Greeks matrisi hesaplanıyor...</td></tr>`;
 
     try {
         const cleanSym = symbol.replace('.IS', '').toUpperCase();
-        const response = await fetch(`/api/varant_simulator?symbol=${cleanSym}&price=${spotPrice}&target=${defaultTarget}`);
+        const response = await fetch(`/api/varant_simulator?symbol=${cleanSym}&price=${spotPrice}&target=${defaultTarget}&issuer=${encodeURIComponent(issuer)}`);
         const data = await response.json();
 
         if (data.status === 'success' && data.warrants && data.warrants.length > 0) {
@@ -2201,7 +2206,7 @@ async function loadDetailedVarantSim(symbol, spotPrice) {
                 
                 tr.innerHTML = `
                     <td style="font-weight:800; color:var(--text-light); font-size:0.95rem;">${w.code}</td>
-                    <td><span style="color:${badgeColor}; font-weight:bold;">${w.type}</span> <span style="font-size:0.75rem; color:var(--text-muted);">(${w.issuer})</span></td>
+                    <td><span style="color:${badgeColor}; font-weight:bold;">${w.type}</span> <span style="font-size:0.75rem; color:var(--accent-yellow); font-weight:600;">(🏛️ ${w.issuer})</span></td>
                     <td style="font-weight:bold;">${w.current_warrant_price}</td>
                     <td style="color:var(--accent-green); font-weight:bold;">${w.target_warrant_price}</td>
                     <td style="color:var(--accent-blue);">${w.spot_gain_pct}</td>
@@ -2214,7 +2219,7 @@ async function loadDetailedVarantSim(symbol, spotPrice) {
                 tbody.appendChild(tr);
             });
         } else {
-            tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;">Bu hisse için aktif ihraç edilmiş varant bulunmamaktadır.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;">Bu hisse ve seçilen kurum (${issuer}) için aktif ihraç edilmiş varant bulunmamaktadır.</td></tr>`;
         }
     } catch (e) {
         tbody.innerHTML = `<tr><td colspan="10" class="text-red text-center" style="padding:2rem;">Hesaplama hatası: ${e.message}</td></tr>`;
@@ -2226,13 +2231,15 @@ async function recalculateDetailVarantSim() {
     const spot = parseFloat(document.getElementById('tk-price')?.innerText?.replace('₺','').replace(',','') || 100);
     const targetInput = document.getElementById('dt-sim-target-input');
     const targetVal = parseFloat(targetInput?.value || spot * 1.099);
+    const issuerSelect = document.getElementById('dt-sim-issuer-select');
+    const issuer = issuerSelect ? issuerSelect.value : 'ALL';
     
     const tbody = document.getElementById('dt-varantsim-tbody');
-    if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;"><div class="spinner small" style="display:inline-block; margin-right:8px;"></div> Yeniden hesaplanıyor...</td></tr>`;
+    if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;"><div class="spinner small" style="display:inline-block; margin-right:8px;"></div> Yeniden hesaplanıyor (${issuer})...</td></tr>`;
 
     try {
         const cleanSym = sym.replace('.IS', '').toUpperCase();
-        const response = await fetch(`/api/varant_simulator?symbol=${cleanSym}&price=${spot}&target=${targetVal}`);
+        const response = await fetch(`/api/varant_simulator?symbol=${cleanSym}&price=${spot}&target=${targetVal}&issuer=${encodeURIComponent(issuer)}`);
         const data = await response.json();
 
         if (data.status === 'success' && data.warrants && data.warrants.length > 0) {
@@ -2244,7 +2251,7 @@ async function recalculateDetailVarantSim() {
                 
                 tr.innerHTML = `
                     <td style="font-weight:800; color:var(--text-light); font-size:0.95rem;">${w.code}</td>
-                    <td><span style="color:${badgeColor}; font-weight:bold;">${w.type}</span> <span style="font-size:0.75rem; color:var(--text-muted);">(${w.issuer})</span></td>
+                    <td><span style="color:${badgeColor}; font-weight:bold;">${w.type}</span> <span style="font-size:0.75rem; color:var(--accent-yellow); font-weight:600;">(🏛️ ${w.issuer})</span></td>
                     <td style="font-weight:bold;">${w.current_warrant_price}</td>
                     <td style="color:var(--accent-green); font-weight:bold;">${w.target_warrant_price}</td>
                     <td style="color:var(--accent-blue);">${w.spot_gain_pct}</td>
@@ -2256,6 +2263,8 @@ async function recalculateDetailVarantSim() {
                 `;
                 tbody.appendChild(tr);
             });
+        } else {
+            tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;">Bu hisse ve seçilen kurum (${issuer}) için aktif ihraç edilmiş varant bulunmamaktadır.</td></tr>`;
         }
     } catch (e) {
         console.error("Varant Sim Recalculate Error:", e);

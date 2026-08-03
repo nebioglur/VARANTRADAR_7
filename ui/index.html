@@ -139,24 +139,36 @@
                     </div>
 
                     <!-- Simülatör Kontrolleri -->
-                    <div style="display:flex; gap:0.5rem; margin-bottom:0.8rem; align-items:center;">
-                        <select id="sim-symbol-select" onchange="runVarantSimulation()" style="background:var(--bg-base); color:var(--text-light); border:1px solid var(--border-color); border-radius:6px; padding:0.4rem 0.6rem; font-weight:700; flex:1;">
-                            <option value="THYAO">THYAO (Türk Hava Yolları)</option>
-                            <option value="AKBNK">AKBNK (Akbank)</option>
-                            <option value="GARAN">GARAN (Garanti BBVA)</option>
-                            <option value="ISCTR">ISCTR (İş Bankası C)</option>
-                            <option value="YKBNK">YKBNK (Yapı Kredi)</option>
-                            <option value="TUPRS">TUPRS (Tüpraş)</option>
-                            <option value="ASELS">ASELS (Aselsan)</option>
-                            <option value="EREGL">EREGL (Erdemir)</option>
-                            <option value="PGSUS">PGSUS (Pegasus)</option>
-                            <option value="KCHOL">KCHOL (Koç Holding)</option>
-                            <option value="SAHOL">SAHOL (Sabancı Holding)</option>
-                            <option value="SISE">SISE (Şişecam)</option>
-                            <option value="BIMAS">BIMAS (BİM Mağazalar)</option>
-                            <option value="EKGYO">EKGYO (Emlak Konut)</option>
-                        </select>
-                        <button onclick="runVarantSimulation()" style="background:var(--accent-blue); color:#fff; border:none; border-radius:6px; padding:0.4rem 0.8rem; font-weight:bold; cursor:pointer; font-size:0.85rem;"><i class="fa-solid fa-play"></i> Hesapla</button>
+                    <div style="display:flex; flex-direction:column; gap:0.5rem; margin-bottom:0.8rem;">
+                        <div style="display:flex; gap:0.5rem; align-items:center;">
+                            <select id="sim-symbol-select" onchange="runVarantSimulation()" style="background:var(--bg-base); color:var(--text-light); border:1px solid var(--border-color); border-radius:6px; padding:0.4rem 0.6rem; font-weight:700; flex:1;">
+                                <option value="THYAO">THYAO (Türk Hava Yolları)</option>
+                                <option value="AKBNK">AKBNK (Akbank)</option>
+                                <option value="GARAN">GARAN (Garanti BBVA)</option>
+                                <option value="ISCTR">ISCTR (İş Bankası C)</option>
+                                <option value="YKBNK">YKBNK (Yapı Kredi)</option>
+                                <option value="TUPRS">TUPRS (Tüpraş)</option>
+                                <option value="ASELS">ASELS (Aselsan)</option>
+                                <option value="EREGL">EREGL (Erdemir)</option>
+                                <option value="PGSUS">PGSUS (Pegasus)</option>
+                                <option value="KCHOL">KCHOL (Koç Holding)</option>
+                                <option value="SAHOL">SAHOL (Sabancı Holding)</option>
+                                <option value="SISE">SISE (Şişecam)</option>
+                                <option value="BIMAS">BIMAS (BİM Mağazalar)</option>
+                                <option value="EKGYO">EKGYO (Emlak Konut)</option>
+                            </select>
+                            <button onclick="runVarantSimulation()" style="background:var(--accent-blue); color:#fff; border:none; border-radius:6px; padding:0.4rem 0.8rem; font-weight:bold; cursor:pointer; font-size:0.85rem;"><i class="fa-solid fa-play"></i> Hesapla</button>
+                        </div>
+                        <div style="display:flex; gap:0.5rem; align-items:center;">
+                            <span style="font-size:0.78rem; color:var(--text-muted); white-space:nowrap;"><i class="fa-solid fa-building-columns"></i> İhraççı Kurum:</span>
+                            <select id="sim-issuer-select" onchange="runVarantSimulation()" style="background:var(--bg-base); color:var(--accent-yellow); border:1px solid var(--border-color); border-radius:6px; padding:0.35rem 0.6rem; font-weight:700; font-size:0.8rem; flex:1;">
+                                <option value="ALL">⭐ Tüm İhraççılar (En İyiler)</option>
+                                <option value="Ahlatcı">🏛️ Ahlatcı Yatırım (AH/AHL)</option>
+                                <option value="İş Yatırım">🏛️ İş Yatırım (IS)</option>
+                                <option value="Ak Yatırım">🏛️ Ak Yatırım (AK)</option>
+                                <option value="Garanti">🏛️ Garanti BBVA (GR)</option>
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Varant Eşleşme ve Hedef Simülasyon Alanı -->
@@ -932,9 +944,19 @@
                                 <span style="color:var(--text-muted); font-size:0.8rem; display:block;">Spot Hisse Fiyatı:</span>
                                 <span id="dt-sim-spot" style="font-size:1.2rem; font-weight:800; color:var(--text-light);">₺0.00</span>
                             </div>
-                            <div style="flex:1; min-width:200px;">
+                            <div style="flex:1; min-width:180px;">
                                 <label style="color:var(--text-muted); font-size:0.8rem; display:block; margin-bottom:4px;">Hedef Hisse Fiyatı (TL):</label>
                                 <input type="number" step="0.1" id="dt-sim-target-input" style="background:var(--bg-base); color:var(--accent-green); font-weight:bold; border:1px solid var(--border-color); border-radius:6px; padding:0.4rem 0.8rem; width:100%;" placeholder="Hedef Fiyat Girin...">
+                            </div>
+                            <div style="min-width:180px;">
+                                <label style="color:var(--text-muted); font-size:0.8rem; display:block; margin-bottom:4px;">İhraççı Kurum Seçimi:</label>
+                                <select id="dt-sim-issuer-select" onchange="recalculateDetailVarantSim()" style="background:var(--bg-base); color:var(--accent-yellow); font-weight:bold; border:1px solid var(--border-color); border-radius:6px; padding:0.4rem 0.8rem; width:100%;">
+                                    <option value="ALL">⭐ Tüm İhraççılar</option>
+                                    <option value="Ahlatcı">🏛️ Ahlatcı Yatırım (AH/AHL)</option>
+                                    <option value="İş Yatırım">🏛️ İş Yatırım (IS)</option>
+                                    <option value="Ak Yatırım">🏛️ Ak Yatırım (AK)</option>
+                                    <option value="Garanti">🏛️ Garanti BBVA (GR)</option>
+                                </select>
                             </div>
                             <button onclick="recalculateDetailVarantSim()" class="btn-primary" style="margin-top:18px; padding:0.45rem 1.2rem;"><i class="fa-solid fa-bolt"></i> Simülasyonu Yenile</button>
                         </div>

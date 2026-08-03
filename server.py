@@ -576,6 +576,7 @@ def api_chart_data():
 def api_varant_simulator():
     """Seçilen hisse için Altın Varantları ve hedef kâr simülasyonunu döner."""
     symbol = request.args.get('symbol', 'THYAO').upper()
+    issuer = request.args.get('issuer', 'ALL')
     try:
         current_price = float(request.args.get('price', 0.0))
     except:
@@ -604,10 +605,11 @@ def api_varant_simulator():
         if target_price <= 0:
             target_price = round(current_price * 1.099, 2)
             
-        warrants = VarantSimulator.get_warrants_for_symbol(symbol, current_price, target_price)
+        warrants = VarantSimulator.get_warrants_for_symbol(symbol, current_price, target_price, issuer=issuer)
         return jsonify({
             "status": "success",
             "symbol": symbol,
+            "issuer": issuer,
             "current_price": current_price,
             "target_price": target_price,
             "warrants": sanitize_for_json(warrants)

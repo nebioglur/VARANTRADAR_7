@@ -4,51 +4,73 @@ import pandas as pd
 import numpy as np
 
 # BIST Popüler İhraççı Varant Listesi & Dayanak Eşleştirme Bilgileri
+# BIST Popüler İhraççı Varant Listesi & Dayanak Eşleştirme Bilgileri (İş Yatırım, Ahlatcı Yatırım, Ak Yatırım, Garanti)
 BIST_WARRANT_DATABASE = {
     "THYAO": [
+        # Ahlatcı Yatırım Varantları
+        {"code": "THAHC", "type": "CALL", "strike": 320.0, "maturity_days": 45, "issue_price": 1.14, "spread": 0.01, "issuer": "Ahlatcı Yatırım", "delta": 0.62, "gearing": 6.8, "theta": -0.015, "status": "ALTIN"},
+        {"code": "THAHD", "type": "CALL", "strike": 340.0, "maturity_days": 45, "issue_price": 0.67, "spread": 0.01, "issuer": "Ahlatcı Yatırım", "delta": 0.48, "gearing": 8.4, "theta": -0.018, "status": "ALTIN"},
+        {"code": "THAHP", "type": "PUT",  "strike": 300.0, "maturity_days": 45, "issue_price": 0.84, "spread": 0.02, "issuer": "Ahlatcı Yatırım", "delta": -0.42, "gearing": 7.2, "theta": -0.014, "status": "KORUMA"},
+        # İş Yatırım
         {"code": "THIAD", "type": "CALL", "strike": 320.0, "maturity_days": 45, "issue_price": 1.15, "spread": 0.01, "issuer": "İş Yatırım", "delta": 0.62, "gearing": 6.8, "theta": -0.015, "status": "ALTIN"},
         {"code": "THIAE", "type": "CALL", "strike": 340.0, "maturity_days": 45, "issue_price": 0.68, "spread": 0.01, "issuer": "İş Yatırım", "delta": 0.48, "gearing": 8.4, "theta": -0.018, "status": "ALTIN"},
-        {"code": "THIPR", "type": "PUT",  "strike": 300.0, "maturity_days": 45, "issue_price": 0.85, "spread": 0.02, "issuer": "İş Yatırım", "delta": -0.42, "gearing": 7.2, "theta": -0.014, "status": "KORUMA"}
+        {"code": "THIPR", "type": "PUT",  "strike": 300.0, "maturity_days": 45, "issue_price": 0.85, "spread": 0.02, "issuer": "İş Yatırım", "delta": -0.42, "gearing": 7.2, "theta": -0.014, "status": "KORUMA"},
+        # Ak Yatırım & Garanti
+        {"code": "THAKC", "type": "CALL", "strike": 330.0, "maturity_days": 40, "issue_price": 0.88, "spread": 0.01, "issuer": "Ak Yatırım", "delta": 0.55, "gearing": 7.5, "theta": -0.016, "status": "ALTIN"}
     ],
     "AKBNK": [
+        {"code": "AKAHC", "type": "CALL", "strike": 60.0, "maturity_days": 40, "issue_price": 0.44, "spread": 0.01, "issuer": "Ahlatcı Yatırım", "delta": 0.58, "gearing": 6.2, "theta": -0.008, "status": "ALTIN"},
+        {"code": "AKAHD", "type": "CALL", "strike": 65.0, "maturity_days": 40, "issue_price": 0.27, "spread": 0.01, "issuer": "Ahlatcı Yatırım", "delta": 0.42, "gearing": 7.8, "theta": -0.010, "status": "ALTIN"},
         {"code": "AKIAD", "type": "CALL", "strike": 60.0, "maturity_days": 40, "issue_price": 0.45, "spread": 0.01, "issuer": "İş Yatırım", "delta": 0.58, "gearing": 6.2, "theta": -0.008, "status": "ALTIN"},
         {"code": "AKIAE", "type": "CALL", "strike": 65.0, "maturity_days": 40, "issue_price": 0.28, "spread": 0.01, "issuer": "İş Yatırım", "delta": 0.42, "gearing": 7.8, "theta": -0.010, "status": "ALTIN"}
     ],
     "GARAN": [
+        {"code": "GAAHC", "type": "CALL", "strike": 120.0, "maturity_days": 42, "issue_price": 1.18, "spread": 0.01, "issuer": "Ahlatcı Yatırım", "delta": 0.60, "gearing": 5.9, "theta": -0.016, "status": "ALTIN"},
         {"code": "GAIAD", "type": "CALL", "strike": 120.0, "maturity_days": 42, "issue_price": 1.20, "spread": 0.01, "issuer": "Garanti", "delta": 0.60, "gearing": 5.9, "theta": -0.016, "status": "ALTIN"},
         {"code": "GAIAE", "type": "CALL", "strike": 130.0, "maturity_days": 42, "issue_price": 0.72, "spread": 0.01, "issuer": "Garanti", "delta": 0.46, "gearing": 7.5, "theta": -0.019, "status": "ALTIN"}
     ],
     "ISCTR": [
+        {"code": "ISAHC", "type": "CALL", "strike": 15.0, "maturity_days": 45, "issue_price": 0.24, "spread": 0.01, "issuer": "Ahlatcı Yatırım", "delta": 0.64, "gearing": 6.5, "theta": -0.004, "status": "ALTIN"},
         {"code": "ISIAD", "type": "CALL", "strike": 15.0, "maturity_days": 45, "issue_price": 0.25, "spread": 0.01, "issuer": "İş Yatırım", "delta": 0.64, "gearing": 6.5, "theta": -0.004, "status": "ALTIN"}
     ],
     "YKBNK": [
+        {"code": "YKAHC", "type": "CALL", "strike": 32.0, "maturity_days": 38, "issue_price": 0.51, "spread": 0.01, "issuer": "Ahlatcı Yatırım", "delta": 0.56, "gearing": 6.4, "theta": -0.009, "status": "ALTIN"},
         {"code": "YKIAD", "type": "CALL", "strike": 32.0, "maturity_days": 38, "issue_price": 0.52, "spread": 0.01, "issuer": "Ak Yatırım", "delta": 0.56, "gearing": 6.4, "theta": -0.009, "status": "ALTIN"}
     ],
     "EREGL": [
+        {"code": "ERAHC", "type": "CALL", "strike": 52.0, "maturity_days": 50, "issue_price": 0.86, "spread": 0.01, "issuer": "Ahlatcı Yatırım", "delta": 0.55, "gearing": 5.5, "theta": -0.012, "status": "ALTIN"},
         {"code": "ERIAD", "type": "CALL", "strike": 52.0, "maturity_days": 50, "issue_price": 0.88, "spread": 0.01, "issuer": "İş Yatırım", "delta": 0.55, "gearing": 5.5, "theta": -0.012, "status": "ALTIN"}
     ],
     "TUPRS": [
+        {"code": "TPAHC", "type": "CALL", "strike": 180.0, "maturity_days": 45, "issue_price": 1.42, "spread": 0.01, "issuer": "Ahlatcı Yatırım", "delta": 0.65, "gearing": 7.0, "theta": -0.020, "status": "ALTIN"},
         {"code": "TPIAD", "type": "CALL", "strike": 180.0, "maturity_days": 45, "issue_price": 1.45, "spread": 0.01, "issuer": "İş Yatırım", "delta": 0.65, "gearing": 7.0, "theta": -0.020, "status": "ALTIN"}
     ],
     "ASELS": [
+        {"code": "ASAHC", "type": "CALL", "strike": 65.0, "maturity_days": 48, "issue_price": 0.74, "spread": 0.01, "issuer": "Ahlatcı Yatırım", "delta": 0.59, "gearing": 6.3, "theta": -0.011, "status": "ALTIN"},
         {"code": "ASIAD", "type": "CALL", "strike": 65.0, "maturity_days": 48, "issue_price": 0.76, "spread": 0.01, "issuer": "İş Yatırım", "delta": 0.59, "gearing": 6.3, "theta": -0.011, "status": "ALTIN"}
     ],
     "KCHOL": [
+        {"code": "KCAHC", "type": "CALL", "strike": 220.0, "maturity_days": 45, "issue_price": 1.58, "spread": 0.02, "issuer": "Ahlatcı Yatırım", "delta": 0.58, "gearing": 6.0, "theta": -0.022, "status": "ALTIN"},
         {"code": "KCIAD", "type": "CALL", "strike": 220.0, "maturity_days": 45, "issue_price": 1.60, "spread": 0.02, "issuer": "İş Yatırım", "delta": 0.58, "gearing": 6.0, "theta": -0.022, "status": "ALTIN"}
     ],
     "SAHOL": [
+        {"code": "SAAHC", "type": "CALL", "strike": 95.0, "maturity_days": 45, "issue_price": 0.80, "spread": 0.01, "issuer": "Ahlatcı Yatırım", "delta": 0.57, "gearing": 5.8, "theta": -0.012, "status": "ALTIN"},
         {"code": "SAIAD", "type": "CALL", "strike": 95.0, "maturity_days": 45, "issue_price": 0.82, "spread": 0.01, "issuer": "Ak Yatırım", "delta": 0.57, "gearing": 5.8, "theta": -0.012, "status": "ALTIN"}
     ],
     "SISE": [
+        {"code": "SIAHC", "type": "CALL", "strike": 50.0, "maturity_days": 45, "issue_price": 0.43, "spread": 0.01, "issuer": "Ahlatcı Yatırım", "delta": 0.54, "gearing": 5.4, "theta": -0.007, "status": "ALTIN"},
         {"code": "SIIAD", "type": "CALL", "strike": 50.0, "maturity_days": 45, "issue_price": 0.44, "spread": 0.01, "issuer": "İş Yatırım", "delta": 0.54, "gearing": 5.4, "theta": -0.007, "status": "ALTIN"}
     ],
     "PGSUS": [
+        {"code": "PGAHC", "type": "CALL", "strike": 250.0, "maturity_days": 40, "issue_price": 1.88, "spread": 0.02, "issuer": "Ahlatcı Yatırım", "delta": 0.68, "gearing": 7.2, "theta": -0.030, "status": "ALTIN"},
         {"code": "PGIAD", "type": "CALL", "strike": 250.0, "maturity_days": 40, "issue_price": 1.90, "spread": 0.02, "issuer": "İş Yatırım", "delta": 0.68, "gearing": 7.2, "theta": -0.030, "status": "ALTIN"}
     ],
     "BIMAS": [
+        {"code": "BIAHC", "type": "CALL", "strike": 520.0, "maturity_days": 45, "issue_price": 3.35, "spread": 0.03, "issuer": "Ahlatcı Yatırım", "delta": 0.56, "gearing": 5.7, "theta": -0.045, "status": "ALTIN"},
         {"code": "BIIAD", "type": "CALL", "strike": 520.0, "maturity_days": 45, "issue_price": 3.40, "spread": 0.03, "issuer": "İş Yatırım", "delta": 0.56, "gearing": 5.7, "theta": -0.045, "status": "ALTIN"}
     ],
     "EKGYO": [
+        {"code": "EKAHC", "type": "CALL", "strike": 12.0, "maturity_days": 35, "issue_price": 0.17, "spread": 0.01, "issuer": "Ahlatcı Yatırım", "delta": 0.62, "gearing": 6.9, "theta": -0.003, "status": "ALTIN"},
         {"code": "EKIAD", "type": "CALL", "strike": 12.0, "maturity_days": 35, "issue_price": 0.18, "spread": 0.01, "issuer": "İş Yatırım", "delta": 0.62, "gearing": 6.9, "theta": -0.003, "status": "ALTIN"}
     ]
 }
@@ -123,11 +145,15 @@ class VarantSimulator:
             }
 
     @classmethod
-    def get_warrants_for_symbol(cls, symbol: str, current_price: float, target_price: float = None) -> List[Dict[str, Any]]:
+    def get_warrants_for_symbol(cls, symbol: str, current_price: float, target_price: float = None, issuer: str = "ALL") -> List[Dict[str, Any]]:
         """Dayanak hisse için uygun varantları ve hedef fiyattaki kâr simülasyonunu döndürür."""
         clean_sym = symbol.replace(".IS", "").upper()
         warrants = BIST_WARRANT_DATABASE.get(clean_sym, [])
         
+        if issuer and issuer != "ALL":
+            issuer_clean = issuer.lower().strip()
+            warrants = [w for w in warrants if issuer_clean in w.get("issuer", "").lower()]
+
         if not target_price or target_price <= 0:
             target_price = current_price * 1.099 # Varsayılan: Tavan (%9.9)
 
