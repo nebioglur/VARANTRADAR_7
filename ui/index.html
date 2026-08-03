@@ -15,6 +15,8 @@
     
     <!-- Chart.js for visualizations -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- html2canvas for JPG / PNG export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
     
@@ -297,10 +299,13 @@
                 <h1 id="tk-sym">SEMBOL</h1>
                 <span id="tk-price" class="tk-price">0.00</span>
             </div>
-            <div class="th-right">
+            <div class="th-right" style="display:flex; align-items:center; gap:8px;">
                 <div class="badge badge-grade" id="ig-val">DERECE</div>
                 <div class="badge badge-regime" id="score-regime">PİYASA REJİMİ</div>
                 <div class="tk-time" id="tk-time">YYYY-AA-GG</div>
+                <button type="button" id="btn-export-jpg" onclick="exportAnalysisAsJPG()" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#fff; border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 8px; padding: 6px 12px; font-size: 0.82rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3); transition: all 0.2s ease;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='none'" title="Analiz Raporunu JPG Görseli Olarak İndir">
+                    <i class="fa-solid fa-file-image"></i> JPG İndir
+                </button>
             </div>
         </div>
 
@@ -1134,6 +1139,6 @@
         </button>
     </div>
 
-    <script src="app.js?v=20260803_v3_hybrid_varantsim"></script>
+    <script src="app.js?v=20260803_v4_jpg_export"></script>
 </body>
 </html>

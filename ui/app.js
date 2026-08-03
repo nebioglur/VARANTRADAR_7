@@ -2219,4 +2219,54 @@ window.addEventListener('DOMContentLoaded', () => {
     runVarantSimulation();
 });
 
+// 📸 ANALİZ RAPORUNU JPG / GÖRSEL OLARAK İNDİRME FONKSİYONU
+async function exportAnalysisAsJPG() {
+    const sym = window.currentAnalyzedSymbol || document.getElementById('tk-sym')?.innerText || 'ANALIZ';
+    const targetElement = document.getElementById('dashboard-wrapper');
+    const btn = document.getElementById('btn-export-jpg');
+    
+    if (!targetElement) return;
+    
+    if (typeof html2canvas === 'undefined') {
+        alert('Görsel kütüphanesi yüklenemedi. Lütfen sayfayı yenileyiniz.');
+        return;
+    }
+    
+    const originalBtnText = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Hazırlanıyor...';
+        btn.disabled = true;
+    }
+    
+    try {
+        const canvas = await html2canvas(targetElement, {
+            backgroundColor: '#0b0f19',
+            scale: 2, // Yüksek çözünürlüklü Retina/HD çıktı
+            useCORS: true,
+            logging: false,
+            windowWidth: targetElement.scrollWidth,
+            windowHeight: targetElement.scrollHeight
+        });
+        
+        // JPG / PNG İndirici Linki
+        const imageURL = canvas.toDataURL('image/jpeg', 0.95);
+        const downloadLink = document.createElement('a');
+        const nowStr = new Date().toISOString().slice(0,10);
+        downloadLink.download = `VarantRadar_${sym}_Analiz_${nowStr}.jpg`;
+        downloadLink.href = imageURL;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+    } catch (err) {
+        console.error("JPG Export Error:", err);
+        alert("Görsel oluşturulurken bir hata oluştu: " + err.message);
+    } finally {
+        if (btn) {
+            btn.innerHTML = originalBtnText;
+            btn.disabled = false;
+        }
+    }
+}
+
+
 
