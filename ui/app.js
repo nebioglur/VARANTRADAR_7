@@ -207,13 +207,20 @@ async function scanHomeOpportunities() {
             
             // Get top 3
             const top3 = data.results.slice(0, 3);
-            const classes = ["bull", "base", "bear"];
-            const labels = ["GÜÇLÜ AL (POTANSİYEL)", "AL (BİRİKTİR)", "İZLE (NÖTR)"];
-            
             top3.forEach((item, index) => {
                 let scoreValue = item.Score !== undefined ? item.Score : (item.Confidence_Score !== undefined ? item.Confidence_Score : 0);
-                let c = classes[index] || "base";
-                let l = labels[index] || "İZLE";
+                let c = "bull";
+                let l = "GÜÇLÜ AL";
+                if (scoreValue >= 75) {
+                    c = "bull";
+                    l = "GÜÇLÜ AL (LİDER)";
+                } else if (scoreValue >= 60) {
+                    c = "base";
+                    l = "KADEMELİ AL (DESTEK)";
+                } else {
+                    c = "bear";
+                    l = "İZLE / BEKLE";
+                }
                 
                 contentBox.innerHTML += `
                 <div class="scenario-box ${c}" style="cursor:pointer;" onclick="document.getElementById('symbol-input').value='${item.Symbol}'; analyzeSymbol();">

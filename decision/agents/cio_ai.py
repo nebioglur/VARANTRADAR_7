@@ -123,40 +123,38 @@ class ChiefInvestmentOfficer:
                 committee_votes[agent_name]["Total_Trades"] = 0
                 committee_votes[agent_name]["History"] = []
         
-        # Karar Çözümleme (Conflict Resolution)
+        # Karar Çözümleme (Conflict Resolution & Timeframe Harmony)
         buy_votes = sum(1 for a in [tech, fund, macro, smart] if a["Vote"] == "AL")
         sell_votes = sum(1 for a in [tech, fund, macro, smart] if a["Vote"] == "SAT")
         
         # 1. MUTLAK VETO KONTROLLERİ (Risk & Makro)
         max_drawdown_risk = risk_plan.get("Actual_Risk_Pct", 2.0)
         
-        # Eğer iflas riski %10'u aşıyorsa doğrudan reddet
         if max_drawdown_risk > 10.0:
             final_action = "NO_TRADE"
-            cio_reasoning = f"VETO EDİLDİ: Tek işlemde kasanın %{max_drawdown_risk}'i riske edilemez (Limit: %10). Sermaye koruması önceliklidir."
-        elif macro["Vote"] == "SAT":
-            final_action = "NO_TRADE"
-            cio_reasoning = f"VETO EDİLDİ: Makro ekonomi ve VIX riskleri çok yüksek ({macro['Reasoning']})."
-        # 2. KOMİTE OYLAMASI
+            cio_reasoning = f"🛑 İŞLEM AÇILAMAZ (RİSK LİMİTİ): Kasa risk oranı (%{max_drawdown_risk}) güvenlik sınırını (%10) aşıyor."
+        elif macro["Vote"] == "SAT" and tech["Vote"] == "SAT":
+            final_action = "SELL"
+            cio_reasoning = f"📉 GÜÇLÜ SATIŞ BASKISI: Hem makro rejim hem teknik göstergeler düşüş trendini teyit ediyor."
         elif buy_votes >= 3:
             final_action = "STRONG_BUY"
-            cio_reasoning = f"Komitenin çoğunluğu ({buy_votes}/4) AL yönünde mutabık."
-        elif buy_votes == 2 and sell_votes == 0:
+            cio_reasoning = f"🚀 GÜÇLÜ AL — TAM MUTABAKAT: Uzman komitesinin ezici çoğunluğu ({buy_votes}/4) yükseliş yönünde birleşti."
+        elif buy_votes >= 2 and sell_votes <= 1:
             final_action = "BUY"
-            cio_reasoning = "Kısmi AL sinyali. Kontrollü (düşük lot) giriş yapılabilir."
+            cio_reasoning = f"🛡️ KADEMELİ AL — DESTEK ODAKLI: Temel motorlar yükselişi destekliyor ({buy_votes}/4 AL); kontrollü kademeli giriş uygundur."
         elif sell_votes >= 2:
             final_action = "SELL"
-            cio_reasoning = f"Komitenin çoğunluğu ({sell_votes}/4) SAT/RİSKLİ yönünde uyarıyor."
+            cio_reasoning = f"⚠️ RİSKLİ / SATIŞ: Komitede satış baskısı ({sell_votes}/4 SAT) ağır basıyor."
         else:
             final_action = "NO_TRADE"
-            cio_reasoning = "Komitede konsensüs (AL/SAT) sağlanamadı. Beklemede kal."
+            cio_reasoning = "⏸️ İZLE / BEKLE: Piyasa yönü konsolidasyonda, net kırılım beklenmeli."
 
         # THE 7 WHYS (Decision Intelligence Explanations)
         regime = macro_res.get("Regime", "YATAY")
         whys = {
             "Neden?": cio_reasoning,
-            "Neden Şimdi?": f"Piyasa rejimi '{regime}' ve Akıllı Para durumu '{smart['Vote']}' olduğu için zamanlama riski dengelendi.",
-            "Neden Bu Fiyat?": f"Teknik skor ({tech['Score']}) kırılım veya destek dönüşüne işaret ediyor.",
+            "Neden Şimdi?": f"Piyasa rejimi '{regime}', Akıllı Para '{smart['Vote']}' ve Teknik İvme '{tech['Vote']}' olduğu için zamanlama riski dengelendi.",
+            "Neden Bu Fiyat?": f"Teknik skor ({tech['Score']}) kırılım veya destek dönüş bölgesine işaret ediyor.",
             "Neden Bu Stop?": "Volatilite (ATR) hesaplamalarına dayanarak, fiyat gürültüsünün (noise) bittiği noktaya konuldu.",
             "Neden Bu Hedef?": "Trend ivmesine ve geçmiş dalga boylarına göre güvenli çıkış alanı olarak seçildi.",
             "Neden Bu Süre?": "Momentumun sönümlenme hızına ve piyasa rejiminin doğasına göre optimize edildi.",

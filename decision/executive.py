@@ -162,17 +162,19 @@ class ExecutiveDecisionEngine:
         if is_bull and trend == "GÜÇLÜ YÜKSELİŞ" and confidence_score > 70:
             op_pyramiding = "Trend güçlü. Direnç kırılımlarında karlı pozisyonlara (Piramitleme) ekleme yapılabilir."
             
-        op_short_term = "NÖTR - Kısa vade momentum belirsiz."
-        if engine_scores.get("Technical", 50) > 65:
-            op_short_term = "AL - Kısa vade ivme güçlü, günlük trade için uygun."
-        elif engine_scores.get("Technical", 50) < 35:
-            op_short_term = "SAT - Kısa vade momentum zayıf, destek kırılımı var."
-            
-        op_long_term = "TUT - Uzun vade yatay seyir."
-        if inv_grade in ["AAA", "AA", "A"]:
-            op_long_term = "BİRİKTİR - Temel rasyolar ucuz, uzun vade için cazip."
-        elif inv_grade in ["CCC", "B"]:
-            op_long_term = "UZAK DUR - Makro ve temel yapı bozuk."
+        # VADE UYUMLU VE TUTARLI TAVSİYELER (Unified Timeframe Directives)
+        if action == "STRONG_BUY":
+            op_short_term = "GÜÇLÜ AL — Kısa vadeli ivme ve hacim patlaması yukarı yönü teyit ediyor."
+            op_long_term = "BİRİKTİR — Temel ve teknik göstergeler uzun vadeli yükselişi destekliyor."
+        elif action == "BUY":
+            op_short_term = "KADEMELİ AL — Destek seviyelerine geri çekilmelerde kademeli giriş uygundur."
+            op_long_term = "TUT / BİRİKTİR — Trend pozitif, direnç kırılımıyla ekleme yapılabilir."
+        elif action == "SELL":
+            op_short_term = "SAT / RİSKLİ — Kısa vadeli teknik ve makro satış baskısı mevcut."
+            op_long_term = "UZAK DUR — Düşüş trendi veya bozulan temel rasyolar nedeniyle riskli."
+        else:
+            op_short_term = "İZLE / BEKLE — Kısa vadede yatay seyir, net kırılım beklenmeli."
+            op_long_term = "NÖTR / TUT — Uzun vadeli yön tayini için piyasa dengelenmesi bekleniyor."
         
         mtf = {
             "Daily": {"Trend": trend, "Move": f"%{round(atr_estimate/current_price*100,1)}", "Risk": "Yüksek", "Target": round(current_price + atr_estimate*1.5*multiplier,2), "Stop": round(current_price - atr_estimate*1.5*multiplier,2)},
@@ -210,7 +212,7 @@ class ExecutiveDecisionEngine:
             historical_news = []
             ai_narrative = f"Yapay Zeka Raporu oluşturulamadı: {e}"
 
-        # --- BÜYÜK YATIRIMCI İKNA & KARAR MOTORU (CONVICTION PLAYBOOK) ---
+        # --- BÜYÜK YATIRIMCI İKNA & KARAR MOTORU (CONVICTION PLAYBOOK - HARMONIZED) ---
         tp1_val = trade_plan["Exit_Plan"]["Take_Profit_1"]
         tp2_val = trade_plan["Exit_Plan"]["Take_Profit_2"]
         entry1_val = trade_plan['Entry_Plan']['Entry_1']
@@ -222,21 +224,26 @@ class ExecutiveDecisionEngine:
         sl_loss = max(sl_loss, 0.8)
         rr_calc = round(tp2_gain / sl_loss, 1) if sl_loss > 0 else 2.5
         
-        if confidence_score >= 70:
+        if action == "STRONG_BUY" or (confidence_score >= 70 and action != "NO_TRADE" and action != "SELL"):
             verdict_badge = "GÜÇLÜ AL"
             verdict_title = "🚨 KESİN AL — YÜKSEK KURUMSAL İKNA & MOMENTUM"
             verdict_color = "#10b981"
-            exec_pitch = f"{symbol} hissesinde teknik güç, akıllı para hacmi ve piyasa rejimi aynı yönde birleşerek (confluence) yüksek olasılıklı bir yükseliş fırsatı oluşturmuştur. Fiyat ₺{round(current_price, 2)} seviyesinde olup, ₺{stop_loss} seviyesinde risk sıkı tutulurken ₺{tp1_val} (+%{tp1_gain}) ve ₺{tp2_val} (+%{tp2_gain}) hedefleri 1:{rr_calc} gibi asimetrik bir kazanç/risk avantajı sunmaktadır."
-        elif confidence_score >= 50:
+            exec_pitch = f"{symbol} hissesinde teknik güç, akıllı para hacmi ve piyasa rejimi aynı yönde birleşerek yüksek olasılıklı bir yükseliş fırsatı oluşturmuştur. Fiyat ₺{round(current_price, 2)} seviyesinde olup, ₺{stop_loss} seviyesinde risk sıkı tutulurken ₺{tp1_val} (+%{tp1_gain}) ve ₺{tp2_val} (+%{tp2_gain}) hedefleri 1:{rr_calc} gibi asimetrik bir kazanç/risk avantajı sunmaktadır."
+        elif action == "BUY" or (confidence_score >= 50 and action != "NO_TRADE" and action != "SELL"):
             verdict_badge = "KADEMELİ AL"
             verdict_title = "🛡️ KADEMELİ AL — PULLBACK DESTEK GİRİŞİ"
             verdict_color = "#38bdf8"
-            exec_pitch = f"{symbol} hissesinde ana trend yukarı yönlüdür ancak kısa vadeli göstergeler düzeltme veya direnç testine işaret etmektedir. Tek seferde girmek yerine ₺{entry1_val} ve olası testte ₺{entry2_val} desteklerinden 2 kademede alım yaparak ortalamayı güvenli seviyede tutmak en akılcı stratejidir."
+            exec_pitch = f"{symbol} hissesinde ana trend yukarı yönlüdür ancak kısa vadeli göstergeler düzeltme veya direnç testine işaret etmektedir. Tek seferde girmek yerine ₺{entry1_val} ve olası geri çekilmede ₺{entry2_val} desteklerinden 2 kademede alım yaparak ortalamayı güvenli seviyede tutmak en akılcı stratejidir."
+        elif action == "SELL":
+            verdict_badge = "SAT / RİSKLİ"
+            verdict_title = "⚠️ SATIŞ BASKISI — SERMAYE KORUMA MODU"
+            verdict_color = "#ef4444"
+            exec_pitch = f"{symbol} için teknik ve makro motorlar düşüş baskısı veya kırılım uyarısı vermektedir. Yeni alım önerilmez, mevcut pozisyonlarda stop seviyelerine riayet edilmelidir."
         else:
             verdict_badge = "İZLE / BEKLE"
             verdict_title = "🛑 İZLE / NÖTR — RİSKSİZ BEKLEME"
             verdict_color = "#f59e0b"
-            exec_pitch = f"{symbol} için teknik ve hacim verileri şu anda net bir yön teyidi vermemektedir. Sermayenizi korumak adına kırılım veya destek dönüşü teyit edilmeden pozisyon açılması önerilmez."
+            exec_pitch = f"{symbol} için teknik ve hacim verileri şu anda konsolidasyon bölgesindedir. CIO komitesi net bir kırılım veya destek onayı gelene kadar sermaye koruma amaçlı beklemede kalınmasını önermektedir."
 
         warrant_gain_tp1 = round(tp1_gain * 5.2, 1)
         warrant_gain_tp2 = round(tp2_gain * 5.2, 1)
