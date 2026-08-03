@@ -1399,6 +1399,14 @@ function bindDataToDashboard(report) {
     
     // 6. RAW JSON TAB
     setElText('raw-json-output', JSON.stringify(report, null, 2));
+
+    // 7. ALTIN VARANT DETAYLI SİMÜLASYONUNU YÜKLE
+    try {
+        let spotPrice = safeGet(report, "Section_01_Ident.Price", 100);
+        loadDetailedVarantSim(currentSymbol, spotPrice);
+    } catch(e) {
+        console.error("Detaylı varant simülasyonu başlatılamadı:", e);
+    }
 }
 
 // ========== CHART.JS INTEGRATION ==========
@@ -1712,7 +1720,9 @@ function renderAllDashboardTables() {
                     <td>${hacimStr}</td>
                     <td>${scoreStr}</td>
                     <td>
-                        <a href="/?symbol=${res.Symbol}&tab=graphic" target="_blank" class="btn btn-primary" style="padding:0.25rem 0.5rem; font-size:0.75rem; text-decoration:none; color:white; display:inline-block;" onclick="event.preventDefault(); document.getElementById('symbol-input').value='${res.Symbol}'; analyzeSymbol();">İncele</a>
+                        <button type="button" class="btn-primary" style="padding:0.3rem 0.6rem; font-size:0.75rem; border-radius:6px; border:none; color:white; display:flex; align-items:center; gap:4px; cursor:pointer; background:linear-gradient(135deg, #ef4444, #b91c1c); box-shadow:0 2px 6px rgba(239,68,68,0.3);" onclick="document.getElementById('symbol-input').value='${res.Symbol}'; analyzeSymbol();" title="Tavan Hedefi, Stop Seviyeleri ve Altın Varantları İncele">
+                            <i class="fa-solid fa-rocket"></i> İncele
+                        </button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -1755,11 +1765,13 @@ function renderAllDashboardTables() {
                 <td style="font-family:monospace; font-weight:600;">${priceStr}</td>
                 <td>${scoreContent}</td>
                 <td>${statusStr}</td>
-                <td>
-                    <a href="/?symbol=${res.Symbol}&tab=graphic" target="_blank" class="btn btn-primary" style="padding:0.25rem 0.5rem; font-size:0.75rem; text-decoration:none; color:white; display:inline-block;" onclick="event.preventDefault(); document.getElementById('symbol-input').value='${res.Symbol}'; analyzeSymbol();">İncele</a>
-                </td>
-            `;
-            tbody.appendChild(tr);
+                    <td>
+                        <button type="button" class="btn-primary" style="padding:0.3rem 0.6rem; font-size:0.75rem; border-radius:6px; border:none; color:white; display:flex; align-items:center; gap:4px; cursor:pointer; background:linear-gradient(135deg, #3b82f6, #1d4ed8); box-shadow:0 2px 6px rgba(59,130,246,0.3);" onclick="document.getElementById('symbol-input').value='${res.Symbol}'; analyzeSymbol();" title="Detaylı AI Analizi, Varant Getiri Matrisi ve Grafiği Aç">
+                            <i class="fa-solid fa-chart-line"></i> İncele
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
         });
     }
     
@@ -2017,4 +2029,194 @@ function navigateCard(direction) {
     if (nextIdx >= totalCards) nextIdx = 0;
     jumpToCard(nextIdx);
 }
+
+// ==========================================
+// 🚀 ALTIN VARANT SİMÜLATÖRÜ & GREEKS JS ENGINE
+// ==========================================
+
+async function runVarantSimulation() {
+    const symSelect = document.getElementById('sim-symbol-select');
+    const symbol = symSelect ? symSelect.value : 'THYAO';
+    const resBox = document.getElementById('sim-result-box');
+    if (!resBox) return;
+
+    resBox.innerHTML = `<div style="text-align:center; padding:1rem; color:var(--text-muted);"><div class="spinner small" style="display:inline-block; margin-right:8px;"></div> Black-Scholes Greeks ve kâr simülasyonu hesaplanıyor...</div>`;
+
+    try {
+        const response = await fetch(`/api/varant_simulator?symbol=${symbol}`);
+        const data = await response.json();
+        
+        if (data.status === 'success' && data.warrants && data.warrants.length > 0) {
+            let html = `<div style="display:flex; flex-direction:column; gap:0.6rem;">`;
+            data.warrants.forEach(w => {
+                let badgeColor = w.type === 'CALL' ? 'var(--accent-green)' : 'var(--accent-red)';
+                let badgeBg = w.type === 'CALL' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)';
+                let riskColor = w.risk_badge.includes('DÜŞÜK') ? 'var(--accent-green)' : 'var(--accent-yellow)';
+                
+                html += `
+                <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:8px; padding:0.6rem; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span style="font-weight:800; color:var(--text-light);">${w.code}</span>
+                            <span style="background:${badgeBg}; color:${badgeColor}; font-size:0.7rem; font-weight:bold; padding:2px 6px; border-radius:4px;">${w.type} (${w.issuer})</span>
+                            <span style="font-size:0.75rem; color:var(--text-muted);">Vade: ${w.maturity_days} Gün</span>
+                        </div>
+                        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">
+                            Giriş: <b>${w.current_warrant_price}</b> | Hedef: <b style="color:var(--accent-green);">${w.target_warrant_price}</b> | Delta: <b>${w.delta}</b>
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:1.05rem; font-weight:800; color:var(--accent-green);">${w.warrant_gain_pct}</div>
+                        <div style="font-size:0.7rem; color:${riskColor};">${w.risk_badge}</div>
+                    </div>
+                </div>
+                `;
+            });
+            html += `</div>`;
+            resBox.innerHTML = html;
+        } else {
+            resBox.innerHTML = `<div style="text-align:center; padding:1rem; color:var(--text-muted);">Bu hisse için aktif varant eşleşmesi bulunamadı.</div>`;
+        }
+    } catch (e) {
+        resBox.innerHTML = `<div style="text-align:center; padding:1rem; color:var(--accent-red);">Simülasyon yüklenirken hata: ${e.message}</div>`;
+    }
+}
+
+async function fetchWinRateScorecard() {
+    try {
+        const res = await fetch('/api/winrate_stats');
+        const data = await res.json();
+        if (data.status === 'success' && data.stats) {
+            const s = data.stats.summary;
+            setElText('stat-winrate', `%${s.win_rate_pct}`);
+            setElText('stat-avgprofit', `+%{s.avg_profit_pct}`);
+            setElText('stat-pfactor', s.profit_factor);
+
+            setElText('dt-stat-total', s.total_signals_30d);
+            setElText('dt-stat-win', `%${s.win_rate_pct}`);
+            setElText('dt-stat-duration', s.avg_time_to_target_hours);
+
+            // Populate history table in Detailed Analysis
+            const tbody = document.getElementById('dt-winrate-history-tbody');
+            if (tbody && data.stats.recent_completed_signals) {
+                tbody.innerHTML = '';
+                data.stats.recent_completed_signals.forEach(item => {
+                    let tr = document.createElement('tr');
+                    let statusColor = item.pnl_pct.includes('+') ? 'var(--accent-green)' : 'var(--accent-red)';
+                    let warrantColor = item.warrant_gain.includes('+') ? 'var(--accent-green)' : 'var(--accent-red)';
+                    
+                    tr.innerHTML = `
+                        <td style="font-weight:bold; color:var(--text-light);">${item.symbol}</td>
+                        <td style="color:var(--text-muted); font-size:0.8rem;">${item.date}</td>
+                        <td><span class="badge" style="background:rgba(255,255,255,0.05); font-size:0.75rem;">${item.signal_type}</span></td>
+                        <td>${item.entry_price}</td>
+                        <td style="color:var(--accent-blue);">${item.target_price}</td>
+                        <td style="font-weight:bold;">${item.exit_price}</td>
+                        <td style="color:${statusColor}; font-weight:bold;">${item.pnl_pct}</td>
+                        <td style="color:${warrantColor}; font-weight:800;">${item.warrant_gain}</td>
+                        <td style="color:var(--text-muted); font-size:0.8rem;">${item.duration}</td>
+                        <td><span style="color:${statusColor}; font-size:0.75rem; font-weight:bold;">${item.status}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+    } catch (e) {
+        console.error("Winrate Scorecard yükleme hatası:", e);
+    }
+}
+
+async function loadDetailedVarantSim(symbol, spotPrice) {
+    const spotEl = document.getElementById('dt-sim-spot');
+    const targetInput = document.getElementById('dt-sim-target-input');
+    const tbody = document.getElementById('dt-varantsim-tbody');
+    
+    if (spotEl) spotEl.innerText = `₺${parseFloat(spotPrice || 100).toFixed(2)}`;
+    let defaultTarget = roundTo(parseFloat(spotPrice || 100) * 1.099, 2);
+    if (targetInput) targetInput.value = defaultTarget;
+
+    if (!tbody) return;
+    tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;"><div class="spinner small" style="display:inline-block; margin-right:8px;"></div> Varantlar ve Greeks matrisi hesaplanıyor...</td></tr>`;
+
+    try {
+        const cleanSym = symbol.replace('.IS', '').toUpperCase();
+        const response = await fetch(`/api/varant_simulator?symbol=${cleanSym}&price=${spotPrice}&target=${defaultTarget}`);
+        const data = await response.json();
+
+        if (data.status === 'success' && data.warrants && data.warrants.length > 0) {
+            tbody.innerHTML = '';
+            data.warrants.forEach(w => {
+                let tr = document.createElement('tr');
+                let badgeColor = w.type === 'CALL' ? 'var(--accent-green)' : 'var(--accent-red)';
+                let riskColor = w.risk_badge.includes('DÜŞÜK') ? 'var(--accent-green)' : 'var(--accent-yellow)';
+                
+                tr.innerHTML = `
+                    <td style="font-weight:800; color:var(--text-light); font-size:0.95rem;">${w.code}</td>
+                    <td><span style="color:${badgeColor}; font-weight:bold;">${w.type}</span> <span style="font-size:0.75rem; color:var(--text-muted);">(${w.issuer})</span></td>
+                    <td style="font-weight:bold;">${w.current_warrant_price}</td>
+                    <td style="color:var(--accent-green); font-weight:bold;">${w.target_warrant_price}</td>
+                    <td style="color:var(--accent-blue);">${w.spot_gain_pct}</td>
+                    <td style="color:var(--accent-green); font-weight:800; font-size:0.95rem;">${w.warrant_gain_pct}</td>
+                    <td><span style="color:var(--accent-purple); font-weight:bold;">Δ ${w.delta}</span> <span style="font-size:0.75rem; color:var(--text-muted);">(${w.gearing})</span></td>
+                    <td style="color:var(--accent-red); font-size:0.8rem;">${w.theta}</td>
+                    <td style="color:var(--accent-yellow); font-size:0.8rem;">${w.weekend_decay}</td>
+                    <td><span style="color:${riskColor}; font-size:0.75rem; font-weight:bold;">${w.risk_badge}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } else {
+            tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;">Bu hisse için aktif ihraç edilmiş varant bulunmamaktadır.</td></tr>`;
+        }
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="10" class="text-red text-center" style="padding:2rem;">Hesaplama hatası: ${e.message}</td></tr>`;
+    }
+}
+
+async function recalculateDetailVarantSim() {
+    const sym = window.currentAnalyzedSymbol || document.getElementById('tk-sym')?.innerText || 'THYAO';
+    const spot = parseFloat(document.getElementById('tk-price')?.innerText?.replace('₺','').replace(',','') || 100);
+    const targetInput = document.getElementById('dt-sim-target-input');
+    const targetVal = parseFloat(targetInput?.value || spot * 1.099);
+    
+    const tbody = document.getElementById('dt-varantsim-tbody');
+    if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;"><div class="spinner small" style="display:inline-block; margin-right:8px;"></div> Yeniden hesaplanıyor...</td></tr>`;
+
+    try {
+        const cleanSym = sym.replace('.IS', '').toUpperCase();
+        const response = await fetch(`/api/varant_simulator?symbol=${cleanSym}&price=${spot}&target=${targetVal}`);
+        const data = await response.json();
+
+        if (data.status === 'success' && data.warrants && data.warrants.length > 0) {
+            tbody.innerHTML = '';
+            data.warrants.forEach(w => {
+                let tr = document.createElement('tr');
+                let badgeColor = w.type === 'CALL' ? 'var(--accent-green)' : 'var(--accent-red)';
+                let riskColor = w.risk_badge.includes('DÜŞÜK') ? 'var(--accent-green)' : 'var(--accent-yellow)';
+                
+                tr.innerHTML = `
+                    <td style="font-weight:800; color:var(--text-light); font-size:0.95rem;">${w.code}</td>
+                    <td><span style="color:${badgeColor}; font-weight:bold;">${w.type}</span> <span style="font-size:0.75rem; color:var(--text-muted);">(${w.issuer})</span></td>
+                    <td style="font-weight:bold;">${w.current_warrant_price}</td>
+                    <td style="color:var(--accent-green); font-weight:bold;">${w.target_warrant_price}</td>
+                    <td style="color:var(--accent-blue);">${w.spot_gain_pct}</td>
+                    <td style="color:var(--accent-green); font-weight:800; font-size:0.95rem;">${w.warrant_gain_pct}</td>
+                    <td><span style="color:var(--accent-purple); font-weight:bold;">Δ ${w.delta}</span> <span style="font-size:0.75rem; color:var(--text-muted);">(${w.gearing})</span></td>
+                    <td style="color:var(--accent-red); font-size:0.8rem;">${w.theta}</td>
+                    <td style="color:var(--accent-yellow); font-size:0.8rem;">${w.weekend_decay}</td>
+                    <td><span style="color:${riskColor}; font-size:0.75rem; font-weight:bold;">${w.risk_badge}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    } catch (e) {
+        console.error("Varant Sim Recalculate Error:", e);
+    }
+}
+
+// Sayfa yüklendiğinde simülatörü ve sinyal karnesini otomatik yükle
+window.addEventListener('DOMContentLoaded', () => {
+    fetchWinRateScorecard();
+    runVarantSimulation();
+});
+
 

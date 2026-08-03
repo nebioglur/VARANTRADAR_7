@@ -572,6 +572,63 @@ def api_chart_data():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/api/varant_simulator', methods=['GET'])
+def api_varant_simulator():
+    """Seçilen hisse için Altın Varantları ve hedef kâr simülasyonunu döner."""
+    symbol = request.args.get('symbol', 'THYAO').upper()
+    try:
+        current_price = float(request.args.get('price', 0.0))
+    except:
+        current_price = 0.0
+    try:
+        target_price = float(request.args.get('target', 0.0))
+    except:
+        target_price = 0.0
+        
+    try:
+        from services.varant_simulator import VarantSimulator
+        if current_price <= 0:
+            # En son fiyatı cache'den veya hisse analizinden al
+            clean_cache = GLOBAL_DASHBOARD_CACHE or {}
+            for k, items in clean_cache.items():
+                if isinstance(items, list):
+                    for it in items:
+                        if it.get('Symbol', '').replace('.IS', '') == symbol.replace('.IS', ''):
+                            current_price = float(it.get('Price', 100.0))
+                            break
+                    if current_price > 0:
+                        break
+            if current_price <= 0:
+                current_price = 100.0
+                
+        if target_price <= 0:
+            target_price = round(current_price * 1.099, 2)
+            
+        warrants = VarantSimulator.get_warrants_for_symbol(symbol, current_price, target_price)
+        return jsonify({
+            "status": "success",
+            "symbol": symbol,
+            "current_price": current_price,
+            "target_price": target_price,
+            "warrants": sanitize_for_json(warrants)
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/winrate_stats', methods=['GET'])
+def api_winrate_stats():
+    """Sistemin şeffaf sinyal başarı istatistiklerini ve geçmiş karne verilerini döner."""
+    try:
+        from services.win_rate_engine import WinRateEngine
+        stats = WinRateEngine.get_performance_stats()
+        return jsonify({
+            "status": "success",
+            "stats": sanitize_for_json(stats)
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 if __name__ == "__main__":
 
     print("[SYSTEM] VarantRadar Pro Web Server Baslatiliyor...")
