@@ -182,27 +182,40 @@ async function fetchHomeWinrateStats() {
 
         if (s && s.total_days_tracked > 0) {
             // 3 Ana KPI
-            if (el('stat-winrate')) el('stat-winrate').textContent = `%${s.tavan_success_pct}`;
-            if (el('stat-winrate-sub')) el('stat-winrate-sub').textContent = `${s.total_hit_ceiling}/${s.total_candidates_tracked} Tavan`;
-            if (el('stat-avgprofit')) el('stat-avgprofit').textContent = `%${s.plus5_success_pct}`;
-            if (el('stat-avgprofit-sub')) el('stat-avgprofit-sub').textContent = `${s.total_hit_plus5}/${s.total_candidates_tracked} Hisse`;
-            if (el('stat-pfactor')) el('stat-pfactor').textContent = `+%${s.cumulative_avg_max_gain_pct}`;
-            if (el('stat-pfactor-sub')) el('stat-pfactor-sub').textContent = `Ort. Zirve Getirisi`;
-            // Detay satırları
-            if (el('stat-days-val')) el('stat-days-val').textContent = `${s.total_days_tracked} Gün / ${s.total_candidates_tracked} Öneri`;
-            if (el('stat-warrant-val')) el('stat-warrant-val').textContent = `+%${s.ahlatci_warrant_avg_gain_pct}`;
-            if (el('stat-close-val')) el('stat-close-val').textContent = `+%${s.cumulative_avg_closing_gain_pct}`;
+            const fields = [
+                ['stat-winrate', `%${s.tavan_success_pct}`],
+                ['stat-winrate-sub', `${s.total_hit_ceiling}/${s.total_candidates_tracked} Tavan`],
+                ['stat-avgprofit', `%${s.plus5_success_pct}`],
+                ['stat-avgprofit-sub', `${s.total_hit_plus5}/${s.total_candidates_tracked} Hisse`],
+                ['stat-pfactor', `+%${s.cumulative_avg_max_gain_pct}`],
+                ['stat-pfactor-sub', `Ort. Zirve Getirisi`],
+                ['stat-days-val', `${s.total_days_tracked} Gün / ${s.total_candidates_tracked} Öneri`],
+                ['stat-warrant-val', `+%${s.ahlatci_warrant_avg_gain_pct}`],
+                ['stat-close-val', `+%${s.cumulative_avg_closing_gain_pct}`]
+            ];
+            
+            fields.forEach(([id, val]) => {
+                if (el(id)) el(id).textContent = val;
+                if (el(id + '-stats')) el(id + '-stats').textContent = val;
+            });
         } else {
             // Veri yok — 04 Ağustos'tan önce
-            if (el('stat-winrate')) el('stat-winrate').textContent = '-';
-            if (el('stat-winrate-sub')) el('stat-winrate-sub').textContent = 'Veri bekleniyor';
-            if (el('stat-avgprofit')) el('stat-avgprofit').textContent = '-';
-            if (el('stat-avgprofit-sub')) el('stat-avgprofit-sub').textContent = 'Veri bekleniyor';
-            if (el('stat-pfactor')) el('stat-pfactor').textContent = '-';
-            if (el('stat-pfactor-sub')) el('stat-pfactor-sub').textContent = 'Veri bekleniyor';
-            if (el('stat-days-val')) el('stat-days-val').textContent = '04 Ağu 2026 sabahından itibaren';
-            if (el('stat-warrant-val')) el('stat-warrant-val').textContent = 'Bekleniyor';
-            if (el('stat-close-val')) el('stat-close-val').textContent = 'Bekleniyor';
+            const emptyFields = [
+                ['stat-winrate', '-'],
+                ['stat-winrate-sub', 'Veri bekleniyor'],
+                ['stat-avgprofit', '-'],
+                ['stat-avgprofit-sub', 'Veri bekleniyor'],
+                ['stat-pfactor', '-'],
+                ['stat-pfactor-sub', 'Veri bekleniyor'],
+                ['stat-days-val', '04 Ağu 2026 sabahından itibaren'],
+                ['stat-warrant-val', 'Bekleniyor'],
+                ['stat-close-val', 'Bekleniyor']
+            ];
+            
+            emptyFields.forEach(([id, val]) => {
+                if (el(id)) el(id).textContent = val;
+                if (el(id + '-stats')) el(id + '-stats').textContent = val;
+            });
         }
     } catch (e) {
         console.warn('[WinrateStats] Veri alinamadi:', e.message);

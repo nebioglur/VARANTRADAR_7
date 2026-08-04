@@ -1,121 +1,131 @@
-from typing import Dict, Any, List
-import random
-from datetime import datetime, timedelta
+"""
+VarantRadar Pro - Gercek Basari Karnesi Motoru
+04 Agustos 2026'dan itibaren tavan_tracker verilerine dayanir.
+Sahte/hardcoded veri YOKTUR - tum istatistikler gercek seans verilerinden hesaplanir.
+"""
+from typing import Dict, Any
+from services.tavan_tracker import TavanAuditTracker
+
 
 class WinRateEngine:
     """
-    VarantRadar Pro V7 - Sinyal Geçmişi & Başarı Karnesi (Win-Rate Engine)
-    Geçmiş 30 gün içinde Tavan Radarı, 1 Saatlik ve 5 Dakikalık sistemin
-    ürettiği sinyallerin başarı oranlarını, hedefe ulaşma sürelerini ve 
-    stop-loss korumalarını şeffaf istatistiklerle sunar.
+    Gercek performans istatistiklerini tavan_tracker uzerinden hesaplar.
+    Sahte veri uretmez - sadece gercek seans kayitlarindan beslenir.
     """
 
     @classmethod
     def get_performance_stats(cls) -> Dict[str, Any]:
-        """Tüm sistemin genel başarı metriklerini döndürür."""
-        # Gerçek piyasa geçmişi analiz simülasyonu
-        return {
-            "summary": {
-                "total_signals_30d": 78,
-                "target_reached": 66,
-                "stopped_out": 12,
-                "win_rate_pct": 84.6,
-                "avg_profit_pct": 8.1,
-                "avg_time_to_target_hours": "3.4 Saat",
-                "profit_factor": 3.82
-            },
-            "category_winrates": [
-                {
-                    "name": "Dağ Kekliği Tavan Radarı",
-                    "icon": "fa-rocket",
-                    "color": "var(--accent-red)",
-                    "signals": 34,
-                    "success": 29,
-                    "win_rate": "%85.3",
-                    "avg_gain": "+%9.4",
-                    "desc": "Tavana kilitlenen ve tavan marjına ulaşanlar"
+        """Tum sistemin genel basari metriklerini gercek veriden dondurur."""
+        try:
+            history = TavanAuditTracker.get_long_term_history(start_date="2026-08-04")
+            summ = history.get("summary", {})
+
+            total_candidates = summ.get("total_candidates_tracked", 0)
+            total_tavan = summ.get("total_hit_ceiling", 0)
+            total_plus5 = summ.get("total_hit_plus5", 0)
+            total_days = summ.get("total_days_tracked", 0)
+            tavan_pct = summ.get("tavan_success_pct", 0.0)
+            plus5_pct = summ.get("plus5_success_pct", 0.0)
+            avg_max_gain = summ.get("cumulative_avg_max_gain_pct", 0.0)
+            avg_close_gain = summ.get("cumulative_avg_closing_gain_pct", 0.0)
+            warrant_avg = summ.get("ahlatci_warrant_avg_gain_pct", 0.0)
+
+            # Profit Factor hesapla (basit: kazanan/kaybeden orani)
+            losers = total_candidates - total_plus5
+            profit_factor = round(total_plus5 / max(losers, 1), 2) if total_candidates > 0 else 0.0
+
+            # Son gunlerin dokumleri
+            daily_breakdown = history.get("daily_breakdown", [])
+            recent_signals = []
+            for day in daily_breakdown[:5]:  # Son 5 gun
+                candidates = day.get("candidates", [])
+                for c in candidates[:3]:  # Her gunden max 3 sinyal
+                    max_gain = c.get("max_gain_pct", 0)
+                    closing_gain = c.get("closing_gain_pct", 0)
+                    hit_ceiling = c.get("hit_ceiling", False)
+
+                    if hit_ceiling:
+                        status = "TAVAN KILIDI"
+                        pnl = f"+%{max_gain}"
+                    elif max_gain >= 5:
+                        status = "+%5 HEDEF ULASILDI"
+                        pnl = f"+%{closing_gain}"
+                    elif closing_gain > 0:
+                        status = "POZITIF KAPANIŞ"
+                        pnl = f"+%{closing_gain}"
+                    else:
+                        status = "NEGATIF KAPANIŞ"
+                        pnl = f"%{closing_gain}"
+
+                    recent_signals.append({
+                        "symbol": c.get("symbol", "?"),
+                        "date": day.get("date", ""),
+                        "signal_type": "Tavan Radari",
+                        "entry_price": "",
+                        "target_price": "",
+                        "exit_price": "",
+                        "pnl_pct": pnl,
+                        "status": status,
+                        "duration": day.get("snapshot_time", ""),
+                        "warrant_gain": f"+%{round(max_gain * 6.2, 1)}" if max_gain > 0 else "-%0"
+                    })
+
+            return {
+                "summary": {
+                    "total_signals_30d": total_candidates,
+                    "target_reached": total_tavan,
+                    "stopped_out": total_candidates - total_plus5,
+                    "win_rate_pct": tavan_pct,
+                    "avg_profit_pct": avg_max_gain,
+                    "avg_time_to_target_hours": f"{total_days} Seans",
+                    "profit_factor": profit_factor
                 },
-                {
-                    "name": "1 Saatlik Teknik Fırsatlar (5/5 Onay)",
-                    "icon": "fa-clock",
-                    "color": "var(--accent-green)",
-                    "signals": 26,
-                    "success": 23,
-                    "win_rate": "%88.5",
-                    "avg_gain": "+%6.8",
-                    "desc": "EMA, MACD, RSI, ADX 5'li onaylı trend kırılımları"
+                "category_winrates": [
+                    {
+                        "name": "Tavan Radari (Gercek Veri)",
+                        "icon": "fa-rocket",
+                        "color": "var(--accent-green)",
+                        "signals": total_candidates,
+                        "success": total_tavan,
+                        "win_rate": f"%{tavan_pct}",
+                        "avg_gain": f"+%{avg_max_gain}",
+                        "desc": f"{total_days} seansta {total_tavan}/{total_candidates} tavan kilidi"
+                    },
+                    {
+                        "name": "+%5 ve Uzeri Kar Basarisi",
+                        "icon": "fa-chart-line",
+                        "color": "var(--accent-blue)",
+                        "signals": total_candidates,
+                        "success": total_plus5,
+                        "win_rate": f"%{plus5_pct}",
+                        "avg_gain": f"+%{avg_close_gain}",
+                        "desc": f"{total_plus5}/{total_candidates} oneri +%5 ustu kar sagladi"
+                    },
+                    {
+                        "name": "Ahlatci Varant Kaldiraci",
+                        "icon": "fa-building-columns",
+                        "color": "var(--accent-purple)",
+                        "signals": total_candidates,
+                        "success": total_tavan,
+                        "win_rate": f"+%{warrant_avg}",
+                        "avg_gain": f"+%{warrant_avg}",
+                        "desc": f"~6.2x kaldıracli varant getirisi ortalaması"
+                    }
+                ],
+                "recent_completed_signals": recent_signals
+            }
+        except Exception as e:
+            print(f"[WinRateEngine] Gercek veri hatasi: {e}")
+            return {
+                "summary": {
+                    "total_signals_30d": 0,
+                    "target_reached": 0,
+                    "stopped_out": 0,
+                    "win_rate_pct": 0,
+                    "avg_profit_pct": 0,
+                    "avg_time_to_target_hours": "Veri bekleniyor",
+                    "profit_factor": 0
                 },
-                {
-                    "name": "5 Dakikalık RSI Scalp Sinyalleri",
-                    "icon": "fa-bolt",
-                    "color": "var(--accent-blue)",
-                    "signals": 18,
-                    "success": 14,
-                    "win_rate": "%77.8",
-                    "avg_gain": "+%2.9",
-                    "desc": "Kısa vadeli dipten dönüş hızlı trade işlemleri"
-                }
-            ],
-            "recent_completed_signals": [
-                {
-                    "symbol": "THYAO",
-                    "date": "Bugün 11:20",
-                    "signal_type": "Tavan Radarı",
-                    "entry_price": "₺322.40",
-                    "target_price": "₺354.20",
-                    "exit_price": "₺354.00",
-                    "pnl_pct": "+%9.8",
-                    "status": "HEDEFE ULAŞTI (TAVAN)",
-                    "duration": "2s 15dk",
-                    "warrant_gain": "+%64.5"
-                },
-                {
-                    "symbol": "AKBNK",
-                    "date": "Bugün 10:05",
-                    "signal_type": "1S Fırsat (5/5)",
-                    "entry_price": "₺58.10",
-                    "target_price": "₺62.40",
-                    "exit_price": "₺61.80",
-                    "pnl_pct": "+%6.4",
-                    "status": "HEDEFE ULAŞTI",
-                    "duration": "4s 10dk",
-                    "warrant_gain": "+%39.7"
-                },
-                {
-                    "symbol": "ASELS",
-                    "date": "Dün 14:30",
-                    "signal_type": "Tavan Radarı",
-                    "entry_price": "₺62.80",
-                    "target_price": "₺69.00",
-                    "exit_price": "₺68.90",
-                    "pnl_pct": "+%9.7",
-                    "status": "HEDEFE ULAŞTI (TAVAN)",
-                    "duration": "1s 45dk",
-                    "warrant_gain": "+%61.1"
-                },
-                {
-                    "symbol": "TUPRS",
-                    "date": "Dün 09:50",
-                    "signal_type": "1S Fırsat (5/5)",
-                    "entry_price": "₺172.50",
-                    "target_price": "₺184.00",
-                    "exit_price": "₺183.20",
-                    "pnl_pct": "+%6.2",
-                    "status": "HEDEFE ULAŞTI",
-                    "duration": "3s 30dk",
-                    "warrant_gain": "+%43.4"
-                },
-                {
-                    "symbol": "EREGL",
-                    "date": "3 Gün Önce",
-                    "signal_type": "5D RSI Scalp",
-                    "entry_price": "₺51.20",
-                    "target_price": "₺53.00",
-                    "exit_price": "₺50.15",
-                    "pnl_pct": "-%2.0",
-                    "status": "STOP KORUMASI DEVREYE GİRDİ",
-                    "duration": "45dk",
-                    "warrant_gain": "-%11.0"
-                }
-            ]
-        }
+                "category_winrates": [],
+                "recent_completed_signals": []
+            }

@@ -45,9 +45,22 @@ body.light-mode .top-nav {
     box-shadow: 0 1px 8px rgba(0,0,0,0.08);
 }
 body.light-mode .card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    box-shadow: var(--shadow-md);
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: var(--shadow-md) !important;
+    color: var(--text-main);
+}
+body.light-mode .card h3, body.light-mode .card-title {
+    color: #1e293b !important;
+}
+body.light-mode .card [style*="color:var(--text-light)"] {
+    color: #1e293b !important;
+}
+body.light-mode .card [style*="color:#fff"] {
+    color: #0f172a !important;
+}
+body.light-mode .card [style*="color:var(--accent-yellow)"] {
+    color: #b45309 !important;
 }
 body.light-mode .data-table th { color: #475569; }
 body.light-mode .data-table td { color: #0f172a; }
