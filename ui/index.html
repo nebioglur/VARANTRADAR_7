@@ -40,6 +40,11 @@
                 <span class="pulse"></span>
                 <span>SİSTEM AKTİF</span>
             </div>
+            <!-- TEMA TOGGLE -->
+            <button id="theme-toggle-btn" class="theme-toggle-btn" onclick="toggleTheme()" title="Açık / Koyu Tema">
+                <i class="fa-solid fa-sun" id="theme-icon"></i>
+                <span id="theme-label">Açık Tema</span>
+            </button>
         </div>
     </header>
 
@@ -92,49 +97,54 @@
             <!-- 🔥 YENİ KANTİTATİF VE PERFORMANS MODÜLLERİ (HİBRİT GİRİŞ PANELİ) -->
             <div style="grid-column: 1 / -1; display:grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap:1.2rem; margin-bottom:1.5rem;">
                 
-                <!-- 1. SİNYAL BAŞARI KARNESİ (WIN-RATE & TRACK RECORD) -->
+                <!-- 1. SİNYAL BAŞARI KARNESİ (WIN-RATE & TRACK RECORD) - GERÇEK VERİ -->
                 <div class="card" style="border:1px solid rgba(234, 179, 8, 0.4); background: linear-gradient(135deg, rgba(234, 179, 8, 0.05) 0%, rgba(15,23,42,0.95) 100%); box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem;">
-                        <h3 class="card-title" style="margin:0; font-size:1.05rem; color:var(--accent-yellow);"><i class="fa-solid fa-trophy text-yellow"></i> Sistem Başarı Karnesi (Son 30 Gün)</h3>
-                        <span class="badge" style="background:rgba(234, 179, 8, 0.2); color:var(--accent-yellow); font-weight:700; border:1px solid rgba(234, 179, 8, 0.4); padding:3px 8px; border-radius:12px; font-size:0.75rem;">Canlı Doğrulama</span>
-                    </div>
-                    
-                    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:0.6rem; margin-bottom:1rem;">
-                        <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:8px; padding:0.6rem; text-align:center;">
-                            <div style="font-size:0.75rem; color:var(--text-muted);">Genel Başarı (Win)</div>
-                            <div id="stat-winrate" style="font-size:1.3rem; font-weight:800; color:var(--accent-green); margin-top:2px;">%84.6</div>
-                        </div>
-                        <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:8px; padding:0.6rem; text-align:center;">
-                            <div style="font-size:0.75rem; color:var(--text-muted);">Ort. Kâr Marjı</div>
-                            <div id="stat-avgprofit" style="font-size:1.3rem; font-weight:800; color:var(--accent-blue); margin-top:2px;">+%8.1</div>
-                        </div>
-                        <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:8px; padding:0.6rem; text-align:center;">
-                            <div style="font-size:0.75rem; color:var(--text-muted);">Profit Factor</div>
-                            <div id="stat-pfactor" style="font-size:1.3rem; font-weight:800; color:var(--accent-purple); margin-top:2px;">3.82</div>
+                        <h3 class="card-title" style="margin:0; font-size:1.05rem; color:var(--accent-yellow);"><i class="fa-solid fa-trophy text-yellow"></i> Sistem Başarı Karnesi</h3>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span id="stat-inception-badge" class="badge" style="background:rgba(16,185,129,0.15); color:#10b981; font-weight:700; border:1px solid rgba(16,185,129,0.3); padding:3px 8px; border-radius:12px; font-size:0.72rem;">05 Ağu 2026'dan beri</span>
+                            <span id="stat-live-badge" class="badge" style="background:rgba(234, 179, 8, 0.2); color:var(--accent-yellow); font-weight:700; border:1px solid rgba(234, 179, 8, 0.4); padding:3px 8px; border-radius:12px; font-size:0.72rem;"><span class="pulse" style="display:inline-block; margin-right:3px;"></span>Canlı</span>
                         </div>
                     </div>
 
-                    <!-- Kategori Dağılımı -->
+                    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:0.6rem; margin-bottom:1rem;">
+                        <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:8px; padding:0.6rem; text-align:center;">
+                            <div style="font-size:0.72rem; color:var(--text-muted);">Tavan Başarı</div>
+                            <div id="stat-winrate" style="font-size:1.3rem; font-weight:800; color:var(--accent-green); margin-top:2px;"><i class="fa-solid fa-spinner fa-spin" style="font-size:1rem;"></i></div>
+                            <div id="stat-winrate-sub" style="font-size:0.65rem; color:var(--text-muted); margin-top:1px;">yükleniyor...</div>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:8px; padding:0.6rem; text-align:center;">
+                            <div style="font-size:0.72rem; color:var(--text-muted);">+%5 Kâr Oranı</div>
+                            <div id="stat-avgprofit" style="font-size:1.3rem; font-weight:800; color:var(--accent-blue); margin-top:2px;"><i class="fa-solid fa-spinner fa-spin" style="font-size:1rem;"></i></div>
+                            <div id="stat-avgprofit-sub" style="font-size:0.65rem; color:var(--text-muted); margin-top:1px;">yükleniyor...</div>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:8px; padding:0.6rem; text-align:center;">
+                            <div style="font-size:0.72rem; color:var(--text-muted);">Ort. Zirve Primi</div>
+                            <div id="stat-pfactor" style="font-size:1.3rem; font-weight:800; color:var(--accent-purple); margin-top:2px;"><i class="fa-solid fa-spinner fa-spin" style="font-size:1rem;"></i></div>
+                            <div id="stat-pfactor-sub" style="font-size:0.65rem; color:var(--text-muted); margin-top:1px;">yükleniyor...</div>
+                        </div>
+                    </div>
+
+                    <!-- Kategori Dağılımı (gerçek veriden) -->
                     <div id="winrate-categories" style="display:flex; flex-direction:column; gap:0.5rem;">
                         <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; background:rgba(255,255,255,0.02); padding:0.4rem 0.6rem; border-radius:6px;">
-                            <span><i class="fa-solid fa-rocket" style="color:var(--accent-red); margin-right:5px;"></i> Tavan Radarı:</span>
-                            <span style="font-weight:700; color:var(--accent-green);">%85.3 Başarı (29/34)</span>
+                            <span><i class="fa-solid fa-rocket" style="color:var(--accent-red); margin-right:5px;"></i> <span id="stat-days-label">Toplam Seans:</span></span>
+                            <span id="stat-days-val" style="font-weight:700; color:var(--accent-green);">...</span>
                         </div>
                         <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; background:rgba(255,255,255,0.02); padding:0.4rem 0.6rem; border-radius:6px;">
-                            <span><i class="fa-solid fa-clock" style="color:var(--accent-green); margin-right:5px;"></i> 1S Fırsatlar (5/5):</span>
-                            <span style="font-weight:700; color:var(--accent-green);">%88.5 Başarı (23/26)</span>
+                            <span><i class="fa-solid fa-building-columns" style="color:var(--accent-purple); margin-right:5px;"></i> Ahlatcı Varant Ort.:</span>
+                            <span id="stat-warrant-val" style="font-weight:700; color:var(--accent-purple);">...</span>
                         </div>
                         <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; background:rgba(255,255,255,0.02); padding:0.4rem 0.6rem; border-radius:6px;">
-                            <span><i class="fa-solid fa-bolt" style="color:var(--accent-blue); margin-right:5px;"></i> 5D RSI Scalp:</span>
-                            <span style="font-weight:700; color:var(--accent-green);">%77.8 Başarı (14/18)</span>
+                            <span><i class="fa-solid fa-calendar" style="color:var(--accent-blue); margin-right:5px;"></i> Kapanis Ort. Getiri:</span>
+                            <span id="stat-close-val" style="font-weight:700; color:var(--accent-blue);">...</span>
                         </div>
                     </div>
 
                     <!-- 05 Ağustos 2026'dan İtibaren İstatistikler Sekmesine Git Butonu -->
                     <button onclick="switchMainTab('stats', document.querySelectorAll('.nav-btn')[2])" type="button" style="width:100%; margin-top:0.75rem; background:linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(16,185,129,0.35) 100%); color:#6ee7b7; border:1px solid rgba(16,185,129,0.5); border-radius:6px; padding:0.5rem; font-weight:700; cursor:pointer; font-size:0.78rem; display:flex; align-items:center; justify-content:center; gap:6px; transition:all 0.2s ease;" onmouseover="this.style.background='linear-gradient(135deg, #10b981, #059669)'; this.style.color='#fff';" onmouseout="this.style.background='linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(16,185,129,0.35) 100%)'; this.style.color='#6ee7b7';">
-                        <i class="fa-solid fa-chart-pie"></i> 05 Ağustos 2026'dan İtibaren Tavan & Kâr İstatistikleri <i class="fa-solid fa-arrow-right"></i>
+                        <i class="fa-solid fa-chart-pie"></i> Tüm Tarihsel İstatistikler <i class="fa-solid fa-arrow-right"></i>
                     </button>
-                </div>
 
                 <!-- 2. ALTIN VARANT VE KALDIRAÇ SIMÜLATÖRÜ (HIZLI DAYANAK SEÇİCİ) -->
                 <div class="card" style="border:1px solid rgba(59, 130, 246, 0.4); background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(15,23,42,0.95) 100%); box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
@@ -1684,6 +1694,26 @@
         </div>
     </div>
 
-    <script src="app.js?v=20260803_v7_dynamic_committee"></script>
+    <!-- 📱 Mobil Yatay Döndürme İpucu Overlay -->
+    <div id="rotateHintOverlay" class="rotate-hint-overlay">
+        <i class="fa-solid fa-mobile-screen-button"></i>
+        <p>Grafikleri daha rahat görmek için telefonunuzu <b>yatay</b> çevirin</p>
+        <button class="dismiss-btn" onclick="dismissRotateHint()">
+            <i class="fa-solid fa-check"></i> Tamam, Anladım
+        </button>
+    </div>
+
+    <!-- 📱 Tam Ekran Grafik Modu Overlay (Mobil) -->
+    <div id="chartFullscreenOverlay" class="chart-fullscreen-overlay">
+        <div class="chart-fs-header">
+            <h4 id="chart-fs-title"><i class="fa-solid fa-chart-line"></i> Grafik</h4>
+            <button class="chart-fs-close" onclick="closeChartFullscreen()">
+                <i class="fa-solid fa-xmark"></i> Kapat
+            </button>
+        </div>
+        <div class="chart-fs-body" id="chart-fs-body"></div>
+    </div>
+
+    <script src="app.js?v=20260804_v8_mobile_theme"></script>
 </body>
 </html>

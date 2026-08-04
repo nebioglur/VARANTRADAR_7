@@ -109,6 +109,79 @@ let lastActiveTab = 'home';
 let analysisAbortController = null;
 let logInterval = null;
 
+// ============================================================
+// 🌗 TEMA TOGGLE (Koyu / Açık)
+// ============================================================
+function toggleTheme() {
+    const body = document.body;
+    const icon = document.getElementById('theme-icon');
+    const label = document.getElementById('theme-label');
+    const isLight = body.classList.toggle('light-mode');
+
+    if (isLight) {
+        if (icon) { icon.className = 'fa-solid fa-moon'; }
+        if (label) label.textContent = 'Koyu Tema';
+        localStorage.setItem('varant-theme', 'light');
+    } else {
+        if (icon) { icon.className = 'fa-solid fa-sun'; }
+        if (label) label.textContent = 'Açık Tema';
+        localStorage.setItem('varant-theme', 'dark');
+    }
+}
+
+// Sayfa yüklenince tema tercihini geri yükle
+(function initTheme() {
+    const saved = localStorage.getItem('varant-theme');
+    if (saved === 'light') {
+        document.body.classList.add('light-mode');
+        const icon = document.getElementById('theme-icon');
+        const label = document.getElementById('theme-label');
+        if (icon) icon.className = 'fa-solid fa-moon';
+        if (label) label.textContent = 'Koyu Tema';
+    }
+})();
+
+// ============================================================
+// 🏆 GİRİŞ SAYFASI: Başarı Karnesi → Gerçek API Verisi
+// ============================================================
+async function fetchHomeWinrateStats() {
+    try {
+        const res = await fetch('/api/tavan_history?start_date=2026-08-05');
+        const data = await res.json();
+        const s = (data.status === 'success' && data.summary) ? data.summary : null;
+
+        const el = (id) => document.getElementById(id);
+
+        if (s && s.total_days_tracked > 0) {
+            // 3 Ana KPI
+            if (el('stat-winrate')) el('stat-winrate').textContent = `%${s.tavan_success_pct}`;
+            if (el('stat-winrate-sub')) el('stat-winrate-sub').textContent = `${s.total_hit_ceiling}/${s.total_candidates_tracked} Tavan`;
+            if (el('stat-avgprofit')) el('stat-avgprofit').textContent = `%${s.plus5_success_pct}`;
+            if (el('stat-avgprofit-sub')) el('stat-avgprofit-sub').textContent = `${s.total_hit_plus5}/${s.total_candidates_tracked} Hisse`;
+            if (el('stat-pfactor')) el('stat-pfactor').textContent = `+%${s.cumulative_avg_max_gain_pct}`;
+            if (el('stat-pfactor-sub')) el('stat-pfactor-sub').textContent = `Ort. Zirve Getirisi`;
+            // Detay satırları
+            if (el('stat-days-val')) el('stat-days-val').textContent = `${s.total_days_tracked} Gün / ${s.total_candidates_tracked} Öneri`;
+            if (el('stat-warrant-val')) el('stat-warrant-val').textContent = `+%${s.ahlatci_warrant_avg_gain_pct}`;
+            if (el('stat-close-val')) el('stat-close-val').textContent = `+%${s.cumulative_avg_closing_gain_pct}`;
+        } else {
+            // Veri yok — 05 Ağustos'tan önce
+            if (el('stat-winrate')) el('stat-winrate').textContent = '-';
+            if (el('stat-winrate-sub')) el('stat-winrate-sub').textContent = 'Veri bekleniyor';
+            if (el('stat-avgprofit')) el('stat-avgprofit').textContent = '-';
+            if (el('stat-avgprofit-sub')) el('stat-avgprofit-sub').textContent = 'Veri bekleniyor';
+            if (el('stat-pfactor')) el('stat-pfactor').textContent = '-';
+            if (el('stat-pfactor-sub')) el('stat-pfactor-sub').textContent = 'Veri bekleniyor';
+            if (el('stat-days-val')) el('stat-days-val').textContent = '05 Ağu 2026 sabahından itibaren';
+            if (el('stat-warrant-val')) el('stat-warrant-val').textContent = 'Bekleniyor';
+            if (el('stat-close-val')) el('stat-close-val').textContent = 'Bekleniyor';
+        }
+    } catch (e) {
+        console.warn('[WinrateStats] Veri alinamadi:', e.message);
+    }
+}
+
+
 function switchMainTab(tabName, btnElement) {
     if (tabName !== 'dashboard') {
         lastActiveTab = tabName;
@@ -2299,6 +2372,7 @@ async function recalculateDetailVarantSim() {
 window.addEventListener('DOMContentLoaded', () => {
     fetchWinRateScorecard();
     runVarantSimulation();
+    fetchHomeWinrateStats();
 });
 
 // 📸 ANALİZ RAPORUNU JPG / GÖRSEL OLARAK İNDİRME FONKSİYONU
@@ -2859,8 +2933,105 @@ function renderHallOfFame(hofList, tbody) {
     });
 }
 
+// ============================================================
+// 📱 MOBİL GRAFİK YARDIMCILARI
+// ============================================================
 
+// Yatay Döndürme İpucu
+let rotateHintDismissed = localStorage.getItem('rotate-hint-dismissed') === 'true';
 
+function showRotateHint() {
+    if (rotateHintDismissed || window.innerWidth > 850) return;
+    const overlay = document.getElementById('rotateHintOverlay');
+    if (overlay && window.matchMedia('(orientation: portrait)').matches) {
+        overlay.classList.add('active');
+    }
+}
+function dismissRotateHint() {
+    rotateHintDismissed = true;
+    localStorage.setItem('rotate-hint-dismissed', 'true');
+    const overlay = document.getElementById('rotateHintOverlay');
+    if (overlay) overlay.classList.remove('active');
+}
 
+// Yataya geçince ipucunu otomatik kapat
+window.matchMedia('(orientation: landscape)').addEventListener('change', e => {
+    if (e.matches) {
+        const overlay = document.getElementById('rotateHintOverlay');
+        if (overlay) overlay.classList.remove('active');
+    }
+});
 
+// Tam Ekran Grafik Modu
+function openChartFullscreen(canvasId, title) {
+    const originalCanvas = document.getElementById(canvasId);
+    if (!originalCanvas) return;
+
+    const overlay = document.getElementById('chartFullscreenOverlay');
+    const titleEl = document.getElementById('chart-fs-title');
+    const body = document.getElementById('chart-fs-body');
+    if (!overlay || !body) return;
+
+    if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-chart-line"></i> ${title || 'Grafik'}`;
+
+    // Canvas'ı klonla
+    body.innerHTML = '';
+    const clone = originalCanvas.cloneNode(true);
+    clone.style.width = '100%';
+    clone.style.height = '100%';
+    clone.style.maxHeight = '80vh';
+    body.appendChild(clone);
+
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeChartFullscreen() {
+    const overlay = document.getElementById('chartFullscreenOverlay');
+    if (overlay) overlay.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// Dashboard yüklenince grafiklere "Büyüt" butonu ekle
+function injectChartExpandButtons() {
+    if (window.innerWidth > 850) return;
+    document.querySelectorAll('.chart-container').forEach((container, idx) => {
+        if (container.querySelector('.chart-expand-btn')) return;
+        const canvas = container.querySelector('canvas');
+        if (!canvas) return;
+
+        const canvasId = canvas.id || `chart-canvas-${idx}`;
+        if (!canvas.id) canvas.id = canvasId;
+
+        const btn = document.createElement('button');
+        btn.className = 'chart-expand-btn';
+        btn.innerHTML = '<i class="fa-solid fa-expand"></i> Büyüt';
+        btn.onclick = function() {
+            // İlk açılışta yatay döndürme ipucu göster
+            if (!rotateHintDismissed) showRotateHint();
+            openChartFullscreen(canvasId, container.closest('.card')?.querySelector('.card-title')?.textContent || 'Grafik');
+        };
+        container.style.position = 'relative';
+        container.appendChild(btn);
+    });
+}
+
+// Sayfa yüklenince ve analiz tamamlanınca çağır
+const _origSwitchMainTab = window.switchMainTab;
+if (typeof _origSwitchMainTab === 'function') {
+    // Dashboard sekmesine geçince butonları ekle
+    const origFn = switchMainTab;
+}
+
+// 500ms sonra otomatik inject (sayfa yüklenince)
+setTimeout(injectChartExpandButtons, 1500);
+
+// Analiz tamamlanınca tekrar inject et (yeni grafikler oluşabilir)
+const _chartObserver = new MutationObserver(() => {
+    setTimeout(injectChartExpandButtons, 500);
+});
+const dashWrapper = document.getElementById('dashboard-wrapper');
+if (dashWrapper) {
+    _chartObserver.observe(dashWrapper, { childList: true, subtree: true });
+}
 
