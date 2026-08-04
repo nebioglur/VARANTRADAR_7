@@ -40,6 +40,12 @@
                 <span class="pulse"></span>
                 <span>SİSTEM AKTİF</span>
             </div>
+            <!-- ONLİNE SAYACI -->
+            <div id="online-counter" style="display:flex; align-items:center; gap:5px; font-size:0.78rem; font-weight:700; color:var(--accent-green); background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); border-radius:16px; padding:3px 10px; margin-left:0.5rem;">
+                <span style="display:inline-block; width:7px; height:7px; background:#10b981; border-radius:50%; animation:pulse 2s infinite;"></span>
+                <span id="online-count">1</span>
+                <span style="color:var(--text-muted); font-weight:500;">online</span>
+            </div>
             <!-- TEMA TOGGLE -->
             <button id="theme-toggle-btn" class="theme-toggle-btn" onclick="toggleTheme()" title="Açık / Koyu Tema">
                 <i class="fa-solid fa-sun" id="theme-icon"></i>
@@ -102,7 +108,7 @@
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem;">
                         <h3 class="card-title" style="margin:0; font-size:1.05rem; color:var(--accent-yellow);"><i class="fa-solid fa-trophy text-yellow"></i> Sistem Başarı Karnesi</h3>
                         <div style="display:flex; align-items:center; gap:6px;">
-                            <span id="stat-inception-badge" class="badge" style="background:rgba(16,185,129,0.15); color:#10b981; font-weight:700; border:1px solid rgba(16,185,129,0.3); padding:3px 8px; border-radius:12px; font-size:0.72rem;">05 Ağu 2026'dan beri</span>
+                            <span id="stat-inception-badge" class="badge" style="background:rgba(16,185,129,0.15); color:#10b981; font-weight:700; border:1px solid rgba(16,185,129,0.3); padding:3px 8px; border-radius:12px; font-size:0.72rem;">04 Ağu 2026'dan beri</span>
                             <span id="stat-live-badge" class="badge" style="background:rgba(234, 179, 8, 0.2); color:var(--accent-yellow); font-weight:700; border:1px solid rgba(234, 179, 8, 0.4); padding:3px 8px; border-radius:12px; font-size:0.72rem;"><span class="pulse" style="display:inline-block; margin-right:3px;"></span>Canlı</span>
                         </div>
                     </div>
@@ -141,7 +147,7 @@
                         </div>
                     </div>
 
-                    <!-- 05 Ağustos 2026'dan İtibaren İstatistikler Sekmesine Git Butonu -->
+                    <!-- 04 Ağustos 2026'dan İtibaren İstatistikler Sekmesine Git Butonu -->
                     <button onclick="switchMainTab('stats', document.querySelectorAll('.nav-btn')[2])" type="button" style="width:100%; margin-top:0.75rem; background:linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(16,185,129,0.35) 100%); color:#6ee7b7; border:1px solid rgba(16,185,129,0.5); border-radius:6px; padding:0.5rem; font-weight:700; cursor:pointer; font-size:0.78rem; display:flex; align-items:center; justify-content:center; gap:6px; transition:all 0.2s ease;" onmouseover="this.style.background='linear-gradient(135deg, #10b981, #059669)'; this.style.color='#fff';" onmouseout="this.style.background='linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(16,185,129,0.35) 100%)'; this.style.color='#6ee7b7';">
                         <i class="fa-solid fa-chart-pie"></i> Tüm Tarihsel İstatistikler <i class="fa-solid fa-arrow-right"></i>
                     </button>
@@ -1072,7 +1078,7 @@
             <aside class="sidebar-tabs">
                 <div style="padding:0.5rem 1rem 1rem; border-bottom:1px solid rgba(255,255,255,0.07); margin-bottom:0.5rem;">
                     <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); font-weight:700;">Performans Merkezi</div>
-                    <div style="font-size:0.72rem; color:#10b981; font-weight:700; margin-top:3px;">05 Ağustos 2026'dan itibaren</div>
+                    <div style="font-size:0.72rem; color:#10b981; font-weight:700; margin-top:3px;">04 Ağustos 2026'dan itibaren</div>
                 </div>
                 <button class="s-tab active" onclick="switchStatsTab('ozet', this)">
                     <i class="fa-solid fa-chart-pie"></i> Genel Özet (KPI)
@@ -1092,7 +1098,7 @@
                     <div style="display:flex; flex-direction:column; gap:0.5rem;">
                         <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:5px 8px;">
                             <div style="font-size:0.65rem; color:var(--text-muted); margin-bottom:2px;">Başlangıç</div>
-                            <input type="date" id="stats-tab-start-date" value="2026-08-05" style="background:transparent; border:none; color:#fff; font-size:0.8rem; outline:none; width:100%; font-family:inherit;">
+                            <input type="date" id="stats-tab-start-date" value="2026-08-04" style="background:transparent; border:none; color:#fff; font-size:0.8rem; outline:none; width:100%; font-family:inherit;">
                         </div>
                         <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:5px 8px;">
                             <div style="font-size:0.65rem; color:var(--text-muted); margin-bottom:2px;">Bitiş</div>
@@ -1140,7 +1146,7 @@
                     <div style="margin-bottom:1rem;">
                         <h3 style="color:#10b981; font-size:1.1rem; margin:0; display:flex; align-items:center; gap:8px;">
                             <i class="fa-solid fa-chart-pie"></i> Kümülatif Başarı Özeti
-                            <span style="font-size:0.72rem; color:var(--text-muted); font-weight:400; background:rgba(16,185,129,0.1); padding:2px 8px; border-radius:4px; border:1px solid rgba(16,185,129,0.25);">📅 05 Ağustos 2026'dan itibaren</span>
+                            <span style="font-size:0.72rem; color:var(--text-muted); font-weight:400; background:rgba(16,185,129,0.1); padding:2px 8px; border-radius:4px; border:1px solid rgba(16,185,129,0.25);">📅 04 Ağustos 2026'dan itibaren</span>
                         </h3>
                     </div>
                     <!-- 5 KPI Kartı -->
@@ -1175,7 +1181,7 @@
                     <!-- Boş veri / Bekleme bilgi kutusu -->
                     <div id="stats-empty-notice" style="display:none; text-align:center; padding:3rem 1rem; background:rgba(16,185,129,0.04); border:1px dashed rgba(16,185,129,0.3); border-radius:10px;">
                         <div style="font-size:3rem; margin-bottom:1rem;">📅</div>
-                        <div style="font-size:1.15rem; font-weight:800; color:#10b981; margin-bottom:0.5rem;">Sistem 05 Ağustos 2026 Sabahı Hazır!</div>
+                        <div style="font-size:1.15rem; font-weight:800; color:#10b981; margin-bottom:0.5rem;">Sistem 04 Ağustos 2026 Sabahı Hazır!</div>
                         <div style="font-size:0.9rem; color:var(--text-muted); max-width:450px; margin:0 auto; line-height:1.7;">
                             Sabah <b style="color:#facc15;">10:15</b>'te ilk tavan taraması yapıldığında istatistikler buraya otomatik kaydedilecek.<br>
                             Her gün seans saatlerinde <b style="color:#38bdf8;">(10:15 / 11:30 / 14:00 / 16:00)</b> ve <b style="color:#10b981;">18:10 kapanışında</b> güncellenir.
@@ -1232,7 +1238,7 @@
                         <h3 style="color:#facc15; font-size:1.1rem; margin:0; display:flex; align-items:center; gap:8px;">
                             <i class="fa-solid fa-crown"></i> Hall of Fame &mdash; En Cok Kazandiran Hisseler
                         </h3>
-                        <p style="color:var(--text-muted); font-size:0.82rem; margin-top:4px;">05 Agustos 2026'dan bu yana en yuksek tavan kilitleme ve +%5 basari oranina sahip hisseler</p>
+                        <p style="color:var(--text-muted); font-size:0.82rem; margin-top:4px;">04 Agustos 2026'dan bu yana en yuksek tavan kilitleme ve +%5 basari oranina sahip hisseler</p>
                     </div>
                     <div style="overflow-x:auto;">
                         <table class="data-table" style="width:100%; font-size:0.84rem; max-height:600px;">
@@ -1549,7 +1555,7 @@
                         <i class="fa-solid fa-trophy"></i> Belirli Saatlerdeki Tavan Önerilerinin Başarı Arşivi (Tarihsel Performans)
                     </h2>
                     <p style="color:var(--text-muted, #94a3b8); font-size:0.82rem; margin-top:4px; margin-bottom:0;">
-                        <span style="color:#10b981; font-weight:700;">📅 Resmi Başlangıç: 05 Ağustos 2026</span> | 10:15, 11:30, 14:00 ve 16:00 tavan önerilerinin kümülatif başarısı, saat dilimi analizi ve Ahlatcı Yatırım varant getirileri.
+                        <span style="color:#10b981; font-weight:700;">📅 Resmi Başlangıç: 04 Ağustos 2026</span> | 10:15, 11:30, 14:00 ve 16:00 tavan önerilerinin kümülatif başarısı, saat dilimi analizi ve Ahlatcı Yatırım varant getirileri.
                     </p>
                 </div>
                 
@@ -1557,7 +1563,7 @@
                 <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                     <div style="display:flex; align-items:center; gap:5px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:4px 8px;">
                         <span style="font-size:0.75rem; color:var(--text-muted);">Başlangıç:</span>
-                        <input type="date" id="hist-start-date" value="2026-08-05" style="background:transparent; border:none; color:#fff; font-size:0.8rem; outline:none; font-family:inherit;">
+                        <input type="date" id="hist-start-date" value="2026-08-04" style="background:transparent; border:none; color:#fff; font-size:0.8rem; outline:none; font-family:inherit;">
                     </div>
                     <div style="display:flex; align-items:center; gap:5px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:4px 8px;">
                         <span style="font-size:0.75rem; color:var(--text-muted);">Bitiş:</span>

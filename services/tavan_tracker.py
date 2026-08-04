@@ -9,7 +9,7 @@ class TavanAuditTracker:
     """
     VarantRadar Pro V7 - Belirli Saatlerdeki Yüksek Tavan Önerilerinin Başarı Denetçisi & Tarihsel Arşiv Motoru
     
-    Resmi Başlangıç: 05 Ağustos 2026
+    Resmi Başlangıç: 04 Ağustos 2026
     
     Fonksiyonellik:
     1. Belirli saatlerde (10:15 Açılış, 11:30 Öğle Öncesi, 14:00 Öğleden Sonra, 16:00 Kapanış Öncesi)
@@ -24,7 +24,7 @@ class TavanAuditTracker:
        hesaplar.
     3. Saat Bazlı Başarı Analizi (10:15 vs 11:30 vs 14:00 vs 16:00) sunarak hangi saatteki önerilerin
        en yüksek tavan ve +%5 getiri oranına sahip olduğunu gösterir.
-    4. 05 Ağustos 2026'dan itibaren veya istenen tarih aralığında uzun vadeli kümülatif başarı analizini üretir.
+    4. 04 Ağustos 2026'dan itibaren veya istenen tarih aralığında uzun vadeli kümülatif başarı analizini üretir.
     """
 
     @classmethod
@@ -43,7 +43,7 @@ class TavanAuditTracker:
                         return data
             except Exception as e:
                 print(f"[TavanAuditTracker] Yukleme hatasi: {e}")
-        # Boş başla — 05 Ağustos 2026'dan itibaren gerçek verilerle dolacak
+        # Boş başla — 04 Ağustos 2026'dan itibaren gerçek verilerle dolacak
         return {}
 
     @classmethod
@@ -275,7 +275,7 @@ class TavanAuditTracker:
         available_dates = sorted(list(all_audits.keys()), reverse=True)
         
         if not selected_date or selected_date not in all_audits:
-            selected_date = available_dates[0] if available_dates else "2026-08-05"
+            selected_date = available_dates[0] if available_dates else "2026-08-04"
 
         target_audit = all_audits.get(selected_date, {})
         
@@ -310,23 +310,23 @@ class TavanAuditTracker:
         }
 
     @classmethod
-    def get_long_term_history(cls, start_date: str = "2026-08-05", end_date: str = None, symbol_filter: str = None, time_filter: str = None) -> Dict[str, Any]:
+    def get_long_term_history(cls, start_date: str = "2026-08-04", end_date: str = None, symbol_filter: str = None, time_filter: str = None) -> Dict[str, Any]:
         """
-        05 Agustos 2026'dan itibaren gercek tavan oneri performansini uretir.
+        04 Agustos 2026'dan itibaren gercek tavan oneri performansini uretir.
         Veri yoksa bos ozet dondurur — demo veri uretmez.
         """
         all_audits = cls.load_all_audits()
         if not all_audits:
             return {
                 "status": "success",
-                "start_date": start_date or "2026-08-05",
+                "start_date": start_date or "2026-08-04",
                 "end_date": end_date or datetime.now().strftime("%Y-%m-%d"),
-                "official_inception_date": "2026-08-05",
+                "official_inception_date": "2026-08-04",
                 "summary": {"total_days_tracked": 0, "total_candidates_tracked": 0, "total_hit_ceiling": 0, "tavan_success_pct": 0.0, "total_hit_plus5": 0, "plus5_success_pct": 0.0, "cumulative_avg_max_gain_pct": 0.0, "cumulative_avg_closing_gain_pct": 0.0, "ahlatci_warrant_avg_gain_pct": 0.0},
                 "hourly_summary": [],
                 "daily_breakdown": [],
                 "hall_of_fame": [],
-                "available_range": {"min_date": "2026-08-05", "max_date": datetime.now().strftime("%Y-%m-%d")}
+                "available_range": {"min_date": "2026-08-04", "max_date": datetime.now().strftime("%Y-%m-%d")}
             }
 
         sorted_dates = sorted(list(all_audits.keys()))
@@ -486,9 +486,9 @@ class TavanAuditTracker:
 
         return {
             "status": "success",
-            "start_date": start_date or "2026-08-05",
+            "start_date": start_date or "2026-08-04",
             "end_date": end_date or datetime.now().strftime("%Y-%m-%d"),
-            "official_inception_date": "2026-08-05",
+            "official_inception_date": "2026-08-04",
             "summary": {
                 "total_days_tracked": total_days,
                 "total_candidates_tracked": total_candidates,
@@ -504,19 +504,19 @@ class TavanAuditTracker:
             "daily_breakdown": daily_breakdown,
             "hall_of_fame": hall_of_fame,
             "available_range": {
-                "min_date": sorted_dates[0] if sorted_dates else "2026-08-05",
+                "min_date": sorted_dates[0] if sorted_dates else "2026-08-04",
                 "max_date": sorted_dates[-1] if sorted_dates else datetime.now().strftime("%Y-%m-%d")
             }
         }
 
     @classmethod
     def _generate_initial_historical_data(cls) -> Dict[str, Any]:
-        """05 Ağustos 2026 başlangıçlı zengin, saat bazlı çoklu öneri denetim arşivi üretir."""
+        """04 Ağustos 2026 başlangıçlı zengin, saat bazlı çoklu öneri denetim arşivi üretir."""
         history = {}
 
-        # 1. 2026-08-05 (Resmi Başlangıç Günü - Çarşamba)
-        history["2026-08-05"] = {
-            "date": "2026-08-05",
+        # 1. 2026-08-04 (Resmi Başlangıç Günü - Çarşamba)
+        history["2026-08-04"] = {
+            "date": "2026-08-04",
             "snapshot_time": "10:15 / 11:30 / 14:00",
             "evaluation_time": "18:10 (Kapanış)",
             "status": "COMPLETED",

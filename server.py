@@ -258,6 +258,36 @@ ALL_SYMBOLS = [s.replace('.IS','') for s in BIST_SYMBOLS] + [w.replace('.IS','')
 app = Flask(__name__, static_folder='ui')
 CORS(app) # Geliştirme aşaması için Cross-Origin izin verilir
 
+# ============ Online Kullanıcı Sayacı (Heartbeat) ============
+import time as _time
+_online_users = {}  # {session_id: last_heartbeat_timestamp}
+_ONLINE_TIMEOUT = 35  # 35 saniye heartbeat yoksa offline say
+
+@app.route('/api/heartbeat', methods=['POST'])
+def api_heartbeat():
+    """Kullanıcı her 15 saniyede bir heartbeat gönderir."""
+    sid = request.json.get('sid') if request.is_json else request.args.get('sid', '')
+    if not sid:
+        import uuid
+        sid = str(uuid.uuid4())[:8]
+    _online_users[sid] = _time.time()
+    # Eski oturumları temizle
+    cutoff = _time.time() - _ONLINE_TIMEOUT
+    expired = [k for k, v in _online_users.items() if v < cutoff]
+    for k in expired:
+        del _online_users[k]
+    return jsonify({"status": "ok", "sid": sid, "online": len(_online_users)})
+
+@app.route('/api/online', methods=['GET'])
+def api_online():
+    """Anlık online kullanıcı sayısını döndürür."""
+    cutoff = _time.time() - _ONLINE_TIMEOUT
+    expired = [k for k, v in _online_users.items() if v < cutoff]
+    for k in expired:
+        del _online_users[k]
+    return jsonify({"online": len(_online_users)})
+
+
 @app.route('/')
 def serve_ui():
     """Varsayılan olarak index.html'i açar"""
@@ -654,7 +684,7 @@ def api_tavan_tracker():
 @app.route('/api/tavan_history', methods=['GET'])
 def api_tavan_history():
     """05 Ağustos 2026'dan itibaren veya istenen aralıkta uzun vadeli kümülatif tavan ve saat bazlı başarı arşivi."""
-    start_date = request.args.get('start_date', '2026-08-05')
+    start_date = request.args.get('start_date', '2026-08-04')
     end_date = request.args.get('end_date', None)
     symbol_filter = request.args.get('symbol', None)
     time_filter = request.args.get('time', None)

@@ -110,6 +110,34 @@ let analysisAbortController = null;
 let logInterval = null;
 
 // ============================================================
+// 🟢 ONLİNE KULLANICI SAYACI (Heartbeat)
+// ============================================================
+let _heartbeatSid = localStorage.getItem('varant-sid') || '';
+
+async function sendHeartbeat() {
+    try {
+        const res = await fetch('/api/heartbeat', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ sid: _heartbeatSid })
+        });
+        const data = await res.json();
+        if (data.sid) {
+            _heartbeatSid = data.sid;
+            localStorage.setItem('varant-sid', data.sid);
+        }
+        const el = document.getElementById('online-count');
+        if (el && data.online !== undefined) {
+            el.textContent = data.online;
+        }
+    } catch(e) { /* sessiz hata */ }
+}
+
+// Sayfa yüklenince hemen gönder, sonra 15 saniyede bir
+sendHeartbeat();
+setInterval(sendHeartbeat, 15000);
+
+// ============================================================
 // 🌗 TEMA TOGGLE (Koyu / Açık)
 // ============================================================
 function toggleTheme() {
@@ -146,7 +174,7 @@ function toggleTheme() {
 // ============================================================
 async function fetchHomeWinrateStats() {
     try {
-        const res = await fetch('/api/tavan_history?start_date=2026-08-05');
+        const res = await fetch('/api/tavan_history?start_date=2026-08-04');
         const data = await res.json();
         const s = (data.status === 'success' && data.summary) ? data.summary : null;
 
@@ -165,14 +193,14 @@ async function fetchHomeWinrateStats() {
             if (el('stat-warrant-val')) el('stat-warrant-val').textContent = `+%${s.ahlatci_warrant_avg_gain_pct}`;
             if (el('stat-close-val')) el('stat-close-val').textContent = `+%${s.cumulative_avg_closing_gain_pct}`;
         } else {
-            // Veri yok — 05 Ağustos'tan önce
+            // Veri yok — 04 Ağustos'tan önce
             if (el('stat-winrate')) el('stat-winrate').textContent = '-';
             if (el('stat-winrate-sub')) el('stat-winrate-sub').textContent = 'Veri bekleniyor';
             if (el('stat-avgprofit')) el('stat-avgprofit').textContent = '-';
             if (el('stat-avgprofit-sub')) el('stat-avgprofit-sub').textContent = 'Veri bekleniyor';
             if (el('stat-pfactor')) el('stat-pfactor').textContent = '-';
             if (el('stat-pfactor-sub')) el('stat-pfactor-sub').textContent = 'Veri bekleniyor';
-            if (el('stat-days-val')) el('stat-days-val').textContent = '05 Ağu 2026 sabahından itibaren';
+            if (el('stat-days-val')) el('stat-days-val').textContent = '04 Ağu 2026 sabahından itibaren';
             if (el('stat-warrant-val')) el('stat-warrant-val').textContent = 'Bekleniyor';
             if (el('stat-close-val')) el('stat-close-val').textContent = 'Bekleniyor';
         }
@@ -2675,7 +2703,7 @@ function closeLongTermHistoryModal() {
 }
 
 function applyLongTermFilter() {
-    const startDate = document.getElementById('hist-start-date')?.value || '2026-08-05';
+    const startDate = document.getElementById('hist-start-date')?.value || '2026-08-04';
     const endDate = document.getElementById('hist-end-date')?.value || '';
     const symbol = document.getElementById('hist-symbol-search')?.value || '';
     const time = document.getElementById('hist-time-filter')?.value || '';
@@ -2692,7 +2720,7 @@ function openTavanAuditForDate(dateStr) {
     fetchTavanAuditData(dateStr);
 }
 
-async function fetchLongTermHistoryData(startDate = '2026-08-05', endDate = '', symbol = '', time = '') {
+async function fetchLongTermHistoryData(startDate = '2026-08-04', endDate = '', symbol = '', time = '') {
     const dailyTbody = document.getElementById('hist-daily-tbody');
     const hofTbody = document.getElementById('hist-hall-of-fame-tbody');
     const hourlyContainer = document.getElementById('hist-hourly-cards-container');
@@ -2740,14 +2768,14 @@ function switchStatsTab(tabName, btnEl) {
 }
 
 function applyStatsTabFilter() {
-    const startDate = document.getElementById('stats-tab-start-date')?.value || '2026-08-05';
+    const startDate = document.getElementById('stats-tab-start-date')?.value || '2026-08-04';
     const endDate = document.getElementById('stats-tab-end-date')?.value || '';
     const symbol = document.getElementById('stats-tab-symbol-search')?.value || '';
     const time = document.getElementById('stats-tab-time-filter')?.value || '';
     fetchStatsTabData(startDate, endDate, symbol, time);
 }
 
-async function fetchStatsTabData(startDate = '2026-08-05', endDate = '', symbol = '', time = '') {
+async function fetchStatsTabData(startDate = '2026-08-04', endDate = '', symbol = '', time = '') {
     const dailyTbody = document.getElementById('stats-tab-daily-tbody');
     const hofTbody = document.getElementById('stats-tab-hall-of-fame-tbody');
     const hourlyContainer = document.getElementById('stats-tab-hourly-cards-container');
@@ -2762,7 +2790,7 @@ async function fetchStatsTabData(startDate = '2026-08-05', endDate = '', symbol 
         const tabSymbol = document.getElementById('stats-tab-symbol-search')?.value || symbol;
         const tabTime = document.getElementById('stats-tab-time-filter')?.value || time;
 
-        let url = `/api/tavan_history?start_date=${encodeURIComponent(tabStartDate || '2026-08-05')}`;
+        let url = `/api/tavan_history?start_date=${encodeURIComponent(tabStartDate || '2026-08-04')}`;
         if (tabEndDate) url += `&end_date=${encodeURIComponent(tabEndDate)}`;
         if (tabSymbol) url += `&symbol=${encodeURIComponent(tabSymbol)}`;
         if (tabTime) url += `&time=${encodeURIComponent(tabTime)}`;
@@ -2778,7 +2806,7 @@ async function fetchStatsTabData(startDate = '2026-08-05', endDate = '', symbol 
                 renderHistoryKpis(summ, 'stats-tab-');
                 const notice = document.getElementById('stats-empty-notice');
                 if (notice) notice.style.display = 'block';
-                if (hourlyContainer) hourlyContainer.innerHTML = `<div style="color:var(--text-muted); font-size:0.85rem; padding:2rem; text-align:center; grid-column:1/-1;"><i class="fa-regular fa-calendar-xmark" style="font-size:2rem; color:#10b981; display:block; margin-bottom:0.5rem;"></i>Henuz seans verisi yok. Ilk kayit 05 Agustos 2026 sabahi 10:15'te olusturulacak.</div>`;
+                if (hourlyContainer) hourlyContainer.innerHTML = `<div style="color:var(--text-muted); font-size:0.85rem; padding:2rem; text-align:center; grid-column:1/-1;"><i class="fa-regular fa-calendar-xmark" style="font-size:2rem; color:#10b981; display:block; margin-bottom:0.5rem;"></i>Henuz seans verisi yok. Ilk kayit 04 Agustos 2026 sabahi 10:15'te olusturulacak.</div>`;
                 if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">Henuz kayitli seans bulunmuyor.</td></tr>`;
                 if (hofTbody) hofTbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">Henuz veri yok.</td></tr>`;
                 return;
