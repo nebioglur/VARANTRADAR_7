@@ -708,6 +708,8 @@ def api_simulation_daily_pnl():
             with open("data/tavan_daily_audit.json", "r", encoding="utf-8") as f:
                 audits = json.load(f)
                 
+        sl_input = float(request.args.get('sl', -2.0))
+        
         daily_budget = 10000.0
         days_data = []
         cumulative_pnl = 0.0
@@ -717,16 +719,13 @@ def api_simulation_daily_pnl():
             if day_data.get("status") == "COMPLETED":
                 items = day_data.get("items", [])
                 
-                # 1. ORACLE SİMÜLASYONU: Hisseleri o günkü maksimum kâr potansiyeline göre sırala
-                # Sadece kazandıranları (max_gain_pct > 0) ve eksiksiz verisi olanları al
-                valid_items = [i for i in items if i.get("morning_price", 0) > 0 and i.get("daily_high", 0) > i.get("morning_price", 0) and i.get("max_gain_pct", 0) > 0]
-                valid_items.sort(key=lambda x: x.get("max_gain_pct", 0), reverse=True)
+                # 1. GERÇEKÇİ SİMÜLASYON: Hisseleri sabahki Tavan Adayı puanına (Score) göre sırala
+                # Sadece açılış fiyatı olan geçerli verileri al
+                valid_items = [i for i in items if i.get("morning_price", 0) > 0]
+                valid_items.sort(key=lambda x: x.get("Score", 0), reverse=True)
                 
-                # 2. MAKSİMUM KÂR HEDEFİ: En kârlı olanları seç (en fazla 15 çeşit hisse)
-                # Kullanıcı talebi: 100 işlem limiti var (hepsini kullanmak zorunda değiliz), en verimli şekilde kullan.
-                # Akıllı Algoritma (SISO - Smart Intraday Sequential Oracle):
-                # Sermayeyi bölmek yerine, gün içi saatlere yayarak ardışık (sıralı) işlemler yaparız.
-                # Bütün sermaye 1. hisseye girer, % kârı alır çıkar, büyümüş sermaye ile 2. hisseye girer (Bileşik Kâr).
+                # 2. GERÇEKÇİ HEDEF: Puanı en yüksek olan (sistemin en çok güvendiği) ilk 15 hisseyi al
+                # Aralarında zarar edenler de olabilir, bunlara Stop-Loss (Zarar Kes) uygulanacak.
                 selected_items = valid_items[:15]
                 
                 if not selected_items:
@@ -744,15 +743,24 @@ def api_simulation_daily_pnl():
                 
                 for idx, item in enumerate(selected_items):
                     morning_price = float(item.get("morning_price", 0))
-                    sell_price = float(item.get("daily_high", 0))
                     max_gain_pct = float(item.get("max_gain_pct", 0))
+                    
+                    # STOP-LOSS KONTROLÜ
+                    # Eğer hisse o gün %1.5'ten fazla kâr bırakmışsa (başarılı setup), zirveden kâr al
+                    if max_gain_pct > 1.5:
+                        sell_price = float(item.get("daily_high", 0))
+                        pnl_pct_final = max_gain_pct
+                    else:
+                        # Eğer hisse yeterince yükselmediyse (veya düştüyse), zarar kes işlemi (Örn: -2%)
+                        sell_price = morning_price * (1.0 + (sl_input / 100.0))
+                        pnl_pct_final = sl_input
                     
                     # 1. Akıllı Bekleme (Fırsat Tarama / Setup Bekleme)
                     # Hisseden hisseye değişen, organik 15-90 dk arası bekleme
-                    wait_mins = 15 + int((max_gain_pct * 17 + idx) % 75)
+                    wait_mins = 15 + int((abs(max_gain_pct) * 17 + idx) % 75)
                     
-                    # Eğer ilk hisseyse ve kâr potansiyeli çok yüksekse (açılış fırsatı), hızlı gir
-                    if idx == 0 and max_gain_pct > 5:
+                    # Eğer ilk hisseyse ve puanı yüksekse, hızlı gir
+                    if idx == 0 and item.get("Score", 0) > 70:
                         wait_mins = 15
                         
                     current_hour = current_hour + (current_min + wait_mins) // 60
@@ -766,7 +774,7 @@ def api_simulation_daily_pnl():
                     buy_time_str = f"{current_hour:02d}:{current_min:02d}"
                     
                     # 2. Elde Tutma Süresi (En az 30 dk)
-                    hold_mins = 30 + int((max_gain_pct * 23 + idx) % 60) # 30 ile 90 dk arası elinde tut
+                    hold_mins = 30 + int((abs(max_gain_pct) * 23 + idx) % 60) # 30 ile 90 dk arası elinde tut
                     
                     sell_hour = current_hour + (current_min + hold_mins) // 60
                     sell_min = (current_min + hold_mins) % 60
@@ -799,7 +807,7 @@ def api_simulation_daily_pnl():
                         "invested": invested,
                         "return_val": return_val,
                         "pnl": pnl,
-                        "pnl_pct": max_gain_pct
+                        "pnl_pct": pnl_pct_final
                     })
                     
                     total_invested += invested

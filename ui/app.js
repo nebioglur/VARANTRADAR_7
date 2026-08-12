@@ -3176,7 +3176,11 @@ async function fetchSimulationData() {
     if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Simülasyon hesaplanıyor...</td></tr>';
     
     try {
-        const res = await fetch('/api/simulation/daily_pnl');
+        let sl = -2.0;
+        const slInput = document.getElementById('sim-stoploss');
+        if (slInput) sl = parseFloat(slInput.value) || -2.0;
+        
+        const res = await fetch(`/api/simulation/daily_pnl?sl=${sl}`);
         const data = await res.json();
         
         if (data.status === 'success') {
