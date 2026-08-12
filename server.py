@@ -715,41 +715,62 @@ def api_simulation_daily_pnl():
         for date_key in sorted(audits.keys()):
             day_data = audits[date_key]
             if day_data.get("status") == "COMPLETED":
-                items = day_data.get("items", [])[:15]
-                if not items:
+                items = day_data.get("items", [])
+                
+                # 1. ORACLE SİMÜLASYONU: Hisseleri o günkü maksimum kâr potansiyeline göre sırala
+                # Eksik veri olanları ele
+                valid_items = [i for i in items if i.get("morning_price", 0) > 0 and i.get("daily_high", 0) >= i.get("morning_price", 0)]
+                valid_items.sort(key=lambda x: x.get("max_gain_pct", 0), reverse=True)
+                
+                # 2. EN FAZLA 10-15 HİSSE SEÇİMİ (Biz en yüksek kâr getiren ilk 15'i alıyoruz)
+                # Maksimum 100 günlük işlem kuralı çerçevesinde tek bir hisseye 1 trade ayırıyoruz
+                # İleride her hissede parçalı al-sat istenirse diye limit 100 olarak duruyor. (Şu an 15 < 100)
+                selected_items = valid_items[:15]
+                
+                if not selected_items:
                     continue
                     
-                stocks_count = len(items)
-                allocation_per_stock = daily_budget / stocks_count
+                stocks_count = len(selected_items)
+                
+                # 3. AĞIRLIKLI DAĞILIM (Eşit değil, en kârlıya en çok pay)
+                # Basit lineer veya üstel dağılım (Rank bazlı: 1. hisse 15 birim, 2. hisse 14 birim ... son hisse 1 birim)
+                total_weight = sum(range(1, stocks_count + 1))
                 
                 total_invested = 0.0
                 total_return = 0.0
                 trades = []
                 
-                for item in items:
+                for idx, item in enumerate(selected_items):
                     morning_price = float(item.get("morning_price", 0))
-                    closing_price = float(item.get("closing_price", 0))
+                    # Satış fiyatı artık kapanış değil, gün içi ZİRVE noktası (Oracle avantajı)
+                    sell_price = float(item.get("daily_high", 0))
+                    max_gain_pct = float(item.get("max_gain_pct", 0))
                     
-                    if morning_price > 0:
-                        shares = math.floor(allocation_per_stock / morning_price)
-                        invested = shares * morning_price
-                        return_val = shares * closing_price
-                        pnl = return_val - invested
-                        pnl_pct = item.get("closing_gain_pct", 0)
+                    # Hisse başına düşen ağırlık ve sermaye payı
+                    weight = stocks_count - idx
+                    allocation_per_stock = daily_budget * (weight / total_weight)
+                    
+                    shares = math.floor(allocation_per_stock / morning_price)
+                    if shares == 0:
+                        continue
                         
-                        total_invested += invested
-                        total_return += return_val
-                        
-                        trades.append({
-                            "symbol": item.get("symbol"),
-                            "buy_price": morning_price,
-                            "sell_price": closing_price,
-                            "shares": shares,
-                            "invested": invested,
-                            "return_val": return_val,
-                            "pnl": pnl,
-                            "pnl_pct": pnl_pct
-                        })
+                    invested = shares * morning_price
+                    return_val = shares * sell_price
+                    pnl = return_val - invested
+                    
+                    total_invested += invested
+                    total_return += return_val
+                    
+                    trades.append({
+                        "symbol": item.get("symbol"),
+                        "buy_price": morning_price,
+                        "sell_price": sell_price,
+                        "shares": shares,
+                        "invested": invested,
+                        "return_val": return_val,
+                        "pnl": pnl,
+                        "pnl_pct": max_gain_pct
+                    })
                         
                 daily_pnl = total_return - total_invested
                 daily_pnl_pct = (daily_pnl / total_invested * 100) if total_invested > 0 else 0
