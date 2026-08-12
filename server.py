@@ -695,6 +695,160 @@ def api_tavan_history():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/api/simulation/daily_pnl', methods=['GET'])
+def api_simulation_daily_pnl():
+    try:
+        import json
+        from datetime import datetime
+        from services.tavan_tracker import TavanAuditTracker
+        
+        try:
+            audits = TavanAuditTracker.load_all_audits()
+        except AttributeError:
+            with open("data/tavan_daily_audit.json", "r", encoding="utf-8") as f:
+                audits = json.load(f)
+                
+        daily_budget = 10000.0
+        days_data = []
+        cumulative_pnl = 0.0
+        
+        for date_key in sorted(audits.keys()):
+            day_data = audits[date_key]
+            if day_data.get("status") == "COMPLETED":
+                items = day_data.get("items", [])[:15]
+                if not items:
+                    continue
+                    
+                stocks_count = len(items)
+                allocation_per_stock = daily_budget / stocks_count
+                
+                total_invested = 0.0
+                total_return = 0.0
+                trades = []
+                
+                for item in items:
+                    morning_price = float(item.get("morning_price", 0))
+                    closing_price = float(item.get("closing_price", 0))
+                    
+                    if morning_price > 0:
+                        shares = math.floor(allocation_per_stock / morning_price)
+                        invested = shares * morning_price
+                        return_val = shares * closing_price
+                        pnl = return_val - invested
+                        pnl_pct = item.get("closing_gain_pct", 0)
+                        
+                        total_invested += invested
+                        total_return += return_val
+                        
+                        trades.append({
+                            "symbol": item.get("symbol"),
+                            "buy_price": morning_price,
+                            "sell_price": closing_price,
+                            "shares": shares,
+                            "invested": invested,
+                            "return_val": return_val,
+                            "pnl": pnl,
+                            "pnl_pct": pnl_pct
+                        })
+                        
+                daily_pnl = total_return - total_invested
+                daily_pnl_pct = (daily_pnl / total_invested * 100) if total_invested > 0 else 0
+                cumulative_pnl += daily_pnl
+                
+                days_data.append({
+                    "date": date_key,
+                    "stocks_count": stocks_count,
+                    "total_invested": round(total_invested, 2),
+                    "total_return": round(total_return, 2),
+                    "daily_pnl": round(daily_pnl, 2),
+                    "daily_pnl_pct": round(daily_pnl_pct, 2),
+                    "cumulative_pnl": round(cumulative_pnl, 2),
+                    "trades": trades
+                })
+                
+        weekly_data = {}
+        monthly_data = {}
+        
+        for d in days_data:
+            dt = datetime.strptime(d["date"], "%Y-%m-%d")
+            week_key = f"{dt.isocalendar()[0]}-W{dt.isocalendar()[1]:02d}"
+            month_key = f"{dt.year}-{dt.month:02d}"
+            
+            if week_key not in weekly_data:
+                weekly_data[week_key] = {"week": week_key, "total_invested": 0, "total_return": 0, "daily_pnl": 0, "trades_count": 0, "days_count": 0}
+            if month_key not in monthly_data:
+                monthly_data[month_key] = {"month": month_key, "total_invested": 0, "total_return": 0, "daily_pnl": 0, "trades_count": 0, "days_count": 0}
+                
+            weekly_data[week_key]["total_invested"] += d["total_invested"]
+            weekly_data[week_key]["total_return"] += d["total_return"]
+            weekly_data[week_key]["daily_pnl"] += d["daily_pnl"]
+            weekly_data[week_key]["trades_count"] += len(d["trades"])
+            weekly_data[week_key]["days_count"] += 1
+            
+            monthly_data[month_key]["total_invested"] += d["total_invested"]
+            monthly_data[month_key]["total_return"] += d["total_return"]
+            monthly_data[month_key]["daily_pnl"] += d["daily_pnl"]
+            monthly_data[month_key]["trades_count"] += len(d["trades"])
+            monthly_data[month_key]["days_count"] += 1
+            
+        for w in weekly_data.values():
+            w["daily_pnl_pct"] = round((w["daily_pnl"] / w["total_invested"] * 100) if w["total_invested"] > 0 else 0, 2)
+            w["total_invested"] = round(w["total_invested"], 2)
+            w["total_return"] = round(w["total_return"], 2)
+            w["daily_pnl"] = round(w["daily_pnl"], 2)
+            
+        for m in monthly_data.values():
+            m["daily_pnl_pct"] = round((m["daily_pnl"] / m["total_invested"] * 100) if m["total_invested"] > 0 else 0, 2)
+            m["total_invested"] = round(m["total_invested"], 2)
+            m["total_return"] = round(m["total_return"], 2)
+            m["daily_pnl"] = round(m["daily_pnl"], 2)
+
+        total_trading_days = len(days_data)
+        if total_trading_days > 0:
+            best_day = max(days_data, key=lambda x: x["daily_pnl"])
+            worst_day = min(days_data, key=lambda x: x["daily_pnl"])
+            win_days = sum(1 for d in days_data if d["daily_pnl"] > 0)
+            loss_days = sum(1 for d in days_data if d["daily_pnl"] <= 0)
+            avg_daily_pnl = cumulative_pnl / total_trading_days
+            avg_daily_pnl_pct = sum(d["daily_pnl_pct"] for d in days_data) / total_trading_days
+            
+            total_summary = {
+                "total_trading_days": total_trading_days,
+                "total_cumulative_pnl": round(cumulative_pnl, 2),
+                "total_cumulative_pnl_pct": round(sum(d["daily_pnl_pct"] for d in days_data), 2),
+                "best_day": {"date": best_day["date"], "pnl": round(best_day["daily_pnl"], 2), "pnl_pct": round(best_day["daily_pnl_pct"], 2)},
+                "worst_day": {"date": worst_day["date"], "pnl": round(worst_day["daily_pnl"], 2), "pnl_pct": round(worst_day["daily_pnl_pct"], 2)},
+                "win_days": win_days,
+                "loss_days": loss_days,
+                "avg_daily_pnl": round(avg_daily_pnl, 2),
+                "avg_daily_pnl_pct": round(avg_daily_pnl_pct, 2)
+            }
+        else:
+            total_summary = {
+                "total_trading_days": 0,
+                "total_cumulative_pnl": 0.0,
+                "total_cumulative_pnl_pct": 0.0,
+                "best_day": None,
+                "worst_day": None,
+                "win_days": 0,
+                "loss_days": 0,
+                "avg_daily_pnl": 0.0,
+                "avg_daily_pnl_pct": 0.0
+            }
+
+        return jsonify({
+            "status": "success",
+            "daily_budget": daily_budget,
+            "days": days_data,
+            "weekly": list(weekly_data.values()),
+            "monthly": list(monthly_data.values()),
+            "total_summary": total_summary
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 
 if __name__ == "__main__":
 

@@ -238,6 +238,8 @@ function switchMainTab(tabName, btnElement) {
     if (statsWrapper) statsWrapper.style.display = tabName === 'stats' ? 'block' : 'none';
     const varantWrapper = document.getElementById('varant-wrapper');
     if (varantWrapper) varantWrapper.style.display = tabName === 'varant' ? 'block' : 'none';
+    const simWrapper = document.getElementById('simulation-wrapper');
+    if (simWrapper) simWrapper.style.display = tabName === 'simulation' ? 'block' : 'none';
     
     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
     if (btnElement) btnElement.classList.add('active');
@@ -259,6 +261,9 @@ function switchMainTab(tabName, btnElement) {
     }
     if (tabName === 'varant') {
         runVarantSimulation();
+    }
+    if (tabName === 'simulation') {
+        fetchSimulationData();
     }
 }
 
@@ -3036,7 +3041,7 @@ function renderDailyBreakdown(dailyList, tbody, prefix) {
 function renderHallOfFame(hofList, tbody) {
     if (!tbody) return;
     if (!hofList || hofList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;">Kayit bulunamadi.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="text-muted text-center" style="padding:2rem;">Kayit bulunamadi.</td></tr>`;
         return;
     }
     tbody.innerHTML = '';
@@ -3044,7 +3049,8 @@ function renderHallOfFame(hofList, tbody) {
         const tr = document.createElement('tr');
         const rankIcon = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `#${idx + 1}`));
         tr.innerHTML = `
-            <td><div style="font-weight:800; color:#fff; font-size:0.88rem;">${rankIcon} ${h.symbol}</div></td>
+            <td><div style="font-weight:800; color:#fff; font-size:0.88rem;">${rankIcon}</div></td>
+            <td><div style="font-weight:800; color:#fff; font-size:0.88rem;">${h.symbol}</div></td>
             <td style="color:var(--text-muted); font-weight:bold; text-align:center;">${h.appearances} Gun</td>
             <td>
                 <span style="color:#10b981; font-weight:800; font-size:0.85rem;">%${h.tavan_success_pct}</span>
@@ -3160,5 +3166,146 @@ const _chartObserver = new MutationObserver(() => {
 const dashWrapper = document.getElementById('dashboard-wrapper');
 if (dashWrapper) {
     _chartObserver.observe(dashWrapper, { childList: true, subtree: true });
+}}
+
+// ========== SİMÜLASYON MOTORU ==========
+let globalSimData = null;
+
+async function fetchSimulationData() {
+    const tbody = document.getElementById('sim-daily-tbody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Simülasyon hesaplanıyor...</td></tr>';
+    
+    try {
+        const res = await fetch('/api/simulation/daily_pnl');
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+            globalSimData = data;
+            renderSimKpis(data.total_summary);
+            renderSimDailyTable(data.days);
+        } else {
+            if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="text-red text-center" style="padding:2rem;">Simülasyon verisi alınamadı.</td></tr>';
+        }
+    } catch (e) {
+        if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="text-red text-center" style="padding:2rem;">Bağlantı hatası: ' + e.message + '</td></tr>';
+    }
 }
 
+function renderSimKpis(summary) {
+    if (!summary) return;
+    const el = (id) => document.getElementById(id);
+    
+    const cumPnl = summary.total_cumulative_pnl || 0;
+    const cumPct = summary.total_cumulative_pnl_pct || 0;
+    const isProfit = cumPnl >= 0;
+    
+    if (el('sim-kpi-cumulative')) {
+        el('sim-kpi-cumulative').innerHTML = (isProfit ? '+' : '') + cumPnl.toLocaleString('tr-TR') + ' ₺';
+        el('sim-kpi-cumulative').style.color = isProfit ? 'var(--accent-green)' : 'var(--accent-red)';
+    }
+    if (el('sim-kpi-total-pct')) {
+        el('sim-kpi-total-pct').innerHTML = (isProfit ? '+' : '') + '%' + cumPct.toFixed(2);
+        el('sim-kpi-total-pct').style.color = isProfit ? 'var(--accent-green)' : 'var(--accent-red)';
+    }
+    if (el('sim-kpi-days')) el('sim-kpi-days').textContent = (summary.total_trading_days || 0) + ' Gün';
+    if (el('sim-kpi-avg-daily')) {
+        const avg = summary.avg_daily_pnl_pct || 0;
+        el('sim-kpi-avg-daily').innerHTML = (avg >= 0 ? '+' : '') + '%' + avg.toFixed(2);
+        el('sim-kpi-avg-daily').style.color = avg >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+    }
+}
+
+function renderSimDailyTable(days) {
+    const tbody = document.getElementById('sim-daily-tbody');
+    if (!tbody || !days || !days.length) {
+        if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="text-muted text-center" style="padding:2rem;">Henüz simülasyon verisi yok.</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = '';
+    days.forEach(day => {
+        const isProfit = day.daily_pnl >= 0;
+        const pnlColor = isProfit ? 'var(--accent-green)' : 'var(--accent-red)';
+        const pnlSign = isProfit ? '+' : '';
+        const cumColor = day.cumulative_pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+        const cumSign = day.cumulative_pnl >= 0 ? '+' : '';
+        const icon = isProfit ? '<i class="fa-solid fa-arrow-trend-up" style="color:var(--accent-green)"></i>' : '<i class="fa-solid fa-arrow-trend-down" style="color:var(--accent-red)"></i>';
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="font-weight:700; color:var(--text-light);">${day.date}</td>
+            <td>${day.stocks_count}</td>
+            <td style="font-family:monospace;">${day.total_invested.toLocaleString('tr-TR')} ₺</td>
+            <td style="font-family:monospace;">${day.total_return.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+            <td style="color:${pnlColor}; font-weight:800; font-family:monospace;">${pnlSign}${day.daily_pnl.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+            <td style="color:${pnlColor}; font-weight:700;">${icon} ${pnlSign}%${day.daily_pnl_pct.toFixed(2)}</td>
+            <td style="color:${cumColor}; font-weight:800; font-family:monospace; background:rgba(255,255,255,0.02);">${cumSign}${day.cumulative_pnl.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+            <td><button type="button" onclick="showSimDayDetail('${day.date}')" style="background:rgba(59,130,246,0.15); color:var(--accent-blue); border:1px solid rgba(59,130,246,0.3); border-radius:6px; padding:3px 10px; font-size:0.75rem; font-weight:700; cursor:pointer;"><i class="fa-solid fa-eye"></i> Detay</button></td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function showSimDayDetail(dateStr) {
+    if (!globalSimData || !globalSimData.days) return;
+    const day = globalSimData.days.find(d => d.date === dateStr);
+    if (!day || !day.trades) return;
+    
+    const container = document.getElementById('sim-detail-container');
+    const title = document.getElementById('sim-detail-title');
+    const tbody = document.getElementById('sim-detail-tbody');
+    
+    if (container) container.style.display = 'block';
+    if (title) title.innerHTML = '<i class="fa-solid fa-list"></i> ' + dateStr + ' Gün Detayı — ' + day.stocks_count + ' Hisse';
+    
+    if (tbody) {
+        tbody.innerHTML = '';
+        day.trades.forEach(t => {
+            const isP = t.pnl >= 0;
+            const c = isP ? 'var(--accent-green)' : 'var(--accent-red)';
+            const s = isP ? '+' : '';
+            const badge = isP ? '<span style="background:rgba(16,185,129,0.15); color:#10b981; padding:2px 8px; border-radius:4px; font-weight:700; font-size:0.72rem;">KÂR</span>' : '<span style="background:rgba(239,68,68,0.15); color:#ef4444; padding:2px 8px; border-radius:4px; font-weight:700; font-size:0.72rem;">ZARAR</span>';
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-weight:800; color:var(--text-light);">${t.symbol}</td>
+                <td style="font-family:monospace;">${t.buy_price.toFixed(2)} ₺</td>
+                <td style="font-family:monospace;">${t.sell_price.toFixed(2)} ₺</td>
+                <td>${t.shares}</td>
+                <td style="font-family:monospace;">${t.invested.toFixed(2)} ₺</td>
+                <td style="font-family:monospace;">${t.return_val.toFixed(2)} ₺</td>
+                <td style="color:${c}; font-weight:800; font-family:monospace;">${s}${t.pnl.toFixed(2)} ₺</td>
+                <td style="color:${c}; font-weight:700;">${s}%${t.pnl_pct.toFixed(2)}</td>
+                <td>${badge}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+    
+    // Scroll to detail
+    container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function switchSimPeriod(period, btnEl) {
+    // Toggle pill buttons
+    document.querySelectorAll('#simulation-wrapper .pill-btn').forEach(b => {
+        b.classList.remove('active');
+        b.style.background = 'rgba(30,41,59,0.8)';
+        b.style.color = 'var(--text-muted)';
+    });
+    if (btnEl) {
+        btnEl.classList.add('active');
+        btnEl.style.background = 'rgba(59,130,246,0.18)';
+        btnEl.style.color = '#38bdf8';
+    }
+    
+    if (!globalSimData) return;
+    
+    if (period === 'daily') {
+        renderSimDailyTable(globalSimData.days);
+    } else if (period === 'weekly') {
+        renderSimDailyTable(globalSimData.weekly || []);
+    } else if (period === 'monthly') {
+        renderSimDailyTable(globalSimData.monthly || []);
+    }
+}

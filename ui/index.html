@@ -6,7 +6,7 @@
     <title>VARANTRADAR PRO | FINTECH TERMINAL</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=20260812_v11_varant_tab">
+    <link rel="stylesheet" href="style.css?v=20260812_v12_simulation">
     <!-- ApexCharts -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     
@@ -37,6 +37,7 @@
             <button class="nav-btn" onclick="switchMainTab('stats', this)"><i class="fa-solid fa-chart-pie"></i> İSTATİSTİKLER</button>
             <button class="nav-btn" onclick="switchMainTab('news', this)"><i class="fa-solid fa-newspaper"></i> HABERLER (KAP)</button>
             <button class="nav-btn" onclick="switchMainTab('varant', this)"><i class="fa-solid fa-calculator"></i> VARANT</button>
+            <button class="nav-btn" onclick="switchMainTab('simulation', this)"><i class="fa-solid fa-flask"></i> SİMÜLASYON</button>
             <div class="status-indicator">
                 <span class="pulse"></span>
                 <span>SİSTEM AKTİF</span>
@@ -1279,6 +1280,87 @@
         </div>
     </div> <!-- END VARANT-WRAPPER -->
 
+    <div id="simulation-wrapper" class="main-wrapper" style="display: none;">
+      <div style="max-width:1100px; margin:0 auto;">
+        <!-- Title -->
+        <div style="margin-bottom:1.5rem;">
+          <h2><i class="fa-solid fa-flask"></i> Günlük Simülasyon Motoru</h2>
+          <p>Sistemin tavan adayı önerilerine birebir uysaydık, 10.000₺ ile günlük alım-satım yapsaydık kâr mı zarar mı ederdik?</p>
+        </div>
+
+        <!-- 4 KPI Cards row -->
+        <div id="sim-kpi-row" style="display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:1.5rem;">
+          <div class="card" style="border:1px solid var(--border-color); text-align:center;">
+            <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; text-transform:uppercase; letter-spacing:1px;">Kümülatif K/Z (₺)</div>
+            <div id="sim-kpi-cumulative" style="font-size:1.8rem; font-weight:800;">-</div>
+          </div>
+          <div class="card" style="border:1px solid var(--border-color); text-align:center;">
+            <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; text-transform:uppercase; letter-spacing:1px;">Toplam Getiri (%)</div>
+            <div id="sim-kpi-total-pct" style="font-size:1.8rem; font-weight:800;">-</div>
+          </div>
+          <div class="card" style="border:1px solid var(--border-color); text-align:center;">
+            <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; text-transform:uppercase; letter-spacing:1px;">İşlem Günü</div>
+            <div id="sim-kpi-days" style="font-size:1.8rem; font-weight:800; color:var(--text-main);">-</div>
+          </div>
+          <div class="card" style="border:1px solid var(--border-color); text-align:center;">
+            <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; text-transform:uppercase; letter-spacing:1px;">Günlük Ort. Getiri</div>
+            <div id="sim-kpi-avg-daily" style="font-size:1.8rem; font-weight:800;">-</div>
+          </div>
+        </div>
+
+        <!-- Period tabs: Günlük | Haftalık | Aylık -->
+        <div style="display:flex; gap:8px; margin-bottom:1rem;">
+          <button class="pill-btn active" onclick="switchSimPeriod('daily',this)" id="sim-period-daily">Günlük</button>
+          <button class="pill-btn" onclick="switchSimPeriod('weekly',this)" id="sim-period-weekly">Haftalık</button>
+          <button class="pill-btn" onclick="switchSimPeriod('monthly',this)" id="sim-period-monthly">Aylık</button>
+        </div>
+
+        <!-- Main simulation results table -->
+        <div class="card" style="border:1px solid var(--border-color);">
+          <table class="data-table" style="width:100%;">
+            <thead>
+              <tr>
+                <th>Tarih</th>
+                <th>Hisse Sayısı</th>
+                <th>Yatırılan (₺)</th>
+                <th>Geri Dönüş (₺)</th>
+                <th>Günlük K/Z (₺)</th>
+                <th>Günlük %</th>
+                <th>Kümülatif K/Z (₺)</th>
+                <th>Detay</th>
+              </tr>
+            </thead>
+            <tbody id="sim-daily-tbody">
+              <tr><td colspan="8" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Simülasyon hesaplanıyor...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Expanded trade detail container (shown when clicking Detay) -->
+        <div id="sim-detail-container" style="display:none; margin-top:1rem;">
+          <div class="card" style="border:1px solid rgba(59,130,246,0.3);">
+            <h4 id="sim-detail-title" style="color:var(--accent-blue); margin-bottom:0.8rem;"><i class="fa-solid fa-list"></i> Gün Detayı</h4>
+            <table class="data-table" style="width:100%; font-size:0.82rem;">
+              <thead>
+                <tr>
+                  <th>Sembol</th>
+                  <th>Alış (₺)</th>
+                  <th>Satış (₺)</th>
+                  <th>Lot</th>
+                  <th>Yatırılan (₺)</th>
+                  <th>Getiri (₺)</th>
+                  <th>K/Z (₺)</th>
+                  <th>K/Z %</th>
+                  <th>Sonuç</th>
+                </tr>
+              </thead>
+              <tbody id="sim-detail-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div id="news-wrapper" class="main-wrapper" style="display: none;">
         <div class="card">
             <h2 style="margin-bottom: 0.5rem;"><i class="fa-solid fa-earth-americas text-blue"></i> Finans & Ekonomi Dergisi</h2>
@@ -1735,6 +1817,6 @@
         <div class="chart-fs-body" id="chart-fs-body"></div>
     </div>
 
-    <script src="app.js?v=20260812_v11_varant_tab"></script>
+    <script src="app.js?v=20260812_v12_simulation"></script>
 </body>
 </html>
