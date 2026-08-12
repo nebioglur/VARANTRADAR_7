@@ -3166,7 +3166,7 @@ const _chartObserver = new MutationObserver(() => {
 const dashWrapper = document.getElementById('dashboard-wrapper');
 if (dashWrapper) {
     _chartObserver.observe(dashWrapper, { childList: true, subtree: true });
-}}
+}
 
 // ========== SİMÜLASYON MOTORU ==========
 let globalSimData = null;
