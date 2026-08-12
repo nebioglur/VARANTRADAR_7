@@ -1740,12 +1740,12 @@ async function fetchDashboardData() {
                     setInterval(fetchDashboardData, 30000);
                 }
             } else {
-                console.log('[DASHBOARD] Veri henüz boş, tarama devam ediyor...');
+                console.log('[DASHBOARD] Veri henüz boş veya tarama devam ediyor...');
                 // Hâlâ boşsa kullanıcıyı bilgilendir
                 ["tb-signals-5m", "tb-tavan-adaylari", "tb-opportunities-1h", "tb-opportunities", "tb-gainers", "tb-losers", "tb-favorites", "tb-high_volume", "tb-low_volume"].forEach(id => {
                     const tbody = document.getElementById(id);
                     if (tbody && (tbody.innerText.includes("Taran") || tbody.innerHTML.includes("Taran"))) {
-                        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;" class="text-muted"><div class="spinner small" style="display:inline-block; margin-right:10px;"></div> Tarama devam ediyor...</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;" class="text-muted">Piyasa kapalı veya tarama devam ediyor (00:00-09:00 arası veri bulunmayabilir).</td></tr>`;
                     }
                 });
             }
