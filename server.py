@@ -722,14 +722,17 @@ def api_simulation_daily_pnl():
                 valid_items = [i for i in items if i.get("morning_price", 0) > 0 and i.get("daily_high", 0) > i.get("morning_price", 0) and i.get("max_gain_pct", 0) > 0]
                 valid_items.sort(key=lambda x: x.get("max_gain_pct", 0), reverse=True)
                 
-                # 2. MAKSİMUM KÂR HEDEFİ: Sadece en çok kazandıran TEK HİSSEYE %100 sermaye!
-                # Kullanıcı talebi: "Tek hisse 10000TL'lik alım satıma girebilirsin, amaç maksimum kar"
-                selected_items = valid_items[:1]
+                # 2. MAKSİMUM KÂR HEDEFİ: En kârlı olanları seç (en fazla 15)
+                # Kullanıcı talebi: 1-15 arası hisse al, dağılımı kâra göre optimize et.
+                selected_items = valid_items[:15]
                 
                 if not selected_items:
                     continue
                     
                 stocks_count = len(selected_items)
+                
+                # Toplam kâr potansiyelini bul (Ağırlık hesaplamak için)
+                total_gain_pool = sum(float(i.get("max_gain_pct", 0)) for i in selected_items)
                 
                 total_invested = 0.0
                 total_return = 0.0
@@ -740,8 +743,13 @@ def api_simulation_daily_pnl():
                     sell_price = float(item.get("daily_high", 0))
                     max_gain_pct = float(item.get("max_gain_pct", 0))
                     
-                    # Tüm bütçe bu hisseye!
-                    allocation_per_stock = daily_budget
+                    # Oransal Dağılım: Kârı büyük olana büyük bütçe
+                    if total_gain_pool > 0:
+                        allocation_pct = max_gain_pct / total_gain_pool
+                    else:
+                        allocation_pct = 1.0 / stocks_count
+                        
+                    allocation_per_stock = daily_budget * allocation_pct
                     
                     shares = math.floor(allocation_per_stock / morning_price)
                     if shares == 0:

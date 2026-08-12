@@ -1290,8 +1290,7 @@
           <div style="background:rgba(59,130,246,0.1); border-left:4px solid var(--accent-blue); padding:1rem; border-radius:6px; margin-top:1rem;">
             <h4 style="margin:0 0 0.5rem 0; color:var(--accent-blue);"><i class="fa-solid fa-circle-info"></i> Hisseler Neye Göre Seçildi?</h4>
             <p style="margin:0; font-size:0.85rem; color:var(--text-light); line-height:1.5;">
-              Bu simülasyon <strong>"Maksimum Kâr"</strong> hedefler. 15 hisse kısıtı kaldırılmış ve <strong>Oracle (Geleceği Gören) Stratejisi</strong> uygulanmıştır:
-              Günün tavan adayları arasından gün içi zirvesine (`max_gain_pct`) göre en yüksek getiriyi sağlayan <strong>TEK BİR HİSSE</strong> seçilir. Günlük 10.000 TL bütçenin %100'ü, bu en çok kazandıran hisseye (1 alış, 1 satış işlemiyle) yatırılarak ulaşılabilecek teorik maksimum kâr potansiyeli ekrana yansıtılır.
+              Bu simülasyon <strong>"Maksimum Kâr Dağılım"</strong> (Oracle) mantığıyla çalışır. Günün adaylarından kâr getiren <strong>en fazla 15 hisse</strong> seçilir. 10.000 TL bütçe bu hisselere eşit dağıtılmaz; o gün en çok kazandıran hisse kasadan en büyük payı alacak şekilde kâr oranına (<code>max_gain_pct</code>) göre dinamik paylaştırılır. Satışlar gün içi zirve fiyatından yapılır.
             </p>
           </div>
         </div>
