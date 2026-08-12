@@ -379,7 +379,7 @@ class TechnicalEngine(BaseEngine):
         high = df['High']
         low = df['Low']
         
-        df['EMA8'] = close.ewm(span=8, adjust=False).mean()
+        df['EMA9'] = close.ewm(span=9, adjust=False).mean()
         df['EMA21'] = close.ewm(span=21, adjust=False).mean()
         
         ema12 = close.ewm(span=12, adjust=False).mean()
@@ -535,7 +535,8 @@ class TechnicalEngine(BaseEngine):
                 "low": round(row['Low'], 2),
                 "close": round(row['Close'], 2),
                 "volume": float(row['Volume']) if 'Volume' in row else 0,
-                "ema8": round(row['EMA8'], 2) if pd.notna(row['EMA8']) else None,
+                "ema8": round(row['EMA8'], 2) if 'EMA8' in row and pd.notna(row.get('EMA8')) else None,
+                "ema9": round(row['EMA9'], 2) if 'EMA9' in row and pd.notna(row['EMA9']) else None,
                 "ema21": round(row['EMA21'], 2) if pd.notna(row['EMA21']) else None,
                 "macd": round(row['MACD'], 2) if pd.notna(row['MACD']) else None,
                 "macd_signal": round(row['MACD_Signal'], 2) if pd.notna(row['MACD_Signal']) else None,
@@ -1124,5 +1125,38 @@ class TechnicalEngine(BaseEngine):
                         
             return False, 0, ""
                 
+    def check_ema_stop_loss(self, df, interval="1h"):
+        """Checks for EMA 9 crossing below EMA 21 to trigger a stop loss"""
+        if df.empty or len(df) < 30:
+            return False, ""
+        try:
+            import pandas as pd
+            import numpy as np
+            
+            close_col = 'close' if 'close' in df.columns else 'Close'
+            vol_col = 'volume' if 'volume' in df.columns else 'Volume'
+            
+            close = df[close_col]
+            vol = df[vol_col]
+            
+            ema9 = close.ewm(span=9, adjust=False).mean()
+            ema21 = close.ewm(span=21, adjust=False).mean()
+            
+            c_ema9, c_ema21 = float(ema9.iloc[-1]), float(ema21.iloc[-1])
+            p_ema9, p_ema21 = float(ema9.iloc[-2]), float(ema21.iloc[-2])
+            
+            crossed_down = (p_ema9 >= p_ema21) and (c_ema9 < c_ema21)
+            
+            if interval == "1h":
+                if crossed_down or (c_ema9 < c_ema21):
+                    return True, "1H EMA 9 Altında"
+            elif interval == "15m":
+                vol_sma = vol.rolling(20).mean()
+                c_vol, avg_vol = float(vol.iloc[-1]), float(vol_sma.iloc[-1])
+                if crossed_down and c_vol > avg_vol * 1.5:
+                    return True, "15M Hacimli Kesişim"
+            return False, ""
+        except Exception:
+            return False, ""
         except Exception as e:
             return False, 0, ""

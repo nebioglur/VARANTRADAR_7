@@ -2606,12 +2606,14 @@ function navigateCard(direction) {
 // 📊 10:15 SABAH TAVAN LİSTESİ & 18:10 SEANS KAPANIŞ KARNESİ JS
 // ================================================================
 
-function openTavanAuditModal() {
+function openTavanAuditModal(skipFetch = false) {
     const modal = document.getElementById('tavan-audit-modal');
     if (modal) {
         modal.style.display = 'block';
         document.body.style.overflow = 'hidden';
-        fetchTavanAuditData();
+        if (!skipFetch) {
+            fetchTavanAuditData();
+        }
     }
 }
 
@@ -2729,6 +2731,11 @@ async function fetchTavanAuditData(dateStr = '') {
                         badgeBg = 'rgba(239,68,68,0.2)';
                         badgeColor = '#ef4444';
                     }
+                    
+                    if (it.stop_loss_triggered) {
+                        badgeBg = 'rgba(239,68,68,0.4)';
+                        badgeColor = '#ef4444';
+                    }
 
                     const closeGainSign = it.closing_gain_pct >= 0 ? '+' : '';
                     const maxGainSign = it.max_gain_pct >= 0 ? '+' : '';
@@ -2747,7 +2754,7 @@ async function fetchTavanAuditData(dateStr = '') {
                         <td style="color:${closeGainCol}; font-weight:bold;">${closeGainSign}%${parseFloat(it.closing_gain_pct).toFixed(2)}</td>
                         <td style="color:${maxGainCol}; font-weight:800; font-size:0.95rem;">${maxGainSign}%${parseFloat(it.max_gain_pct).toFixed(2)}</td>
                         <td>
-                            <span style="background:${badgeBg}; color:${badgeColor}; border:1px solid ${badgeColor}; padding:3px 8px; border-radius:6px; font-weight:700; font-size:0.75rem; white-space:nowrap;">
+                            <span style="background:${badgeBg}; color:${badgeColor}; border:1px solid ${badgeColor}; padding:3px 8px; border-radius:6px; font-weight:700; font-size:0.75rem; white-space:nowrap; ${it.stop_loss_triggered ? 'animation: pulse 1.5s infinite;' : ''}">
                                 ${it.result_badge}
                             </span>
                         </td>
@@ -2796,7 +2803,7 @@ function applyLongTermFilter() {
 
 function openTavanAuditForDate(dateStr) {
     closeLongTermHistoryModal();
-    openTavanAuditModal();
+    openTavanAuditModal(true); // Skip default fetch to prevent race condition
     const select = document.getElementById('tavan-audit-date-select');
     if (select) {
         select.value = dateStr;
@@ -3002,7 +3009,7 @@ function renderHourlyCards(hourlyList, container) {
 function renderDailyBreakdown(dailyList, tbody, prefix) {
     if (!tbody) return;
     if (!dailyList || dailyList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-muted text-center" style="padding:2rem;">Filtreye uygun islem gunu bulunamadi.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;">Filtreye uygun islem gunu bulunamadi.</td></tr>`;
         return;
     }
     tbody.innerHTML = '';
@@ -3017,21 +3024,22 @@ function renderDailyBreakdown(dailyList, tbody, prefix) {
             </td>
             <td style="font-weight:bold; color:var(--text-light); text-align:center;">${d.total_candidates}</td>
             <td>
-                <span style="color:${tavanPctCol}; font-weight:800; font-size:0.88rem;">%${d.hit_ceiling_pct}</span>
-                <div style="font-size:0.7rem; color:var(--text-muted);">${d.hit_ceiling_count}/${d.total_candidates} Hisse</div>
+                <span style="color:${tavanPctCol}; font-weight:800; font-size:0.88rem;">%${d.hit_ceiling_pct} Başarı</span>
+                <div style="font-size:0.7rem; color:var(--text-muted);">${d.hit_ceiling_count}/${d.total_candidates} Hisse Tavana Ulaştı</div>
             </td>
             <td>
-                <span style="color:${plus5PctCol}; font-weight:800; font-size:0.88rem;">%${d.hit_plus5_pct}</span>
-                <div style="font-size:0.7rem; color:var(--text-muted);">${d.hit_plus5_count}/${d.total_candidates} Hisse</div>
+                <div style="font-weight:800; font-size:0.9rem; color:${d.avg_closing_gain_pct >= 0 ? '#10b981' : '#ef4444'}">
+                    ${d.avg_closing_gain_pct >= 0 ? '+' : ''}%${d.avg_closing_gain_pct}
+                </div>
+                <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Zirve: <span style="color:#facc15">+%${d.avg_max_gain_pct}</span></div>
             </td>
-            <td style="color:#facc15; font-weight:800; font-size:0.9rem;">+ %${d.avg_max_gain_pct}</td>
             <td>
                 <div style="font-weight:800; color:#38bdf8; font-size:0.82rem;">${d.star_stock || '-'}</div>
-                <div style="font-size:0.72rem; color:#c084fc; font-weight:700;">${d.star_warrant || ''}: <span style="color:#10b981;">${d.star_warrant_gain || ''}</span></div>
+                <div style="font-size:0.72rem; color:#c084fc; font-weight:700;">${d.star_warrant || ''} <span style="color:#10b981;">${d.star_warrant_gain || ''}</span></div>
             </td>
             <td>
-                <button onclick="openTavanAuditForDate('${d.date}')" class="btn-primary" style="background:rgba(239,68,68,0.25); color:#fca5a5; border:1px solid rgba(239,68,68,0.4); padding:3px 7px; font-size:0.72rem; border-radius:4px;">
-                    <i class="fa-solid fa-folder-open"></i> Ac
+                <button onclick="openTavanAuditForDate('${d.date}')" class="btn-primary" style="background:rgba(239,68,68,0.25); color:#fca5a5; border:1px solid rgba(239,68,68,0.4); padding:4px 10px; font-size:0.8rem; font-weight:bold; border-radius:4px; cursor:pointer;">
+                    <i class="fa-solid fa-folder-open"></i> Detayları Aç
                 </button>
             </td>`;
         tbody.appendChild(tr);
@@ -3375,4 +3383,49 @@ function switchSimPeriod(period, btnEl) {
     } else if (period === 'monthly') {
         renderSimDailyTable(globalSimData.monthly || []);
     }
+}
+
+function toggleSimDetail(dateStr) {
+    const detailContainer = document.getElementById('sim-detail-container');
+    const detailTbody = document.getElementById('sim-detail-tbody');
+    const detailTitle = document.getElementById('sim-detail-title');
+    
+    if (!detailContainer || !detailTbody || !globalSimData || !globalSimData.days) return;
+    
+    // Zaten ayni tarih aciksa kapat
+    if (detailContainer.style.display === 'block' && detailContainer.dataset.date === dateStr) {
+        detailContainer.style.display = 'none';
+        detailContainer.dataset.date = '';
+        return;
+    }
+    
+    const dayData = globalSimData.days.find(d => d.date === dateStr);
+    if (!dayData || !dayData.trades) return;
+    
+    detailTitle.innerHTML = `<i class=\"fa-solid fa-list\"></i> ${dateStr} - İşlem Detayı`;
+    detailTbody.innerHTML = '';
+    
+    dayData.trades.forEach(t => {
+        const isProfit = t.pnl >= 0;
+        const color = isProfit ? 'var(--accent-green)' : 'var(--accent-red)';
+        const sign = isProfit ? '+' : '';
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style=\"font-weight:700; color:var(--text-light);\">${t.symbol}</td>
+            <td style=\"font-family:monospace;\">${t.buy_price.toFixed(2)} ₺</td>
+            <td style=\"font-family:monospace;\">${t.sell_price.toFixed(2)} ₺</td>
+            <td>${t.lot_size.toLocaleString('tr-TR')}</td>
+            <td style=\"font-family:monospace;\">${t.invested.toLocaleString('tr-TR')} ₺</td>
+            <td style=\"font-family:monospace;\">${t.returned.toLocaleString('tr-TR')} ₺</td>
+            <td style=\"color:${color}; font-weight:800; font-family:monospace;\">${sign}${t.pnl.toLocaleString('tr-TR')} ₺</td>
+            <td style=\"color:${color}; font-weight:700;\">${sign}%${t.pnl_pct.toFixed(2)}</td>
+            <td style=\"font-size:0.75rem;\">${t.reason}</td>
+        `;
+        detailTbody.appendChild(tr);
+    });
+    
+    detailContainer.style.display = 'block';
+    detailContainer.dataset.date = dateStr;
+    detailContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }

@@ -138,6 +138,7 @@ class TavanAuditTracker:
                 "closing_price": round(price, 2),
                 "max_gain_pct": 0.0,
                 "closing_gain_pct": 0.0,
+                "stop_loss_triggered": False,
                 "hit_ceiling": False,
                 "hit_plus5": False,
                 "result_badge": "⏳ SEANS SÜRÜYOR",
@@ -224,6 +225,26 @@ class TavanAuditTracker:
                 badge = "🛑 YATAY / DÜZELTME"
                 badge_col = "red"
 
+            # Stop Loss (Zarar Kes) Kontrolü (15m ve 1h)
+            try:
+                from analysis.technical import TechnicalEngine
+                # Sadece gün içi zarar kes kontrolü
+                if close_gain < 5.0 and not is_tavan:
+                    df_15m = TechnicalEngine.get_chart_data(sym, interval="15m")
+                    if isinstance(df_15m, dict) and df_15m.get("status") != "error":
+                        import pandas as pd
+                        df_check = pd.DataFrame(df_15m.get("candles", []))
+                        if not df_check.empty:
+                            df_check.rename(columns={'Close': 'close', 'Volume': 'volume'}, inplace=True)
+                            te = TechnicalEngine()
+                            is_stop, stop_msg = te.check_ema_stop_loss(df_check, interval="15m")
+                            if is_stop:
+                                badge = f"🚨 ZARAR KES ({stop_msg})"
+                                badge_col = "red"
+                                item["stop_loss_triggered"] = True
+            except Exception as e:
+                print(f"[ZARAR KES HATA] {sym}: {e}")
+
             # Kaldıraçlı Ahlatcı Varant Getirisi (~6.2x)
             warrant_gain = round(max(0.0, max_gain * 6.2), 1)
 
@@ -288,7 +309,14 @@ class TavanAuditTracker:
         cum_plus5 = 0
         cum_max_gains = []
 
+        from datetime import datetime
         for d_key, aud in all_audits.items():
+            try:
+                if datetime.strptime(d_key, "%Y-%m-%d").weekday() >= 5:
+                    continue
+            except Exception:
+                pass
+            
             summ = aud.get("summary", {})
             t_cnt = summ.get("total_candidates", 0)
             if t_cnt > 0:
@@ -334,17 +362,23 @@ class TavanAuditTracker:
 
         sorted_dates = sorted(list(all_audits.keys()))
         
+        from datetime import datetime
         # Tarih filtreleme
         filtered_audits = {}
         for d, aud in all_audits.items():
-            if start_date and d < start_date:
-                continue
-            if end_date and d > end_date:
-                continue
+            try:
+                if datetime.strptime(d, "%Y-%m-%d").weekday() >= 5:
+                    continue
+            except Exception:
+                pass
+                
+            if start_date and start_date.strip():
+                if d < start_date:
+                    continue
+            if end_date and end_date.strip():
+                if d > end_date:
+                    continue
             filtered_audits[d] = aud
-
-        if not filtered_audits:
-            filtered_audits = all_audits
 
         total_days = len(filtered_audits)
         total_candidates = 0
