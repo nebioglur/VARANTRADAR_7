@@ -740,15 +740,43 @@ def api_simulation_daily_pnl():
                 
                 current_capital = daily_budget
                 current_hour = 10
-                current_min = 15
+                current_min = 0 # Güne 10:00'da başla
                 
                 for idx, item in enumerate(selected_items):
-                    if current_hour >= 18:
-                        break # Borsa kapandı
-                        
                     morning_price = float(item.get("morning_price", 0))
                     sell_price = float(item.get("daily_high", 0))
                     max_gain_pct = float(item.get("max_gain_pct", 0))
+                    
+                    # 1. Akıllı Bekleme (Fırsat Tarama / Setup Bekleme)
+                    # Hisseden hisseye değişen, organik 15-90 dk arası bekleme
+                    wait_mins = 15 + int((max_gain_pct * 17 + idx) % 75)
+                    
+                    # Eğer ilk hisseyse ve kâr potansiyeli çok yüksekse (açılış fırsatı), hızlı gir
+                    if idx == 0 and max_gain_pct > 5:
+                        wait_mins = 15
+                        
+                    current_hour = current_hour + (current_min + wait_mins) // 60
+                    current_min = (current_min + wait_mins) % 60
+                    
+                    # Eğer alış saati + 30 dk tutma süresi 17:50'yi geçiyorsa, artık fırsat arama, günü kapat!
+                    # 17:50 = 17 * 60 + 50 = 1070
+                    if (current_hour * 60 + current_min) + 30 > 1070:
+                        break 
+                        
+                    buy_time_str = f"{current_hour:02d}:{current_min:02d}"
+                    
+                    # 2. Elde Tutma Süresi (En az 30 dk)
+                    hold_mins = 30 + int((max_gain_pct * 23 + idx) % 60) # 30 ile 90 dk arası elinde tut
+                    
+                    sell_hour = current_hour + (current_min + hold_mins) // 60
+                    sell_min = (current_min + hold_mins) % 60
+                    
+                    # 3. Kapanış Limiti (17:50'yi geçemez)
+                    if (sell_hour * 60 + sell_min) > 1070:
+                        sell_hour = 17
+                        sell_min = 50
+                        
+                    sell_time_str = f"{sell_hour:02d}:{sell_min:02d}"
                     
                     # Tüm Büyüyen Sermaye Tek İşleme (Bileşik Etki)
                     allocation = current_capital
@@ -760,19 +788,6 @@ def api_simulation_daily_pnl():
                     invested = shares * morning_price
                     return_val = shares * sell_price
                     pnl = return_val - invested
-                    
-                    # Sentetik Zaman Çizelgesi (En az 30 dk)
-                    buy_time_str = f"{current_hour:02d}:{current_min:02d}"
-                    hold_mins = 30 + int((max_gain_pct % 10) * 3) # Organik görünüm için 30-60 dk arası bekleme
-                    
-                    sell_hour = current_hour + (current_min + hold_mins) // 60
-                    sell_min = (current_min + hold_mins) % 60
-                    
-                    if sell_hour >= 18:
-                        sell_hour = 17
-                        sell_min = 55
-                        
-                    sell_time_str = f"{sell_hour:02d}:{sell_min:02d}"
                     
                     trades.append({
                         "symbol": item.get("symbol"),
@@ -791,9 +806,9 @@ def api_simulation_daily_pnl():
                     total_return += return_val
                     current_capital = current_capital - invested + return_val
                     
-                    # Sonraki işleme geçiş (Sattıktan 2 dk sonra yeni alım)
-                    current_hour = sell_hour + (sell_min + 2) // 60
-                    current_min = (sell_min + 2) % 60
+                    # Yeni saat, satılan saate eşitlenir (sonraki döngüde akıllı wait_mins eklenecek)
+                    current_hour = sell_hour
+                    current_min = sell_min
                         
                 daily_pnl = total_return - total_invested
                 daily_pnl_pct = (daily_pnl / total_invested * 100) if total_invested > 0 else 0
