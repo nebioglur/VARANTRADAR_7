@@ -1285,7 +1285,15 @@
         <!-- Title -->
         <div style="margin-bottom:1.5rem;">
           <h2><i class="fa-solid fa-flask"></i> Oracle Simülasyon Motoru (Maks. Potansiyel)</h2>
-          <p>En yüksek getiri sağlayan tavan adaylarına ağırlıklı sermaye (maks. 15 hisse) yatırılarak gün içi zirvelerden (<i class="fa-solid fa-bolt text-yellow"></i> min. 30 dk marj ile) satılsaydı ne olurdu? (Günlük max 100 işlem limiti aktif)</p>
+          <p>Maksimum kâr potansiyelini ölçmek için geçmiş veriler üzerinde çalışan stratejik test motoru.</p>
+          
+          <div style="background:rgba(59,130,246,0.1); border-left:4px solid var(--accent-blue); padding:1rem; border-radius:6px; margin-top:1rem;">
+            <h4 style="margin:0 0 0.5rem 0; color:var(--accent-blue);"><i class="fa-solid fa-circle-info"></i> Hisseler Neye Göre Seçildi?</h4>
+            <p style="margin:0; font-size:0.85rem; color:var(--text-light); line-height:1.5;">
+              Bu simülasyon <strong>"Maksimum Kâr"</strong> hedefler. 15 hisse kısıtı kaldırılmış ve <strong>Oracle (Geleceği Gören) Stratejisi</strong> uygulanmıştır:
+              Günün tavan adayları arasından gün içi zirvesine (`max_gain_pct`) göre en yüksek getiriyi sağlayan <strong>TEK BİR HİSSE</strong> seçilir. Günlük 10.000 TL bütçenin %100'ü, bu en çok kazandıran hisseye (1 alış, 1 satış işlemiyle) yatırılarak ulaşılabilecek teorik maksimum kâr potansiyeli ekrana yansıtılır.
+            </p>
+          </div>
         </div>
 
         <!-- 4 KPI Cards row -->
@@ -1339,7 +1347,10 @@
         <!-- Expanded trade detail container (shown when clicking Detay) -->
         <div id="sim-detail-container" style="display:none; margin-top:1rem;">
           <div class="card" style="border:1px solid rgba(59,130,246,0.3);">
-            <h4 id="sim-detail-title" style="color:var(--accent-blue); margin-bottom:0.8rem;"><i class="fa-solid fa-list"></i> Gün Detayı</h4>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem;">
+              <h4 id="sim-detail-title" style="color:var(--accent-blue); margin:0;"><i class="fa-solid fa-list"></i> Gün Detayı</h4>
+              <button id="sim-btn-telegram" style="background:#2481cc; color:#fff; border:none; border-radius:6px; padding:6px 12px; font-size:0.8rem; font-weight:700; cursor:pointer;"><i class="fa-brands fa-telegram"></i> Telegram'a Gönder</button>
+            </div>
             <table class="data-table" style="width:100%; font-size:0.82rem;">
               <thead>
                 <tr>

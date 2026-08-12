@@ -718,23 +718,18 @@ def api_simulation_daily_pnl():
                 items = day_data.get("items", [])
                 
                 # 1. ORACLE SİMÜLASYONU: Hisseleri o günkü maksimum kâr potansiyeline göre sırala
-                # Eksik veri olanları ele
-                valid_items = [i for i in items if i.get("morning_price", 0) > 0 and i.get("daily_high", 0) >= i.get("morning_price", 0)]
+                # Sadece kazandıranları (max_gain_pct > 0) ve eksiksiz verisi olanları al
+                valid_items = [i for i in items if i.get("morning_price", 0) > 0 and i.get("daily_high", 0) > i.get("morning_price", 0) and i.get("max_gain_pct", 0) > 0]
                 valid_items.sort(key=lambda x: x.get("max_gain_pct", 0), reverse=True)
                 
-                # 2. EN FAZLA 10-15 HİSSE SEÇİMİ (Biz en yüksek kâr getiren ilk 15'i alıyoruz)
-                # Maksimum 100 günlük işlem kuralı çerçevesinde tek bir hisseye 1 trade ayırıyoruz
-                # İleride her hissede parçalı al-sat istenirse diye limit 100 olarak duruyor. (Şu an 15 < 100)
-                selected_items = valid_items[:15]
+                # 2. MAKSİMUM KÂR HEDEFİ: Sadece en çok kazandıran TEK HİSSEYE %100 sermaye!
+                # Kullanıcı talebi: "Tek hisse 10000TL'lik alım satıma girebilirsin, amaç maksimum kar"
+                selected_items = valid_items[:1]
                 
                 if not selected_items:
                     continue
                     
                 stocks_count = len(selected_items)
-                
-                # 3. AĞIRLIKLI DAĞILIM (Eşit değil, en kârlıya en çok pay)
-                # Basit lineer veya üstel dağılım (Rank bazlı: 1. hisse 15 birim, 2. hisse 14 birim ... son hisse 1 birim)
-                total_weight = sum(range(1, stocks_count + 1))
                 
                 total_invested = 0.0
                 total_return = 0.0
@@ -742,13 +737,11 @@ def api_simulation_daily_pnl():
                 
                 for idx, item in enumerate(selected_items):
                     morning_price = float(item.get("morning_price", 0))
-                    # Satış fiyatı artık kapanış değil, gün içi ZİRVE noktası (Oracle avantajı)
                     sell_price = float(item.get("daily_high", 0))
                     max_gain_pct = float(item.get("max_gain_pct", 0))
                     
-                    # Hisse başına düşen ağırlık ve sermaye payı
-                    weight = stocks_count - idx
-                    allocation_per_stock = daily_budget * (weight / total_weight)
+                    # Tüm bütçe bu hisseye!
+                    allocation_per_stock = daily_budget
                     
                     shares = math.floor(allocation_per_stock / morning_price)
                     if shares == 0:
@@ -872,6 +865,64 @@ def api_simulation_daily_pnl():
         traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/api/simulation/send_telegram', methods=['POST'])
+def api_simulation_send_telegram():
+    try:
+        data = request.json
+        date_str = data.get('date')
+        if not date_str:
+            return jsonify({"status": "error", "message": "Date is required"}), 400
+            
+        # Re-run simulation logic to get the exact data (fast enough to not need caching here)
+        sim_res = api_simulation_daily_pnl().json
+        if sim_res.get("status") != "success":
+            return jsonify({"status": "error", "message": "Simülasyon hesaplanamadı"}), 500
+            
+        days = sim_res.get("days", [])
+        day_data = next((d for d in days if d["date"] == date_str), None)
+        
+        if not day_data:
+            return jsonify({"status": "error", "message": "Belirtilen tarih için simülasyon verisi bulunamadı"}), 404
+            
+        # Telegram Mesajını Oluştur
+        is_profit = day_data['daily_pnl'] >= 0
+        icon = "🟢" if is_profit else "🔴"
+        
+        msg = (
+            f"🧪 <b>ORACLE SİMÜLASYON RAPORU</b> 🧪\n"
+            f"📅 <b>Tarih:</b> {date_str}\n"
+            f"📊 <b>İşlem Gören Hisse Sayısı:</b> {day_data['stocks_count']}\n"
+            f"💰 <b>Yatırılan Tutar:</b> {day_data['total_invested']:,.2f} ₺\n"
+            f"{icon} <b>Günlük K/Z:</b> {day_data['daily_pnl']:,.2f} ₺ (%{day_data['daily_pnl_pct']:.2f})\n\n"
+            f"📋 <b>GÜN İÇİ İŞLEMLER:</b>\n"
+        )
+        
+        for t in day_data['trades']:
+            t_icon = "🟢" if t['pnl'] >= 0 else "🔴"
+            msg += (
+                f"▪️ <b>#{t['symbol']}</b> - {t['shares']} Lot\n"
+                f"   └ <i>Alış:</i> {t['buy_price']:.2f} ₺ ⏱️ {t.get('buy_time', '10:15')}\n"
+                f"   └ <i>Satış:</i> {t['sell_price']:.2f} ₺ ⏱️ {t.get('sell_time', 'Zirve')}\n"
+                f"   └ <i>K/Z:</i> {t_icon} {t['pnl']:,.2f} ₺ (%{t['pnl_pct']:.2f})\n\n"
+            )
+            
+        msg += f"🤖 <i>VarantRadar Pro Simülasyon Motoru</i>"
+        
+        from services.notification_manager import NotificationManager
+        notif = NotificationManager()
+        if not notif.telegram_chat_id or "BURAYA_" in str(notif.telegram_token):
+            return jsonify({"status": "error", "message": "Telegram ayarları yapılandırılmamış."}), 400
+            
+        success = notif.send_telegram_message(msg)
+        if success:
+            return jsonify({"status": "success", "message": "Rapor Telegram'a gönderildi."})
+        else:
+            return jsonify({"status": "error", "message": "Telegram'a gönderilirken bir hata oluştu."}), 500
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == "__main__":
 

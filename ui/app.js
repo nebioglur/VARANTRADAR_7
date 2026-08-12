@@ -3254,9 +3254,40 @@ function showSimDayDetail(dateStr) {
     const container = document.getElementById('sim-detail-container');
     const title = document.getElementById('sim-detail-title');
     const tbody = document.getElementById('sim-detail-tbody');
+    const tgBtn = document.getElementById('sim-btn-telegram');
     
     if (container) container.style.display = 'block';
     if (title) title.innerHTML = '<i class="fa-solid fa-list"></i> ' + dateStr + ' Gün Detayı — ' + day.stocks_count + ' Hisse';
+    
+    if (tgBtn) {
+        tgBtn.onclick = async function() {
+            tgBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gönderiliyor...';
+            tgBtn.disabled = true;
+            try {
+                const res = await fetch('/api/simulation/send_telegram', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ date: dateStr })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    tgBtn.innerHTML = '<i class="fa-solid fa-check"></i> Gönderildi';
+                    tgBtn.style.background = 'var(--accent-green)';
+                } else {
+                    alert('Hata: ' + data.message);
+                    tgBtn.innerHTML = '<i class="fa-brands fa-telegram"></i> Telegram\'a Gönder';
+                }
+            } catch (e) {
+                alert('Bağlantı Hatası: ' + e.message);
+                tgBtn.innerHTML = '<i class="fa-brands fa-telegram"></i> Telegram\'a Gönder';
+            }
+            setTimeout(() => {
+                tgBtn.disabled = false;
+                tgBtn.innerHTML = '<i class="fa-brands fa-telegram"></i> Telegram\'a Gönder';
+                tgBtn.style.background = '#2481cc';
+            }, 3000);
+        };
+    }
     
     if (tbody) {
         tbody.innerHTML = '';
