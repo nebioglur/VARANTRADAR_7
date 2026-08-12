@@ -236,12 +236,13 @@ function switchMainTab(tabName, btnElement) {
     document.getElementById('news-wrapper').style.display = tabName === 'news' ? 'block' : 'none';
     const statsWrapper = document.getElementById('stats-wrapper');
     if (statsWrapper) statsWrapper.style.display = tabName === 'stats' ? 'block' : 'none';
+    const varantWrapper = document.getElementById('varant-wrapper');
+    if (varantWrapper) varantWrapper.style.display = tabName === 'varant' ? 'block' : 'none';
     
     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
     if (btnElement) btnElement.classList.add('active');
     
     if (tabName === 'radar') {
-        // Radar sekmesi ilk açıldığında aktif alt sekmeyi veya ilk sekmeyi başlat
         const activeRadarTabBtn = document.querySelector('#radar-wrapper .sidebar-tabs .s-tab.active') || document.querySelector('#radar-wrapper .sidebar-tabs .s-tab');
         if (activeRadarTabBtn) {
             activeRadarTabBtn.click();
@@ -255,6 +256,9 @@ function switchMainTab(tabName, btnElement) {
     if (tabName === 'stats') {
         fetchStatsTabData();
         fetchHomeWinrateStats();
+    }
+    if (tabName === 'varant') {
+        runVarantSimulation();
     }
 }
 

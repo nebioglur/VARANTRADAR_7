@@ -6,7 +6,7 @@
     <title>VARANTRADAR PRO | FINTECH TERMINAL</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=20260804_v10_radar_stats">
+    <link rel="stylesheet" href="style.css?v=20260812_v11_varant_tab">
     <!-- ApexCharts -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     
@@ -36,6 +36,7 @@
             <button class="nav-btn" onclick="switchMainTab('radar', this)"><i class="fa-solid fa-tower-broadcast"></i> RADAR</button>
             <button class="nav-btn" onclick="switchMainTab('stats', this)"><i class="fa-solid fa-chart-pie"></i> İSTATİSTİKLER</button>
             <button class="nav-btn" onclick="switchMainTab('news', this)"><i class="fa-solid fa-newspaper"></i> HABERLER (KAP)</button>
+            <button class="nav-btn" onclick="switchMainTab('varant', this)"><i class="fa-solid fa-calculator"></i> VARANT</button>
             <div class="status-indicator">
                 <span class="pulse"></span>
                 <span>SİSTEM AKTİF</span>
@@ -100,105 +101,7 @@
                 <button type="button" class="slider-nav-btn next-card-btn" onclick="navigateCard(1)">İleri <i class="fa-solid fa-chevron-right"></i></button>
             </div>
 
-            <!-- 🔥 YENİ KANTİTATİF VE PERFORMANS MODÜLLERİ (HİBRİT GİRİŞ PANELİ) -->
-            <div style="grid-column: 1 / -1; display:grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap:1.2rem; margin-bottom:1.5rem;">
-                
-                <!-- 1. SİNYAL BAŞARI KARNESİ (WIN-RATE & TRACK RECORD) - GERÇEK VERİ -->
-                <div class="card" style="border:1px solid rgba(234, 179, 8, 0.4); background: linear-gradient(135deg, rgba(234, 179, 8, 0.05) 0%, rgba(15,23,42,0.95) 100%); box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem;">
-                        <h3 class="card-title" style="margin:0; font-size:1.05rem; color:var(--accent-yellow);"><i class="fa-solid fa-trophy text-yellow"></i> Sistem Başarı Karnesi</h3>
-                        <div style="display:flex; align-items:center; gap:6px;">
-                            <span id="stat-inception-badge" class="badge" style="background:rgba(16,185,129,0.15); color:#10b981; font-weight:700; border:1px solid rgba(16,185,129,0.3); padding:3px 8px; border-radius:12px; font-size:0.72rem;">04 Ağu 2026'dan beri</span>
-                            <span id="stat-live-badge" class="badge" style="background:rgba(234, 179, 8, 0.2); color:var(--accent-yellow); font-weight:700; border:1px solid rgba(234, 179, 8, 0.4); padding:3px 8px; border-radius:12px; font-size:0.72rem;"><span class="pulse" style="display:inline-block; margin-right:3px;"></span>Canlı</span>
-                        </div>
-                    </div>
 
-                    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:0.6rem; margin-bottom:1rem;">
-                        <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:8px; padding:0.6rem; text-align:center;">
-                            <div style="font-size:0.72rem; color:var(--text-muted);">Tavan Başarı</div>
-                            <div id="stat-winrate" style="font-size:1.3rem; font-weight:800; color:var(--accent-green); margin-top:2px;"><i class="fa-solid fa-spinner fa-spin" style="font-size:1rem;"></i></div>
-                            <div id="stat-winrate-sub" style="font-size:0.65rem; color:var(--text-muted); margin-top:1px;">yükleniyor...</div>
-                        </div>
-                        <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:8px; padding:0.6rem; text-align:center;">
-                            <div style="font-size:0.72rem; color:var(--text-muted);">+%5 Kâr Oranı</div>
-                            <div id="stat-avgprofit" style="font-size:1.3rem; font-weight:800; color:var(--accent-blue); margin-top:2px;"><i class="fa-solid fa-spinner fa-spin" style="font-size:1rem;"></i></div>
-                            <div id="stat-avgprofit-sub" style="font-size:0.65rem; color:var(--text-muted); margin-top:1px;">yükleniyor...</div>
-                        </div>
-                        <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:8px; padding:0.6rem; text-align:center;">
-                            <div style="font-size:0.72rem; color:var(--text-muted);">Ort. Zirve Primi</div>
-                            <div id="stat-pfactor" style="font-size:1.3rem; font-weight:800; color:var(--accent-purple); margin-top:2px;"><i class="fa-solid fa-spinner fa-spin" style="font-size:1rem;"></i></div>
-                            <div id="stat-pfactor-sub" style="font-size:0.65rem; color:var(--text-muted); margin-top:1px;">yükleniyor...</div>
-                        </div>
-                    </div>
-
-                    <!-- Kategori Dağılımı (gerçek veriden) -->
-                    <div id="winrate-categories" style="display:flex; flex-direction:column; gap:0.5rem;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; background:rgba(255,255,255,0.02); padding:0.4rem 0.6rem; border-radius:6px;">
-                            <span><i class="fa-solid fa-rocket" style="color:var(--accent-red); margin-right:5px;"></i> <span id="stat-days-label">Toplam Seans:</span></span>
-                            <span id="stat-days-val" style="font-weight:700; color:var(--accent-green);">...</span>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; background:rgba(255,255,255,0.02); padding:0.4rem 0.6rem; border-radius:6px;">
-                            <span><i class="fa-solid fa-building-columns" style="color:var(--accent-purple); margin-right:5px;"></i> Ahlatcı Varant Ort.:</span>
-                            <span id="stat-warrant-val" style="font-weight:700; color:var(--accent-purple);">...</span>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; background:rgba(255,255,255,0.02); padding:0.4rem 0.6rem; border-radius:6px;">
-                            <span><i class="fa-solid fa-calendar" style="color:var(--accent-blue); margin-right:5px;"></i> Kapanis Ort. Getiri:</span>
-                            <span id="stat-close-val" style="font-weight:700; color:var(--accent-blue);">...</span>
-                        </div>
-                    </div>
-
-                    <!-- 04 Ağustos 2026'dan İtibaren İstatistikler Sekmesine Git Butonu -->
-                    <button onclick="switchMainTab('stats', document.querySelectorAll('.nav-btn')[2])" type="button" style="width:100%; margin-top:0.75rem; background:linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(16,185,129,0.35) 100%); color:#6ee7b7; border:1px solid rgba(16,185,129,0.5); border-radius:6px; padding:0.5rem; font-weight:700; cursor:pointer; font-size:0.78rem; display:flex; align-items:center; justify-content:center; gap:6px; transition:all 0.2s ease;" onmouseover="this.style.background='linear-gradient(135deg, #10b981, #059669)'; this.style.color='#fff';" onmouseout="this.style.background='linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(16,185,129,0.35) 100%)'; this.style.color='#6ee7b7';">
-                        <i class="fa-solid fa-chart-pie"></i> Tüm Tarihsel İstatistikler <i class="fa-solid fa-arrow-right"></i>
-                    </button>
-
-                <!-- 2. ALTIN VARANT VE KALDIRAÇ SIMÜLATÖRÜ (HIZLI DAYANAK SEÇİCİ) -->
-                <div class="card" style="border:1px solid rgba(59, 130, 246, 0.4); background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(15,23,42,0.95) 100%); box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem;">
-                        <h3 class="card-title" style="margin:0; font-size:1.05rem; color:var(--accent-blue);"><i class="fa-solid fa-calculator text-blue"></i> Altın Varant & Greeks Simülatörü</h3>
-                        <span class="badge" style="background:rgba(59, 130, 246, 0.2); color:var(--accent-blue); font-weight:700; border:1px solid rgba(59, 130, 246, 0.4); padding:3px 8px; border-radius:12px; font-size:0.75rem;">Black-Scholes</span>
-                    </div>
-
-                    <!-- Simülatör Kontrolleri -->
-                    <div style="display:flex; flex-direction:column; gap:0.5rem; margin-bottom:0.8rem;">
-                        <div style="display:flex; gap:0.5rem; align-items:center;">
-                            <select id="sim-symbol-select" onchange="runVarantSimulation()" style="background:var(--bg-base); color:var(--text-light); border:1px solid var(--border-color); border-radius:6px; padding:0.4rem 0.6rem; font-weight:700; flex:1;">
-                                <option value="THYAO">THYAO (Türk Hava Yolları)</option>
-                                <option value="AKBNK">AKBNK (Akbank)</option>
-                                <option value="GARAN">GARAN (Garanti BBVA)</option>
-                                <option value="ISCTR">ISCTR (İş Bankası C)</option>
-                                <option value="YKBNK">YKBNK (Yapı Kredi)</option>
-                                <option value="TUPRS">TUPRS (Tüpraş)</option>
-                                <option value="ASELS">ASELS (Aselsan)</option>
-                                <option value="EREGL">EREGL (Erdemir)</option>
-                                <option value="PGSUS">PGSUS (Pegasus)</option>
-                                <option value="KCHOL">KCHOL (Koç Holding)</option>
-                                <option value="SAHOL">SAHOL (Sabancı Holding)</option>
-                                <option value="SISE">SISE (Şişecam)</option>
-                                <option value="BIMAS">BIMAS (BİM Mağazalar)</option>
-                                <option value="EKGYO">EKGYO (Emlak Konut)</option>
-                            </select>
-                            <button onclick="runVarantSimulation()" style="background:var(--accent-blue); color:#fff; border:none; border-radius:6px; padding:0.4rem 0.8rem; font-weight:bold; cursor:pointer; font-size:0.85rem;"><i class="fa-solid fa-play"></i> Hesapla</button>
-                        </div>
-                        <div style="display:flex; gap:0.5rem; align-items:center;">
-                            <span style="font-size:0.78rem; color:var(--text-muted); white-space:nowrap;"><i class="fa-solid fa-building-columns"></i> İhraççı Kurum:</span>
-                            <select id="sim-issuer-select" onchange="runVarantSimulation()" style="background:var(--bg-base); color:var(--accent-yellow); border:1px solid var(--border-color); border-radius:6px; padding:0.35rem 0.6rem; font-weight:700; font-size:0.8rem; flex:1;">
-                                <option value="Ahlatcı" selected>🏛️ Ahlatcı Yatırım (AH/AHL)</option>
-                                <option value="ALL">⭐ Tüm İhraççılar (En İyiler)</option>
-                                <option value="İş Yatırım">🏛️ İş Yatırım (IS)</option>
-                                <option value="Ak Yatırım">🏛️ Ak Yatırım (AK)</option>
-                                <option value="Garanti">🏛️ Garanti BBVA (GR)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Varant Eşleşme ve Hedef Simülasyon Alanı -->
-                    <div id="sim-result-box" style="max-height:160px; overflow-y:auto; font-size:0.85rem;">
-                        <div style="text-align:center; padding:1.5rem 0; color:var(--text-muted);">Dayanak hisse seçerek Altın Varant kâr simülasyonunu başlatın.</div>
-                    </div>
-                </div>
-
-            </div>
 
             <!-- 📱 MOBİL & MASAÜSTÜ HIZLI KATEGORİ FİLTRE HAPLARI (PILL TABS) -->
             <div id="radar-pill-tabs" style="grid-column: 1 / -1; display:flex; gap:8px; overflow-x:auto; padding-bottom:6px; margin-bottom:1rem; scrollbar-width:none; -webkit-overflow-scrolling:touch;">
@@ -1311,6 +1214,71 @@
         </div> <!-- END DASHBOARD-LAYOUT -->
     </div> <!-- END STATS-WRAPPER -->
 
+    <!-- 🧮 VARANT SİMÜLATÖRÜ TAM SAYFA WRAPPER -->
+    <div id="varant-wrapper" class="main-wrapper" style="display: none;">
+        <div style="max-width:900px; margin:0 auto;">
+            <!-- Başlık -->
+            <div style="margin-bottom:1.5rem;">
+                <h2 style="margin:0; font-size:1.6rem; color:var(--accent-blue); display:flex; align-items:center; gap:10px;">
+                    <i class="fa-solid fa-calculator"></i> Altın Varant & Greeks Simülatörü
+                    <span class="badge" style="background:rgba(59, 130, 246, 0.2); color:var(--accent-blue); font-weight:700; border:1px solid rgba(59, 130, 246, 0.4); padding:4px 12px; border-radius:12px; font-size:0.78rem;">Black-Scholes</span>
+                </h2>
+                <p style="color:var(--text-muted); font-size:0.9rem; margin-top:0.5rem;">Dayanak hisse seçerek Ahlatcı, İş Yatırım, Ak Yatırım ve Garanti BBVA varantlarının kaldıraçlı kâr/zarar simülasyonunu hesaplayın.</p>
+            </div>
+
+            <!-- Simülatör Kontrolleri -->
+            <div class="card" style="border:1px solid rgba(59, 130, 246, 0.4); background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(15,23,42,0.95) 100%); box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin-bottom:1.5rem;">
+                <div style="display:grid; grid-template-columns:1fr 1fr auto; gap:0.8rem; align-items:end;">
+                    <div>
+                        <label style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; font-weight:700; display:block; margin-bottom:4px;"><i class="fa-solid fa-chart-line"></i> Dayanak Hisse</label>
+                        <select id="sim-symbol-select" onchange="runVarantSimulation()" style="background:var(--bg-base); color:var(--text-light); border:1px solid var(--border-color); border-radius:8px; padding:0.55rem 0.8rem; font-weight:700; width:100%; font-size:0.9rem;">
+                            <option value="THYAO">THYAO (Türk Hava Yolları)</option>
+                            <option value="AKBNK">AKBNK (Akbank)</option>
+                            <option value="GARAN">GARAN (Garanti BBVA)</option>
+                            <option value="ISCTR">ISCTR (İş Bankası C)</option>
+                            <option value="YKBNK">YKBNK (Yapı Kredi)</option>
+                            <option value="TUPRS">TUPRS (Tüpraş)</option>
+                            <option value="ASELS">ASELS (Aselsan)</option>
+                            <option value="EREGL">EREGL (Erdemir)</option>
+                            <option value="PGSUS">PGSUS (Pegasus)</option>
+                            <option value="KCHOL">KCHOL (Koç Holding)</option>
+                            <option value="SAHOL">SAHOL (Sabancı Holding)</option>
+                            <option value="SISE">SISE (Şişecam)</option>
+                            <option value="BIMAS">BIMAS (BİM Mağazalar)</option>
+                            <option value="EKGYO">EKGYO (Emlak Konut)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; font-weight:700; display:block; margin-bottom:4px;"><i class="fa-solid fa-building-columns"></i> İhraççı Kurum</label>
+                        <select id="sim-issuer-select" onchange="runVarantSimulation()" style="background:var(--bg-base); color:var(--accent-yellow); border:1px solid var(--border-color); border-radius:8px; padding:0.55rem 0.8rem; font-weight:700; font-size:0.85rem; width:100%;">
+                            <option value="Ahlatcı" selected>🏛️ Ahlatcı Yatırım (AH/AHL)</option>
+                            <option value="ALL">⭐ Tüm İhraççılar (En İyiler)</option>
+                            <option value="İş Yatırım">🏛️ İş Yatırım (IS)</option>
+                            <option value="Ak Yatırım">🏛️ Ak Yatırım (AK)</option>
+                            <option value="Garanti">🏛️ Garanti BBVA (GR)</option>
+                        </select>
+                    </div>
+                    <button onclick="runVarantSimulation()" style="background:linear-gradient(135deg, #3b82f6, #2563eb); color:#fff; border:none; border-radius:8px; padding:0.55rem 1.5rem; font-weight:bold; cursor:pointer; font-size:0.95rem; display:flex; align-items:center; gap:8px; box-shadow:0 4px 15px rgba(59,130,246,0.4); transition:all 0.2s;" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 6px 20px rgba(59,130,246,0.5)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(59,130,246,0.4)'">
+                        <i class="fa-solid fa-play"></i> Hesapla
+                    </button>
+                </div>
+            </div>
+
+            <!-- Simülasyon Sonuçları -->
+            <div class="card" style="border:1px solid var(--border-color);">
+                <h3 style="font-size:1rem; color:var(--accent-blue); margin-bottom:1rem; display:flex; align-items:center; gap:8px;">
+                    <i class="fa-solid fa-table-list"></i> Varant Eşleşme & Kâr Simülasyonu
+                </h3>
+                <div id="sim-result-box" style="max-height:500px; overflow-y:auto; font-size:0.85rem;">
+                    <div style="text-align:center; padding:3rem 0; color:var(--text-muted);">
+                        <i class="fa-solid fa-calculator" style="font-size:2.5rem; display:block; margin-bottom:1rem; color:var(--accent-blue); opacity:0.5;"></i>
+                        Yukarıdan dayanak hisse ve ihraççı kurum seçerek <b style="color:var(--accent-blue);">Hesapla</b> butonuna basın.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> <!-- END VARANT-WRAPPER -->
+
     <div id="news-wrapper" class="main-wrapper" style="display: none;">
         <div class="card">
             <h2 style="margin-bottom: 0.5rem;"><i class="fa-solid fa-earth-americas text-blue"></i> Finans & Ekonomi Dergisi</h2>
@@ -1767,6 +1735,6 @@
         <div class="chart-fs-body" id="chart-fs-body"></div>
     </div>
 
-    <script src="app.js?v=20260804_v10_radar_stats"></script>
+    <script src="app.js?v=20260812_v11_varant_tab"></script>
 </body>
 </html>
