@@ -765,6 +765,8 @@ def api_simulation_daily_pnl():
                         "symbol": item.get("symbol"),
                         "buy_price": morning_price,
                         "sell_price": sell_price,
+                        "buy_time": item.get("snapshot_time", "10:15"),
+                        "sell_time": "Zirve",
                         "shares": shares,
                         "invested": invested,
                         "return_val": return_val,

@@ -3260,16 +3260,29 @@ function showSimDayDetail(dateStr) {
     
     if (tbody) {
         tbody.innerHTML = '';
+        let totalInvested = 0;
+        let totalReturn = 0;
+        let totalPnl = 0;
+        
         day.trades.forEach(t => {
             const isP = t.pnl >= 0;
             const c = isP ? 'var(--accent-green)' : 'var(--accent-red)';
             const s = isP ? '+' : '';
             const badge = isP ? '<span style="background:rgba(16,185,129,0.15); color:#10b981; padding:2px 8px; border-radius:4px; font-weight:700; font-size:0.72rem;">KÂR</span>' : '<span style="background:rgba(239,68,68,0.15); color:#ef4444; padding:2px 8px; border-radius:4px; font-weight:700; font-size:0.72rem;">ZARAR</span>';
             
+            totalInvested += t.invested;
+            totalReturn += t.return_val;
+            totalPnl += t.pnl;
+            
+            const buyTime = t.buy_time || '10:15';
+            const sellTime = t.sell_time || 'Zirve';
+            
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td style="font-weight:800; color:var(--text-light);">${t.symbol}</td>
+                <td style="color:var(--text-muted);"><i class="fa-regular fa-clock"></i> ${buyTime}</td>
                 <td style="font-family:monospace;">${t.buy_price.toFixed(2)} ₺</td>
+                <td style="color:var(--text-muted);"><i class="fa-regular fa-clock"></i> ${sellTime}</td>
                 <td style="font-family:monospace;">${t.sell_price.toFixed(2)} ₺</td>
                 <td>${t.shares}</td>
                 <td style="font-family:monospace;">${t.invested.toFixed(2)} ₺</td>
@@ -3280,6 +3293,25 @@ function showSimDayDetail(dateStr) {
             `;
             tbody.appendChild(tr);
         });
+        
+        // Add Summary Row
+        const isTotalPnlPositive = totalPnl >= 0;
+        const totalC = isTotalPnlPositive ? 'var(--accent-green)' : 'var(--accent-red)';
+        const totalS = isTotalPnlPositive ? '+' : '';
+        const totalPct = (totalPnl / totalInvested * 100) || 0;
+        
+        const trTotal = document.createElement('tr');
+        trTotal.style.background = 'rgba(255,255,255,0.03)';
+        trTotal.style.borderTop = '2px solid rgba(255,255,255,0.1)';
+        trTotal.innerHTML = `
+            <td colspan="6" style="font-weight:800; text-align:right; color:var(--text-light); padding-right:15px;">TOPLAM GÜNLÜK SONUÇ:</td>
+            <td style="font-weight:800; font-family:monospace;">${totalInvested.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+            <td style="font-weight:800; font-family:monospace;">${totalReturn.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+            <td style="color:${totalC}; font-weight:800; font-family:monospace; font-size:1.05rem;">${totalS}${totalPnl.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+            <td style="color:${totalC}; font-weight:800; font-size:1.05rem;">${totalS}%${totalPct.toFixed(2)}</td>
+            <td></td>
+        `;
+        tbody.appendChild(trTotal);
     }
     
     // Scroll to detail
