@@ -7,17 +7,25 @@ from typing import Dict, Any
 from services.tavan_tracker import TavanAuditTracker
 
 
+from datetime import datetime, timedelta
+
 class WinRateEngine:
     """
     Gercek performans istatistiklerini tavan_tracker uzerinden hesaplar.
     Sahte veri uretmez - sadece gercek seans kayitlarindan beslenir.
+    Sistem basari karnesi icin sadece icinde bulunulan haftanin (Pazartesi-Cuma) verisini dikkate alir.
     """
 
     @classmethod
     def get_performance_stats(cls) -> Dict[str, Any]:
-        """Tum sistemin genel basari metriklerini gercek veriden dondurur."""
+        """Tum sistemin genel basari metriklerini mevcut haftanin gercek verisinden dondurur."""
         try:
-            history = TavanAuditTracker.get_long_term_history(start_date="2026-08-04")
+            # Sadece mevcut haftanin istatistiklerini dondurmek icin Pazartesi gununu bulalim
+            today = datetime.now()
+            monday = today - timedelta(days=today.weekday())
+            start_date_str = monday.strftime("%Y-%m-%d")
+            
+            history = TavanAuditTracker.get_long_term_history(start_date=start_date_str)
             summ = history.get("summary", {})
 
             total_candidates = summ.get("total_candidates_tracked", 0)

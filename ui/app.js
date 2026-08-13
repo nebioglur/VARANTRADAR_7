@@ -234,33 +234,33 @@ function switchMainTab(tabName, btnElement) {
     document.getElementById('dashboard-wrapper').style.display = tabName === 'dashboard' ? 'block' : 'none';
     document.getElementById('radar-wrapper').style.display = tabName === 'radar' ? 'block' : 'none';
     document.getElementById('news-wrapper').style.display = tabName === 'news' ? 'block' : 'none';
+    
     const statsWrapper = document.getElementById('stats-wrapper');
     if (statsWrapper) statsWrapper.style.display = tabName === 'stats' ? 'block' : 'none';
+    
     const varantWrapper = document.getElementById('varant-wrapper');
     if (varantWrapper) varantWrapper.style.display = tabName === 'varant' ? 'block' : 'none';
+    
     const simWrapper = document.getElementById('simulation-wrapper');
     if (simWrapper) simWrapper.style.display = tabName === 'simulation' ? 'block' : 'none';
     
     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
     if (btnElement) btnElement.classList.add('active');
     
-    if (tabName === 'radar') {
-        const activeRadarTabBtn = document.querySelector('#radar-wrapper .sidebar-tabs .s-tab.active') || document.querySelector('#radar-wrapper .sidebar-tabs .s-tab');
-        if (activeRadarTabBtn) {
-            activeRadarTabBtn.click();
-        } else {
-            switchRadarTab('hisse');
-        }
+    // Alt navigasyon barı sadece dashboard/radar/stats/sim varken kullanışlı
+    const bottomBar = document.querySelector('.bottom-mobile-bar');
+    if (bottomBar) {
+        bottomBar.style.display = (tabName === 'dashboard' || tabName === 'radar' || tabName === 'stats' || tabName === 'simulation' || tabName === 'varant') ? 'flex' : 'none';
     }
-    if (tabName === 'news') {
-        fetchGlobalNews();
+
+    if (tabName === 'radar') {
+        startRadar('all');
     }
     if (tabName === 'stats') {
-        fetchStatsTabData();
-        fetchHomeWinrateStats();
+        fetchLongTermHistoryData();
     }
     if (tabName === 'varant') {
-        runVarantSimulation();
+        fetchVarantDashboardData();
     }
     if (tabName === 'simulation') {
         fetchSimulationData();
@@ -2613,8 +2613,86 @@ function jumpToCard(cardIdx) {
 
 let currentActiveCardIdx = 0;
 function navigateCard(direction) {
-    currentActiveCardIdx = (currentActiveCardIdx + direction + 3) % 3;
-    jumpToCard(currentActiveCardIdx);
+    navigateSwipe(direction); // Reuse the new contextual swipe logic
+}
+
+// 📱 MOBİL SWIPE / İLERİ-GERİ NAVİGASYON
+let touchStartX = 0;
+let touchEndX = 0;
+
+document.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+}, {passive: true});
+
+document.addEventListener('touchend', e => {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+}, {passive: true});
+
+function handleSwipe() {
+    const swipeThreshold = 50; // min distance
+    if (touchEndX < touchStartX - swipeThreshold) {
+        // Swiped left -> Next
+        navigateSwipe(1);
+    }
+    if (touchEndX > touchStartX + swipeThreshold) {
+        // Swiped right -> Prev
+        navigateSwipe(-1);
+    }
+}
+
+function navigateSwipe(direction) {
+    // Check which wrapper is currently visible
+    const homeVisible = document.getElementById('home-wrapper')?.style.display !== 'none';
+    const statsVisible = document.getElementById('stats-wrapper')?.style.display !== 'none';
+    const simVisible = document.getElementById('simulation-wrapper')?.style.display !== 'none';
+    const varantVisible = document.getElementById('varant-wrapper')?.style.display !== 'none';
+
+    if (homeVisible) {
+        currentActiveCardIdx = (currentActiveCardIdx + direction + 3) % 3;
+        jumpToCard(currentActiveCardIdx);
+    } else if (statsVisible) {
+        const tabs = ['ozet', 'saatlik', 'gunluk', 'hallfame'];
+        const activeBtn = document.querySelector('#stats-wrapper .s-tab.active');
+        let idx = 0;
+        if (activeBtn) {
+            const currentTab = tabs.find(t => activeBtn.getAttribute('onclick').includes(t));
+            idx = tabs.indexOf(currentTab);
+        }
+        const nextIdx = (idx + direction + tabs.length) % tabs.length;
+        const nextBtn = document.querySelector(`#stats-wrapper .s-tab[onclick*="${tabs[nextIdx]}"]`);
+        if (nextBtn) {
+            switchStatsTab(tabs[nextIdx], nextBtn);
+            nextBtn.scrollIntoView({behavior: 'smooth', block: 'nearest', inline: 'center'});
+        }
+    } else if (simVisible) {
+        const tabs = ['daily', 'weekly', 'monthly'];
+        const activeBtn = document.querySelector('#simulation-wrapper .pill-btn.active');
+        let idx = 0;
+        if (activeBtn) {
+            const currentTab = tabs.find(t => activeBtn.getAttribute('onclick').includes(t));
+            idx = tabs.indexOf(currentTab);
+        }
+        const nextIdx = (idx + direction + tabs.length) % tabs.length;
+        const nextBtn = document.querySelector(`#simulation-wrapper .pill-btn[onclick*="${tabs[nextIdx]}"]`);
+        if (nextBtn) {
+            switchSimPeriod(tabs[nextIdx], nextBtn);
+        }
+    } else if (varantVisible) {
+        const tabs = ['opportunities', 'volume', 'signals', 'ai'];
+        const activeBtn = document.querySelector('#varant-wrapper .v-tab.active');
+        let idx = 0;
+        if (activeBtn) {
+            const currentTab = tabs.find(t => activeBtn.getAttribute('onclick').includes(t));
+            idx = tabs.indexOf(currentTab);
+        }
+        const nextIdx = (idx + direction + tabs.length) % tabs.length;
+        const nextBtn = document.querySelector(`#varant-wrapper .v-tab[onclick*="${tabs[nextIdx]}"]`);
+        if (nextBtn) {
+            switchVarantTab(tabs[nextIdx], nextBtn);
+            nextBtn.scrollIntoView({behavior: 'smooth', block: 'nearest', inline: 'center'});
+        }
+    }
 }
 
 // ================================================================
@@ -2796,16 +2874,15 @@ async function fetchTavanAuditData(dateStr = '') {
 }
 
 function openLongTermHistoryModal() {
-    const modal = document.getElementById('long-term-history-modal');
-    if (modal) {
-        modal.style.display = 'block';
-        fetchLongTermHistoryData();
+    // Redirect to the new stats tab layout
+    const statsBtn = document.querySelector('.nav-btn[onclick*="stats"]');
+    if (statsBtn) {
+        switchMainTab('stats', statsBtn);
     }
 }
 
 function closeLongTermHistoryModal() {
-    const modal = document.getElementById('long-term-history-modal');
-    if (modal) modal.style.display = 'none';
+    // No-op, old modal is removed.
 }
 
 function applyLongTermFilter() {
@@ -2827,12 +2904,16 @@ function openTavanAuditForDate(dateStr) {
 }
 
 async function fetchLongTermHistoryData(startDate = '2026-08-04', endDate = '', symbol = '', time = '') {
-    const dailyTbody = document.getElementById('hist-daily-tbody');
-    const hofTbody = document.getElementById('hist-hall-of-fame-tbody');
-    const hourlyContainer = document.getElementById('hist-hourly-cards-container');
+    const dailyTbody = document.getElementById('stats-tab-daily-tbody');
+    const hofTbody = document.getElementById('stats-tab-hall-of-fame-tbody');
+    const hourlyContainer = document.getElementById('stats-tab-hourly-cards-container'); // Need to ensure this exists or fallback to old one
 
-    if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="7" class="text-muted text-center" style="padding:1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Tarihsel performans arşivi taranıyor...</td></tr>`;
-    if (hofTbody) hofTbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center" style="padding:1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Yıldızlar hesaplanıyor...</td></tr>`;
+    if (!hourlyContainer) { // Fallback if missing
+        console.warn("stats-tab-hourly-cards-container not found!");
+    }
+
+    if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center" style="padding:1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Tarihsel performans arşivi taranıyor...</td></tr>`;
+    if (hofTbody) hofTbody.innerHTML = `<tr><td colspan="7" class="text-muted text-center" style="padding:1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Yıldızlar hesaplanıyor...</td></tr>`;
 
     try {
         let url = `/api/tavan_history?start_date=${encodeURIComponent(startDate)}`;
