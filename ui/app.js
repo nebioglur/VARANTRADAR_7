@@ -3120,14 +3120,6 @@ function renderHourlyCards(hourlyList, container) {
     }).join('');
 }
 
-            <td>
-                <button onclick="openTavanAuditForDate('${d.date}')" class="btn-primary" style="background:rgba(239,68,68,0.25); color:#fca5a5; border:1px solid rgba(239,68,68,0.4); padding:4px 10px; font-size:0.8rem; font-weight:bold; border-radius:4px; cursor:pointer;">
-                    <i class="fa-solid fa-folder-open"></i> Detayları Aç
-                </button>
-            </td>`;
-        tbody.appendChild(tr);
-    });
-}
 
 function renderHallOfFame(hofList, tbody) {
     if (!tbody) return;
