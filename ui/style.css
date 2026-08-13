@@ -793,13 +793,7 @@ body {
     }
 
     /* ---- TABLOLAR Mobil: Profesyonel Yatay Kaydırma ---- */
-    .card,
-    .main-wrapper > div > div > .card,
-    #simulation-wrapper .card,
-    #stats-wrapper .card,
-    #stab-gunluk,
-    #stab-hallfame,
-    #stab-ozet {
+    .table-scroll-wrapper {
         overflow-x: auto !important;
         overflow-y: visible !important;
         -webkit-overflow-scrolling: touch;
