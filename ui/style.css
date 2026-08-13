@@ -779,19 +779,41 @@ body {
     }
 
     /* ---- TABLOLAR Mobil ---- */
+    .card {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
     .data-table {
-        font-size: 0.82rem !important;
+        font-size: 0.72rem !important;
         max-height: 400px !important;
+        min-width: 600px;
     }
     .data-table th, .data-table td {
-        padding: 0.55rem 0.35rem !important;
-        font-size: 0.78rem;
+        padding: 0.4rem 0.3rem !important;
+        font-size: 0.7rem;
+        white-space: nowrap;
     }
     .data-table .btn, .btn-primary {
-        padding: 0.45rem 0.7rem !important;
-        font-size: 0.8rem !important;
+        padding: 0.35rem 0.55rem !important;
+        font-size: 0.72rem !important;
         font-weight: 700 !important;
         border-radius: 6px !important;
+    }
+
+    /* Simülasyon KPI grid mobilde 2 sütun */
+    #sim-kpi-row {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.6rem !important;
+    }
+
+    /* Tavan audit modal mobilde tam ekran */
+    #tavan-audit-modal > div {
+        padding: 0.8rem !important;
+        margin: 0.5rem !important;
+        border-radius: 8px !important;
+    }
+    #tavan-audit-modal table {
+        min-width: 700px;
     }
 
     /* ---- RADAR GRİD Tek Sütun ---- */

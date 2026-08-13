@@ -257,6 +257,7 @@ function switchMainTab(tabName, btnElement) {
         startRadar('all');
     }
     if (tabName === 'stats') {
+        fetchStatsTabData();
         fetchLongTermHistoryData();
     }
     if (tabName === 'varant') {
