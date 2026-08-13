@@ -725,7 +725,7 @@ def api_simulation_daily_pnl():
                 valid_items.sort(key=lambda x: x.get("Score", 0), reverse=True)
                 
                 # 2. GERÇEKÇİ HEDEF: Puanı en yüksek olan (sistemin en çok güvendiği) ilk 5 hisseyi al
-                # Sermaye bu hisselere EŞİT bölünecek.
+                # Sermaye, hisselerin Alış Puanına (Score) göre orantılı paylaştırılacak.
                 selected_items = valid_items[:5]
                 
                 if not selected_items:
@@ -737,11 +737,18 @@ def api_simulation_daily_pnl():
                 total_return = 0.0
                 trades = []
                 
-                allocation_per_stock = daily_budget / stocks_count
+                # Tüm seçili hisselerin toplam puanını hesapla (Ağırlıklı dağılım için)
+                total_score = sum(item.get("Score", 0) for item in selected_items)
+                if total_score == 0:
+                    total_score = stocks_count * 100 # Sıfıra bölünme hatasını engelle
                 
                 for idx, item in enumerate(selected_items):
                     morning_price = float(item.get("morning_price", 0))
                     max_gain_pct = float(item.get("max_gain_pct", 0))
+                    item_score = item.get("Score", 100) if item.get("Score", 0) > 0 else 100
+                    
+                    # Sermayenin o hisseye düşen ağırlıklı payını hesapla (Örn: 90 puan alan, 40 alandan fazla bütçe alır)
+                    allocation_per_stock = daily_budget * (item_score / total_score)
                     
                     # STOP-LOSS KONTROLÜ
                     # Eğer hisse o gün %1.5'ten fazla kâr bırakmışsa (başarılı setup), zirveden kâr al
@@ -770,7 +777,7 @@ def api_simulation_daily_pnl():
                     buy_time_str = f"{buy_hour:02d}:{buy_min:02d}"
                     sell_time_str = f"{sell_hour:02d}:{sell_min:02d}"
                     
-                    # Sermayenin o hisseye düşen payı ile alım yap
+                    # Ağırlıklı sermaye ile alım yap
                     import math
                     shares = math.floor(allocation_per_stock / morning_price)
                     
