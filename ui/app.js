@@ -1742,7 +1742,7 @@ async function fetchDashboardData() {
             } else {
                 console.log('[DASHBOARD] Veri henüz boş veya tarama devam ediyor...');
                 // Hâlâ boşsa kullanıcıyı bilgilendir
-                ["tb-signals-5m", "tb-tavan-adaylari", "tb-opportunities-1h", "tb-opportunities", "tb-gainers", "tb-losers", "tb-favorites", "tb-high_volume", "tb-low_volume"].forEach(id => {
+                ["tb-signals-5m", "tb-tavan-adaylari", "tb-opportunities-1h", "tb-stay-away-1h", "tb-opportunities", "tb-gainers", "tb-losers", "tb-favorites", "tb-high_volume", "tb-low_volume"].forEach(id => {
                     const tbody = document.getElementById(id);
                     if (tbody && (tbody.innerText.includes("Taran") || tbody.innerHTML.includes("Taran"))) {
                         tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;" class="text-muted">Piyasa kapalı veya tarama devam ediyor (00:00-09:00 arası veri bulunmayabilir).</td></tr>`;
@@ -1778,6 +1778,7 @@ function renderAllDashboardTables() {
         'signals_5m': 'tb-signals-5m',
         'tavan_adaylari': 'tb-tavan-adaylari',
         'opportunities_1h': 'tb-opportunities-1h',
+        'stay_away_1h': 'tb-stay-away-1h',
         'opportunities': 'tb-opportunities',
         'gainers': 'tb-gainers',
         'losers': 'tb-losers',
@@ -1842,7 +1843,7 @@ function renderAllDashboardTables() {
         // 10'a kadar hisse göster
         const displayItems = items.slice(0, 10);
         let timeStr = new Date().toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'});
-        const headerTimeSpan = document.getElementById('time-' + (cat === 'opportunities_1h' ? 'opportunities-1h' : cat));
+        const headerTimeSpan = document.getElementById('time-' + (cat === 'opportunities_1h' ? 'opportunities-1h' : (cat === 'stay_away_1h' ? 'stay-away-1h' : cat)));
         if (headerTimeSpan) {
             headerTimeSpan.innerText = "(Güncelleme: " + timeStr + ")";
         }
@@ -1998,6 +1999,20 @@ function renderAllDashboardTables() {
                 
                 let barsAgoMain = res.Crossover_Bars_Ago !== undefined ? res.Crossover_Bars_Ago : '?';
                 statusStr = `<span style="font-size:0.75rem; color:var(--text-muted);">🔀 ${barsAgoMain}s önce | ADX:${res.ADX_Val} RSI:${res.RSI_Val}</span>`;
+            } else if (cat === 'stay_away_1h') {
+                let s5 = res.Score_5 !== undefined ? res.Score_5 : 0;
+                let sColor = s5 === 5 ? 'var(--accent-red)' : (s5 >= 4 ? '#f87171' : 'var(--accent-yellow)');
+                scoreContent = `<span style="color:${sColor};font-weight:700;">${s5} / 5</span>`;
+                
+                if (res.Daily_Change_Pct !== undefined) {
+                    let d_pct = parseFloat(res.Daily_Change_Pct);
+                    let d_c = d_pct > 0 ? "var(--accent-green)" : (d_pct < 0 ? "var(--accent-red)" : "var(--text-muted)");
+                    let d_sign = d_pct > 0 ? "+" : "";
+                    priceStr += `<br><span style="color:${d_c}; font-size:0.75rem;">(${d_sign}%${Math.abs(d_pct).toFixed(2)})</span>`;
+                }
+                
+                let barsAgoMain = res.Crossover_Bars_Ago !== undefined ? res.Crossover_Bars_Ago : '?';
+                statusStr = `<span style="font-size:0.75rem; color:var(--text-muted);">📉 ${barsAgoMain}s önce | ADX:${res.ADX_Val} RSI:${res.RSI_Val}</span>`;
             } else {
                 let scoreValue = res.Score !== undefined ? res.Score : 0;
                 let scoreColor = scoreValue >= 70 ? 'var(--accent-green)' : (scoreValue >= 50 ? 'var(--accent-yellow)' : 'var(--accent-red)');

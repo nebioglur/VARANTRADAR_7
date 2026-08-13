@@ -154,6 +154,7 @@ def background_scanner():
                 fast_1h_res = scanner.scan_pool_bulk_1h(BIST50_SYMBOLS, daily_stats)
                 GLOBAL_DASHBOARD_CACHE["opportunities_1h"] = sanitize_for_json(fast_1h_res.get("opportunities_1h", []))
                 GLOBAL_DASHBOARD_CACHE["tavan_adaylari"] = sanitize_for_json(fast_1h_res.get("tavan_adaylari", []))
+                GLOBAL_DASHBOARD_CACHE["stay_away_1h"] = sanitize_for_json(fast_1h_res.get("stay_away_1h", []))
                 save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
             except Exception as e_1h:
                 print(f"[BACKGROUND] Hızlı Başlangıç 1h hatası: {e_1h}")
@@ -187,6 +188,8 @@ def background_scanner():
                     results["opportunities_1h"] = GLOBAL_DASHBOARD_CACHE["opportunities_1h"]
                 if "tavan_adaylari" in GLOBAL_DASHBOARD_CACHE:
                     results["tavan_adaylari"] = GLOBAL_DASHBOARD_CACHE["tavan_adaylari"]
+                if "stay_away_1h" in GLOBAL_DASHBOARD_CACHE:
+                    results["stay_away_1h"] = GLOBAL_DASHBOARD_CACHE["stay_away_1h"]
                 if "signals_5m" in GLOBAL_DASHBOARD_CACHE:
                     results["signals_5m"] = GLOBAL_DASHBOARD_CACHE["signals_5m"]
                 
@@ -201,6 +204,7 @@ def background_scanner():
                         tavan_candidates = res_1h.get("tavan_adaylari", [])
                         GLOBAL_DASHBOARD_CACHE["opportunities_1h"] = sanitize_for_json(res_1h.get("opportunities_1h", []))
                         GLOBAL_DASHBOARD_CACHE["tavan_adaylari"] = sanitize_for_json(tavan_candidates)
+                        GLOBAL_DASHBOARD_CACHE["stay_away_1h"] = sanitize_for_json(res_1h.get("stay_away_1h", []))
                         save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
                         
                         # Belirli Saatlerdeki Tavan Listesi Bellek Kaydı & 18:10 Kapanış Denetimi
