@@ -778,20 +778,46 @@ body {
         display: block;
     }
 
-    /* ---- TABLOLAR Mobil ---- */
-    .card {
+    /* ---- TABLOLAR Mobil: Profesyonel Yatay Kaydırma ---- */
+    .card,
+    .main-wrapper > div > div > .card,
+    #simulation-wrapper .card,
+    #stats-wrapper .card,
+    #stab-gunluk,
+    #stab-hallfame,
+    #stab-ozet {
         overflow-x: auto !important;
+        overflow-y: visible !important;
         -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+        /* Touch olayını yalnızca yatay kaydırma olarak al */
+        touch-action: pan-x pan-y;
+        /* Sağda daha fazla içerik olduğunu gösteren gölge efekti */
+        background:
+            linear-gradient(to right, var(--card-bg, #0f172a) 30%, transparent) left / 40px 100% no-repeat,
+            linear-gradient(to left, var(--card-bg, #0f172a) 30%, transparent) right / 40px 100% no-repeat,
+            linear-gradient(to right, rgba(0,0,0,0.3), transparent) left / 14px 100% no-repeat,
+            linear-gradient(to left, rgba(0,0,0,0.3), transparent) right / 14px 100% no-repeat;
+        background-attachment: local, local, scroll, scroll;
     }
+
     .data-table {
         font-size: 0.72rem !important;
-        max-height: 400px !important;
-        min-width: 600px;
+        max-height: none !important;
+        min-width: 580px;
+        width: max-content;
+        table-layout: auto;
     }
     .data-table th, .data-table td {
-        padding: 0.4rem 0.3rem !important;
-        font-size: 0.7rem;
+        padding: 0.45rem 0.4rem !important;
+        font-size: 0.72rem;
         white-space: nowrap;
+    }
+    .data-table th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: var(--card-bg, #0f172a);
     }
     .data-table .btn, .btn-primary {
         padding: 0.35rem 0.55rem !important;
@@ -807,13 +833,20 @@ body {
     }
 
     /* Tavan audit modal mobilde tam ekran */
+    #tavan-audit-modal {
+        padding: 0.5rem !important;
+    }
     #tavan-audit-modal > div {
-        padding: 0.8rem !important;
-        margin: 0.5rem !important;
+        padding: 0.6rem !important;
+        margin: 0 !important;
         border-radius: 8px !important;
+        max-width: 100% !important;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-x pan-y;
     }
     #tavan-audit-modal table {
-        min-width: 700px;
+        min-width: 650px;
     }
 
     /* ---- RADAR GRİD Tek Sütun ---- */
