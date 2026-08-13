@@ -2955,8 +2955,26 @@ function switchStatsTab(tabName, btnEl) {
 }
 
 function applyStatsTabFilter() {
-    const startDate = document.getElementById('stats-tab-start-date')?.value || '2026-08-04';
-    const endDate = document.getElementById('stats-tab-end-date')?.value || '';
+    const weekVal = document.getElementById('stats-tab-week-select')?.value;
+    let startDate = '2026-08-10'; // Default start of current week
+    let endDate = '';
+
+    if (weekVal) {
+        const [year, weekStr] = weekVal.split('-W');
+        const simple = new Date(year, 0, 1 + (weekStr - 1) * 7);
+        const dow = simple.getDay();
+        const ISOweekStart = simple;
+        if (dow <= 4)
+            ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
+        else
+            ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
+            
+        startDate = ISOweekStart.toISOString().slice(0, 10);
+        const ISOweekEnd = new Date(ISOweekStart);
+        ISOweekEnd.setDate(ISOweekStart.getDate() + 4);
+        endDate = ISOweekEnd.toISOString().slice(0, 10);
+    }
+    
     const symbol = document.getElementById('stats-tab-symbol-search')?.value || '';
     const time = document.getElementById('stats-tab-time-filter')?.value || '';
     fetchStatsTabData(startDate, endDate, symbol, time);
@@ -2972,8 +2990,8 @@ async function fetchStatsTabData(startDate = '2026-08-04', endDate = '', symbol 
     if (hourlyContainer) hourlyContainer.innerHTML = `<div style="color:var(--text-muted); font-size:0.85rem; padding:1rem;"><i class="fa-solid fa-spinner fa-spin"></i> Saatlik veriler yukleniyor...</div>`;
 
     try {
-        const tabStartDate = document.getElementById('stats-tab-start-date')?.value || startDate;
-        const tabEndDate = document.getElementById('stats-tab-end-date')?.value || endDate;
+        const tabStartDate = startDate;
+        const tabEndDate = endDate;
         const tabSymbol = document.getElementById('stats-tab-symbol-search')?.value || symbol;
         const tabTime = document.getElementById('stats-tab-time-filter')?.value || time;
 
@@ -3102,37 +3120,6 @@ function renderHourlyCards(hourlyList, container) {
     }).join('');
 }
 
-function renderDailyBreakdown(dailyList, tbody, prefix) {
-    if (!tbody) return;
-    if (!dailyList || dailyList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;">Filtreye uygun islem gunu bulunamadi.</td></tr>`;
-        return;
-    }
-    tbody.innerHTML = '';
-    dailyList.forEach(d => {
-        const tr = document.createElement('tr');
-        const tavanPctCol = d.hit_ceiling_pct >= 70 ? '#10b981' : (d.hit_ceiling_pct >= 50 ? '#facc15' : '#ef4444');
-        const plus5PctCol = d.hit_plus5_pct >= 80 ? '#38bdf8' : (d.hit_plus5_pct >= 60 ? '#10b981' : '#facc15');
-        tr.innerHTML = `
-            <td>
-                <div style="font-weight:800; color:#fff; font-size:0.88rem;"><i class="fa-regular fa-calendar text-muted"></i> ${d.date}</div>
-                <div style="font-size:0.68rem; color:#10b981; font-weight:700;"><i class="fa-solid fa-check"></i> ${d.status === 'COMPLETED' ? 'Tamamlandi' : 'Canli'}</div>
-            </td>
-            <td style="font-weight:bold; color:var(--text-light); text-align:center;">${d.total_candidates}</td>
-            <td>
-                <span style="color:${tavanPctCol}; font-weight:800; font-size:0.88rem;">%${d.hit_ceiling_pct} Başarı</span>
-                <div style="font-size:0.7rem; color:var(--text-muted);">${d.hit_ceiling_count}/${d.total_candidates} Hisse Tavana Ulaştı</div>
-            </td>
-            <td>
-                <div style="font-weight:800; font-size:0.9rem; color:${d.avg_closing_gain_pct >= 0 ? '#10b981' : '#ef4444'}">
-                    ${d.avg_closing_gain_pct >= 0 ? '+' : ''}%${d.avg_closing_gain_pct}
-                </div>
-                <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Zirve: <span style="color:#facc15">+%${d.avg_max_gain_pct}</span></div>
-            </td>
-            <td>
-                <div style="font-weight:800; color:#38bdf8; font-size:0.82rem;">${d.star_stock || '-'}</div>
-                <div style="font-size:0.72rem; color:#c084fc; font-weight:700;">${d.star_warrant || ''} <span style="color:#10b981;">${d.star_warrant_gain || ''}</span></div>
-            </td>
             <td>
                 <button onclick="openTavanAuditForDate('${d.date}')" class="btn-primary" style="background:rgba(239,68,68,0.25); color:#fca5a5; border:1px solid rgba(239,68,68,0.4); padding:4px 10px; font-size:0.8rem; font-weight:bold; border-radius:4px; cursor:pointer;">
                     <i class="fa-solid fa-folder-open"></i> Detayları Aç
@@ -3571,4 +3558,53 @@ function toggleSimDetail(dateStr) {
     detailContainer.style.display = 'block';
     detailContainer.dataset.date = dateStr;
     detailContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function renderDailyBreakdown(dailyList, tbody, prefix = '') {
+    if (!tbody) return;
+    const weekVal = document.getElementById('stats-tab-week-select')?.value;
+    let expectedDates = [];
+    if (weekVal) {
+        const [year, weekStr] = weekVal.split('-W');
+        const simple = new Date(year, 0, 1 + (weekStr - 1) * 7);
+        const dow = simple.getDay();
+        const ISOweekStart = simple;
+        if (dow <= 4)
+            ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
+        else
+            ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
+        for(let i = 0; i < 5; i++) {
+            const d = new Date(ISOweekStart);
+            d.setDate(d.getDate() + i);
+            expectedDates.push(d.toISOString().slice(0, 10));
+        }
+    } else {
+        expectedDates = dailyList.map(d => d.date);
+    }
+    if (expectedDates.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-muted text-center" style="padding:2rem;">Bu hafta icin kayit bulunamadi.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = '';
+    expectedDates.reverse().forEach(dateStr => {
+        const d = dailyList.find(x => x.date === dateStr);
+        if (!d) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = '<td><div style="font-weight:800; font-size:0.9rem; color:var(--text-light); display:flex; align-items:center; gap:6px;"><i class="fa-regular fa-calendar" style="color:var(--text-muted);"></i> ' + dateStr + '</div></td><td colspan="5" class="text-center" style="color:var(--text-muted); font-size:0.85rem; font-style:italic; padding:1.5rem 0;"><i class="fa-solid fa-mug-hot" style="font-size:1.2rem; color:rgba(255,255,255,0.1); margin-right:8px;"></i> TATİL / VERİ YOK</td>';
+            tbody.appendChild(tr);
+            return;
+        }
+        const tr = document.createElement('tr');
+        const total = d.candidates ? d.candidates.length : 0;
+        const tavan = d.candidates ? d.candidates.filter(c => c.hit_ceiling).length : 0;
+        const plus5 = d.candidates ? d.candidates.filter(c => c.hit_plus5).length : 0;
+        let tavanRate = total > 0 ? ((tavan / total) * 100).toFixed(1) : '0';
+        if (tavanRate.endsWith('.0')) tavanRate = tavanRate.replace('.0', '');
+        const best = d.best_performer || { symbol: 'Yok', max_gain_pct: 0, warrant_code: 'Yok', warrant_gain_pct: 0 };
+        const avgMax = d.avg_max_gain_pct || 0;
+        const avgClose = d.avg_closing_gain_pct || 0;
+        const dailyResultClass = avgClose > 0 ? 'text-green' : (avgClose < 0 ? 'text-red' : 'text-muted');
+        tr.innerHTML = '<td><div style="font-weight:800; font-size:0.9rem; color:var(--text-light); display:flex; align-items:center; gap:6px;"><i class="fa-regular fa-calendar-check" style="color:#10b981;"></i> ' + d.date + '</div><div style="font-size:0.65rem; color:#10b981; font-weight:700; margin-top:3px;"><i class="fa-solid fa-check"></i> ' + (d.status === 'COMPLETED' ? 'Tamamlandı' : 'Canlı') + '</div></td><td><div style="font-size:1.1rem; font-weight:800; color:#fff;">' + total + '</div></td><td><div style="font-size:0.9rem; font-weight:800; color:#10b981;">%' + tavanRate + ' Başarı</div><div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">' + tavan + '/' + total + ' Hisse Tavana Ulaştı</div></td><td><div style="font-weight:800; font-size:0.9rem;" class="' + dailyResultClass + '">+' + avgClose + '%</div><div style="font-size:0.72rem; color:var(--accent-yellow); font-weight:600;">Zirve: +' + avgMax + '%</div></td><td><div style="font-weight:800; font-size:0.85rem; color:#38bdf8;">' + best.symbol + ' (+' + best.max_gain_pct + '%)</div><div style="font-size:0.72rem; color:#c084fc; font-weight:700; margin-top:2px;">' + best.warrant_code + ' +' + best.warrant_gain_pct + '%</div></td><td><button onclick="console.log(\'Detayları Ac clicked for ' + d.date + '\'); openTavanAuditForDate(\'' + d.date + '\')" class="btn-primary" style="background:rgba(239,68,68,0.25); color:#fca5a5; border:1px solid rgba(239,68,68,0.4); padding:4px 10px; font-size:0.8rem; font-weight:bold; border-radius:4px; cursor:pointer; display:flex; align-items:center; gap:6px;"><i class="fa-solid fa-folder-open"></i> Detayları Aç</button></td>';
+        tbody.appendChild(tr);
+    });
 }
