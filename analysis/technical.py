@@ -1273,6 +1273,8 @@ class TechnicalEngine(BaseEngine):
                         return True, bars_ago, timestamp_str
                         
             return False, 0, ""
+        except Exception as e:
+            return False, 0, ""
                 
     def check_ema_stop_loss(self, df, interval="1h"):
         """Checks for EMA 9 crossing below EMA 21 to trigger a stop loss"""

@@ -1,87 +1,299 @@
+import json
+import os
 import pandas as pd
-from utils.logger import logger
+import yfinance as yf
+from datetime import datetime, timedelta
+import math
 
-class BacktestEngine:
-    def __init__(self, initial_capital: float = 10000.0):
-        self.initial_capital = initial_capital
+class AdvancedBacktester:
+    CACHE_FILE = "data/backtester_cache.json"
+    CACHE_TTL_SECONDS = 1800  # 30 dakika
+    
+    def __init__(self, audit_file_path="data/tavan_daily_audit.json"):
+        self.audit_file_path = audit_file_path
+        self.daily_budget = 10000.0
+        self.max_stocks = 5
 
-    def run_backtest(self, df: pd.DataFrame, signals_column: str = 'Action') -> dict:
-        """
-        Runs a simplified backtest on a dataframe containing Buy/Sell signals.
-        Assume 'Action' column has 'AL', 'SAT', or 'BEKLE'.
-        """
-        if df.empty or signals_column not in df.columns:
-            logger.warning("Backtest failed: No data or signals column missing.")
+    def load_audit_data(self):
+        if not os.path.exists(self.audit_file_path):
             return {}
+        with open(self.audit_file_path, "r", encoding="utf-8") as f:
+            return json.load(f)
 
-        capital = self.initial_capital
-        position_shares = 0
-        total_trades = 0
-        winning_trades = 0
-        losing_trades = 0
-        peak_capital = capital
-        max_drawdown = 0.0
+    def download_1h_data(self, symbols, period="1mo"):
+        if not symbols:
+            return None
+        print(f"[BACKTESTER] {len(symbols)} hisse için 1h veri indiriliyor...")
+        df = yf.download(symbols, period=period, interval="1h", group_by='ticker', threads=False, progress=False)
+        return df
 
-        trade_history = []
-
-        for index, row in df.iterrows():
-            price = row['close']
-            signal = row[signals_column]
-
-            if signal == 'AL' and position_shares == 0:
-                # Buy as many shares as possible
-                position_shares = int(capital / price)
-                capital -= position_shares * price
-                trade_history.append({"type": "BUY", "price": price, "date": index})
-
-            elif signal == 'SAT' and position_shares > 0:
-                # Sell all shares
-                revenue = position_shares * price
-                capital += revenue
-                
-                # Check trade outcome
-                buy_price = trade_history[-1]['price']
-                if price > buy_price:
-                    winning_trades += 1
-                else:
-                    losing_trades += 1
-                    
-                total_trades += 1
-                trade_history.append({"type": "SELL", "price": price, "date": index})
-                position_shares = 0
-
-            # Calculate Drawdown
-            current_portfolio_value = capital + (position_shares * price)
-            if current_portfolio_value > peak_capital:
-                peak_capital = current_portfolio_value
+    def evaluate_sell_signal(self, df_1h, current_time):
+        """
+        Gelen DataFrame'i current_time anına kadar keser ve son saatteki SAT sinyalini kontrol eder.
+        SAT Sinyali = UZAK DUR (Negatif Momentum) kriteri: EMA8 < EMA21, Momentum < 0, vb.
+        """
+        sub_df = df_1h.loc[:current_time].copy()
+        if len(sub_df) < 20:
+            return False, 0
             
-            drawdown = (peak_capital - current_portfolio_value) / peak_capital * 100
-            if drawdown > max_drawdown:
-                max_drawdown = drawdown
+        close = sub_df['Close']
+        if close.empty:
+            return False, 0
+            
+        ema8 = close.ewm(span=8, adjust=False).mean()
+        ema21 = close.ewm(span=21, adjust=False).mean()
+        momentum = close - close.shift(10)
+        
+        c_ema8 = float(ema8.iloc[-1])
+        c_ema21 = float(ema21.iloc[-1])
+        p_ema8 = float(ema8.iloc[-2]) if len(ema8) > 1 else c_ema8
+        p_ema21 = float(ema21.iloc[-2]) if len(ema21) > 1 else c_ema21
+        
+        c_mom = float(momentum.iloc[-1])
+        
+        crossed_down = (p_ema8 >= p_ema21) and (c_ema8 < c_ema21)
+        
+        if crossed_down or (c_ema8 < c_ema21 and c_mom < 0):
+            return True, float(close.iloc[-1])
+            
+        return False, 0
 
-        # Final close out if still holding
-        if position_shares > 0:
-            final_price = df['close'].iloc[-1]
-            capital += position_shares * final_price
-            if final_price > trade_history[-1]['price']:
-                winning_trades += 1
-            else:
-                losing_trades += 1
-            total_trades += 1
+    def run_simulation(self):
+        # Cache kontrolü - 30 dakika içinde hesaplanmışsa tekrar indirme
+        if os.path.exists(self.CACHE_FILE):
+            try:
+                with open(self.CACHE_FILE, "r", encoding="utf-8") as f:
+                    cached = json.load(f)
+                cache_time = cached.get("_cache_timestamp", 0)
+                if (datetime.now().timestamp() - cache_time) < self.CACHE_TTL_SECONDS:
+                    print("[BACKTESTER] Cache'den okunuyor (30dk geçerli)")
+                    cached.pop("_cache_timestamp", None)
+                    return cached
+            except Exception:
+                pass
+        
+        audit_data = self.load_audit_data()
+        if not audit_data:
+            return {"status": "error", "message": "Audit data not found"}
+            
+        all_symbols = set()
+        for date_key, day_data in audit_data.items():
+            if isinstance(day_data, dict) and 'items' in day_data:
+                for item in day_data['items']:
+                    if 'symbol' in item:
+                        all_symbols.add(item['symbol'] + '.IS' if not item['symbol'].endswith('.IS') else item['symbol'])
+                        
+        symbols_list = list(all_symbols)
+        if not symbols_list:
+            return {"status": "error", "message": "No symbols found"}
+            
+        df_1h = self.download_1h_data(symbols_list)
+        if df_1h is None or df_1h.empty:
+            return {"status": "error", "message": "Failed to download historical data"}
 
-        final_return_pct = ((capital - self.initial_capital) / self.initial_capital) * 100
-        win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
+        days_result = []
+        cumulative_pnl = 0.0
+        
+        sorted_dates = sorted(audit_data.keys())
+        for date_key in sorted_dates:
+            day_data = audit_data[date_key]
+            stocks = []
+            if isinstance(day_data, dict) and 'items' in day_data:
+                stocks = day_data['items']
+                
+            if not stocks:
+                continue
+                
+            for s in stocks:
+                s['Score'] = s.get('morning_score', s.get('Score', 80))
+                try:
+                    dtc = s.get('distance_to_ceiling_1015', s.get('Distance_To_Ceiling_Pct', '0'))
+                    if isinstance(dtc, str):
+                        dtc = dtc.replace('+', '').replace('%', '')
+                    s['DTC_Float'] = float(dtc)
+                except:
+                    s['DTC_Float'] = 0.0
+                    
+            stocks = sorted(stocks, key=lambda x: (x.get('Score', 0), x.get('DTC_Float', 0)), reverse=True)
+            selected_stocks = stocks[:self.max_stocks]
+            if not selected_stocks:
+                continue
+                
+            total_score = sum(s.get('Score', 100) for s in selected_stocks)
+            if total_score == 0:
+                total_score = 1
+                
+            daily_invested = 0.0
+            daily_return = 0.0
+            day_trades = []
+            
+            for s in selected_stocks:
+                raw_sym = s.get('symbol', '')
+                sym = raw_sym + '.IS' if not raw_sym.endswith('.IS') else raw_sym
+                score = s.get('Score', 100)
+                morning_price = float(s.get('morning_price', 0))
+                if morning_price <= 0:
+                    continue
+                    
+                allocation = self.daily_budget * (score / total_score)
+                shares = math.floor(allocation / morning_price)
+                if shares <= 0:
+                    continue
+                    
+                invested = shares * morning_price
+                sell_price = morning_price
+                sell_time_str = "Gün Sonu"
+                
+                if len(symbols_list) == 1:
+                    sym_df = df_1h
+                else:
+                    if hasattr(df_1h.columns, 'levels') and sym in df_1h.columns.levels[0]:
+                        sym_df = df_1h[sym]
+                    else:
+                        sym_df = pd.DataFrame()
+                        
+                sym_df = sym_df.dropna(how='all')
+                
+                if not sym_df.empty:
+                    day_start = pd.to_datetime(f"{date_key} 10:00:00").tz_localize('Europe/Istanbul')
+                    future_df = sym_df[sym_df.index >= day_start]
+                    
+                    sold = False
+                    for idx_time, row in future_df.iterrows():
+                        is_sell, price_at_signal = self.evaluate_sell_signal(sym_df, idx_time)
+                        if is_sell and price_at_signal > 0:
+                            sell_price = price_at_signal
+                            sell_time_str = str(idx_time)
+                            sold = True
+                            break
+                            
+                    if not sold and not future_df.empty:
+                        sell_price = float(future_df['Close'].iloc[-1])
+                        sell_time_str = str(future_df.index[-1])
+                
+                if sell_price == morning_price and s.get('closing_price'):
+                    sell_price = float(s.get('closing_price'))
+                    
+                return_val = shares * sell_price
+                pnl = return_val - invested
+                pnl_pct = (pnl / invested) * 100 if invested > 0 else 0
+                
+                daily_invested += invested
+                daily_return += return_val
+                
+                day_trades.append({
+                    "symbol": raw_sym,
+                    "buy_price": morning_price,
+                    "sell_price": round(sell_price, 2),
+                    "buy_time": "10:00",
+                    "sell_time": sell_time_str.split(' ')[-1][:5] if ' ' in sell_time_str else "17:50",
+                    "shares": shares,
+                    "invested": round(invested, 2),
+                    "return_val": round(return_val, 2),
+                    "pnl": round(pnl, 2),
+                    "pnl_pct": round(pnl_pct, 2),
+                    "score": score
+                })
+                
+            if daily_invested > 0:
+                d_pnl = daily_return - daily_invested
+                d_pnl_pct = (d_pnl / daily_invested) * 100
+                cumulative_pnl += d_pnl
+                
+                days_result.append({
+                    "date": date_key,
+                    "stocks_count": len(day_trades),
+                    "total_invested": round(daily_invested, 2),
+                    "total_return": round(daily_return, 2),
+                    "daily_pnl": round(d_pnl, 2),
+                    "daily_pnl_pct": round(d_pnl_pct, 2),
+                    "cumulative_pnl": round(cumulative_pnl, 2),
+                    "trades": day_trades
+                })
+                
+        # Generate weekly/monthly breakdown
+        weekly_data = {}
+        monthly_data = {}
+        
+        for d in days_result:
+            dt = datetime.strptime(d["date"], "%Y-%m-%d")
+            week_key = f"{dt.isocalendar()[0]}-W{dt.isocalendar()[1]:02d}"
+            month_key = f"{dt.year}-{dt.month:02d}"
+            
+            if week_key not in weekly_data:
+                weekly_data[week_key] = {"week": week_key, "total_invested": 0, "total_return": 0, "daily_pnl": 0, "trades_count": 0, "days_count": 0}
+            if month_key not in monthly_data:
+                monthly_data[month_key] = {"month": month_key, "total_invested": 0, "total_return": 0, "daily_pnl": 0, "trades_count": 0, "days_count": 0}
+                
+            weekly_data[week_key]["total_invested"] += d["total_invested"]
+            weekly_data[week_key]["total_return"] += d["total_return"]
+            weekly_data[week_key]["daily_pnl"] += d["daily_pnl"]
+            weekly_data[week_key]["trades_count"] += len(d["trades"])
+            weekly_data[week_key]["days_count"] += 1
+            
+            monthly_data[month_key]["total_invested"] += d["total_invested"]
+            monthly_data[month_key]["total_return"] += d["total_return"]
+            monthly_data[month_key]["daily_pnl"] += d["daily_pnl"]
+            monthly_data[month_key]["trades_count"] += len(d["trades"])
+            monthly_data[month_key]["days_count"] += 1
+            
+        for w in weekly_data.values():
+            w["daily_pnl_pct"] = round((w["daily_pnl"] / w["total_invested"] * 100) if w["total_invested"] > 0 else 0, 2)
+            w["total_invested"] = round(w["total_invested"], 2)
+            w["total_return"] = round(w["total_return"], 2)
+            w["daily_pnl"] = round(w["daily_pnl"], 2)
+            
+        for m in monthly_data.values():
+            m["daily_pnl_pct"] = round((m["daily_pnl"] / m["total_invested"] * 100) if m["total_invested"] > 0 else 0, 2)
+            m["total_invested"] = round(m["total_invested"], 2)
+            m["total_return"] = round(m["total_return"], 2)
+            m["daily_pnl"] = round(m["daily_pnl"], 2)
 
+        total_trading_days = len(days_result)
+        if total_trading_days > 0:
+            best_day = max(days_result, key=lambda x: x["daily_pnl"])
+            worst_day = min(days_result, key=lambda x: x["daily_pnl"])
+            win_days = sum(1 for d in days_result if d["daily_pnl"] > 0)
+            loss_days = sum(1 for d in days_result if d["daily_pnl"] <= 0)
+            avg_daily_pnl = cumulative_pnl / total_trading_days
+            avg_daily_pnl_pct = sum(d["daily_pnl_pct"] for d in days_result) / total_trading_days
+            
+            total_summary = {
+                "total_trading_days": total_trading_days,
+                "total_cumulative_pnl": round(cumulative_pnl, 2),
+                "total_cumulative_pnl_pct": round(sum(d["daily_pnl_pct"] for d in days_result), 2),
+                "best_day": {"date": best_day["date"], "pnl": round(best_day["daily_pnl"], 2), "pnl_pct": round(best_day["daily_pnl_pct"], 2)},
+                "worst_day": {"date": worst_day["date"], "pnl": round(worst_day["daily_pnl"], 2), "pnl_pct": round(worst_day["daily_pnl_pct"], 2)},
+                "win_days": win_days,
+                "loss_days": loss_days,
+                "avg_daily_pnl": round(avg_daily_pnl, 2),
+                "avg_daily_pnl_pct": round(avg_daily_pnl_pct, 2)
+            }
+        else:
+            total_summary = {
+                "total_trading_days": 0,
+                "total_cumulative_pnl": 0.0,
+                "total_cumulative_pnl_pct": 0.0,
+                "best_day": None, "worst_day": None,
+                "win_days": 0, "loss_days": 0,
+                "avg_daily_pnl": 0.0, "avg_daily_pnl_pct": 0.0
+            }
         result = {
-            "initial_capital": self.initial_capital,
-            "final_capital": round(capital, 2),
-            "return_pct": round(final_return_pct, 2),
-            "total_trades": total_trades,
-            "win_rate_pct": round(win_rate, 2),
-            "max_drawdown_pct": round(max_drawdown, 2),
-            "winning_trades": winning_trades,
-            "losing_trades": losing_trades
+            "status": "success",
+            "daily_budget": self.daily_budget,
+            "days": days_result,
+            "weekly": list(weekly_data.values()),
+            "monthly": list(monthly_data.values()),
+            "total_summary": total_summary
         }
-
-        logger.info(f"Backtest Result: Return: {result['return_pct']}%, Win Rate: {result['win_rate_pct']}%, Max DD: {result['max_drawdown_pct']}%")
+        
+        # Cache'e kaydet
+        try:
+            cache_data = result.copy()
+            cache_data["_cache_timestamp"] = datetime.now().timestamp()
+            with open(self.CACHE_FILE, "w", encoding="utf-8") as f:
+                json.dump(cache_data, f)
+        except Exception as e:
+            print(f"[BACKTESTER] Cache yazma hatası: {e}")
+            
         return result

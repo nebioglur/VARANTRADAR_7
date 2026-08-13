@@ -275,7 +275,7 @@ class UniversalScanner:
         tavan_adaylari = sorted(
             tavan_adaylari,
             key=lambda x: (-x.get("Score", 0), -x.get("Vol_Multiplier", 0), x.get("Distance_To_Ceiling_Pct", 99))
-        )
+        )[:10]
         
         stay_away_1h = sorted(stay_away_1h, key=lambda x: (x.get("Crossover_Bars_Ago", 999), x.get("EMA_Gap_Pct", 0)))
         print(f"[SCANNER 1H] Tarama tamamlandı. {len(opportunities)} fırsat, {len(tavan_adaylari)} tavan, {len(stay_away_1h)} uzak dur bulundu.")
