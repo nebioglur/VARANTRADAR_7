@@ -54,9 +54,9 @@ class AdvancedBacktester:
         crossed_down = (p_ema8 >= p_ema21) and (c_ema8 < c_ema21)
         
         if crossed_down or (c_ema8 < c_ema21 and c_mom < 0):
-            return True, float(close.iloc[-1])
+            return True, float(close.iloc[-1]), "🔴 UZAK DUR (EMA Kesişimi)"
             
-        return False, 0
+        return False, 0, ""
 
     def run_simulation(self):
         # Cache kontrolü - 30 dakika içinde hesaplanmışsa tekrar indirme
@@ -159,12 +159,25 @@ class AdvancedBacktester:
                     future_df = sym_df[sym_df.index >= day_start]
                     
                     sold = False
+                    exit_reason = "⏱️ GÜN SONU"
+                    max_price_seen = float(future_df['High'].max()) if 'High' in future_df.columns else morning_price
+                    
                     for idx_time, row in future_df.iterrows():
-                        is_sell, price_at_signal = self.evaluate_sell_signal(sym_df, idx_time)
+                        # Stop loss -2.0%
+                        low_val = float(row['Low']) if 'Low' in row else float(row['Close'])
+                        if low_val <= morning_price * 0.98:
+                            sell_price = morning_price * 0.98
+                            sell_time_str = str(idx_time)
+                            sold = True
+                            exit_reason = "🛡️ ZARAR KES (STOP)"
+                            break
+                            
+                        is_sell, price_at_signal, reason = self.evaluate_sell_signal(sym_df, idx_time)
                         if is_sell and price_at_signal > 0:
                             sell_price = price_at_signal
                             sell_time_str = str(idx_time)
                             sold = True
+                            exit_reason = reason
                             break
                             
                     if not sold and not future_df.empty:
@@ -173,10 +186,16 @@ class AdvancedBacktester:
                 
                 if sell_price == morning_price and s.get('closing_price'):
                     sell_price = float(s.get('closing_price'))
+                    if max_price_seen < sell_price:
+                        max_price_seen = sell_price
                     
                 return_val = shares * sell_price
                 pnl = return_val - invested
                 pnl_pct = (pnl / invested) * 100 if invested > 0 else 0
+                
+                max_return_val = shares * max_price_seen
+                max_pnl = max_return_val - invested
+                max_pnl_pct = (max_pnl / invested) * 100 if invested > 0 else 0
                 
                 daily_invested += invested
                 daily_return += return_val
@@ -192,7 +211,10 @@ class AdvancedBacktester:
                     "return_val": round(return_val, 2),
                     "pnl": round(pnl, 2),
                     "pnl_pct": round(pnl_pct, 2),
-                    "score": score
+                    "score": score,
+                    "max_pnl": round(max_pnl, 2),
+                    "max_pnl_pct": round(max_pnl_pct, 2),
+                    "exit_reason": exit_reason
                 })
                 
             if daily_invested > 0:
@@ -204,6 +226,7 @@ class AdvancedBacktester:
                     "date": date_key,
                     "stocks_count": len(day_trades),
                     "total_invested": round(daily_invested, 2),
+                    "unused_capital": round(self.daily_budget - daily_invested, 2),
                     "total_return": round(daily_return, 2),
                     "daily_pnl": round(d_pnl, 2),
                     "daily_pnl_pct": round(d_pnl_pct, 2),

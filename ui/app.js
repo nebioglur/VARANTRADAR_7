@@ -3210,12 +3210,58 @@ async function fetchSimulationData() {
             globalSimData = data;
             renderSimKpis(data.total_summary);
             renderSimDailyTable(data.days);
+            initSimLiveScanner(data.days);
         } else {
             if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="text-red text-center" style="padding:2rem;">Simülasyon verisi alınamadı.</td></tr>';
         }
     } catch (e) {
         if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="text-red text-center" style="padding:2rem;">Bağlantı hatası: ' + e.message + '</td></tr>';
     }
+}
+
+let simLogInterval = null;
+function initSimLiveScanner(days) {
+    const logEl = document.getElementById('sim-live-log');
+    const quotaEl = document.getElementById('sim-live-quota');
+    if (!logEl || !quotaEl) return;
+    
+    // İşlem kotasını son günün verisinden alalım
+    let todayTrades = 0;
+    if (days && days.length > 0) {
+        const lastDay = days[days.length - 1];
+        todayTrades = lastDay.stocks_count || 0;
+    }
+    quotaEl.innerHTML = `${todayTrades}/100`;
+    
+    if (simLogInterval) clearInterval(simLogInterval);
+    
+    const messages = [
+        "📡 BIST Yıldız Pazar taranıyor...",
+        "⚙️ Tavan potansiyeli algoritması çalışıyor...",
+        "🎯 AL Sinyali (Kopuş) aranıyor...",
+        "🛡️ Aktif pozisyonlar için Stop-Loss kontrol ediliyor...",
+        "📉 Negatif momentum (Uzak Dur) filtresi aktif...",
+        "⏳ Otonom karar destek modülü verileri bekliyor..."
+    ];
+    let msgIdx = 0;
+    
+    simLogInterval = setInterval(() => {
+        const now = new Date();
+        const h = now.getHours();
+        
+        if (h < 9 || h > 18) {
+            logEl.innerHTML = "🌙 Piyasa kapalı, sistem uyku modunda.";
+            logEl.style.color = "var(--text-muted)";
+            return;
+        }
+        
+        logEl.style.color = "var(--text-light)";
+        logEl.innerHTML = messages[msgIdx];
+        msgIdx = (msgIdx + 1) % messages.length;
+    }, 4000);
+    
+    // İlk mesajı hemen yaz
+    logEl.innerHTML = messages[0];
 }
 
 function renderSimKpis(summary) {
@@ -3334,19 +3380,20 @@ function showSimDayDetail(dateStr) {
             
             const buyTime = t.buy_time || '10:15';
             const sellTime = t.sell_time || 'Zirve';
+            const reason = t.exit_reason || '⏱️ GÜN SONU';
             
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td style="font-weight:800; color:var(--text-light);">${t.symbol}</td>
-                <td style="color:var(--text-muted);"><i class="fa-regular fa-clock"></i> ${buyTime}</td>
-                <td style="font-family:monospace;">${t.buy_price.toFixed(2)} ₺</td>
-                <td style="color:var(--text-muted);"><i class="fa-regular fa-clock"></i> ${sellTime}</td>
-                <td style="font-family:monospace;">${t.sell_price.toFixed(2)} ₺</td>
+                <td style="font-weight:700; color:var(--accent-blue);">${t.score || 0}</td>
+                <td style="color:var(--text-muted);"><i class="fa-regular fa-clock"></i> ${buyTime} <span style="font-family:monospace; color:var(--text-main); margin-left:4px;">${t.buy_price.toFixed(2)}₺</span></td>
+                <td style="color:var(--text-muted);"><i class="fa-regular fa-clock"></i> ${sellTime} <span style="font-family:monospace; color:var(--text-main); margin-left:4px;">${t.sell_price.toFixed(2)}₺</span></td>
+                <td style="font-size:0.75rem; color:var(--text-light);">${reason}</td>
                 <td>${t.shares}</td>
                 <td style="font-family:monospace;">${t.invested.toFixed(2)} ₺</td>
-                <td style="font-family:monospace;">${t.return_val.toFixed(2)} ₺</td>
                 <td style="color:${c}; font-weight:800; font-family:monospace;">${s}${t.pnl.toFixed(2)} ₺</td>
                 <td style="color:${c}; font-weight:700;">${s}%${t.pnl_pct.toFixed(2)}</td>
+                <td style="color:var(--text-light); font-weight:700; font-size:0.75rem;">+${(t.max_pnl_pct || 0).toFixed(2)}%</td>
                 <td>${badge}</td>
             `;
             tbody.appendChild(tr);
@@ -3362,11 +3409,11 @@ function showSimDayDetail(dateStr) {
         trTotal.style.background = 'rgba(255,255,255,0.03)';
         trTotal.style.borderTop = '2px solid rgba(255,255,255,0.1)';
         trTotal.innerHTML = `
-            <td colspan="6" style="font-weight:800; text-align:right; color:var(--text-light); padding-right:15px;">TOPLAM GÜNLÜK SONUÇ:</td>
+            <td colspan="6" style="font-weight:800; text-align:right; color:var(--text-light); padding-right:15px;">TOPLAM GÜNLÜK SONUÇ (Boşta Kalan: ${(10000 - totalInvested).toFixed(2)}₺):</td>
             <td style="font-weight:800; font-family:monospace;">${totalInvested.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
-            <td style="font-weight:800; font-family:monospace;">${totalReturn.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
             <td style="color:${totalC}; font-weight:800; font-family:monospace; font-size:1.05rem;">${totalS}${totalPnl.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
             <td style="color:${totalC}; font-weight:800; font-size:1.05rem;">${totalS}%${totalPct.toFixed(2)}</td>
+            <td></td>
             <td></td>
         `;
         tbody.appendChild(trTotal);

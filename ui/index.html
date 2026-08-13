@@ -1307,6 +1307,18 @@
               Bu simülasyon <strong>"Puan Ağırlıklı Sepet"</strong> (Gerçekçi) mantığıyla çalışır. Günün tavan adaylarından <strong>en fazla 5 hisse</strong> seçilir. 10.000 TL bütçe bu hisselere <strong>AL Puanı ve Sıçrama Potansiyeli ağırlıklı</strong> paylaştırılarak eşzamanlı pozisyon açılır. (Yüksek puanlı hisseye daha büyük bütçe ayrılır). Satışlar ise hissede <strong>UZAK DUR</strong> sinyali (1 saatlik negatif momentum) oluştuğu anda otomatik gerçekleşir. Bu bir "Oracle" (geleceği bilen) değil, tamamen gerçek verilere dayalı bir testtir.
             </p>
           </div>
+          
+          <!-- Canlı Tarama Durumu -->
+          <div style="margin-top:1.5rem; background:linear-gradient(90deg, rgba(16,185,129,0.1), transparent); border-left:4px solid var(--accent-green); padding:0.8rem 1rem; border-radius:6px; display:flex; justify-content:space-between; align-items:center;">
+             <div style="display:flex; align-items:center; gap:10px;">
+                <span class="pulse" style="width:10px; height:10px; background:var(--accent-green); display:inline-block; border-radius:50%; box-shadow:0 0 10px var(--accent-green);"></span>
+                <span style="font-weight:700; color:var(--accent-green); font-size:0.95rem;">Sistem Canlı (Otonom Mod Aktif)</span>
+                <span style="font-family:monospace; color:var(--text-muted); font-size:0.85rem; margin-left:10px;" id="sim-live-log">📡 Piyasa taranıyor... Fırsatlar aranıyor...</span>
+             </div>
+             <div style="font-size:0.85rem; font-weight:700; color:var(--text-light); background:rgba(255,255,255,0.05); padding:4px 10px; border-radius:20px; border:1px solid rgba(255,255,255,0.1);">
+                📊 GÜNLÜK İŞLEM KOTASI: <span style="color:var(--accent-blue);" id="sim-live-quota">0/100</span>
+             </div>
+          </div>
         </div>
 
         <!-- 4 KPI Cards row -->
@@ -1378,15 +1390,15 @@
               <thead>
                 <tr>
                   <th>Sembol</th>
-                  <th>Alış Saati</th>
-                  <th>Alış (₺)</th>
-                  <th>Satış Saati</th>
-                  <th>Gün İçi Zirve (₺)</th>
+                  <th>AL Puanı</th>
+                  <th>Alış (Saat - ₺)</th>
+                  <th>Satış (Saat - ₺)</th>
+                  <th>Satış Nedeni</th>
                   <th>Lot</th>
                   <th>Yatırılan (₺)</th>
-                  <th>Getiri (₺)</th>
                   <th>Net K/Z (₺)</th>
                   <th>K/Z %</th>
+                  <th>Maks %</th>
                   <th>Sonuç</th>
                 </tr>
               </thead>
