@@ -3511,16 +3511,47 @@ function renderDailyBreakdown(dailyList, tbody, prefix = '') {
             return;
         }
         const tr = document.createElement('tr');
-        const total = d.candidates ? d.candidates.length : 0;
-        const tavan = d.candidates ? d.candidates.filter(c => c.hit_ceiling).length : 0;
-        const plus5 = d.candidates ? d.candidates.filter(c => c.hit_plus5).length : 0;
-        let tavanRate = total > 0 ? ((tavan / total) * 100).toFixed(1) : '0';
-        if (tavanRate.endsWith('.0')) tavanRate = tavanRate.replace('.0', '');
-        const best = d.best_performer || { symbol: 'Yok', max_gain_pct: 0, warrant_code: 'Yok', warrant_gain_pct: 0 };
+        const total = d.total_candidates || 0;
+        const tavan = d.hit_ceiling_count || 0;
+        let tavanRate = d.hit_ceiling_pct || 0;
         const avgMax = d.avg_max_gain_pct || 0;
         const avgClose = d.avg_closing_gain_pct || 0;
+        const starStock = d.star_stock || 'Yok';
+        const warrantCode = d.star_warrant || 'Yok';
+        const warrantGain = d.star_warrant_gain || '+0%';
+        
         const dailyResultClass = avgClose > 0 ? 'text-green' : (avgClose < 0 ? 'text-red' : 'text-muted');
-        tr.innerHTML = '<td><div style="font-weight:800; font-size:0.9rem; color:var(--text-light); display:flex; align-items:center; gap:6px;"><i class="fa-regular fa-calendar-check" style="color:#10b981;"></i> ' + d.date + '</div><div style="font-size:0.65rem; color:#10b981; font-weight:700; margin-top:3px;"><i class="fa-solid fa-check"></i> ' + (d.status === 'COMPLETED' ? 'Tamamlandı' : 'Canlı') + '</div></td><td><div style="font-size:1.1rem; font-weight:800; color:#fff;">' + total + '</div></td><td><div style="font-size:0.9rem; font-weight:800; color:#10b981;">%' + tavanRate + ' Başarı</div><div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">' + tavan + '/' + total + ' Hisse Tavana Ulaştı</div></td><td><div style="font-weight:800; font-size:0.9rem;" class="' + dailyResultClass + '">+' + avgClose + '%</div><div style="font-size:0.72rem; color:var(--accent-yellow); font-weight:600;">Zirve: +' + avgMax + '%</div></td><td><div style="font-weight:800; font-size:0.85rem; color:#38bdf8;">' + best.symbol + ' (+' + best.max_gain_pct + '%)</div><div style="font-size:0.72rem; color:#c084fc; font-weight:700; margin-top:2px;">' + best.warrant_code + ' +' + best.warrant_gain_pct + '%</div></td><td><button onclick="console.log(\'Detayları Ac clicked for ' + d.date + '\'); openTavanAuditForDate(\'' + d.date + '\')" class="btn-primary" style="background:rgba(239,68,68,0.25); color:#fca5a5; border:1px solid rgba(239,68,68,0.4); padding:4px 10px; font-size:0.8rem; font-weight:bold; border-radius:4px; cursor:pointer; display:flex; align-items:center; gap:6px;"><i class="fa-solid fa-folder-open"></i> Detayları Aç</button></td>';
+        
+        tr.innerHTML = `
+            <td>
+                <div style="font-weight:800; font-size:0.9rem; color:var(--text-light); display:flex; align-items:center; gap:6px;">
+                    <i class="fa-regular fa-calendar-check" style="color:#10b981;"></i> ${d.date}
+                </div>
+                <div style="font-size:0.65rem; color:#10b981; font-weight:700; margin-top:3px;">
+                    <i class="fa-solid fa-check"></i> ${d.status === 'COMPLETED' ? 'Tamamlandı' : 'Canlı'}
+                </div>
+            </td>
+            <td>
+                <div style="font-size:1.1rem; font-weight:800; color:#fff;">${total}</div>
+            </td>
+            <td>
+                <div style="font-size:0.9rem; font-weight:800; color:#10b981;">%${tavanRate} Başarı</div>
+                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">${tavan}/${total} Hisse Tavana Ulaştı</div>
+            </td>
+            <td>
+                <div style="font-weight:800; font-size:0.9rem;" class="${dailyResultClass}">+${avgClose}%</div>
+                <div style="font-size:0.72rem; color:var(--accent-yellow); font-weight:600;">Zirve: +${avgMax}%</div>
+            </td>
+            <td>
+                <div style="font-weight:800; font-size:0.85rem; color:#38bdf8;">${starStock}</div>
+                <div style="font-size:0.72rem; color:#c084fc; font-weight:700; margin-top:2px;">${warrantCode} ${warrantGain}</div>
+            </td>
+            <td>
+                <button onclick="console.log('Detayları Ac clicked for ${d.date}'); openTavanAuditForDate('${d.date}')" class="btn-primary" style="background:rgba(239,68,68,0.25); color:#fca5a5; border:1px solid rgba(239,68,68,0.4); padding:4px 10px; font-size:0.8rem; font-weight:bold; border-radius:4px; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-folder-open"></i> Detayları Aç
+                </button>
+            </td>
+        `;
         tbody.appendChild(tr);
     });
 }
