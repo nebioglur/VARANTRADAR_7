@@ -2620,24 +2620,48 @@ function navigateCard(direction) {
 // 📱 MOBİL SWIPE / İLERİ-GERİ NAVİGASYON
 let touchStartX = 0;
 let touchEndX = 0;
+let swipeBlocked = false;
 
 document.addEventListener('touchstart', e => {
     touchStartX = e.changedTouches[0].screenX;
+    // Kaydırılabilir bir elemanın içindeysek swipe'ı engelle
+    swipeBlocked = false;
+    let el = e.target;
+    while (el && el !== document.body) {
+        if (el.scrollWidth > el.clientWidth + 5) {
+            swipeBlocked = true;
+            break;
+        }
+        // Tablo, modal, veya overflow:auto olan herhangi bir container
+        const style = window.getComputedStyle(el);
+        if (style.overflowX === 'auto' || style.overflowX === 'scroll') {
+            swipeBlocked = true;
+            break;
+        }
+        if (el.tagName === 'TABLE' || el.tagName === 'THEAD' || el.tagName === 'TBODY' || el.tagName === 'TD' || el.tagName === 'TH') {
+            swipeBlocked = true;
+            break;
+        }
+        if (el.id === 'tavan-audit-modal') {
+            swipeBlocked = true;
+            break;
+        }
+        el = el.parentElement;
+    }
 }, {passive: true});
 
 document.addEventListener('touchend', e => {
+    if (swipeBlocked) return;
     touchEndX = e.changedTouches[0].screenX;
     handleSwipe();
 }, {passive: true});
 
 function handleSwipe() {
-    const swipeThreshold = 50; // min distance
+    const swipeThreshold = 70; // Eşik değeri artırıldı (yanlış tetikleme azaltmak için)
     if (touchEndX < touchStartX - swipeThreshold) {
-        // Swiped left -> Next
         navigateSwipe(1);
     }
     if (touchEndX > touchStartX + swipeThreshold) {
-        // Swiped right -> Prev
         navigateSwipe(-1);
     }
 }
