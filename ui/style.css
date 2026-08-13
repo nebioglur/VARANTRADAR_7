@@ -805,7 +805,7 @@ body {
         -webkit-overflow-scrolling: touch;
         scroll-behavior: smooth;
         /* Touch olayını yalnızca yatay kaydırma olarak al */
-        touch-action: pan-x pan-y;
+        touch-action: pan-x pan-y pinch-zoom;
         /* Sağda daha fazla içerik olduğunu gösteren gölge efekti */
         background:
             linear-gradient(to right, var(--card-bg, #0f172a) 30%, transparent) left / 40px 100% no-repeat,
@@ -832,6 +832,20 @@ body {
         top: 0;
         z-index: 2;
         background: var(--card-bg, #0f172a);
+    }
+    
+    /* AKILLI KULLANIM: İlk sütun (Hisse adı) sağa kaydırırken sabit kalır! */
+    .data-table th:first-child,
+    .data-table td:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 3;
+        background: var(--card-bg, #0f172a);
+        box-shadow: 2px 0 5px rgba(0,0,0,0.2);
+        border-right: 1px solid rgba(255,255,255,0.05);
+    }
+    .data-table th:first-child {
+        z-index: 4; /* Hem üstte hem solda sabit olan hücre en üstte olmalı */
     }
     .data-table .btn, .btn-primary {
         padding: 0.35rem 0.55rem !important;
