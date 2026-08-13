@@ -148,7 +148,7 @@
                         <button onclick="openTavanAuditModal()" type="button" style="background:rgba(239,68,68,0.25); color:#fca5a5; border:1px solid rgba(239,68,68,0.5); border-radius:6px; padding:3px 9px; font-size:0.75rem; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:5px;" title="10:15 Sabah Adaylarının 18:10 Kapanış Tavan & +%5 İstatistik Tablosunu Aç"><i class="fa-solid fa-chart-pie"></i> 10:15 ➔ 18:10 Karnesi</button>
                     </div>
                     <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; margin-top:-0.5rem;">🛡️ Anti-Trap Kalkanı: VWAP Üzeri Kurumsal Alım Teyidi, ORB Açılış Kırılımı ve Sahte Fitil Koruması ile Yüksek Başarı.</p>
-                    <div style="max-height:380px; overflow-y:auto;">
+                    <div style="max-height:65vh; min-height:300px; overflow-y:auto;">
                     <table class="data-table" style="width: 100%;">
                         <thead><tr><th>Sembol</th><th>Fiyat</th><th>Evre & Kalkan</th><th>Tavan / Kalan</th><th>Hacim & VWAP</th><th>AI & Teyit</th><th style="width:60px;"></th></tr></thead>
                         <tbody id="tb-tavan-adaylari"><tr><td colspan="7" class="text-muted text-center">Taranıyor...</td></tr></tbody>
@@ -160,7 +160,7 @@
                 <div class="card" id="radar-card-1" style="padding:1rem; border:1px solid rgba(16, 185, 129, 0.5); box-shadow: 0 0 15px rgba(16,185,129,0.15);">
                     <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem; color:var(--accent-green);"><i class="fa-solid fa-clock"></i> 1 Saatlik Swing & Momentum <span id="time-opportunities-1h" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
                     <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; margin-top:-0.5rem;">Kısa-Orta Vade (1-5 Gün): EMA, MACD, RSI, ADX ve Momentum taraması.</p>
-                    <div style="max-height:350px; overflow-y:auto;">
+                    <div style="max-height:65vh; min-height:300px; overflow-y:auto;">
                     <table class="data-table" style="width: 100%;">
                         <thead><tr><th>Sembol</th><th>Fiyat</th><th>Şart (X/5)</th><th>Kısa Vade Sinyali</th><th style="width:60px;"></th></tr></thead>
                         <tbody id="tb-opportunities-1h"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
@@ -172,7 +172,7 @@
                 <div class="card" id="radar-card-stay-away" style="padding:1rem; border:1px solid rgba(239, 68, 68, 0.5); box-shadow: 0 0 15px rgba(239,68,68,0.15);">
                     <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem; color:var(--accent-red);"><i class="fa-solid fa-triangle-exclamation"></i> UZAK DUR HİSSELERİ! <span id="time-stay-away-1h" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
                     <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; margin-top:-0.5rem;">Sert düşüş sinyali: 1 saatlikte EMA, MACD, RSI ve Momentum SAT veriyor.</p>
-                    <div style="max-height:350px; overflow-y:auto;">
+                    <div style="max-height:65vh; min-height:300px; overflow-y:auto;">
                     <table class="data-table" style="width: 100%;">
                         <thead><tr><th>Sembol</th><th>Fiyat</th><th>Şart (X/5)</th><th>Düşüş Sinyali</th><th style="width:60px;"></th></tr></thead>
                         <tbody id="tb-stay-away-1h"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
@@ -184,7 +184,7 @@
                 <div class="card" id="radar-card-2" style="padding:1rem; border:1px solid rgba(59, 130, 246, 0.5); box-shadow: 0 0 15px rgba(59,130,246,0.15);">
                     <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem; color:var(--accent-blue);"><i class="fa-solid fa-bolt"></i> 5 Dakikalık Hızlı Scalp (RSI) <span id="time-signals-5m" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
                     <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; margin-top:-0.5rem;">Gün İçi / Anlık Al-Sat (15-60 Dk): BIST50'de RSI aşırı satım/alım dönüşleri.</p>
-                    <div style="max-height:350px; overflow-y:auto;">
+                    <div style="max-height:65vh; min-height:300px; overflow-y:auto;">
                     <table class="data-table" style="width: 100%;">
                         <thead><tr><th>Sembol</th><th>Fiyat</th><th>RSI</th><th>Anlık Scalp</th><th style="width:60px;"></th></tr></thead>
                         <tbody id="tb-signals-5m"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
@@ -195,7 +195,7 @@
                 <!-- Fırsatlar (Günlük) -->
                 <div class="card" id="radar-card-3" style="padding:1rem;">
                     <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem;"><i class="fa-solid fa-bolt text-yellow"></i> Fırsatlar (Günlük) <span id="time-opportunities" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
-                    <div style="max-height:350px; overflow-y:auto;">
+                    <div style="max-height:65vh; min-height:300px; overflow-y:auto;">
                     <table class="data-table" style="width: 100%;">
                         <thead><tr><th>Sembol</th><th>Fiyat</th><th>Skor</th><th>Durum</th><th style="width:60px;"></th></tr></thead>
                         <tbody id="tb-opportunities"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
@@ -206,7 +206,7 @@
                 <!-- Yükselenler -->
                 <div class="card" id="radar-card-4" style="padding:1rem;">
                     <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem;"><i class="fa-solid fa-arrow-trend-up text-green"></i> Yükselenler <span id="time-gainers" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
-                    <div style="max-height:350px; overflow-y:auto;">
+                    <div style="max-height:65vh; min-height:300px; overflow-y:auto;">
                     <table class="data-table" style="width: 100%;">
                         <thead><tr><th>Sembol</th><th>Fiyat</th><th>Skor</th><th>Değişim</th><th style="width:60px;"></th></tr></thead>
                         <tbody id="tb-gainers"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
@@ -217,7 +217,7 @@
                 <!-- Düşenler -->
                 <div class="card" id="radar-card-5" style="padding:1rem;">
                     <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem;"><i class="fa-solid fa-arrow-trend-down text-red"></i> Düşenler <span id="time-losers" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
-                    <div style="max-height:350px; overflow-y:auto;">
+                    <div style="max-height:65vh; min-height:300px; overflow-y:auto;">
                     <table class="data-table" style="width: 100%;">
                         <thead><tr><th>Sembol</th><th>Fiyat</th><th>Skor</th><th>Değişim</th><th style="width:60px;"></th></tr></thead>
                         <tbody id="tb-losers"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
@@ -228,7 +228,7 @@
                 <!-- YZ Favorileri -->
                 <div class="card" style="padding:1rem;">
                     <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem;"><i class="fa-solid fa-star text-blue"></i> YZ Favorileri <span id="time-favorites" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
-                    <div style="max-height:350px; overflow-y:auto;">
+                    <div style="max-height:65vh; min-height:300px; overflow-y:auto;">
                     <table class="data-table" style="width: 100%;">
                         <thead><tr><th>Sembol</th><th>Fiyat</th><th>Skor</th><th>Durum</th><th style="width:60px;"></th></tr></thead>
                         <tbody id="tb-favorites"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
@@ -239,7 +239,7 @@
                 <!-- Hacimli -->
                 <div class="card" style="padding:1rem;">
                     <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem;"><i class="fa-solid fa-water text-blue"></i> Kurumsal / Hacimli <span id="time-high_volume" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
-                    <div style="max-height:350px; overflow-y:auto;">
+                    <div style="max-height:65vh; min-height:300px; overflow-y:auto;">
                     <table class="data-table" style="width: 100%;">
                         <thead><tr><th>Sembol</th><th>Fiyat</th><th>Skor</th><th>Hacim</th><th style="width:60px;"></th></tr></thead>
                         <tbody id="tb-high_volume"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
@@ -250,7 +250,7 @@
                 <!-- Sığ -->
                 <div class="card" style="padding:1rem;">
                     <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem;"><i class="fa-solid fa-droplet-slash text-yellow"></i> Sığ Hisseler <span id="time-low_volume" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
-                    <div style="max-height:350px; overflow-y:auto;">
+                    <div style="max-height:65vh; min-height:300px; overflow-y:auto;">
                     <table class="data-table" style="width: 100%;">
                         <thead><tr><th>Sembol</th><th>Fiyat</th><th>Skor</th><th>Hacim</th><th style="width:60px;"></th></tr></thead>
                         <tbody id="tb-low_volume"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
@@ -260,13 +260,15 @@
             </div>
 
             <!-- Right Side: Live Autonomous AI Committee Macro & Sector Engine -->
-            <div class="card" style="border:1px solid rgba(139, 92, 246, 0.4); background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(15,23,42,0.95) 100%); box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem;">
-                    <h3 class="card-title" style="margin:0; font-size:1.05rem; color:var(--accent-purple);"><i class="fa-solid fa-users-viewfinder text-purple"></i> Otonom Komite: Piyasa Trend Liderleri & Rejim Stratejisi</h3>
-                    <span class="badge" style="background:rgba(139, 92, 246, 0.2); color:#c084fc; font-weight:700; border:1px solid rgba(139, 92, 246, 0.4); padding:3px 8px; border-radius:12px; font-size:0.75rem;">Canlı Konsensüs</span>
-                </div>
+            <details class="card" style="grid-column: 1 / -1; border:1px solid rgba(139, 92, 246, 0.4); background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(15,23,42,0.95) 100%); box-shadow: 0 4px 20px rgba(0,0,0,0.3); cursor: pointer;">
+                <summary style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0; outline:none; list-style:none;">
+                    <h3 class="card-title" style="margin:0; font-size:1.05rem; color:var(--accent-purple); display:flex; align-items:center; gap:8px;">
+                        <i class="fa-solid fa-users-viewfinder text-purple"></i> Otonom Komite: Piyasa Trend Liderleri & Rejim Stratejisi <i class="fa-solid fa-chevron-down" style="font-size:0.8rem; opacity:0.7;"></i>
+                    </h3>
+                    <span class="badge" style="background:rgba(139, 92, 246, 0.2); color:#c084fc; font-weight:700; border:1px solid rgba(139, 92, 246, 0.4); padding:3px 8px; border-radius:12px; font-size:0.75rem;">Detaylar</span>
+                </summary>
                 
-                <div id="home-committee-summary" style="display:flex; flex-direction:column; gap:0.8rem; margin-top:0.5rem;">
+                <div id="home-committee-summary" style="display:flex; flex-direction:column; gap:0.8rem; margin-top:1rem; cursor:default;">
                     <!-- 1. Canlı Rejim ve Sektörel Rotasyon -->
                     <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:8px; padding:0.8rem;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
@@ -305,7 +307,7 @@
                         </button>
                     </div>
                 </div>
-            </div>
+            </details>
         </div>
     </div>
     </div> <!-- END HOME WRAPPER -->
