@@ -123,7 +123,10 @@ class UniversalScanner:
                 all_symbols_stats[sym] = {
                     "Daily_EMA50": r["Daily_EMA50"],
                     "Daily_EMA200": r["Daily_EMA200"],
-                    "Daily_Close": r["Daily_Close"]
+                    "Daily_Close": r["Daily_Close"],
+                    "Price": r.get("Price"),
+                    "High": r.get("High"),
+                    "Low": r.get("Low")
                 }
                 
         print("[SCANNER] Bulk analiz tamamlandı ve kategorize edildi.")
@@ -175,6 +178,8 @@ class UniversalScanner:
         tech_result["Volume"] = volume_today
         tech_result["Money_Volume"] = money_volume
         tech_result["Price"] = round(close_today, 2)
+        tech_result["High"] = round(float(df['high'].iloc[-1]), 2)
+        tech_result["Low"] = round(float(df['low'].iloc[-1]), 2)
         
         return tech_result
 
