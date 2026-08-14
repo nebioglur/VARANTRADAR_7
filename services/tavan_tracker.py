@@ -415,15 +415,39 @@ class TavanAuditTracker:
             if d_total == 0:
                 continue
 
-            d_tavan = sum(1 for it in items if it.get("hit_ceiling"))
-            d_plus5 = sum(1 for it in items if it.get("hit_plus5"))
-            total_morning_price = sum(it.get("morning_price", 0.0) for it in items)
-            total_closing_price = sum(it.get("closing_price", it.get("morning_price", 0.0)) for it in items)
-            total_max_price = sum(it.get("daily_high", it.get("morning_price", 0.0)) for it in items)
+            # 1. Her hisse için % getiri hesapla (Eğer closing_gain_pct json'da 0 ise fiyatlardan hesapla)
+            d_tavan = 0
+            d_plus5 = 0
+            sum_close_pct = 0.0
+            sum_max_pct = 0.0
+            
+            for it in items:
+                m_price = it.get("morning_price", 0.0)
+                c_price = it.get("closing_price", m_price)
+                h_price = it.get("daily_high", m_price)
+                
+                if m_price > 0:
+                    # Kullanıcının tam istediği matematik: Kapanış % - Öneri Saati %
+                    # Bu matematiksel olarak (Kapanış Fiyatı - Öneri Fiyatı) / Önceki Kapanış * 100 ile aynıdır.
+                    # Önceki Kapanışı (p_close), tavan hedefini (ceiling_target) 1.10'a bölerek buluyoruz.
+                    c_target = it.get("ceiling_target", m_price * 1.10)
+                    p_close = c_target / 1.10 if c_target > 0 else m_price
+                    
+                    c_pct = ((c_price - m_price) / p_close) * 100
+                    m_pct = ((h_price - m_price) / p_close) * 100
+                else:
+                    c_pct = 0.0
+                    m_pct = 0.0
+                    
+                sum_close_pct += c_pct
+                sum_max_pct += m_pct
+                
+                if it.get("hit_ceiling"): d_tavan += 1
+                if it.get("hit_plus5"): d_plus5 += 1
 
-            if total_morning_price > 0:
-                d_close_gain = ((total_closing_price - total_morning_price) / total_morning_price) * 100
-                d_max_gain = ((total_max_price - total_morning_price) / total_morning_price) * 100
+            if d_total > 0:
+                d_close_gain = sum_close_pct / d_total
+                d_max_gain = sum_max_pct / d_total
             else:
                 d_close_gain = 0.0
                 d_max_gain = 0.0
