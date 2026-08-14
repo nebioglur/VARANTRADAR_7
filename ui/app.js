@@ -1907,7 +1907,7 @@ function renderAllDashboardTables() {
                 let domEl = `<span style="color:${domColor}; font-weight:700; font-size:0.75rem;"><i class="fa-solid ${domIcon}"></i> ${domStr}</span>`;
 
                 // 6. Patlama Olasılığı (P-Score)
-                let pScore = res.P_Score !== undefined ? res.P_Score : 0;
+                let pScore = res.Score !== undefined ? res.Score : 0;
                 let pScoreColor = pScore >= 80 ? 'var(--accent-green)' : (pScore >= 50 ? 'var(--accent-yellow)' : 'var(--accent-red)');
                 let pScoreStr = `
                     <div style="width:100%; max-width:80px; background:rgba(255,255,255,0.1); border-radius:4px; overflow:hidden; margin-bottom:4px;">
@@ -3195,7 +3195,9 @@ async function fetchSimulationData() {
             if (equityCurve.length > 0) {
                 startBakiye = equityCurve[0].start_equity;
                 endBakiye = equityCurve[equityCurve.length - 1].end_equity;
-                totalGetiri = ((endBakiye - startBakiye) / startBakiye) * 100;
+                if (startBakiye > 0) {
+                    totalGetiri = ((endBakiye - startBakiye) / startBakiye) * 100;
+                }
             }
             
             const isProfit = totalGetiri >= 0;

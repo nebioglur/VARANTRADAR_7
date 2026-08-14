@@ -241,15 +241,15 @@ def background_scanner():
                                                 sent_today = True
                                                 
                                     if not sent_today:
-                                        import sqlite3
-                                        from contextlib import closing
+                                        from services.trade_database import get_connection
                                         trades = []
-                                        with closing(sqlite3.connect("data/varantradar.db")) as conn:
-                                            c = conn.cursor()
-                                            c.execute("SELECT trade_data FROM sim_trades WHERE date_str=?", (d_str,))
-                                            row = c.fetchone()
-                                            if row:
-                                                trades = json.loads(row[0])
+                                        try:
+                                            with get_connection() as conn:
+                                                c = conn.cursor()
+                                                c.execute("SELECT * FROM trades WHERE date_str=?", (d_str,))
+                                                trades = [dict(row) for row in c.fetchall()]
+                                        except Exception as db_err:
+                                            print(f"[SIM DB HATA] {db_err}")
                                         if trades:
                                             total_pnl = sum([t.get('pnl_val', 0) for t in trades])
                                             total_invested = sum([(t.get('shares',0) * t.get('entry_price',0)) for t in trades])

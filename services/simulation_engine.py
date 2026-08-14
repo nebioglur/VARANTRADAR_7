@@ -159,7 +159,10 @@ class SimulationEngine:
                 sub_df = df.loc[:current_time]
                 row = df.loc[current_time]
                 
-                elapsed_mins = (current_time - pd.to_datetime(trade['entry_time'])).total_seconds() / 60.0
+                dt_current = current_time.tz_localize(None) if current_time.tzinfo else current_time
+                dt_entry = pd.to_datetime(trade['entry_time'])
+                dt_entry = dt_entry.tz_localize(None) if dt_entry.tzinfo else dt_entry
+                elapsed_mins = (dt_current - dt_entry).total_seconds() / 60.0
                 high = float(row['High'])
                 low = float(row['Low'])
                 close = float(row['Close'])
