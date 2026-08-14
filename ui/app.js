@@ -1881,46 +1881,47 @@ function renderAllDashboardTables() {
             let statusStr = "";
             let scoreContent = "";
             if (cat === 'arge_tavan') {
-                let scoreValue = res.Score !== undefined ? res.Score : 0;
-                let phaseBadge = res.Phase_Badge || 'TAVAN';
-                let phaseColor = res.Phase_Color || 'green';
-                let phaseBg = phaseColor === 'red' ? 'rgba(239, 68, 68, 0.2)' : (phaseColor === 'yellow' ? 'rgba(234, 179, 8, 0.2)' : 'rgba(16, 185, 129, 0.2)');
-                let phaseTxtColor = phaseColor === 'red' ? 'var(--accent-red)' : (phaseColor === 'yellow' ? 'var(--accent-yellow)' : 'var(--accent-green)');
-                let phaseIcon = phaseColor === 'red' ? 'fa-lock' : (phaseColor === 'yellow' ? 'fa-bolt' : 'fa-seedling');
-                let evreStr = `<span style="background:${phaseBg}; color:${phaseTxtColor}; padding:3px 7px; border-radius:4px; font-weight:700; font-size:0.72rem; white-space:nowrap;"><i class="fa-solid ${phaseIcon}"></i> ${phaseBadge}</span>`;
+                // 1. Aday Hisse & Fiyat
                 
-                if (res.Momentum_Accel) {
-                    evreStr += `<div style="margin-top:4px;"><span style="background:rgba(239,68,68,0.15); color:var(--accent-red); padding:2px 5px; border-radius:3px; font-size:0.65rem; font-weight:800; border:1px solid rgba(239,68,68,0.3);"><i class="fa-solid fa-rocket fa-bounce"></i> İvme Yüksek</span></div>`;
-                }
+                // 2. Alpha (BIST Ayrışma)
+                let alphaStr = res.Alpha_Str || "Hesaplanıyor";
+                let alphaColor = alphaStr.includes("Pozitif") ? "var(--accent-green)" : (alphaStr.includes("Negatif") ? "var(--accent-red)" : "var(--accent-yellow)");
+                let alphaIcon = alphaStr.includes("Pozitif") ? "fa-arrow-trend-up" : (alphaStr.includes("Negatif") ? "fa-arrow-trend-down" : "fa-minus");
+                let alphaEl = `<span style="color:${alphaColor}; font-weight:800; font-size:0.8rem;"><i class="fa-solid ${alphaIcon}"></i> ${alphaStr}</span>`;
                 
-                let volM = res.Vol_Multiplier !== undefined ? parseFloat(res.Vol_Multiplier).toFixed(1) : "1.0";
-                let volColor = volM >= 2.5 ? 'var(--accent-green)' : (volM >= 1.5 ? 'var(--accent-yellow)' : 'var(--text-muted)');
-                let hacimStr = `<span style="color:${volColor}; font-weight:700; font-size:0.85rem;"><i class="fa-solid fa-fire"></i> ${volM}x</span>`;
+                // 3. Squeeze (Şort)
+                let sqzStr = res.Short_Squeeze || "Hesaplanıyor";
+                let sqzColor = sqzStr.includes("Patlatma") ? "var(--accent-red)" : (sqzStr.includes("Yükseliyor") ? "var(--accent-yellow)" : "var(--text-muted)");
+                let sqzIcon = sqzStr.includes("Patlatma") ? "fa-fire fa-beat" : (sqzStr.includes("Yükseliyor") ? "fa-arrow-up" : "fa-minus");
+                let sqzEl = `<span style="color:${sqzColor}; font-weight:800; font-size:0.8rem;"><i class="fa-solid ${sqzIcon}"></i> ${sqzStr}</span>`;
+
+                // 4. Akıllı Para (CMF)
+                let smStr = res.Smart_Money || "Hesaplanıyor";
+                let smColor = smStr.includes("Giriş") || smStr.includes("Akümülasyon") ? "var(--accent-green)" : (smStr.includes("Çıkış") || smStr.includes("Dağıtım") ? "var(--accent-red)" : "var(--accent-yellow)");
+                let smEl = `<span style="color:${smColor}; font-weight:800; font-size:0.8rem;">${smStr}</span>`;
                 
-                let sqzPct = res.Squeeze_Pct !== undefined ? parseFloat(res.Squeeze_Pct).toFixed(1) : "0.0";
-                let sqzColor = sqzPct <= 2.5 ? 'var(--accent-purple)' : (sqzPct <= 5.0 ? 'var(--accent-blue)' : 'var(--text-muted)');
-                let sqzStr = `<span style="color:${sqzColor}; font-weight:700; font-size:0.85rem;"><i class="fa-solid fa-compress"></i> %${sqzPct}</span>`;
-                
+                // 5. Domino Etkisi
+                let domStr = res.Domino_Str || "Yok";
+                let domColor = domStr !== "Yok" ? "var(--accent-blue)" : "var(--text-muted)";
+                let domIcon = domStr !== "Yok" ? "fa-chess-knight" : "fa-ban";
+                let domEl = `<span style="color:${domColor}; font-weight:700; font-size:0.75rem;"><i class="fa-solid ${domIcon}"></i> ${domStr}</span>`;
+
+                // 6. Patlama Olasılığı (P-Score)
                 let pScore = res.P_Score !== undefined ? res.P_Score : 0;
                 let pScoreColor = pScore >= 80 ? 'var(--accent-green)' : (pScore >= 50 ? 'var(--accent-yellow)' : 'var(--accent-red)');
                 let pScoreStr = `
                     <div style="width:100%; max-width:80px; background:rgba(255,255,255,0.1); border-radius:4px; overflow:hidden; margin-bottom:4px;">
                         <div style="height:6px; background:${pScoreColor}; width:${pScore}%"></div>
                     </div>
-                    <span style="color:${pScoreColor}; font-weight:800; font-size:0.85rem;">%${pScore} Olasılık</span>
+                    <span style="color:${pScoreColor}; font-weight:800; font-size:0.85rem;">%${pScore}</span>
                 `;
-                
-                let fpStr = res.Footprint || "Hesaplanıyor";
-                let fpColor = res.Footprint_Color === 'green' ? 'var(--accent-green)' : (res.Footprint_Color === 'red' ? 'var(--accent-red)' : 'var(--accent-yellow)');
-                let fpIcon = res.Footprint_Color === 'green' ? 'fa-arrow-trend-up' : (res.Footprint_Color === 'red' ? 'fa-arrow-trend-down' : 'fa-minus');
-                let footprintEl = `<span style="color:${fpColor}; font-weight:700; font-size:0.75rem;"><i class="fa-solid ${fpIcon}"></i> ${fpStr}</span>`;
                 
                 tr.innerHTML = `
                     <td style="color:var(--accent-purple);font-weight:700; font-size:1rem;">${symStr} <span style="font-size:0.7rem; color:var(--text-muted);">${priceStr}</span></td>
-                    <td>${evreStr} <div style="font-size:0.7rem; margin-top:2px; font-weight:bold;">${scoreValue}/100</div></td>
-                    <td>${hacimStr}</td>
-                    <td>${sqzStr}</td>
-                    <td>${footprintEl}</td>
+                    <td>${alphaEl}</td>
+                    <td>${sqzEl}</td>
+                    <td>${smEl}</td>
+                    <td>${domEl}</td>
                     <td>${pScoreStr}</td>
                     <td>
                         <button class="btn btn-sm" onclick="openGraphicTab('${res.Symbol}')" title="Detaylı Analiz"><i class="fa-solid fa-chart-line"></i></button>

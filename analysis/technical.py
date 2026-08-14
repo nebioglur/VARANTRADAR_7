@@ -999,7 +999,59 @@ class TechnicalEngine(BaseEngine):
             if change_1 > change_2 and change_1 > 0 and change_2 > 0:
                 momentum_accel = True
         
+        # ==========================================
+        # 👑 AR-GE EKSTRALAR (Faz 3)
+        # ==========================================
+        # 1. Alpha Gücü (Göreceli BIST Ayrışması Proxy)
+        # EMA21'den sapma * hacim şiddeti * CMF
+        c_ema21 = float(ema21.iloc[-1])
+        alpha_val = ((current_price - c_ema21) / c_ema21) * 100 * vol_multiplier
+        if alpha_val > 15:
+            alpha_str = f"Pozitif (+%{round(alpha_val,1)})"
+        elif alpha_val < 0:
+            alpha_str = f"Negatif (%{round(alpha_val,1)})"
+        else:
+            alpha_str = f"Nötr (+%{round(alpha_val,1)})"
+
+        # 2. Şort Sıkıştırması (Squeeze Riski)
+        # ADX Hesaplama
+        up = high.diff()
+        down = low.shift(1) - low
+        plus_dm = pd.Series(np.where((up > down) & (up > 0), up, 0.0), index=df.index)
+        minus_dm = pd.Series(np.where((down > up) & (down > 0), down, 0.0), index=df.index)
+        tr1 = high - low
+        tr2 = (high - close.shift(1)).abs()
+        tr3 = (low - close.shift(1)).abs()
+        tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+        atr = tr.ewm(alpha=1/14, adjust=False).mean()
+        plus_di = 100 * (plus_dm.ewm(alpha=1/14, adjust=False).mean() / atr)
+        minus_di = 100 * (minus_dm.ewm(alpha=1/14, adjust=False).mean() / atr)
+        dx = 100 * (plus_di - minus_di).abs() / (plus_di + minus_di).replace(0, np.nan)
+        adx = dx.ewm(alpha=1/14, adjust=False).mean()
+        current_adx = float(adx.iloc[-1])
         
+        short_squeeze = "Yok"
+        if current_adx > 30 and current_rsi > 70 and squeeze_pct < 4.0:
+            short_squeeze = "🔥 Patlatma Yakın"
+        elif current_adx > 25 and current_rsi > 65:
+            short_squeeze = "Yükseliyor"
+            
+        # 3. Akıllı Para (Smart Money CMF)
+        smart_money = "Nötr Para"
+        if current_cmf > 0.15:
+            smart_money = "🟢 Güçlü Giriş"
+        elif current_cmf > 0.05:
+            smart_money = "🟢 Akümülasyon"
+        elif current_cmf < -0.1:
+            smart_money = "🔴 Sert Çıkış"
+        elif current_cmf < 0:
+            smart_money = "🔴 Dağıtım"
+            
+        # 4. Domino Etkisi
+        domino_str = "Yok"
+        if domino_peers and len(domino_peers) > 0:
+            domino_str = f"#{', #'.join(domino_peers[:2])}"
+            
         
         return {
             "Symbol": symbol,
@@ -1019,12 +1071,13 @@ class TechnicalEngine(BaseEngine):
             "ORB_Breakout": orb_breakout,
             "VWAP": round(current_vwap, 2),
             "V_Reversal": v_reversal,
-            "V_Power": v_power,
-            "ETA": eta_str,
+            "V_Power": round(v_power, 1),
+            "ETA": eta,
             "Breakdown_Risk": breakdown_risk,
             "Breakdown_Warning": breakdown_warning,
             "Domino_Sector": domino_sector,
             "Domino_Peers": domino_peers,
+            "Domino_Str": domino_str,
             "Warrant_Match": warrant_match,
             "Streak_Score": streak_score,
             "Streak_Potential": streak_potential,
@@ -1033,6 +1086,10 @@ class TechnicalEngine(BaseEngine):
             "Footprint": footprint,
             "Footprint_Color": footprint_color,
             "Momentum_Accel": momentum_accel,
+            "Alpha_Str": alpha_str,
+            "Alpha_Val": round(alpha_val, 2),
+            "Short_Squeeze": short_squeeze,
+            "Smart_Money": smart_money,
             "Score": score,
             "Report": report,
             "Position": position
