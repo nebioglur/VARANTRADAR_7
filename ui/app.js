@@ -1722,6 +1722,14 @@ async function fetchDashboardData() {
         if (data && data.status === 'success') {
             setElText('total-analyzed-counter', `RADAR BUGÜNE KADAR ${data.total_analyzed || 0} VERİYİ ANALİZ ETTİ`);
             
+            // Son tarama saatini ekranda göster
+            const lastUpdated = data.last_updated || "Bilinmiyor";
+            const timeHTML = `<i class="fa-solid fa-clock"></i> Son Tarama: ${lastUpdated}`;
+            const timeEl1 = document.getElementById('last-scan-time');
+            if (timeEl1) timeEl1.innerHTML = timeHTML;
+            const timeEl2 = document.getElementById('arge-last-scan');
+            if (timeEl2) timeEl2.innerHTML = timeHTML;
+            
             console.log('[DASHBOARD] API cevabı geldi. Keys:', Object.keys(data.dashboard_data || {}), 
                 'opp1h:', (data.dashboard_data?.opportunities_1h || []).length,
                 'opp:', (data.dashboard_data?.opportunities || []).length);

@@ -415,10 +415,18 @@ def api_dashboard_init():
                         seen.add(item['Symbol'])
         total = len(seen)
     
+    last_updated = "Bilinmiyor"
+    import os
+    from datetime import datetime
+    if os.path.exists("data/dashboard_cache.json"):
+        mtime = os.path.getmtime("data/dashboard_cache.json")
+        last_updated = datetime.fromtimestamp(mtime).strftime("%H:%M")
+        
     return jsonify({
         "status": "success",
         "total_analyzed": total,
-        "dashboard_data": clean_cache or {}
+        "dashboard_data": clean_cache or {},
+        "last_updated": last_updated
     })
 
 @app.route('/api/pool_info', methods=['GET'])

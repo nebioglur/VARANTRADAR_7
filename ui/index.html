@@ -85,7 +85,10 @@
             </div>
 
             <div style="grid-column: 1 / -1; margin-bottom: 0.8rem; text-align: center;">
-                <span style="font-size: 1rem; font-weight: bold; color: var(--accent-green); background: rgba(34,197,94,0.1); padding:0.4rem 0.9rem; border-radius:20px; border:1px solid rgba(34,197,94,0.3);" id="total-analyzed-counter">RADAR BUGÜNE KADAR 0 VERİYİ ANALİZ ETTİ</span>
+                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
+                    <span style="font-size: 1rem; font-weight: bold; color: var(--accent-green); background: rgba(34,197,94,0.1); padding:0.4rem 0.9rem; border-radius:20px; border:1px solid rgba(34,197,94,0.3);" id="total-analyzed-counter">RADAR BUGÜNE KADAR 0 VERİYİ ANALİZ ETTİ</span>
+                    <span style="font-size: 0.85rem; color: var(--text-muted);" id="last-scan-time"><i class="fa-solid fa-clock"></i> Son Tarama: Bekleniyor...</span>
+                </div>
             </div>
             
             <!-- 📱 MOBİL VE HIZLI GEÇİŞ KONTROLLERİ (GERİ / İLERİ TUŞLARI) -->
@@ -182,7 +185,7 @@
                 
                 <!-- 🧪 AR-GE: Saf Madde (Zenginleştirilmiş Arıtma) -->
                 <div class="card" id="radar-card-2" style="padding:1rem; border:1px solid rgba(139, 92, 246, 0.6); box-shadow: 0 0 20px rgba(139, 92, 246, 0.2); background: linear-gradient(180deg, rgba(139,92,246,0.05) 0%, transparent 100%);">
-                    <h3 class="card-title" style="font-size:1.1rem; margin-bottom:0.8rem; color:var(--accent-purple); text-shadow: 0 0 10px rgba(139, 92, 246, 0.5);"><i class="fa-solid fa-flask-vial"></i> AR-GE Laboratuvarı <span style="font-size:0.75rem; color:var(--text-muted);">| Saf Madde Üretimi</span></h3>
+                    <h3 class="card-title" style="font-size:1.1rem; margin-bottom:0.8rem; color:var(--accent-purple); text-shadow: 0 0 10px rgba(139, 92, 246, 0.5);"><i class="fa-solid fa-flask-vial"></i> AR-GE Laboratuvarı <span style="font-size:0.75rem; color:var(--text-muted);">| Saf Madde Üretimi</span> <span id="arge-last-scan" style="float:right; font-size:0.8rem; color:var(--text-muted); font-weight:normal; text-shadow:none;"><i class="fa-solid fa-clock"></i> Son Tarama: Bekleniyor...</span></h3>
                     <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; margin-top:-0.5rem;">Tavan Radar adaylarının patlama olasılığını, hacim şiddetini ve fiyat sıkışmasını ölçen <b>Zenginleştirilmiş Arıtma</b> analizleri.</p>
                     <div class="table-scroll-wrapper" style="max-height:65vh; min-height:300px; overflow-y:auto;">
                     <table class="data-table" style="width: 100%;">
