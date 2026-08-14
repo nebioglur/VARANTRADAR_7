@@ -748,6 +748,60 @@ def api_tavan_history():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+
+@app.route('/api/simulation/live_orders', methods=['GET'])
+def api_simulation_live_orders():
+    try:
+        from services.market_data import MarketDataManager
+        import datetime
+        # Canlı sistemde bugün olması lazım, ama simülasyon testinde en son gün
+        date_str = request.args.get('date', '2026-08-13') 
+        signals = MarketDataManager.get_signals(date_str)
+        
+        valid_signals = []
+        for s in signals:
+            score = float(s.get('score', 0))
+            phase = str(s.get('morning_phase', ''))
+            if score >= 80 and "YATAY" not in phase and "NEGATİF" not in phase and "UZAK DUR" not in phase:
+                valid_signals.append(s)
+                
+        orders = []
+        ideal_allocation = 3333.0 # Çelik kural: Sabit 100 TL risk, %3 stop = 3333 TL alım
+        
+        for s in valid_signals:
+            morning_price = float(s.get('morning_price', 0))
+            if morning_price <= 0: continue
+            
+            entry_price = morning_price * 1.0015 # %0.15 slipaj payı ile tahmini giriş
+            shares = int(ideal_allocation // entry_price)
+            if shares <= 0: continue
+            
+            ceiling = float(s.get('ceiling_target', entry_price * 1.10))
+            
+            stop_price = entry_price * 0.97
+            tp1_price = entry_price * 1.05
+            tp2_price = ceiling
+            
+            orders.append({
+                'symbol': s['symbol'],
+                'score': s['score'],
+                'entry_price': round(entry_price, 2),
+                'shares': shares,
+                'total_volume': round(shares * entry_price, 2),
+                'stop_price': round(stop_price, 2),
+                'max_loss': round(shares * (entry_price - stop_price), 2),
+                'tp1_price': round(tp1_price, 2),
+                'tp2_price': round(tp2_price, 2)
+            })
+            
+        return jsonify({
+            "status": "success",
+            "date": date_str,
+            "orders": sorted(orders, key=lambda x: x['score'], reverse=True)
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 @app.route('/api/simulation/daily_pnl', methods=['GET'])
 def api_simulation_daily_pnl():
     try:

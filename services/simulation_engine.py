@@ -87,10 +87,8 @@ class SimulationEngine:
     def run_daily_simulation(self, date_str: str):
         signals = MarketDataManager.get_signals(date_str)
         if not signals:
-            print(f"[SimEngine] {date_str} için sinyal yok.")
             return
 
-        # Sadece Skoru >= 80 ve Uptrend olanları al
         valid_signals = []
         for s in signals:
             score = float(s['score'])
@@ -98,71 +96,55 @@ class SimulationEngine:
             if score >= 80 and "YATAY" not in phase and "NEGATİF" not in phase and "UZAK DUR" not in phase:
                 valid_signals.append(s)
                 
-        # En iyi 15
-        selected = valid_signals[:self.max_positions]
+        selected = valid_signals
         if not selected:
             return
             
-        # Para yönetimi
-        total_score = sum(s['score'] for s in selected)
-        if total_score == 0: total_score = 1
+        current_cash = self.daily_budget
+        # Çelik Sistem: İşlem başına max zarar 100 TL. Stop = %3. 
+        # İdeal Sermaye = 100 / 0.03 = 3333 TL.
+        ideal_allocation = 3333.0 
         
         active_trades = []
-        # Tüm DF leri çek ve hazırla
+        completed_trades = []
+        stopped_out_symbols = set()
+        
+        pending_signals = []
         dfs = {}
+        all_times = set()
+        
         for s in selected:
             sym = s['symbol']
             df = MarketDataManager.get_market_data(date_str, sym)
             if not df.empty:
                 dfs[sym] = df
-                allocation = self.daily_budget * (s['score'] / total_score)
-                entry_price = s['morning_price']
-                if entry_price > 0:
-                    shares = int(allocation // entry_price)
-                    if shares > 0:
-                        active_trades.append({
-                            'symbol': sym,
-                            'entry_time': f"{date_str} 10:15:00",
-                            'entry_price': entry_price,
-                            'ceiling_target': s['ceiling_target'],
-                            'shares': shares,
-                            'status': 'OPEN'
-                        })
-
-        if not active_trades:
-            return
-            
-        # Tüm günün eşsiz zaman damgalarını bul
-        all_times = set()
-        for df in dfs.values():
-            for t in df.index:
-                all_times.add(t)
+                for t in df.index:
+                    all_times.add(t)
+                
+                phase = str(s.get('morning_phase', ''))
+                import re
+                match = re.search(r'(\d{2}:\d{2})', phase)
+                time_str = match.group(1) + ":00" if match else "10:15:00"
+                
+                s['time_str'] = time_str
+                pending_signals.append(s)
                 
         sorted_times = sorted(list(all_times))
         
-        # Simülasyon Döngüsü (Zaman Ekseninde İlerle)
-        completed_trades = []
-        
         for current_time in sorted_times:
-            # Sadece 10:15 sonrasını değerlendir
-            if current_time.time() < time(10, 15):
-                continue
-                
+            # 1. SATIŞLARI KONTROL ET (Zincir Emirler - OCO)
             for trade in [t for t in active_trades if t['status'] == 'OPEN']:
                 sym = trade['symbol']
                 df = dfs[sym]
                 
-                # Bu hisse o anki zamanda veriye sahip mi?
-                if current_time not in df.index:
-                    continue
-                    
-                sub_df = df.loc[:current_time]
-                row = df.loc[current_time]
+                if current_time not in df.index: continue
                 
                 dt_current = current_time.tz_localize(None) if current_time.tzinfo else current_time
                 dt_entry = pd.to_datetime(trade['entry_time'])
                 dt_entry = dt_entry.tz_localize(None) if dt_entry.tzinfo else dt_entry
-                elapsed_mins = (dt_current - dt_entry).total_seconds() / 60.0
+                if dt_current < dt_entry: continue
+                
+                row = df.loc[current_time]
                 high = float(row['High'])
                 low = float(row['Low'])
                 close = float(row['Close'])
@@ -170,58 +152,179 @@ class SimulationEngine:
                 sell_price = None
                 reason = ""
                 
-                # Kural 1: Hard Stop Loss (-2%)
-                if low <= trade['entry_price'] * 0.98:
-                    sell_price = trade['entry_price'] * 0.98
-                    reason = "🛡️ ZARAR KES (-2%)"
-                    
-                # Kural 2: Take Profit (Tavan)
-                elif high >= trade['ceiling_target']:
-                    sell_price = trade['ceiling_target']
-                    reason = "🚀 TAVAN (MAKS KÂR)"
-                    
-                # Kural 3: Minimum 30 dk şartını geçtikten sonra Trend Kesişimi veya Max Time
-                elif elapsed_mins >= 30:
-                    if elapsed_mins >= 480: # 8 Saat
-                        sell_price = close
-                        reason = "⏱️ ZAMAN AŞIMI (8 SAAT)"
-                    else:
-                        is_stop, stop_reason = self._check_ema_stop(sub_df)
-                        if is_stop:
-                            sell_price = close
-                            reason = stop_reason
+                entry = trade['entry_price']
+                
+                # Çelik Hedefler (Gerçek hayatta Zincir Emir olarak bankaya girilir)
+                stop_price = trade['stop_price']
+                tp1_price = trade['tp1_price']
+                tp2_price = trade['tp2_price']
+                
+                # En kötü senaryo: Önce Stop Loss patlar varsayımı
+                if low <= stop_price:
+                    sell_price = stop_price * 0.9985 # Slipaj
+                    reason = f"⛔ ÇELİK STOP KESİLDİ (-%3)"
+                elif high >= tp2_price:
+                    sell_price = tp2_price
+                    reason = f"🚀 TAVAN (TAM KÂR ALINDI)"
+                elif high >= tp1_price and not trade.get('scaled_out', False):
+                    # Yarısını Kâr Al (TP1)
+                    trade['scaled_out'] = True
+                    half_shares = trade['shares'] // 2
+                    if half_shares > 0:
+                        trade['shares'] -= half_shares
+                        scale_out_price = tp1_price * 0.9985
+                        buy_vol = half_shares * entry
+                        sell_vol = half_shares * scale_out_price
+                        comm = (buy_vol + sell_vol) * 0.0004
+                        net_profit = (half_shares * (scale_out_price - entry)) - comm
+                        current_cash += sell_vol - comm 
+                        
+                        # Artık geride kalan lotlar için stop başa (maliyete) çekilir! (Risk Free)
+                        trade['stop_price'] = entry 
+                        
+                        completed_trades.append({
+                            'symbol': sym,
+                            'entry_time': trade['entry_time'],
+                            'entry_price': entry,
+                            'shares': half_shares,
+                            'exit_time': str(current_time),
+                            'exit_price': scale_out_price,
+                            'pnl_val': net_profit,
+                            'pnl_pct': (net_profit / buy_vol) * 100,
+                            'exit_reason': "⚖️ ÇELİK TP1 (YARISI SATILDI)"
+                        })
                             
-                # Eğer satış kararı verildiyse işlemi kapat
                 if sell_price is not None:
                     trade['status'] = 'CLOSED'
                     trade['exit_time'] = str(current_time)
                     trade['exit_price'] = sell_price
-                    trade['pnl_val'] = trade['shares'] * (sell_price - trade['entry_price'])
-                    trade['pnl_pct'] = ((sell_price - trade['entry_price']) / trade['entry_price']) * 100
+                    
+                    buy_volume = trade['shares'] * trade['entry_price']
+                    sell_volume = trade['shares'] * sell_price
+                    commission = (buy_volume + sell_volume) * 0.0004
+                    gross_pnl = trade['shares'] * (sell_price - trade['entry_price'])
+                    trade['pnl_val'] = gross_pnl - commission
+                    trade['pnl_pct'] = (trade['pnl_val'] / buy_volume) * 100
+                    
+                    if "🔄" not in trade.get('exit_reason', '') and trade.get('is_reentry', False):
+                        reason = "🔄 " + reason
+                        
                     trade['exit_reason'] = reason
                     completed_trades.append(trade)
+                    
+                    if "STOP" in reason:
+                        stopped_out_symbols.add(sym)
+                        
+                    current_cash += sell_volume - commission
+                    
+            # 2. YENİ ALIMLARI KONTROL ET
+            open_symbols = {t['symbol'] for t in active_trades if t['status'] == 'OPEN'}
+            
+            to_remove = []
+            for s in pending_signals:
+                dt_ps = pd.to_datetime(f"{date_str} {s['time_str']}")
+                dt_ps = dt_ps.tz_localize(None) if dt_ps.tzinfo else dt_ps
+                dt_current = current_time.tz_localize(None) if current_time.tzinfo else current_time
+                
+                if dt_current >= dt_ps:
+                    to_remove.append(s)
+                    if s['symbol'] in open_symbols:
+                        continue
+                        
+                    allocation = min(current_cash, ideal_allocation)
+                    if allocation >= 1000:
+                        sym = s['symbol']
+                        df = dfs.get(sym)
+                        if df is not None and current_time in df.index:
+                            raw_entry = float(df.loc[current_time, 'Close'])
+                            ceiling = float(s['ceiling_target'])
+                            prev_close = ceiling / 1.10
+                            
+                            if raw_entry >= prev_close * 1.095:
+                                continue
+                                
+                            entry_price = raw_entry * 1.0015
+                            shares = int(allocation // entry_price)
+                            if shares > 0:
+                                current_cash -= (shares * entry_price) * 1.0004 
+                                active_trades.append({
+                                    'symbol': sym,
+                                    'entry_time': str(current_time),
+                                    'entry_price': entry_price,
+                                    'ceiling_target': ceiling,
+                                    'stop_price': entry_price * 0.97, # Çelik Kural: -%3 Zarar Kes
+                                    'tp1_price': entry_price * 1.05,  # Çelik Kural: +%5 Kâr Al (Yarısı)
+                                    'tp2_price': ceiling,             # Çelik Kural: Tavan Kâr Al
+                                    'shares': shares,
+                                    'status': 'OPEN',
+                                    'scaled_out': False,
+                                    'is_reentry': False
+                                })
+            for s in to_remove:
+                if s in pending_signals:
+                    pending_signals.remove(s)
+                    
+            # 3. YENİDEN GİRİŞ (Trend Dönerse, Sadece Stop olanlar için)
+            # Re-entry de sabit zincir emirle olur
+            # Not: Re-entry manuel işlemlerde zor olabilir, ama sistemi 'çelik' kılanlardan biri bu
+            # Kestik attık ama trend dönerse alarm çalar!
+            for sym in list(stopped_out_symbols):
+                if sym not in open_symbols:
+                    allocation = min(current_cash, ideal_allocation)
+                    if allocation >= 1000:
+                        df = dfs.get(sym)
+                        if df is not None and current_time in df.index:
+                            sub_df = df.loc[:current_time]
+                            if len(sub_df) >= 21:
+                                close_series = sub_df['Close']
+                                ema8 = close_series.ewm(span=8, adjust=False).mean()
+                                ema21 = close_series.ewm(span=21, adjust=False).mean()
+                                c_ema8 = float(ema8.iloc[-1])
+                                c_ema21 = float(ema21.iloc[-1])
+                                p_ema8 = float(ema8.iloc[-2])
+                                p_ema21 = float(ema21.iloc[-2])
+                                
+                                if p_ema8 <= p_ema21 and c_ema8 > c_ema21:
+                                    raw_entry = float(close_series.iloc[-1])
+                                    entry_price = raw_entry * 1.0015
+                                    shares = int(allocation // entry_price)
+                                    if shares > 0:
+                                        current_cash -= (shares * entry_price) * 1.0004
+                                        active_trades.append({
+                                            'symbol': sym,
+                                            'entry_time': str(current_time),
+                                            'entry_price': entry_price,
+                                            'ceiling_target': entry_price * 1.10, 
+                                            'stop_price': entry_price * 0.97,
+                                            'tp1_price': entry_price * 1.05,
+                                            'tp2_price': entry_price * 1.10,
+                                            'shares': shares,
+                                            'status': 'OPEN',
+                                            'scaled_out': False,
+                                            'is_reentry': True
+                                        })
+                                        stopped_out_symbols.remove(sym)
 
-        # Gün bittiğinde hala açık olanları kapanıştan sat
         for trade in [t for t in active_trades if t['status'] == 'OPEN']:
             sym = trade['symbol']
             df = dfs[sym]
             if not df.empty:
                 last_time = df.index[-1]
                 close = float(df.iloc[-1]['Close'])
-                
                 trade['status'] = 'CLOSED'
                 trade['exit_time'] = str(last_time)
                 trade['exit_price'] = close
-                trade['pnl_val'] = trade['shares'] * (close - trade['entry_price'])
-                trade['pnl_pct'] = ((close - trade['entry_price']) / trade['entry_price']) * 100
-                
+                buy_volume = trade['shares'] * trade['entry_price']
+                sell_volume = trade['shares'] * close
+                commission = (buy_volume + sell_volume) * 0.0004
+                gross_pnl = trade['shares'] * (close - trade['entry_price'])
+                trade['pnl_val'] = gross_pnl - commission
+                trade['pnl_pct'] = (trade['pnl_val'] / buy_volume) * 100
                 if last_time.time() < time(18, 0):
                     trade['exit_reason'] = "⏳ SEANS BEKLENİYOR"
                 else:
                     trade['exit_reason'] = "⏱️ GÜN SONU KAPANAN"
-                
                 completed_trades.append(trade)
 
-        # Veritabanına kaydet
         self._save_trades(date_str, completed_trades)
-        print(f"[SimEngine] {date_str} için SİMÜLASYON tamamlandı. İşlem Sayısı: {len(completed_trades)}")
+        print(f"[SimEngine] {date_str} için ÇELİK SİSTEM tamamlandı. İşlem Sayısı: {len(completed_trades)}")

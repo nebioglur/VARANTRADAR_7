@@ -1165,6 +1165,20 @@
     </div> <!-- END VARANT-WRAPPER -->
 
     <div id="simulation-wrapper" class="main-wrapper" style="display: none;">
+        
+        <!-- Live Orders Card -->
+        <div class="card" style="border:1px solid var(--accent-yellow); background: rgba(255,193,7,0.05); margin-bottom:2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 class="card-title" style="color:var(--accent-yellow); font-size: 1.3rem;"><i class="fa-solid fa-bolt"></i> Bugünün Çelik Emirleri (Canlı)</h3>
+                <span style="font-size: 0.85rem; color: var(--text-muted);">Sermaye Başına Risk: 100 ₺</span>
+            </div>
+            <p style="color:var(--text-main); margin-bottom:1rem; font-size:0.9rem;">Piyasa açılmadan veya gün içinde aşağıdaki Zincir Emirleri (OCO) bankanıza girip, arkanıza yaslanın.</p>
+            <div id="live-orders-container" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">
+                <!-- Orders will be populated here by JS -->
+                <div style="color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Canlı Emirler Hesaplanıyor...</div>
+            </div>
+        </div>
+
         <div style="max-width:1200px; margin:0 auto; padding: 1rem;">
             <div style="margin-bottom:2rem; text-align: center;">
                 <h2 style="color:var(--accent-blue); font-size: 1.8rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-flask"></i> Gerçekçi Simülasyon Motoru</h2>
@@ -1204,11 +1218,11 @@
                 <h3 class="card-title" style="margin-bottom: 1.5rem; font-size: 1.2rem;"><i class="fa-solid fa-clock-rotate-left text-green"></i> İşlem Geçmişi (Trade Log)</h3>
                 <div class="table-scroll-wrapper" style="max-height: 500px; overflow-y: auto;">
                     <table class="data-table" style="width:100%; border-collapse: separate; border-spacing: 0;">
-                        <thead>
                             <tr>
                                 <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Giriş Zamanı</th>
                                 <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Çıkış Zamanı</th>
                                 <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Sembol</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Lot</th>
                                 <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Giriş Fiyatı</th>
                                 <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Çıkış Fiyatı</th>
                                 <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Kâr / Zarar (₺)</th>
