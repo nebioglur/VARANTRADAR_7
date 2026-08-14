@@ -2942,6 +2942,33 @@ async function fetchStatsTabData() {
             
             if (el('stats-tab-warrant-avg-gain')) el('stats-tab-warrant-avg-gain').innerText = `+ %${(summ.ahlatci_warrant_avg_gain_pct || 0).toFixed(2)}`;
             
+            // Yeni Eklenen Kapanış Kâr/Zarar Dökümü Kutuları
+            if (el('stats-tab-pos-count')) el('stats-tab-pos-count').innerText = `${summ.total_closed_positive || 0} Adet`;
+            if (el('stats-tab-pos-avg')) el('stats-tab-pos-avg').innerText = `(Ort. +%${(summ.avg_positive_close_gain || 0).toFixed(2)})`;
+            
+            if (el('stats-tab-neg-count')) el('stats-tab-neg-count').innerText = `${summ.total_closed_negative || 0} Adet`;
+            if (el('stats-tab-neg-avg')) el('stats-tab-neg-avg').innerText = `(Ort. ${summ.avg_negative_close_gain < 0 ? '' : '-' }%${Math.abs(summ.avg_negative_close_gain || 0).toFixed(2)})`;
+            
+            let netPct = summ.net_profit_pct || 0;
+            let netSign = netPct > 0 ? '+' : '';
+            if (el('stats-tab-net-pct')) el('stats-tab-net-pct').innerText = `${netSign}%${netPct.toFixed(2)}`;
+            let netCard = el('stats-tab-net-card');
+            if (netCard) {
+                if (netPct > 0) {
+                    netCard.style.background = 'linear-gradient(145deg, rgba(16,185,129,0.05) 0%, rgba(15,23,42,1) 100%)';
+                    netCard.style.border = '1px solid rgba(16,185,129,0.2)';
+                    el('stats-tab-net-pct').style.color = 'var(--accent-green)';
+                } else if (netPct < 0) {
+                    netCard.style.background = 'linear-gradient(145deg, rgba(239,68,68,0.05) 0%, rgba(15,23,42,1) 100%)';
+                    netCard.style.border = '1px solid rgba(239,68,68,0.2)';
+                    el('stats-tab-net-pct').style.color = 'var(--accent-red)';
+                } else {
+                    netCard.style.background = 'linear-gradient(145deg, rgba(59,130,246,0.05) 0%, rgba(15,23,42,1) 100%)';
+                    netCard.style.border = '1px solid rgba(59,130,246,0.2)';
+                    el('stats-tab-net-pct').style.color = 'var(--text-muted)';
+                }
+            }
+            
             // Popüle Et: Daily History Tablosu
             if (dailyTbody) {
                 dailyTbody.innerHTML = '';
