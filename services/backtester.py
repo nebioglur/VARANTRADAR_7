@@ -54,7 +54,7 @@ class AdvancedBacktester:
         crossed_down = (p_ema8 >= p_ema21) and (c_ema8 < c_ema21)
         
         if crossed_down or (c_ema8 < c_ema21 and c_mom < 0):
-            return True, float(close.iloc[-1]), "🔴 UZAK DUR (EMA Kesişimi)"
+            return True, float(close.iloc[-1]), "📉 AL Puanı < 50 (Trend Bozuldu)"
             
         return False, 0, ""
 
@@ -114,8 +114,18 @@ class AdvancedBacktester:
                 except:
                     s['DTC_Float'] = 0.0
                     
-            # Kural: Sadece AL puanı 80 ve üzeri olanlar
-            stocks = [s for s in stocks if s.get('Score', 0) >= 80]
+            # Kural: Sadece AL puanı 80 ve üzeri olanlar ve yukarı eğilimli olanlar
+            # (Yatay/Düzeltme veya Negatif fazda olanları hariç tutuyoruz)
+            def is_uptrend(stock):
+                score = stock.get('Score', 0)
+                phase = stock.get('morning_phase', '')
+                if score < 80:
+                    return False
+                if "YATAY" in phase or "UZAK DUR" in phase or "NEGATİF" in phase:
+                    return False
+                return True
+
+            stocks = [s for s in stocks if is_uptrend(s)]
             stocks = sorted(stocks, key=lambda x: (x.get('Score', 0), x.get('DTC_Float', 0)), reverse=True)
             
             # Aynı anda maksimum 15 hisse tutulabilir
@@ -177,6 +187,16 @@ class AdvancedBacktester:
                             sell_time_str = str(idx_time)
                             sold = True
                             exit_reason = "🛡️ ZARAR KES (STOP)"
+                            break
+                            
+                        # 1- Tavan (Maksimum Kâr) Kontrolü
+                        c_target = float(s.get('ceiling_target', morning_price * 1.10))
+                        high_val = float(row['High']) if 'High' in row else float(row['Close'])
+                        if high_val >= c_target:
+                            sell_price = c_target
+                            sell_time_str = str(idx_time)
+                            sold = True
+                            exit_reason = "🚀 TAVAN (MAKS KÂR)"
                             break
                             
                         # En az 30 dk satmama kuralı
