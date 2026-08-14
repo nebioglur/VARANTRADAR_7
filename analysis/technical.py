@@ -1004,6 +1004,7 @@ class TechnicalEngine(BaseEngine):
         # ==========================================
         # 1. Alpha Gücü (Göreceli BIST Ayrışması Proxy)
         # EMA21'den sapma * hacim şiddeti * CMF
+        ema21 = close.ewm(span=21, adjust=False).mean()
         c_ema21 = float(ema21.iloc[-1])
         alpha_val = ((current_price - c_ema21) / c_ema21) * 100 * vol_multiplier
         if alpha_val > 15:
@@ -1072,7 +1073,7 @@ class TechnicalEngine(BaseEngine):
             "VWAP": round(current_vwap, 2),
             "V_Reversal": v_reversal,
             "V_Power": round(v_power, 1),
-            "ETA": eta,
+            "ETA": eta_str,
             "Breakdown_Risk": breakdown_risk,
             "Breakdown_Warning": breakdown_warning,
             "Domino_Sector": domino_sector,
