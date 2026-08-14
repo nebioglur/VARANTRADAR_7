@@ -263,6 +263,10 @@ class UniversalScanner:
                     res_tavan["Bars_Ago"] = bars_ago_al
                     tavan_adaylari.append(res_tavan)
                     
+                    # VIP Sinyal Kontrolü (100 Puan)
+                    if res_tavan.get("Score", 0) == 100:
+                        self._trigger_vip_signal(sym, res_tavan)
+                        
             if is_match_sat:
                 time_label_sat = "ŞİMDİ (Sıcak)" if bars_ago_sat == 0 else f"{bars_ago_sat} Saat Önce"
                 # 3. UZAK DUR (Stay Away) Hisseleri
@@ -283,5 +287,41 @@ class UniversalScanner:
         )[:10]
         
         stay_away_1h = sorted(stay_away_1h, key=lambda x: (x.get("Crossover_Bars_Ago", 999), x.get("EMA_Gap_Pct", 0)))
-        print(f"[SCANNER 1H] Tarama tamamlandı. {len(opportunities)} fırsat, {len(tavan_adaylari)} tavan, {len(stay_away_1h)} uzak dur bulundu.")
-        return {"opportunities_1h": opportunities, "tavan_adaylari": tavan_adaylari, "stay_away_1h": stay_away_1h}
+        
+        return {
+            "opportunities_1h": opportunities,
+            "stay_away_1h": stay_away_1h,
+            "tavan_adaylari": tavan_adaylari
+        }
+
+    def _trigger_vip_signal(self, symbol: str, data: dict):
+        try:
+            import os
+            import json
+            from datetime import datetime
+            from services.telegram_bot import send_vip_signal
+            
+            today = datetime.now().strftime("%Y-%m-%d")
+            cache_file = "data/sent_vip_signals.json"
+            
+            sent_data = {}
+            if os.path.exists(cache_file):
+                try:
+                    with open(cache_file, "r") as f:
+                        sent_data = json.load(f)
+                except:
+                    pass
+            
+            # Gün değiştiyse cache'i temizle
+            if sent_data.get("date") != today:
+                sent_data = {"date": today, "symbols": []}
+                
+            if symbol not in sent_data["symbols"]:
+                # Sinyali gönder
+                success = send_vip_signal(data)
+                if success:
+                    sent_data["symbols"].append(symbol)
+                    with open(cache_file, "w") as f:
+                        json.dump(sent_data, f)
+        except Exception as e:
+            print(f"[VIP SİNYAL HATA] {str(e)}")

@@ -1,42 +1,80 @@
-from services.notification_manager import NotificationManager
+import requests
+import json
+import logging
+from typing import Optional
 
-class TelegramService:
-    """
-    VarantRadar Pro - Telegram Köprüsü
-    NotificationManager ile tam entegre çalışır.
-    """
-    def __init__(self):
-        self.notif = NotificationManager()
-        
-    def is_configured(self):
-        return bool(self.notif.telegram_token and self.notif.telegram_chat_id and "BURAYA_" not in str(self.notif.telegram_token))
-        
-    def send_message(self, text: str):
-        return self.notif.send_telegram_message(text)
+# Telegram Bot Token ve Chat ID
+BOT_TOKEN = "8841122189:AAG4dMDnOS1hv9V_CD2mWCtsuz3Xf0x38tw"
+CHAT_ID = "6105241519"
 
-    def send_alert(self, signal_data: dict):
-        """
-        Formats and sends an AL/SAT alert with full price details.
-        """
-        symbol = signal_data.get('symbol', 'Bilinmiyor').replace('.IS', '').upper()
-        action = signal_data.get('action', 'BEKLE')
-        score = signal_data.get('score', 0)
-        price = signal_data.get('price') or signal_data.get('close')
-        chg = signal_data.get('change_pct') or signal_data.get('daily_change_pct')
-        reasoning = signal_data.get('reasoning', '')
+logger = logging.getLogger(__name__)
+
+def send_telegram_message(text: str, parse_mode: str = "HTML") -> bool:
+    """
+    Belirlenen Chat ID'ye Telegram üzerinden mesaj gönderir.
+    """
+    try:
+        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+        payload = {
+            "chat_id": CHAT_ID,
+            "text": text,
+            "parse_mode": parse_mode
+        }
         
-        action_icon = "🟢 GÜÇLÜ AL" if action == "AL" else ("🔴 GÜÇLÜ SAT" if action == "SAT" else "🟡 İZLE")
-        price_str = f"₺{float(price):.2f}" if price is not None else "-"
-        chg_str = f" (%+{float(chg):.2f})" if chg and float(chg) > 0 else (f" (%{float(chg):.2f})" if chg else "")
+        response = requests.post(url, json=payload, timeout=10)
+        response_data = response.json()
         
-        msg = (
-            f"🚨 <b>YENİ FIRSAT YAKALANDI!</b> 🚨\n\n"
-            f"📌 <b>Hisse:</b> #{symbol}\n"
-            f"💰 <b>Anlık Fiyat:</b> {price_str}{chg_str}\n"
-            f"🎯 <b>Sinyal:</b> {action_icon}\n"
-            f"⭐ <b>AI Skoru:</b> {score}/100\n\n"
-            f"💡 <b>Tespit Nedeni:</b>\n{reasoning}\n\n"
-            f"🤖 <i>VarantRadar Pro Otomatik Tarama Sistemi</i>"
-        )
+        if response.status_code == 200 and response_data.get("ok"):
+            logger.info(f"Telegram mesajı başarıyla gönderildi: {text[:50]}...")
+            return True
+        else:
+            logger.error(f"Telegram mesajı gönderilemedi! Hata: {response_data}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Telegram API çağrısı sırasında hata oluştu: {str(e)}")
+        return False
+
+def send_vip_signal(stock_data: dict) -> bool:
+    """
+    100 AL puanına sahip elit hisseler için VIP sinyal mesajı oluşturur ve gönderir.
+    """
+    symbol = stock_data.get("Symbol", "Bilinmiyor")
+    price = stock_data.get("Price", 0)
+    score = stock_data.get("Score", 0)
+    alpha = stock_data.get("Alpha_Str", "Nötr")
+    cmf = stock_data.get("Smart_Money", "Nötr")
+    squeeze = stock_data.get("Short_Squeeze", "Yok")
+    domino = stock_data.get("Domino_Str", "Yok")
+    
+    text = f"🚨 <b>VIP SİNYAL TESPİT EDİLDİ</b> 🚨\n\n"
+    text += f"💎 <b>Hisse:</b> #{symbol}\n"
+    text += f"🔥 <b>AL Puanı:</b> {score}/100 (Kusursuz)\n"
+    text += f"💵 <b>Anlık Fiyat:</b> ₺{price}\n\n"
+    
+    text += f"📊 <b>AR-GE Laboratuvar Verileri:</b>\n"
+    text += f"🐺 <b>Alpha:</b> {alpha}\n"
+    text += f"💸 <b>Para Akışı:</b> {cmf}\n"
+    text += f"🧨 <b>Şort Durumu:</b> {squeeze}\n"
+    text += f"♟️ <b>Domino:</b> {domino}\n\n"
+    text += f"<i>Not: Bu hisse tüm teknik filtreleri geçerek 100 tam puan almıştır!</i>"
+    
+    return send_telegram_message(text)
+
+def send_simulation_report(total_trades: int, total_profit: float, return_pct: float) -> bool:
+    """
+    Gün sonu simülasyon raporunu gönderir.
+    """
+    text = f"🧪 <b>Simülasyon Gün Sonu Raporu</b> 🧪\n\n"
+    
+    if total_profit > 0:
+        text += f"✅ <b>Günün Kârı:</b> +{total_profit:,.2f} TL\n"
+        text += f"📈 <b>Getiri Oranı:</b> +%{return_pct:.2f}\n"
+    else:
+        text += f"❌ <b>Günün Zararı:</b> {total_profit:,.2f} TL\n"
+        text += f"📉 <b>Getiri Oranı:</b> %{return_pct:.2f}\n"
         
-        return self.send_message(msg)
+    text += f"🛒 <b>Toplam İşlem:</b> {total_trades} adet al-sat\n\n"
+    text += f"<i>Sistem yarın için tekrar taranmaya hazır.</i>"
+    
+    return send_telegram_message(text)

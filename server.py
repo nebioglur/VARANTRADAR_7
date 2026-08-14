@@ -225,6 +225,43 @@ def background_scanner():
                             sim = SimulationEngine()
                             sim.run_daily_simulation(d_str)
                             
+                            # Gün Sonu Simülasyon Telegram Raporu (18:10 Sonrası)
+                            now_time = datetime.now()
+                            if now_time.hour == 18 and now_time.minute >= 10:
+                                try:
+                                    import json, os
+                                    from services.telegram_bot import send_simulation_report
+                                    
+                                    report_cache = "data/sent_sim_report.json"
+                                    sent_today = False
+                                    if os.path.exists(report_cache):
+                                        with open(report_cache, "r") as f:
+                                            cd = json.load(f)
+                                            if cd.get("date") == d_str:
+                                                sent_today = True
+                                                
+                                    if not sent_today:
+                                        import sqlite3
+                                        from contextlib import closing
+                                        trades = []
+                                        with closing(sqlite3.connect("data/varantradar.db")) as conn:
+                                            c = conn.cursor()
+                                            c.execute("SELECT trade_data FROM sim_trades WHERE date_str=?", (d_str,))
+                                            row = c.fetchone()
+                                            if row:
+                                                trades = json.loads(row[0])
+                                        if trades:
+                                            total_pnl = sum([t.get('pnl_val', 0) for t in trades])
+                                            total_invested = sum([(t.get('shares',0) * t.get('entry_price',0)) for t in trades])
+                                            pct = (total_pnl / total_invested * 100) if total_invested > 0 else 0
+                                            
+                                            success = send_simulation_report(len(trades), total_pnl, pct)
+                                            if success:
+                                                with open(report_cache, "w") as f:
+                                                    json.dump({"date": d_str}, f)
+                                except Exception as err:
+                                    print(f"[SIM SİNYAL HATA] {str(err)}")
+                            
                         except Exception as e_audit:
                             print(f"[BACKGROUND] Yeni Motor Hatası: {e_audit}")
                             import traceback
