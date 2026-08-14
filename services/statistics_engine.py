@@ -21,6 +21,11 @@ class StatisticsEngine:
         hit_positive = 0
         hit_negative = 0
         
+        elite_hit_positive = 0
+        elite_hit_negative = 0
+        elite_total_positive_gain = 0.0
+        elite_total_negative_gain = 0.0
+        
         total_max_gain = 0.0
         total_close_gain = 0.0
         total_positive_gain = 0.0
@@ -29,8 +34,9 @@ class StatisticsEngine:
         items = []
         for s in signals:
             sym = s['symbol']
-            m_price = s['morning_price']
-            c_target = s['ceiling_target']
+            m_price = float(s['morning_price'] if s['morning_price'] else 0)
+            c_target = float(s['ceiling_target'] if s['ceiling_target'] else 0)
+            score = float(s['score'] if s['score'] else 0)
             
             df = MarketDataManager.get_market_data(date_str, sym)
             
@@ -50,9 +56,15 @@ class StatisticsEngine:
             if close_gain > 0:
                 hit_positive += 1
                 total_positive_gain += close_gain
+                if score >= 99.9:
+                    elite_hit_positive += 1
+                    elite_total_positive_gain += close_gain
             elif close_gain < 0:
                 hit_negative += 1
                 total_negative_gain += close_gain
+                if score >= 99.9:
+                    elite_hit_negative += 1
+                    elite_total_negative_gain += close_gain
                 
             is_tavan = (high_price >= c_target * 0.995) or (max_gain >= 9.4) or (close_gain >= 9.4)
             is_plus5 = (max_gain >= 5.0) or (close_gain >= 5.0)
@@ -93,6 +105,10 @@ class StatisticsEngine:
             "hit_negative": hit_negative,
             "total_positive_gain": round(total_positive_gain, 2),
             "total_negative_gain": round(total_negative_gain, 2),
+            "elite_hit_positive": elite_hit_positive,
+            "elite_hit_negative": elite_hit_negative,
+            "elite_total_positive_gain": round(elite_total_positive_gain, 2),
+            "elite_total_negative_gain": round(elite_total_negative_gain, 2),
             "tavan_rate": round((hit_ceiling / total_signals)*100, 1),
             "plus5_rate": round((hit_plus5 / total_signals)*100, 1),
             "items": items
@@ -136,6 +152,18 @@ class StatisticsEngine:
         
         net_pct = round(avg_pos_gain + avg_neg_gain, 2)
         
+        # Elite stats
+        t_elite_positive = sum(h['elite_hit_positive'] for h in history)
+        t_elite_negative = sum(h['elite_hit_negative'] for h in history)
+        
+        sum_elite_pos_gain = sum(h['elite_total_positive_gain'] for h in history)
+        sum_elite_neg_gain = sum(h['elite_total_negative_gain'] for h in history)
+        
+        avg_elite_pos_gain = round(sum_elite_pos_gain / t_elite_positive, 2) if t_elite_positive > 0 else 0
+        avg_elite_neg_gain = round(sum_elite_neg_gain / t_elite_negative, 2) if t_elite_negative > 0 else 0
+        
+        net_elite_pct = round(avg_elite_pos_gain + avg_elite_neg_gain, 2)
+        
         return {
             "status": "success",
             "summary": {
@@ -152,7 +180,12 @@ class StatisticsEngine:
                 "total_closed_negative": t_negative,
                 "avg_positive_close_gain": avg_pos_gain,
                 "avg_negative_close_gain": avg_neg_gain,
-                "net_profit_pct": net_pct
+                "net_profit_pct": net_pct,
+                "elite_closed_positive": t_elite_positive,
+                "elite_closed_negative": t_elite_negative,
+                "elite_avg_positive_gain": avg_elite_pos_gain,
+                "elite_avg_negative_gain": avg_elite_neg_gain,
+                "elite_net_profit_pct": net_elite_pct
             },
             "history": history
         }

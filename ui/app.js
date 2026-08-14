@@ -2969,6 +2969,34 @@ async function fetchStatsTabData() {
                 }
             }
             
+            // Elite (Score 100) Kapanış Kâr/Zarar Dökümü Kutuları
+            if (el('stats-tab-elite-pos-count')) el('stats-tab-elite-pos-count').innerText = `${summ.elite_closed_positive || 0} Adet`;
+            if (el('stats-tab-elite-pos-avg')) el('stats-tab-elite-pos-avg').innerText = `(Ort. +%${(summ.elite_avg_positive_gain || 0).toFixed(2)})`;
+            
+            if (el('stats-tab-elite-neg-count')) el('stats-tab-elite-neg-count').innerText = `${summ.elite_closed_negative || 0} Adet`;
+            if (el('stats-tab-elite-neg-avg')) el('stats-tab-elite-neg-avg').innerText = `(Ort. ${summ.elite_avg_negative_gain < 0 ? '' : '-' }%${Math.abs(summ.elite_avg_negative_gain || 0).toFixed(2)})`;
+            
+            let eliteNetPct = summ.elite_net_profit_pct || 0;
+            let eliteNetSign = eliteNetPct > 0 ? '+' : '';
+            if (el('stats-tab-elite-net-pct')) el('stats-tab-elite-net-pct').innerText = `${eliteNetSign}%${eliteNetPct.toFixed(2)}`;
+            
+            let eliteNetCard = el('stats-tab-elite-net-card');
+            if (eliteNetCard) {
+                if (eliteNetPct > 0) {
+                    eliteNetCard.style.background = 'linear-gradient(145deg, rgba(16,185,129,0.05) 0%, rgba(15,23,42,1) 100%)';
+                    eliteNetCard.style.border = '1px solid rgba(16,185,129,0.5)';
+                    el('stats-tab-elite-net-pct').style.color = 'var(--accent-green)';
+                } else if (eliteNetPct < 0) {
+                    eliteNetCard.style.background = 'linear-gradient(145deg, rgba(239,68,68,0.05) 0%, rgba(15,23,42,1) 100%)';
+                    eliteNetCard.style.border = '1px solid rgba(239,68,68,0.5)';
+                    el('stats-tab-elite-net-pct').style.color = 'var(--accent-red)';
+                } else {
+                    eliteNetCard.style.background = 'linear-gradient(145deg, rgba(234,179,8,0.05) 0%, rgba(15,23,42,1) 100%)';
+                    eliteNetCard.style.border = '1px solid rgba(234,179,8,0.5)';
+                    el('stats-tab-elite-net-pct').style.color = 'var(--accent-yellow)';
+                }
+            }
+            
             // Popüle Et: Daily History Tablosu
             if (dailyTbody) {
                 dailyTbody.innerHTML = '';
