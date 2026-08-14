@@ -4961,7 +4961,7 @@
       "VWAP": 10.04,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "02:53 - 03:18",
+      "ETA": "03:18 - 03:43",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Domino_Sector": null,
@@ -4987,7 +4987,7 @@
         "TP1": 10.51,
         "TP2": 10.84,
         "RR": 2.62,
-        "Projection": "02:53 - 03:18"
+        "Projection": "03:18 - 03:43"
       },
       "Time_Label": "19 Saat Önce",
       "Bars_Ago": 19
@@ -5011,7 +5011,7 @@
       "VWAP": 8.72,
       "V_Reversal": 1,
       "V_Power": 5.8,
-      "ETA": "03:02 - 03:27",
+      "ETA": "03:27 - 03:52",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Domino_Sector": null,
@@ -5037,7 +5037,7 @@
         "TP1": 9.22,
         "TP2": 9.48,
         "RR": 2.37,
-        "Projection": "03:02 - 03:27"
+        "Projection": "03:27 - 03:52"
       },
       "Time_Label": "ŞİMDİ (Sıcak)",
       "Bars_Ago": 0
@@ -5061,7 +5061,7 @@
       "VWAP": 27.51,
       "V_Reversal": 1,
       "V_Power": 13.7,
-      "ETA": "01:04 - 01:29",
+      "ETA": "01:29 - 01:54",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Domino_Sector": null,
@@ -5087,7 +5087,7 @@
         "TP1": 28.84,
         "TP2": 30.66,
         "RR": 3.8,
-        "Projection": "01:04 - 01:29"
+        "Projection": "01:29 - 01:54"
       },
       "Time_Label": "2 Saat Önce",
       "Bars_Ago": 2
@@ -5111,7 +5111,7 @@
       "VWAP": 76.88,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "03:17 - 03:42",
+      "ETA": "03:41 - 04:06",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Domino_Sector": null,
@@ -5137,7 +5137,7 @@
         "TP1": 82.76,
         "TP2": 88.34,
         "RR": 3.98,
-        "Projection": "03:17 - 03:42"
+        "Projection": "03:41 - 04:06"
       },
       "Time_Label": "ŞİMDİ (Sıcak)",
       "Bars_Ago": 0
@@ -5161,7 +5161,7 @@
       "VWAP": 2.9,
       "V_Reversal": 1,
       "V_Power": 13.2,
-      "ETA": "03:49 - 04:14",
+      "ETA": "04:13 - 04:38",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Domino_Sector": null,
@@ -5187,7 +5187,7 @@
         "TP1": 3.11,
         "TP2": 3.32,
         "RR": 3.97,
-        "Projection": "03:49 - 04:14"
+        "Projection": "04:13 - 04:38"
       },
       "Time_Label": "41 Saat Önce",
       "Bars_Ago": 41
@@ -5211,7 +5211,7 @@
       "VWAP": 15.93,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "04:35 - 05:00",
+      "ETA": "04:59 - 05:24",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Domino_Sector": null,
@@ -5237,7 +5237,7 @@
         "TP1": 16.23,
         "TP2": 16.75,
         "RR": 2.27,
-        "Projection": "04:35 - 05:00"
+        "Projection": "04:59 - 05:24"
       },
       "Time_Label": "36 Saat Önce",
       "Bars_Ago": 36
@@ -5261,7 +5261,7 @@
       "VWAP": 33.44,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "04:35 - 05:00",
+      "ETA": "05:00 - 05:25",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Domino_Sector": null,
@@ -5287,7 +5287,7 @@
         "TP1": 34.1,
         "TP2": 36.94,
         "RR": 3.56,
-        "Projection": "04:35 - 05:00"
+        "Projection": "05:00 - 05:25"
       },
       "Time_Label": "7 Saat Önce",
       "Bars_Ago": 7
@@ -5311,7 +5311,7 @@
       "VWAP": 192.15,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "03:28 - 03:53",
+      "ETA": "03:53 - 04:18",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Domino_Sector": null,
@@ -5337,7 +5337,7 @@
         "TP1": 196.91,
         "TP2": 205.28,
         "RR": 1.92,
-        "Projection": "03:28 - 03:53"
+        "Projection": "03:53 - 04:18"
       },
       "Time_Label": "27 Saat Önce",
       "Bars_Ago": 27
@@ -5361,7 +5361,7 @@
       "VWAP": 8.16,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "04:34 - 04:59",
+      "ETA": "04:59 - 05:24",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Domino_Sector": null,
@@ -5387,7 +5387,7 @@
         "TP1": 8.34,
         "TP2": 8.93,
         "RR": 5.23,
-        "Projection": "04:34 - 04:59"
+        "Projection": "04:59 - 05:24"
       },
       "Time_Label": "6 Saat Önce",
       "Bars_Ago": 6
@@ -5411,7 +5411,7 @@
       "VWAP": 33.9,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "04:34 - 04:59",
+      "ETA": "04:58 - 05:23",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Domino_Sector": null,
@@ -5437,7 +5437,7 @@
         "TP1": 34.45,
         "TP2": 37.12,
         "RR": 4.72,
-        "Projection": "04:34 - 04:59"
+        "Projection": "04:58 - 05:23"
       },
       "Time_Label": "3 Saat Önce",
       "Bars_Ago": 3
