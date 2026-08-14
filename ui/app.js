@@ -2818,13 +2818,41 @@ function applyLongTermFilter() {
 }
 
 function openTavanAuditForDate(dateStr) {
-    closeLongTermHistoryModal();
-    openTavanAuditModal(true); // Skip default fetch to prevent race condition
-    const select = document.getElementById('tavan-audit-date-select');
-    if (select) {
-        select.value = dateStr;
+    try {
+        console.log("Opening Tavan Audit Modal for date:", dateStr);
+        const modal = document.getElementById('tavan-audit-modal');
+        if (modal) {
+            modal.style.display = 'block';
+            modal.style.zIndex = '9999999'; // Ensure it's on top
+            document.body.style.overflow = 'hidden';
+            
+            // Show loading immediately
+            const tbody = document.getElementById('tavan-audit-tbody');
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> ${dateStr} verileri yükleniyor...</td></tr>`;
+            }
+            
+            const select = document.getElementById('tavan-audit-date-select');
+            if (select) {
+                // Ensure the option exists before setting
+                let optionExists = Array.from(select.options).some(opt => opt.value === dateStr);
+                if (!optionExists) {
+                    const opt = document.createElement('option');
+                    opt.value = dateStr;
+                    opt.textContent = dateStr;
+                    select.appendChild(opt);
+                }
+                select.value = dateStr;
+            }
+            fetchTavanAuditData(dateStr);
+        } else {
+            console.error("tavan-audit-modal element not found in DOM!");
+            alert("Sistem Hatası: Denetim penceresi bulunamadı.");
+        }
+    } catch(e) {
+        console.error("Error opening audit modal:", e);
+        alert("Hata: " + e.message);
     }
-    fetchTavanAuditData(dateStr);
 }
 
 async function fetchLongTermHistoryData(startDate = '2026-08-04', endDate = '', symbol = '', time = '') {

@@ -417,14 +417,22 @@ class TavanAuditTracker:
 
             d_tavan = sum(1 for it in items if it.get("hit_ceiling"))
             d_plus5 = sum(1 for it in items if it.get("hit_plus5"))
-            d_max_gain = sum(it.get("max_gain_pct", 0.0) for it in items) / d_total
-            d_close_gain = sum(it.get("closing_gain_pct", 0.0) for it in items) / d_total
+            total_morning_price = sum(it.get("morning_price", 0.0) for it in items)
+            total_closing_price = sum(it.get("closing_price", it.get("morning_price", 0.0)) for it in items)
+            total_max_price = sum(it.get("daily_high", it.get("morning_price", 0.0)) for it in items)
+
+            if total_morning_price > 0:
+                d_close_gain = ((total_closing_price - total_morning_price) / total_morning_price) * 100
+                d_max_gain = ((total_max_price - total_morning_price) / total_morning_price) * 100
+            else:
+                d_close_gain = 0.0
+                d_max_gain = 0.0
 
             total_candidates += d_total
             total_tavan += d_tavan
             total_plus5 += d_plus5
-            all_max_gains.extend([it.get("max_gain_pct", 0.0) for it in items])
-            all_closing_gains.extend([it.get("closing_gain_pct", 0.0) for it in items])
+            all_max_gains.append(d_max_gain)
+            all_closing_gains.append(d_close_gain)
 
             # Saat bazlı ayrıştırma
             for it in items:
