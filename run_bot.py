@@ -43,16 +43,25 @@ class AutomationBot:
             symbol = row['symbol']
             action = row['action']
             score = row['score']
+            category = row.get('category', 'Tavan Adayı') # Assuming it's Tavan Adayı if not specified
+            
+            # Yalnızca AL sinyali, Puan >= 80 ve Kategori Tavan Adayı ise Telegram'a gönder
+            should_send_telegram = (action == 'AL' and score >= 80 and 'Tavan' in category)
             
             # Check if we should notify
             if self.should_notify(symbol, action):
                 print(f"-> YENİ SİNYAL: {symbol} - {action} (Puan: {score})")
                 
-                # Send Telegram Alert
-                success = self.telegram.send_alert(row.to_dict())
-                
-                if success:
-                    # Update cache
+                # Sadece filtreyi geçenleri Telegram'a gönder
+                if should_send_telegram:
+                    success = self.telegram.send_alert(row.to_dict())
+                    if success:
+                        self.notified_signals[symbol] = {
+                            'action': action,
+                            'time': time.time()
+                        }
+                else:
+                    # Telegrama gönderme ama bildirildi olarak işaretle ki konsolu spamlamasın
                     self.notified_signals[symbol] = {
                         'action': action,
                         'time': time.time()

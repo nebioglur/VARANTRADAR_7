@@ -162,7 +162,10 @@ class AdvancedBacktester:
                     exit_reason = "⏱️ GÜN SONU"
                     max_price_seen = float(future_df['High'].max()) if 'High' in future_df.columns else morning_price
                     
+                    buy_time = day_start
                     for idx_time, row in future_df.iterrows():
+                        elapsed = idx_time - buy_time
+                        
                         # Stop loss -2.0%
                         low_val = float(row['Low']) if 'Low' in row else float(row['Close'])
                         if low_val <= morning_price * 0.98:
@@ -170,6 +173,18 @@ class AdvancedBacktester:
                             sell_time_str = str(idx_time)
                             sold = True
                             exit_reason = "🛡️ ZARAR KES (STOP)"
+                            break
+                            
+                        # En az 30 dk satmama kuralı
+                        if elapsed < pd.Timedelta(minutes=30):
+                            continue
+                            
+                        # En fazla 8 saat tutma kuralı
+                        if elapsed >= pd.Timedelta(hours=8):
+                            sell_price = float(row['Close'])
+                            sell_time_str = str(idx_time)
+                            sold = True
+                            exit_reason = "⏱️ ZAMAN AŞIMI (8 SAAT)"
                             break
                             
                         is_sell, price_at_signal, reason = self.evaluate_sell_signal(sym_df, idx_time)
@@ -180,9 +195,20 @@ class AdvancedBacktester:
                             exit_reason = reason
                             break
                             
+                    is_live = False
                     if not sold and not future_df.empty:
-                        sell_price = float(future_df['Close'].iloc[-1])
-                        sell_time_str = str(future_df.index[-1])
+                        last_idx = future_df.index[-1]
+                        from datetime import datetime
+                        if date_key == datetime.now().strftime("%Y-%m-%d") and last_idx.hour < 18:
+                            is_live = True
+                            sell_price = float(future_df['Close'].iloc[-1])
+                            sell_time_str = "BEKLENİYOR"
+                            exit_reason = "⏳ AÇIK POZİSYON"
+                        else:
+                            sell_price = float(future_df['Close'].iloc[-1])
+                            sell_time_str = str(last_idx)
+                            sold = True
+                            exit_reason = "⏱️ GÜN SONU KAPANAN"
                 
                 if sell_price == morning_price and s.get('closing_price'):
                     sell_price = float(s.get('closing_price'))

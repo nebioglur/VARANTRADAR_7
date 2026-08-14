@@ -3452,21 +3452,36 @@ function toggleSimDetail(dateStr) {
     detailTbody.innerHTML = '';
     
     dayData.trades.forEach(t => {
-        const isProfit = t.pnl >= 0;
-        const color = isProfit ? 'var(--accent-green)' : 'var(--accent-red)';
+        const isProfit = (t.pnl || 0) >= 0;
+        const color = isProfit ? 'var(--accent-green, #10b981)' : 'var(--accent-red, #ef4444)';
         const sign = isProfit ? '+' : '';
+        const shares = t.shares || 0;
+        const invested = t.invested || 0;
+        const returned = t.return_val || 0;
+        const reason = t.exit_reason || '-';
         
+        // Yanıp sönen ışık mantığı
+        const isOpen = t.sell_time === 'BEKLENİYOR';
+        const blinkIndicator = isOpen 
+            ? '<span class="live-dot" style="display:inline-block; width:8px; height:8px; background-color:#10b981; border-radius:50%; box-shadow:0 0 8px #10b981; animation:blinkGreen 1.5s infinite; margin-right:6px;"></span>'
+            : '<span class="closed-dot" style="display:inline-block; width:8px; height:8px; background-color:#ef4444; border-radius:50%; margin-right:6px;"></span>';
+        
+        const buyDisplay = `<div style="font-size:0.7rem; color:var(--text-muted);"><i class="fa-solid fa-arrow-right-to-bracket" style="color:#10b981;"></i> ${t.buy_time || '10:15'}</div><div>${(t.buy_price || 0).toFixed(2)} ₺</div>`;
+        const sellDisplay = isOpen 
+            ? `<div style="font-size:0.75rem; color:#10b981; font-weight:bold;">${blinkIndicator} BEKLENİYOR</div><div style="font-size:0.7rem; color:var(--text-muted);">(Anlık: ${(t.sell_price || 0).toFixed(2)} ₺)</div>` 
+            : `<div style="font-size:0.7rem; color:var(--text-muted);">${blinkIndicator} ${t.sell_time || 'Kapanış'}</div><div>${(t.sell_price || 0).toFixed(2)} ₺</div>`;
+            
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td style=\"font-weight:700; color:var(--text-light);\">${t.symbol}</td>
-            <td style=\"font-family:monospace;\">${t.buy_price.toFixed(2)} ₺</td>
-            <td style=\"font-family:monospace;\">${t.sell_price.toFixed(2)} ₺</td>
-            <td>${t.lot_size.toLocaleString('tr-TR')}</td>
-            <td style=\"font-family:monospace;\">${t.invested.toLocaleString('tr-TR')} ₺</td>
-            <td style=\"font-family:monospace;\">${t.returned.toLocaleString('tr-TR')} ₺</td>
-            <td style=\"color:${color}; font-weight:800; font-family:monospace;\">${sign}${t.pnl.toLocaleString('tr-TR')} ₺</td>
-            <td style=\"color:${color}; font-weight:700;\">${sign}%${t.pnl_pct.toFixed(2)}</td>
-            <td style=\"font-size:0.75rem;\">${t.reason}</td>
+            <td style="font-weight:700; color:var(--text-light);">${t.symbol}</td>
+            <td style="font-family:monospace;">${buyDisplay}</td>
+            <td style="font-family:monospace;">${sellDisplay}</td>
+            <td>${shares.toLocaleString('tr-TR')}</td>
+            <td style="font-family:monospace;">${invested.toLocaleString('tr-TR')} ₺</td>
+            <td style="font-family:monospace;">${returned.toLocaleString('tr-TR')} ₺</td>
+            <td style="color:${color}; font-weight:800; font-family:monospace;">${sign}${(t.pnl || 0).toLocaleString('tr-TR')} ₺</td>
+            <td style="color:${color}; font-weight:700;">${sign}%${(t.pnl_pct || 0).toFixed(2)}</td>
+            <td style="font-size:0.75rem;">${reason}</td>
         `;
         detailTbody.appendChild(tr);
     });
