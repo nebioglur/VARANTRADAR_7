@@ -2972,16 +2972,20 @@ async function fetchStatsTabData(startDate = '2026-08-04', endDate = '', symbol 
             if (notice) notice.style.display = 'none';
 
             // 1. İstatistik Sayfası Sistem Başarı Karnesi Doldur
+            const maxP = summ.cumulative_avg_max_gain_pct || 0;
+            const clsP = summ.cumulative_avg_closing_gain_pct || 0;
+            const wrnP = summ.ahlatci_warrant_avg_gain_pct || 0;
+            
             const fields = [
                 ['stat-winrate-stats', `%${summ.tavan_success_pct || 0}`],
                 ['stat-winrate-sub-stats', `${summ.total_hit_ceiling || 0}/${summ.total_candidates_tracked || 0} Tavan`],
                 ['stat-avgprofit-stats', `%${summ.plus5_success_pct || 0}`],
                 ['stat-avgprofit-sub-stats', `${summ.total_hit_plus5 || 0}/${summ.total_candidates_tracked || 0} Hisse`],
-                ['stat-pfactor-stats', `+ %${summ.cumulative_avg_max_gain_pct || 0}`],
+                ['stat-pfactor-stats', `${maxP > 0 ? '+' : ''}%${maxP.toFixed(2)}`],
                 ['stat-pfactor-sub-stats', `Ort. Zirve Primi`],
                 ['stat-days-val-stats', `${summ.total_days_tracked || 0} Seans / ${summ.total_candidates_tracked || 0} Öneri`],
-                ['stat-warrant-val-stats', `+ %${summ.ahlatci_warrant_avg_gain_pct || 0}`],
-                ['stat-close-val-stats', `+ %${summ.cumulative_avg_closing_gain_pct || 0}`]
+                ['stat-warrant-val-stats', `${wrnP > 0 ? '+' : ''}%${wrnP.toFixed(2)}`],
+                ['stat-close-val-stats', `${clsP > 0 ? '+' : ''}%${clsP.toFixed(2)}`]
             ];
             fields.forEach(([id, val]) => {
                 const el = document.getElementById(id);
@@ -3009,15 +3013,19 @@ async function fetchStatsTabData(startDate = '2026-08-04', endDate = '', symbol 
 function renderHistoryKpis(summ, prefix) {
     if (!summ) return;
     const el = (id) => document.getElementById(prefix + id);
+    const maxP = summ.cumulative_avg_max_gain_pct || 0;
+    const clsP = summ.cumulative_avg_closing_gain_pct || 0;
+    const wrnP = summ.ahlatci_warrant_avg_gain_pct || 0;
+
     if (el('total-days')) el('total-days').innerText = `${summ.total_days_tracked || 0} Seans`;
     if (el('total-candidates-sub')) el('total-candidates-sub').innerText = `Toplam ${summ.total_candidates_tracked || 0} Oneri`;
     if (el('tavan-rate')) el('tavan-rate').innerText = `%${summ.tavan_success_pct || 0}`;
     if (el('tavan-cnt-sub')) el('tavan-cnt-sub').innerText = `${summ.total_hit_ceiling || 0} / ${summ.total_candidates_tracked || 0} Tavan`;
     if (el('plus5-rate')) el('plus5-rate').innerText = `%${summ.plus5_success_pct || 0}`;
     if (el('plus5-cnt-sub')) el('plus5-cnt-sub').innerText = `${summ.total_hit_plus5 || 0} / ${summ.total_candidates_tracked || 0} Kazandirdi`;
-    if (el('avg-max-gain')) el('avg-max-gain').innerText = `+ %${summ.cumulative_avg_max_gain_pct || 0}`;
-    if (el('avg-close-sub')) el('avg-close-sub').innerText = `Kapanis Ort: +%${summ.cumulative_avg_closing_gain_pct || 0}`;
-    if (el('warrant-avg-gain')) el('warrant-avg-gain').innerText = `+ %${summ.ahlatci_warrant_avg_gain_pct || 0}`;
+    if (el('avg-max-gain')) el('avg-max-gain').innerText = `${maxP > 0 ? '+' : ''}%${maxP.toFixed(2)}`;
+    if (el('avg-close-sub')) el('avg-close-sub').innerText = `Kapanis Ort: ${clsP > 0 ? '+' : ''}%${clsP.toFixed(2)}`;
+    if (el('warrant-avg-gain')) el('warrant-avg-gain').innerText = `${wrnP > 0 ? '+' : ''}%${wrnP.toFixed(2)}`;
 }
 
 function renderHourlyCards(hourlyList, container) {
@@ -3566,7 +3574,8 @@ function renderDailyBreakdown(dailyList, tbody, prefix = '') {
         return;
     }
     tbody.innerHTML = '';
-    expectedDates.reverse().forEach(dateStr => {
+    // Reverse SİLİNDİ, en yeni tarih en üstte çıksın
+    expectedDates.forEach(dateStr => {
         const d = dailyList.find(x => x.date === dateStr);
         if (!d) {
             const tr = document.createElement('tr');
@@ -3584,7 +3593,9 @@ function renderDailyBreakdown(dailyList, tbody, prefix = '') {
         const warrantCode = d.star_warrant || 'Yok';
         const warrantGain = d.star_warrant_gain || '+0%';
         
-        const dailyResultClass = avgClose > 0 ? 'text-green' : (avgClose < 0 ? 'text-red' : 'text-muted');
+        const dailyResultColor = avgClose > 0 ? '#10b981' : (avgClose < 0 ? '#ef4444' : 'var(--text-muted)');
+        const closeSign = avgClose > 0 ? '+' : '';
+        const maxSign = avgMax > 0 ? '+' : '';
         
         tr.innerHTML = `
             <td>
@@ -3603,8 +3614,8 @@ function renderDailyBreakdown(dailyList, tbody, prefix = '') {
                 <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">${tavan}/${total} Hisse Tavana Ulaştı</div>
             </td>
             <td>
-                <div style="font-weight:800; font-size:0.9rem;" class="${dailyResultClass}">+${avgClose}%</div>
-                <div style="font-size:0.72rem; color:var(--accent-yellow); font-weight:600;">Zirve: +${avgMax}%</div>
+                <div style="font-weight:800; font-size:0.9rem; color:${dailyResultColor};">${closeSign}${avgClose.toFixed(2)}%</div>
+                <div style="font-size:0.72rem; color:var(--accent-yellow); font-weight:600;">Zirve: ${maxSign}${avgMax.toFixed(2)}%</div>
             </td>
             <td>
                 <div style="font-weight:800; font-size:0.85rem; color:#38bdf8;">${starStock}</div>
