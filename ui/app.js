@@ -2919,7 +2919,7 @@ async function fetchStatsTabData() {
     }
 
     try {
-        const res = await fetch(`/api/tavan_history`);
+        const res = await fetch(`/api/tavan_history?t=` + Date.now());
         const data = await res.json();
 
         if (data.status === 'success' || data.summary) {
@@ -2954,7 +2954,7 @@ async function fetchStatsTabData() {
                         const closeSign = h.avg_close_gain >= 0 ? '+' : '';
                         
                         tr.innerHTML = `
-                            <td><i class="fa-regular fa-calendar" style="color:var(--text-muted);"></i> ${h.date_str}</td>
+                            <td><i class="fa-regular fa-calendar" style="color:var(--text-muted);"></i> ${h.date}</td>
                             <td>${h.total_signals}</td>
                             <td style="color:var(--accent-green); font-weight:bold;">${h.hit_ceiling} Tavan (%${h.tavan_rate})</td>
                             <td style="color:var(--accent-blue); font-weight:bold;">${h.hit_plus5} Adet (%${h.plus5_rate})</td>
@@ -3186,7 +3186,7 @@ async function fetchSimulationData() {
     if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> İşlem Geçmişi Yükleniyor...</td></tr>';
     
     try {
-        const res = await fetch(`/api/simulation/daily_pnl`);
+        const res = await fetch(`/api/simulation/daily_pnl?t=` + Date.now());
         const data = await res.json();
         
         if (data.status === 'success') {
