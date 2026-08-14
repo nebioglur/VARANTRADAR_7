@@ -35,8 +35,8 @@
           "SuperTrend": "YÜKSELİŞ"
         }
       },
-      "Daily_EMA50": 383.70823482456944,
-      "Daily_EMA200": 294.4894501382402,
+      "Daily_EMA50": 383.70823482455313,
+      "Daily_EMA200": 294.4894501381912,
       "Daily_Close": 425.0,
       "Symbol": "ALKLC.IS",
       "Change_Pct": 0.0,
@@ -1020,8 +1020,8 @@
           "SuperTrend": "YÜKSELİŞ"
         }
       },
-      "Daily_EMA50": 284.35829556311114,
-      "Daily_EMA200": 238.4688530037338,
+      "Daily_EMA50": 284.3582955638808,
+      "Daily_EMA200": 238.46885425169899,
       "Daily_Close": 346.0,
       "Symbol": "TUPRS.IS",
       "Change_Pct": 0.0,
@@ -1342,8 +1342,8 @@
           "SuperTrend": "YÜKSELİŞ"
         }
       },
-      "Daily_EMA50": 47.47759025966732,
-      "Daily_EMA200": 30.443789669183573,
+      "Daily_EMA50": 47.47759026469345,
+      "Daily_EMA200": 30.443789703214268,
       "Daily_Close": 52.29999923706055,
       "Symbol": "KTLEV.IS",
       "Change_Pct": 0.0,
@@ -2786,8 +2786,8 @@
           "SuperTrend": "YÜKSELİŞ"
         }
       },
-      "Daily_EMA50": 284.35829556311114,
-      "Daily_EMA200": 238.4688530037338,
+      "Daily_EMA50": 284.3582955638808,
+      "Daily_EMA200": 238.46885425169899,
       "Daily_Close": 346.0,
       "Symbol": "TUPRS.IS",
       "Change_Pct": 0.0,
@@ -3048,8 +3048,8 @@
       "Low": null
     },
     "AKMGY.IS": {
-      "Daily_EMA50": 247.09845049690992,
-      "Daily_EMA200": 236.30605945327207,
+      "Daily_EMA50": 247.09845051363524,
+      "Daily_EMA200": 236.30605942681635,
       "Daily_Close": 258.25,
       "Price": 258.25,
       "High": null,
@@ -3104,8 +3104,8 @@
       "Low": null
     },
     "ALKLC.IS": {
-      "Daily_EMA50": 383.70823482456944,
-      "Daily_EMA200": 294.4894501382402,
+      "Daily_EMA50": 383.70823482455313,
+      "Daily_EMA200": 294.4894501381912,
       "Daily_Close": 425.0,
       "Price": 425.0,
       "High": null,
@@ -3216,8 +3216,8 @@
       "Low": null
     },
     "AYEN.IS": {
-      "Daily_EMA50": 34.36964821075034,
-      "Daily_EMA200": 31.737032600581184,
+      "Daily_EMA50": 34.369648210743826,
+      "Daily_EMA200": 31.737032597496373,
       "Daily_Close": 33.18000030517578,
       "Price": 33.18,
       "High": null,
@@ -3568,8 +3568,8 @@
       "Low": null
     },
     "EBEBK.IS": {
-      "Daily_EMA50": 80.79831329535183,
-      "Daily_EMA200": 70.13829626805645,
+      "Daily_EMA50": 80.79831329546819,
+      "Daily_EMA200": 70.13829655007373,
       "Daily_Close": 79.5999984741211,
       "Price": 79.6,
       "High": null,
@@ -3784,8 +3784,8 @@
       "Low": null
     },
     "GENIL.IS": {
-      "Daily_EMA50": 9.511376985525457,
-      "Daily_EMA200": 10.029840184866508,
+      "Daily_EMA50": 9.511376985599883,
+      "Daily_EMA200": 10.029840267076226,
       "Daily_Close": 10.869999885559082,
       "Price": 10.87,
       "High": null,
@@ -3856,8 +3856,8 @@
       "Low": null
     },
     "GUNDG.IS": {
-      "Daily_EMA50": 1716.532506932817,
-      "Daily_EMA200": 1001.9805048924086,
+      "Daily_EMA50": 1716.5325069330563,
+      "Daily_EMA200": 1001.980505473441,
       "Daily_Close": 1685.0,
       "Price": 1685.0,
       "High": null,
@@ -4112,8 +4112,8 @@
       "Low": null
     },
     "KTLEV.IS": {
-      "Daily_EMA50": 47.47759025966732,
-      "Daily_EMA200": 30.443789669183573,
+      "Daily_EMA50": 47.47759026469345,
+      "Daily_EMA200": 30.443789703214268,
       "Daily_Close": 52.29999923706055,
       "Price": 52.3,
       "High": null,
@@ -4208,8 +4208,8 @@
       "Low": null
     },
     "MTRKS.IS": {
-      "Daily_EMA50": 28.185659403022466,
-      "Daily_EMA200": 25.61179267057565,
+      "Daily_EMA50": 28.185659403023067,
+      "Daily_EMA200": 25.611792670639222,
       "Daily_Close": 32.36000061035156,
       "Price": 32.36,
       "High": null,
@@ -4256,8 +4256,8 @@
       "Low": null
     },
     "OFSYM.IS": {
-      "Daily_EMA50": 56.61792799020452,
-      "Daily_EMA200": 59.890916558444665,
+      "Daily_EMA50": 56.617927990205885,
+      "Daily_EMA200": 59.8909165584083,
       "Daily_Close": 66.30000305175781,
       "Price": 66.3,
       "High": null,
@@ -4320,8 +4320,8 @@
       "Low": null
     },
     "PCILT.IS": {
-      "Daily_EMA50": 29.958438259350334,
-      "Daily_EMA200": 26.629569883758908,
+      "Daily_EMA50": 29.958438259473812,
+      "Daily_EMA200": 26.62957004857381,
       "Daily_Close": 29.18000030517578,
       "Price": 29.18,
       "High": null,
@@ -4376,8 +4376,8 @@
       "Low": null
     },
     "PSGYO.IS": {
-      "Daily_EMA50": 3.447478333453096,
-      "Daily_EMA200": 3.0766853111181094,
+      "Daily_EMA50": 3.447478333408533,
+      "Daily_EMA200": 3.07668530852352,
       "Daily_Close": 3.569999933242798,
       "Price": 3.57,
       "High": null,
@@ -4624,8 +4624,8 @@
       "Low": null
     },
     "TRCAS.IS": {
-      "Daily_EMA50": 43.79803666586288,
-      "Daily_EMA200": 42.1353610888079,
+      "Daily_EMA50": 43.79803666576271,
+      "Daily_EMA200": 42.13536106592416,
       "Daily_Close": 44.34000015258789,
       "Price": 44.34,
       "High": null,
@@ -4664,8 +4664,8 @@
       "Low": null
     },
     "TUPRS.IS": {
-      "Daily_EMA50": 284.35829556311114,
-      "Daily_EMA200": 238.4688530037338,
+      "Daily_EMA50": 284.3582955638808,
+      "Daily_EMA200": 238.46885425169899,
       "Daily_Close": 346.0,
       "Price": 346.0,
       "High": null,

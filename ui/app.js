@@ -3289,27 +3289,16 @@ async function fetchSimulationData() {
                         const pnlColor = t.pnl_pct >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
                         const pnlSign = t.pnl_pct >= 0 ? '+' : '';
                         
-                        
-                        const formatTime = (ts) => {
-                            if (!ts) return '-';
-                            const p = ts.split(' ');
-                            if (p.length >= 2) return p[1].split('+')[0].substring(0,5);
-                            return ts;
-                        };
-                        
-                        const entryTimeStr = formatTime(t.entry_time);
-                        const exitTimeStr = isClosed ? formatTime(t.exit_time) : '<span style="color:var(--accent-yellow)">İşlemde</span>';
-                        
+                        const exitTimeStr = isClosed ? t.exit_time : '<span style="color:var(--accent-yellow)">İşlemde</span>';
                         const exitPriceStr = isClosed ? `₺${t.exit_price.toFixed(2)}` : '-';
                         const pnlValStr = isClosed ? `${pnlSign}₺${(t.pnl_val || 0).toFixed(2)}` : '-';
                         const pnlPctStr = isClosed ? `${pnlSign}${(t.pnl_pct || 0).toFixed(2)}%` : '-';
                         const statusStr = isClosed ? (t.exit_reason || 'Kapandı') : '<span style="color:var(--accent-yellow); font-weight:bold;"><i class="fa-solid fa-spinner fa-spin"></i> AÇIK POZİSYON</span>';
 
                         tr.innerHTML = `
-                            <td><i class="fa-regular fa-clock text-muted"></i> ${entryTimeStr}</td>
-                            <td>${isClosed ? '<i class="fa-regular fa-clock text-muted"></i> ' : ''}${exitTimeStr}</td>
+                            <td>${t.entry_time}</td>
+                            <td>${exitTimeStr}</td>
                             <td style="font-weight:bold; color:var(--text-light);">${t.symbol}</td>
-                            <td style="font-family:monospace; color:var(--text-muted);">${t.shares || '-'}</td>
                             <td>₺${t.entry_price.toFixed(2)}</td>
                             <td>${exitPriceStr}</td>
                             <td style="color:${pnlColor}; font-weight:bold;">${pnlValStr}</td>
@@ -3318,21 +3307,6 @@ async function fetchSimulationData() {
                         `;
                         tbody.appendChild(tr);
                     });
-                    
-                    // TOTAL ROW
-                    const totalTr = document.createElement('tr');
-                    totalTr.style.borderTop = "2px solid var(--border-color)";
-                    totalTr.style.background = "rgba(255,255,255,0.02)";
-                    
-                    const totalPnlVal = trades.reduce((acc, t) => acc + (t.pnl_val || 0), 0);
-                    const totalColor = totalPnlVal >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-                    const totalSign = totalPnlVal >= 0 ? '+' : '';
-                    
-                    totalTr.innerHTML = `
-                        <td colspan="6" style="text-align:right; font-weight:bold; color:var(--text-main); font-size:1.1rem; padding-top:1rem;">GÜNLÜK TOPLAM KÂR/ZARAR:</td>
-                        <td colspan="3" style="color:${totalColor}; font-weight:bold; font-size:1.2rem; padding-top:1rem;">${totalSign}₺${totalPnlVal.toFixed(2)}</td>
-                    `;
-                    tbody.appendChild(totalTr);
                 }
             }
         } else {
@@ -3343,66 +3317,9 @@ async function fetchSimulationData() {
     }
 }
 
-
-async function fetchLiveOrders() {
-    const container = document.getElementById('live-orders-container');
-    if (!container) return;
-    
-    try {
-        const res = await fetch('/api/simulation/live_orders');
-        const data = await res.json();
-        
-        if (data.status === 'success' && data.orders.length > 0) {
-            container.innerHTML = '';
-            data.orders.forEach(order => {
-                let card = document.createElement('div');
-                card.style.cssText = "background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; padding:1rem; display:flex; flex-direction:column; gap: 0.5rem;";
-                
-                card.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem; margin-bottom:0.5rem;">
-                        <strong style="color:var(--text-light); font-size:1.1rem;"><i class="fa-solid fa-crosshairs text-blue"></i> ${order.symbol}</strong>
-                        <span style="background:var(--accent-blue); color:#fff; font-size:0.75rem; padding:0.1rem 0.4rem; border-radius:4px;">Güç: ${order.score}</span>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
-                        <span style="color:var(--text-muted);">Alış Fiyatı:</span>
-                        <strong style="color:var(--text-main);">₺${order.entry_price.toFixed(2)}</strong>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
-                        <span style="color:var(--text-muted);">Miktar (Lot):</span>
-                        <strong style="color:var(--text-main); font-family:monospace;">${order.shares} Lot</strong>
-                    </div>
-                    <div style="background:rgba(255,255,255,0.02); padding:0.5rem; border-radius:4px; margin-top:0.5rem;">
-                        <div style="font-size:0.8rem; color:var(--accent-yellow); margin-bottom:0.3rem;"><i class="fa-solid fa-link"></i> <strong>Zincir Emirler (OCO)</strong></div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:0.2rem;">
-                            <span style="color:var(--accent-red);">Stop-Loss (-%3):</span>
-                            <strong>₺${order.stop_price.toFixed(2)}</strong>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:0.2rem;">
-                            <span style="color:var(--accent-green);">Kâr Al TP1 (+%5):</span>
-                            <strong>₺${order.tp1_price.toFixed(2)}</strong>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
-                            <span style="color:var(--accent-green);">Kâr Al TP2 (Tavan):</span>
-                            <strong>₺${order.tp2_price.toFixed(2)}</strong>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        } else {
-            container.innerHTML = '<div style="color:var(--text-muted);"><i class="fa-solid fa-circle-exclamation"></i> Bugün için geçerli "Çelik Emir" kriterlerine uyan sinyal bulunamadı.</div>';
-        }
-    } catch (e) {
-        container.innerHTML = '<div style="color:var(--accent-red);">Hata: ' + e.message + '</div>';
-    }
-}
-
 let equityChartInstance = null;
 
 function renderEquityCurveChart(equityData) {
-    // Check if Chart.js is loaded
-    if (typeof Chart === 'undefined') return;
-    
     const ctx = document.getElementById('equityCurveChart');
     if (!ctx) return;
     
@@ -3420,29 +3337,143 @@ function renderEquityCurveChart(equityData) {
             datasets: [{
                 label: 'Bakiye (₺)',
                 data: dataPoints,
-                borderColor: '#19c37d',
-                backgroundColor: 'rgba(25, 195, 125, 0.1)',
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
                 borderWidth: 2,
+                pointRadius: 3,
+                pointBackgroundColor: '#3b82f6',
                 fill: true,
-                tension: 0.1
+                tension: 0.2
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            scales: {
-                y: {
-                    grid: { color: 'rgba(255,255,255,0.05)' },
-                    ticks: { color: '#ccc' }
+            plugins: {
+                legend: {
+                    display: false
                 },
-                x: {
-                    grid: { color: 'rgba(255,255,255,0.05)' },
-                    ticks: { color: '#ccc' }
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(context.parsed.y);
+                            }
+                            return label;
+                        }
+                    }
                 }
             },
-            plugins: {
-                legend: { display: false }
+            scales: {
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)'
+                    },
+                    ticks: {
+                        color: '#94a3b8'
+                    }
+                },
+                y: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)'
+                    },
+                    ticks: {
+                        color: '#94a3b8',
+                        callback: function(value, index, values) {
+                            return value.toLocaleString('tr-TR');
+                        }
+                    }
+                }
             }
         }
+    });
+}
+
+function renderDailyBreakdown(dailyList, tbody, prefix = '') {
+    if (!tbody) return;
+    const weekVal = document.getElementById('stats-tab-week-select')?.value;
+    let expectedDates = [];
+    if (weekVal) {
+        const [year, weekStr] = weekVal.split('-W');
+        const simple = new Date(year, 0, 1 + (weekStr - 1) * 7);
+        const dow = simple.getDay();
+        const ISOweekStart = simple;
+        if (dow <= 4)
+            ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
+        else
+            ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
+        for(let i = 0; i < 5; i++) {
+            const d = new Date(ISOweekStart);
+            d.setDate(d.getDate() + i);
+            expectedDates.push(d.toISOString().slice(0, 10));
+        }
+    } else {
+        expectedDates = dailyList.map(d => d.date);
+    }
+    if (expectedDates.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-muted text-center" style="padding:2rem;">Bu hafta icin kayit bulunamadi.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = '';
+    // Reverse SİLİNDİ, en yeni tarih en üstte çıksın
+    expectedDates.forEach(dateStr => {
+        const d = dailyList.find(x => x.date === dateStr);
+        if (!d) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = '<td><div style="font-weight:800; font-size:0.9rem; color:var(--text-light); display:flex; align-items:center; gap:6px;"><i class="fa-regular fa-calendar" style="color:var(--text-muted);"></i> ' + dateStr + '</div></td><td colspan="5" class="text-center" style="color:var(--text-muted); font-size:0.85rem; font-style:italic; padding:1.5rem 0;"><i class="fa-solid fa-mug-hot" style="font-size:1.2rem; color:rgba(255,255,255,0.1); margin-right:8px;"></i> TATİL / VERİ YOK</td>';
+            tbody.appendChild(tr);
+            return;
+        }
+        const tr = document.createElement('tr');
+        const total = d.total_candidates || 0;
+        const tavan = d.hit_ceiling_count || 0;
+        let tavanRate = d.hit_ceiling_pct || 0;
+        const avgMax = d.avg_max_gain_pct || 0;
+        const avgClose = d.avg_closing_gain_pct || 0;
+        const starStock = d.star_stock || 'Yok';
+        const warrantCode = d.star_warrant || 'Yok';
+        const warrantGain = d.star_warrant_gain || '+0%';
+        
+        const dailyResultColor = avgClose > 0 ? '#10b981' : (avgClose < 0 ? '#ef4444' : 'var(--text-muted)');
+        const closeSign = avgClose > 0 ? '+' : '';
+        const maxSign = avgMax > 0 ? '+' : '';
+        
+        tr.innerHTML = `
+            <td>
+                <div style="font-weight:800; font-size:0.9rem; color:var(--text-light); display:flex; align-items:center; gap:6px;">
+                    <i class="fa-regular fa-calendar-check" style="color:#10b981;"></i> ${d.date}
+                </div>
+                <div style="font-size:0.65rem; color:#10b981; font-weight:700; margin-top:3px;">
+                    <i class="fa-solid fa-check"></i> ${d.status === 'COMPLETED' ? 'Tamamlandı' : 'Canlı'}
+                </div>
+            </td>
+            <td>
+                <div style="font-size:1.1rem; font-weight:800; color:#fff;">${total}</div>
+            </td>
+            <td>
+                <div style="font-size:0.9rem; font-weight:800; color:#10b981;">%${tavanRate} Başarı</div>
+                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">${tavan}/${total} Hisse Tavana Ulaştı</div>
+            </td>
+            <td>
+                <div style="font-weight:800; font-size:0.9rem; color:${dailyResultColor};">${closeSign}${avgClose.toFixed(2)}%</div>
+                <div style="font-size:0.72rem; color:var(--accent-yellow); font-weight:600;">Zirve: ${maxSign}${avgMax.toFixed(2)}%</div>
+            </td>
+            <td>
+                <div style="font-weight:800; font-size:0.85rem; color:#38bdf8;">${starStock}</div>
+                <div style="font-size:0.72rem; color:#c084fc; font-weight:700; margin-top:2px;">${warrantCode} ${warrantGain}</div>
+            </td>
+            <td>
+                <button onclick="console.log('Detayları Ac clicked for ${d.date}'); openTavanAuditForDate('${d.date}')" class="btn-primary" style="background:rgba(239,68,68,0.25); color:#fca5a5; border:1px solid rgba(239,68,68,0.4); padding:4px 10px; font-size:0.8rem; font-weight:bold; border-radius:4px; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-folder-open"></i> Detayları Aç
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
     });
 }
