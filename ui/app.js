@@ -3280,19 +3280,29 @@ async function fetchSimulationData() {
             if (tbody) {
                 tbody.innerHTML = '';
                 if (trades.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;">Kayıtlı işlem bulunamadı.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-muted text-center" style="padding:2rem;">Kayıtlı işlem bulunamadı.</td></tr>';
                 } else {
                     trades.forEach(t => {
                         const tr = document.createElement('tr');
+                        const isClosed = t.exit_time && t.exit_price;
                         const pnlColor = t.pnl_pct >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
                         const pnlSign = t.pnl_pct >= 0 ? '+' : '';
+                        
+                        const exitTimeStr = isClosed ? t.exit_time : '<span style="color:var(--accent-yellow)">İşlemde</span>';
+                        const exitPriceStr = isClosed ? `₺${t.exit_price.toFixed(2)}` : '-';
+                        const pnlValStr = isClosed ? `${pnlSign}₺${(t.pnl_val || 0).toFixed(2)}` : '-';
+                        const pnlPctStr = isClosed ? `${pnlSign}${(t.pnl_pct || 0).toFixed(2)}%` : '-';
+                        const statusStr = isClosed ? (t.exit_reason || 'Kapandı') : '<span style="color:var(--accent-yellow); font-weight:bold;"><i class="fa-solid fa-spinner fa-spin"></i> AÇIK POZİSYON</span>';
+
                         tr.innerHTML = `
                             <td>${t.entry_time}</td>
+                            <td>${exitTimeStr}</td>
                             <td style="font-weight:bold; color:var(--text-light);">${t.symbol}</td>
                             <td>₺${t.entry_price.toFixed(2)}</td>
-                            <td>${t.exit_price ? '₺' + t.exit_price.toFixed(2) : '-'}</td>
-                            <td style="color:${pnlColor}; font-weight:bold;">${pnlSign}${t.pnl_pct.toFixed(2)}%</td>
-                            <td>${t.exit_reason || '-'}</td>
+                            <td>${exitPriceStr}</td>
+                            <td style="color:${pnlColor}; font-weight:bold;">${pnlValStr}</td>
+                            <td style="color:${pnlColor}; font-weight:bold;">${pnlPctStr}</td>
+                            <td>${statusStr}</td>
                         `;
                         tbody.appendChild(tr);
                     });
