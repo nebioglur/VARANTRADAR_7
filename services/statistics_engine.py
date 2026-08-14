@@ -110,6 +110,7 @@ class StatisticsEngine:
         c_avg_close = sum(h['avg_close_gain'] for h in history) / total_days if total_days > 0 else 0
         
         return {
+            "status": "success",
             "summary": {
                 "total_days_tracked": total_days,
                 "total_candidates_tracked": total_cands,

@@ -750,19 +750,28 @@ def api_simulation_daily_pnl():
         equity_df = pd.read_sql_query("SELECT * FROM equity_log ORDER BY date_str ASC", conn)
         
         # Get all trades
-        trades_df = pd.read_sql_query("SELECT * FROM trades ORDER BY date_str DESC, entry_time DESC", conn)
-        conn.close()
-        
-        res = {
-            "status": "success",
-            "equity_curve": equity_df.to_dict('records') if not equity_df.empty else [],
-            "trades": trades_df.to_dict('records') if not trades_df.empty else []
-        }
-        return jsonify(res)
+        import sqlite3
+        from contextlib import closing
+        with get_connection() as conn:
+            conn.row_factory = sqlite3.Row
+            c = conn.cursor()
+            # Fetch daily equity log
+            c.execute("SELECT * FROM equity_log ORDER BY date_str ASC")
+            equity_rows = c.fetchall()
+            equity_curve = [dict(row) for row in equity_rows]
+            
+            # Fetch closed trades
+            c.execute("SELECT * FROM trades ORDER BY entry_time DESC LIMIT 100")
+            trade_rows = c.fetchall()
+            trades = [dict(row) for row in trade_rows]
+            
+            return jsonify({
+                "status": "success",
+                "equity_curve": equity_curve,
+                "trades": trades
+            })
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return jsonify({"status": "error", "message": str(e)})
 
 @app.route('/api/simulation/send_telegram', methods=['POST'])
 def api_simulation_send_telegram():
@@ -772,27 +781,31 @@ def api_simulation_send_telegram():
         if not date_str:
             return jsonify({"status": "error", "message": "Date is required"}), 400
             
-        # Re-run simulation logic to get the exact data (fast enough to not need caching here)
         sim_res = api_simulation_daily_pnl().json
         if sim_res.get("status") != "success":
             return jsonify({"status": "error", "message": "Simülasyon hesaplanamadı"}), 500
             
-        days = sim_res.get("days", [])
-        day_data = next((d for d in days if d["date"] == date_str), None)
+        eq_log = sim_res.get("equity_curve", [])
+        day_data = next((d for d in eq_log if d["date_str"] == date_str), None)
         
         if not day_data:
             return jsonify({"status": "error", "message": "Belirtilen tarih için simülasyon verisi bulunamadı"}), 404
             
+        trades = [t for t in sim_res.get("trades", []) if t["date_str"] == date_str]
+        
         # Telegram Mesajını Oluştur
         is_profit = day_data['daily_pnl'] >= 0
         icon = "🟢" if is_profit else "🔴"
         
+        total_invested = sum([(t.get('shares',0) * t.get('entry_price',0)) for t in trades])
+        pct = (day_data['daily_pnl'] / total_invested * 100) if total_invested > 0 else 0
+        
         msg = (
             f"🧪 <b>ORACLE SİMÜLASYON RAPORU</b> 🧪\n"
             f"📅 <b>Tarih:</b> {date_str}\n"
-            f"📊 <b>İşlem Gören Hisse Sayısı:</b> {day_data['stocks_count']}\n"
-            f"💰 <b>Yatırılan Tutar:</b> {day_data['total_invested']:,.2f} ₺\n"
-            f"{icon} <b>Günlük K/Z:</b> {day_data['daily_pnl']:,.2f} ₺ (%{day_data['daily_pnl_pct']:.2f})\n\n"
+            f"📊 <b>İşlem Gören Hisse Sayısı:</b> {len(trades)}\n"
+            f"💰 <b>Yatırılan Tutar:</b> {total_invested:,.2f} ₺\n"
+            f"{icon} <b>Günlük K/Z:</b> {day_data['daily_pnl']:,.2f} ₺ (%{pct:.2f})\n\n"
             f"📋 <b>GÜN İÇİ İŞLEMLER:</b>\n"
         )
         
