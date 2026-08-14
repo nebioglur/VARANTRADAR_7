@@ -3384,7 +3384,15 @@ function showSimDayDetail(dateStr) {
             const isP = t.pnl >= 0;
             const c = isP ? 'var(--accent-green)' : 'var(--accent-red)';
             const s = isP ? '+' : '';
-            const badge = isP ? '<span style="background:rgba(16,185,129,0.15); color:#10b981; padding:2px 8px; border-radius:4px; font-weight:700; font-size:0.72rem;">KÂR</span>' : '<span style="background:rgba(239,68,68,0.15); color:#ef4444; padding:2px 8px; border-radius:4px; font-weight:700; font-size:0.72rem;">ZARAR</span>';
+            
+            let badge = '';
+            if (t.exit_reason === "⏳ AÇIK POZİSYON") {
+                badge = '<span style="background:rgba(234,179,8,0.15); color:#facc15; border:1px solid #facc15; padding:2px 8px; border-radius:4px; font-weight:700; font-size:0.72rem; animation: pulse 2s infinite;">BEKLENİYOR</span>';
+            } else if (isP) {
+                badge = '<span style="background:rgba(16,185,129,0.15); color:#10b981; padding:2px 8px; border-radius:4px; font-weight:700; font-size:0.72rem;">KÂR</span>';
+            } else {
+                badge = '<span style="background:rgba(239,68,68,0.15); color:#ef4444; padding:2px 8px; border-radius:4px; font-weight:700; font-size:0.72rem;">ZARAR</span>';
+            }
             
             totalInvested += t.invested;
             totalReturn += t.return_val;
@@ -3411,6 +3419,16 @@ function showSimDayDetail(dateStr) {
             tbody.appendChild(tr);
         });
         
+        let usedOperations = 0;
+        day.trades.forEach(t => {
+            if (t.exit_reason === "⏳ AÇIK POZİSYON") {
+                usedOperations += 1;
+            } else {
+                usedOperations += 2;
+            }
+        });
+        const remainingOps = 100 - usedOperations;
+
         // Add Summary Row
         const isTotalPnlPositive = totalPnl >= 0;
         const totalC = isTotalPnlPositive ? 'var(--accent-green)' : 'var(--accent-red)';
@@ -3421,7 +3439,10 @@ function showSimDayDetail(dateStr) {
         trTotal.style.background = 'rgba(255,255,255,0.03)';
         trTotal.style.borderTop = '2px solid rgba(255,255,255,0.1)';
         trTotal.innerHTML = `
-            <td colspan="6" style="font-weight:800; text-align:right; color:var(--text-light); padding-right:15px;">TOPLAM GÜNLÜK SONUÇ (Boşta Kalan: ${(10000 - totalInvested).toFixed(2)}₺):</td>
+            <td colspan="6" style="font-weight:800; text-align:right; color:var(--text-light); padding-right:15px;">
+                <span style="background:rgba(239,68,68,0.15); color:#ef4444; padding:3px 8px; border-radius:4px; font-size:0.75rem; font-family:monospace; margin-right:15px; border:1px solid rgba(239,68,68,0.3);">Kalan Günlük İşlem Hakkı: ${remainingOps}/100</span>
+                TOPLAM GÜNLÜK SONUÇ (Boşta Kalan: ${(10000 - totalInvested).toFixed(2)}₺):
+            </td>
             <td style="font-weight:800; font-family:monospace;">${totalInvested.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
             <td style="color:${totalC}; font-weight:800; font-family:monospace; font-size:1.05rem;">${totalS}${totalPnl.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
             <td style="color:${totalC}; font-weight:800; font-size:1.05rem;">${totalS}%${totalPct.toFixed(2)}</td>

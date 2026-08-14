@@ -114,8 +114,12 @@ class AdvancedBacktester:
                 except:
                     s['DTC_Float'] = 0.0
                     
+            # Kural: Sadece AL puanı 80 ve üzeri olanlar
+            stocks = [s for s in stocks if s.get('Score', 0) >= 80]
             stocks = sorted(stocks, key=lambda x: (x.get('Score', 0), x.get('DTC_Float', 0)), reverse=True)
-            selected_stocks = stocks[:self.max_stocks]
+            
+            # Aynı anda maksimum 15 hisse tutulabilir
+            selected_stocks = stocks[:15]
             if not selected_stocks:
                 continue
                 
