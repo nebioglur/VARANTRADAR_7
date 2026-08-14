@@ -1,0 +1,235 @@
+{
+  "status": "success",
+  "start_date": "2026-08-04",
+  "end_date": "2026-08-14",
+  "official_inception_date": "2026-08-04",
+  "summary": {
+    "total_days_tracked": 3,
+    "total_candidates_tracked": 66,
+    "total_hit_ceiling": 17,
+    "tavan_success_pct": 25.8,
+    "total_hit_plus5": 19,
+    "plus5_success_pct": 28.8,
+    "cumulative_avg_max_gain_pct": 6.01,
+    "cumulative_avg_closing_gain_pct": 5.9,
+    "ahlatci_warrant_avg_gain_pct": 37.3
+  },
+  "hourly_summary": [
+    {
+      "time": "10:15",
+      "label": "🌅 10:15 Açılış Seansı",
+      "candidates": 5,
+      "tavan_hits": 5,
+      "tavan_pct": 100.0,
+      "plus5_hits": 5,
+      "plus5_pct": 100.0,
+      "avg_max_gain_pct": 9.86,
+      "warrant_gain_pct": 61.1
+    },
+    {
+      "time": "11:30",
+      "label": "☀️ 11:30 Öğle Öncesi",
+      "candidates": 23,
+      "tavan_hits": 5,
+      "tavan_pct": 21.7,
+      "plus5_hits": 5,
+      "plus5_pct": 21.7,
+      "avg_max_gain_pct": 2.14,
+      "warrant_gain_pct": 13.3
+    },
+    {
+      "time": "14:00",
+      "label": "🌇 14:00 Öğleden Sonra",
+      "candidates": 8,
+      "tavan_hits": 4,
+      "tavan_pct": 50.0,
+      "plus5_hits": 6,
+      "plus5_pct": 75.0,
+      "avg_max_gain_pct": 7.96,
+      "warrant_gain_pct": 49.4
+    },
+    {
+      "time": "08:19",
+      "label": "⏱ 08:19",
+      "candidates": 10,
+      "tavan_hits": 2,
+      "tavan_pct": 20.0,
+      "plus5_hits": 2,
+      "plus5_pct": 20.0,
+      "avg_max_gain_pct": 0.0,
+      "warrant_gain_pct": 0.0
+    },
+    {
+      "time": "12:33",
+      "label": "⏱ 12:33",
+      "candidates": 10,
+      "tavan_hits": 1,
+      "tavan_pct": 10.0,
+      "plus5_hits": 1,
+      "plus5_pct": 10.0,
+      "avg_max_gain_pct": 0.0,
+      "warrant_gain_pct": 0.0
+    },
+    {
+      "time": "12:54",
+      "label": "⏱ 12:54",
+      "candidates": 10,
+      "tavan_hits": 0,
+      "tavan_pct": 0.0,
+      "plus5_hits": 0,
+      "plus5_pct": 0.0,
+      "avg_max_gain_pct": 0.0,
+      "warrant_gain_pct": 0.0
+    }
+  ],
+  "daily_breakdown": [
+    {
+      "date": "2026-08-13",
+      "status": "LIVE_TRACKING",
+      "total_candidates": 48,
+      "hit_ceiling_count": 3,
+      "hit_ceiling_pct": 6.2,
+      "hit_plus5_count": 3,
+      "hit_plus5_pct": 6.2,
+      "avg_max_gain_pct": 0.0,
+      "avg_closing_gain_pct": 0.0,
+      "star_stock": "ANELE.IS (+%0.0)",
+      "star_warrant": "ANAHC",
+      "star_warrant_gain": "+%0.0"
+    },
+    {
+      "date": "2026-08-06",
+      "status": "COMPLETED",
+      "total_candidates": 8,
+      "hit_ceiling_count": 6,
+      "hit_ceiling_pct": 75.0,
+      "hit_plus5_count": 7,
+      "hit_plus5_pct": 87.5,
+      "avg_max_gain_pct": 8.95,
+      "avg_closing_gain_pct": 8.85,
+      "star_stock": "GARAN (+%9.84)",
+      "star_warrant": "GAAHC",
+      "star_warrant_gain": "+%59.0"
+    },
+    {
+      "date": "2026-08-04",
+      "status": "COMPLETED",
+      "total_candidates": 10,
+      "hit_ceiling_count": 8,
+      "hit_ceiling_pct": 80.0,
+      "hit_plus5_count": 9,
+      "hit_plus5_pct": 90.0,
+      "avg_max_gain_pct": 9.08,
+      "avg_closing_gain_pct": 8.84,
+      "star_stock": "ASELS (+%9.88)",
+      "star_warrant": "ASAHC",
+      "star_warrant_gain": "+%62.2"
+    }
+  ],
+  "hall_of_fame": [
+    {
+      "symbol": "GARAN",
+      "appearances": 2,
+      "tavan_hits": 2,
+      "tavan_success_pct": 100.0,
+      "plus5_hits": 2,
+      "plus5_success_pct": 100.0,
+      "avg_max_gain_pct": 9.86,
+      "ahlatci_warrant": "GAAHC"
+    },
+    {
+      "symbol": "TUPRS",
+      "appearances": 2,
+      "tavan_hits": 2,
+      "tavan_success_pct": 100.0,
+      "plus5_hits": 2,
+      "plus5_success_pct": 100.0,
+      "avg_max_gain_pct": 9.86,
+      "ahlatci_warrant": "TPAHC"
+    },
+    {
+      "symbol": "THYAO",
+      "appearances": 2,
+      "tavan_hits": 2,
+      "tavan_success_pct": 100.0,
+      "plus5_hits": 2,
+      "plus5_success_pct": 100.0,
+      "avg_max_gain_pct": 9.85,
+      "ahlatci_warrant": "THAHC"
+    },
+    {
+      "symbol": "AKBNK",
+      "appearances": 2,
+      "tavan_hits": 2,
+      "tavan_success_pct": 100.0,
+      "plus5_hits": 2,
+      "plus5_success_pct": 100.0,
+      "avg_max_gain_pct": 9.84,
+      "ahlatci_warrant": "AKAHC"
+    },
+    {
+      "symbol": "ASELS",
+      "appearances": 2,
+      "tavan_hits": 2,
+      "tavan_success_pct": 100.0,
+      "plus5_hits": 2,
+      "plus5_success_pct": 100.0,
+      "avg_max_gain_pct": 9.82,
+      "ahlatci_warrant": "ASAHC"
+    },
+    {
+      "symbol": "KCHOL",
+      "appearances": 2,
+      "tavan_hits": 2,
+      "tavan_success_pct": 100.0,
+      "plus5_hits": 2,
+      "plus5_success_pct": 100.0,
+      "avg_max_gain_pct": 9.82,
+      "ahlatci_warrant": "KCAHC"
+    },
+    {
+      "symbol": "SISE",
+      "appearances": 2,
+      "tavan_hits": 1,
+      "tavan_success_pct": 50.0,
+      "plus5_hits": 2,
+      "plus5_success_pct": 100.0,
+      "avg_max_gain_pct": 8.91,
+      "ahlatci_warrant": "SIAHC"
+    },
+    {
+      "symbol": "EREGL",
+      "appearances": 2,
+      "tavan_hits": 1,
+      "tavan_success_pct": 50.0,
+      "plus5_hits": 1,
+      "plus5_success_pct": 50.0,
+      "avg_max_gain_pct": 7.15,
+      "ahlatci_warrant": "ERAHC"
+    },
+    {
+      "symbol": "ASTOR.IS",
+      "appearances": 2,
+      "tavan_hits": 1,
+      "tavan_success_pct": 50.0,
+      "plus5_hits": 1,
+      "plus5_success_pct": 50.0,
+      "avg_max_gain_pct": 0.0,
+      "ahlatci_warrant": "ASAHC"
+    },
+    {
+      "symbol": "DCTTR.IS",
+      "appearances": 1,
+      "tavan_hits": 1,
+      "tavan_success_pct": 100.0,
+      "plus5_hits": 1,
+      "plus5_success_pct": 100.0,
+      "avg_max_gain_pct": 0.0,
+      "ahlatci_warrant": "DCAHC"
+    }
+  ],
+  "available_range": {
+    "min_date": "2026-08-04",
+    "max_date": "2026-08-13"
+  }
+}

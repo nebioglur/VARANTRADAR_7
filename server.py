@@ -212,23 +212,27 @@ def background_scanner():
                             from services.tavan_tracker import TavanAuditTracker
                             TavanAuditTracker.record_snapshot(tavan_candidates)
                             TavanAuditTracker.update_daily_progress(daily_stats)
+                            
+                            # YENİ MİMARİ: SQLite'a sinyalleri ve market datasını kaydet
+                            from services.market_data import MarketDataManager
+                            from services.simulation_engine import SimulationEngine
+                            from datetime import datetime
+                            d_str = datetime.now().strftime("%Y-%m-%d")
+                            MarketDataManager.record_signals(d_str, tavan_candidates)
+                            MarketDataManager.fetch_and_store_intraday(d_str)
+                            
+                            # Günlük simülasyonu çalıştır
+                            sim = SimulationEngine()
+                            sim.run_daily_simulation(d_str)
+                            
                         except Exception as e_audit:
-                            print(f"[BACKGROUND] Tavan Audit Tracker hatası: {e_audit}")
+                            print(f"[BACKGROUND] Yeni Motor Hatası: {e_audit}")
+                            import traceback
+                            traceback.print_exc()
                             
                         print("[BACKGROUND] 1h ve Tavan taraması tamamlandı, saatlik tavan denetçisine kaydedildi.")
                 except Exception as e_1h:
                     print(f"[BACKGROUND] 1h Tarama hatası: {e_1h}")
-                
-                try:
-                    print("[BACKGROUND] BIST50 için 5m taraması başlıyor...")
-                    valid_bist50_loop = [s for s in BIST50_SYMBOLS if s in daily_stats]
-                    res_5m = scanner.scan_pool_bulk_5m(valid_bist50_loop)
-                    if res_5m is not None:
-                        GLOBAL_DASHBOARD_CACHE["signals_5m"] = sanitize_for_json(res_5m)
-                        save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
-                        print("[BACKGROUND] 5m taraması tamamlandı ve kaydedildi.")
-                except Exception as e_5m:
-                    print(f"[BACKGROUND] 5m Tarama hatası: {e_5m}")
                 
                 # Telegram bildirimlerini gonder
                 process_notifications(GLOBAL_DASHBOARD_CACHE)
@@ -679,8 +683,8 @@ def api_tavan_tracker():
     """Sabah 10:15 tavan listesi ve 18:10 kapanış performans denetim raporunu döner."""
     selected_date = request.args.get('date', None)
     try:
-        from services.tavan_tracker import TavanAuditTracker
-        data = TavanAuditTracker.get_audit_report(selected_date)
+        from services.statistics_engine import StatisticsEngine
+        data = StatisticsEngine.evaluate_daily_signals(selected_date)
         return jsonify(sanitize_for_json(data))
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -693,8 +697,8 @@ def api_tavan_history():
     symbol_filter = request.args.get('symbol', None)
     time_filter = request.args.get('time', None)
     try:
-        from services.tavan_tracker import TavanAuditTracker
-        data = TavanAuditTracker.get_long_term_history(start_date=start_date, end_date=end_date, symbol_filter=symbol_filter, time_filter=time_filter)
+        from services.statistics_engine import StatisticsEngine
+        data = StatisticsEngine.get_all_time_kpis()
         return jsonify(sanitize_for_json(data))
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -702,11 +706,21 @@ def api_tavan_history():
 @app.route('/api/simulation/daily_pnl', methods=['GET'])
 def api_simulation_daily_pnl():
     try:
-        from services.backtester import AdvancedBacktester
-        backtester = AdvancedBacktester()
-        res = backtester.run_simulation()
-        if res.get("status") == "error":
-            return jsonify(res), 500
+        from services.trade_database import get_connection
+        conn = get_connection()
+        
+        # Get equity log
+        equity_df = pd.read_sql_query("SELECT * FROM equity_log ORDER BY date_str ASC", conn)
+        
+        # Get all trades
+        trades_df = pd.read_sql_query("SELECT * FROM trades ORDER BY date_str DESC, entry_time DESC", conn)
+        conn.close()
+        
+        res = {
+            "status": "success",
+            "equity_curve": equity_df.to_dict('records') if not equity_df.empty else [],
+            "trades": trades_df.to_dict('records') if not trades_df.empty else []
+        }
         return jsonify(res)
     except Exception as e:
         import traceback

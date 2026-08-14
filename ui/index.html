@@ -180,14 +180,14 @@
                     </div>
                 </div>
                 
-                <!-- 5 Dakikalık Kısa Trade Sinyalleri -->
-                <div class="card" id="radar-card-2" style="padding:1rem; border:1px solid rgba(59, 130, 246, 0.5); box-shadow: 0 0 15px rgba(59,130,246,0.15);">
-                    <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem; color:var(--accent-blue);"><i class="fa-solid fa-bolt"></i> 5 Dakikalık Hızlı Scalp (RSI) <span id="time-signals-5m" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
-                    <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; margin-top:-0.5rem;">Gün İçi / Anlık Al-Sat (15-60 Dk): BIST50'de RSI aşırı satım/alım dönüşleri.</p>
+                <!-- 🧪 AR-GE: Saf Madde (Zenginleştirilmiş Arıtma) -->
+                <div class="card" id="radar-card-2" style="padding:1rem; border:1px solid rgba(139, 92, 246, 0.6); box-shadow: 0 0 20px rgba(139, 92, 246, 0.2); background: linear-gradient(180deg, rgba(139,92,246,0.05) 0%, transparent 100%);">
+                    <h3 class="card-title" style="font-size:1.1rem; margin-bottom:0.8rem; color:var(--accent-purple); text-shadow: 0 0 10px rgba(139, 92, 246, 0.5);"><i class="fa-solid fa-flask-vial"></i> AR-GE Laboratuvarı <span style="font-size:0.75rem; color:var(--text-muted);">| Saf Madde Üretimi</span></h3>
+                    <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; margin-top:-0.5rem;">Tavan Radar adaylarının patlama olasılığını, hacim şiddetini ve fiyat sıkışmasını ölçen <b>Zenginleştirilmiş Arıtma</b> analizleri.</p>
                     <div class="table-scroll-wrapper" style="max-height:65vh; min-height:300px; overflow-y:auto;">
                     <table class="data-table" style="width: 100%;">
-                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>RSI</th><th>Anlık Scalp</th><th style="width:60px;"></th></tr></thead>
-                        <tbody id="tb-signals-5m"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
+                        <thead><tr><th>Aday Hisse</th><th>Puan & Evre</th><th>Hacim Şiddeti</th><th>Sıkışma %</th><th>Kurumsal İzi</th><th>Patlama (P-Score)</th><th style="width:60px;"></th></tr></thead>
+                        <tbody id="tb-arge-tavan"><tr><td colspan="7" class="text-muted text-center"><i class="fa-solid fa-microscope fa-beat"></i> Laboratuvar verileri analiz ediliyor...</td></tr></tbody>
                     </table>
                     </div>
                 </div>
@@ -992,239 +992,69 @@
         </div>
     </div> <!-- END DASHBOARD WRAPPER -->
 
-    <!-- 📊 İSTATİSTİKLER & PERFORMANS MERKEZİ WRAPPER (05 AĞUSTOS 2026 BAŞLANGIÇLI) -->
+    <!-- 📊 İSTATİSTİKLER & PERFORMANS MERKEZİ WRAPPER -->
     <div id="stats-wrapper" class="main-wrapper" style="display: none;">
-        <div class="dashboard-layout">
+        <div style="max-width:1200px; margin:0 auto; padding: 1rem;">
+            <div style="margin-bottom:2rem; text-align: center;">
+                <h2 style="color:var(--accent-purple); font-size: 1.8rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-chart-pie"></i> Performans Merkezi (KPI)</h2>
+                <p style="color:var(--text-muted); font-size: 0.95rem;">Sistemimizin başarı istatistikleri ve genel performansı.</p>
+            </div>
 
-            <!-- SOL YAN ÇUBUK (Sidebar) -->
-            <aside class="sidebar-tabs">
-                <div style="padding:0.5rem 1rem 1rem; border-bottom:1px solid rgba(255,255,255,0.07); margin-bottom:0.5rem;">
-                    <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); font-weight:700;">Performans Merkezi</div>
-                    <div style="font-size:0.72rem; color:#10b981; font-weight:700; margin-top:3px;">Bu Haftanın İstatistikleri</div>
+            <!-- Main KPIs Row 1 -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1.5rem; margin-bottom:1.5rem;">
+                <div class="card" style="background: linear-gradient(145deg, rgba(30,41,59,0.5) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(255,255,255,0.05); text-align:center; padding: 1.5rem;">
+                    <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-regular fa-calendar-days"></i> Takip Edilen Seans</div>
+                    <div id="stats-tab-total-days" style="font-size:2.5rem; font-weight:800; color:var(--text-main);">-</div>
+                    <div id="stats-tab-total-candidates-sub" style="font-size:0.8rem; color:var(--text-muted); margin-top:5px;">Toplam Öneri</div>
                 </div>
-                <button class="s-tab active" onclick="switchStatsTab('ozet', this)">
-                    <i class="fa-solid fa-chart-pie"></i> Genel Özet (KPI)
-                </button>
-                <button class="s-tab" onclick="switchStatsTab('saatlik', this)">
-                    <i class="fa-solid fa-clock-rotate-left"></i> Saat Dilimi Analizi
-                </button>
-                <button class="s-tab" onclick="switchStatsTab('gunluk', this)">
-                    <i class="fa-solid fa-calendar-check"></i> Gün Gün Seans Karnesi
-                </button>
-                <button class="s-tab" onclick="switchStatsTab('hallfame', this)">
-                    <i class="fa-solid fa-crown"></i> Hall of Fame
-                </button>
-
-                <div style="margin-top:1.5rem; padding:0 0.5rem;">
-                    <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); font-weight:700; margin-bottom:0.6rem;">Filtrele</div>
-                    <div style="display:flex; flex-direction:column; gap:0.5rem;">
-                        <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:5px 8px;">
-                            <div style="font-size:0.65rem; color:var(--text-muted); margin-bottom:2px;">Hafta Seçimi</div>
-                            <input type="week" id="stats-tab-week-select" style="background:transparent; border:none; color:#fff; font-size:0.8rem; outline:none; width:100%; font-family:inherit; color-scheme: dark;">
-                        </div>
-                        <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:5px 8px;">
-                            <div style="font-size:0.65rem; color:var(--text-muted); margin-bottom:2px;">Saat Dilimi</div>
-                            <select id="stats-tab-time-filter" style="background:transparent; border:none; color:#facc15; font-size:0.8rem; outline:none; font-weight:700; cursor:pointer; width:100%;">
-                                <option value="" style="background:#0f172a; color:#fff;">Tüm Saatler</option>
-                                <option value="10:15" style="background:#0f172a; color:#fff;">10:15 Açılış</option>
-                                <option value="11:30" style="background:#0f172a; color:#fff;">11:30 Öğle</option>
-                                <option value="14:00" style="background:#0f172a; color:#fff;">14:00 Öğleden Sonra</option>
-                                <option value="16:00" style="background:#0f172a; color:#fff;">16:00 Kapanış Öncesi</option>
-                            </select>
-                        </div>
-                        <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:5px 8px;">
-                            <div style="font-size:0.65rem; color:var(--text-muted); margin-bottom:2px;">Sembol</div>
-                            <input type="text" id="stats-tab-symbol-search" placeholder="Örn: THYAO" style="background:transparent; border:none; color:#fff; font-size:0.8rem; outline:none; width:100%;">
-                        </div>
-                        <button onclick="applyStatsTabFilter()" type="button" style="background:linear-gradient(135deg, #10b981, #059669); color:#fff; border:none; border-radius:6px; padding:0.5rem; font-size:0.8rem; font-weight:700; cursor:pointer; width:100%;">
-                            <i class="fa-solid fa-filter"></i> Filtrele
-                        </button>
-                        <button onclick="fetchStatsTabData()" type="button" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:var(--text-muted); border-radius:6px; padding:0.4rem; font-size:0.78rem; cursor:pointer; width:100%;">
-                            <i class="fa-solid fa-rotate"></i> Yenile
-                        </button>
-                    </div>
+                <div class="card" style="background: linear-gradient(145deg, rgba(16,185,129,0.05) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(16,185,129,0.2); text-align:center; padding: 1.5rem;">
+                    <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-rocket"></i> Tavan Başarısı</div>
+                    <div id="stats-tab-tavan-rate" style="font-size:2.5rem; font-weight:800; color:var(--accent-green);">-</div>
+                    <div id="stats-tab-tavan-cnt-sub" style="font-size:0.8rem; color:var(--accent-green); margin-top:5px; opacity:0.8;">- Tavan</div>
                 </div>
-
-                <div style="margin-top:1.5rem; padding:0 0.5rem; border-top:1px solid rgba(255,255,255,0.07); padding-top:1rem;">
-                    <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); font-weight:700; margin-bottom:0.6rem;">Hızlı Erişim</div>
-                    <button onclick="openTavanAuditModal()" type="button" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#fca5a5; border-radius:6px; padding:0.5rem 0.6rem; font-size:0.78rem; cursor:pointer; width:100%; text-align:left; margin-bottom:0.4rem;">
-                        <i class="fa-solid fa-clipboard-check"></i> Günlük Denetim
-                    </button>
-                    <button onclick="openLongTermHistoryModal()" type="button" style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); color:#6ee7b7; border-radius:6px; padding:0.5rem 0.6rem; font-size:0.78rem; cursor:pointer; width:100%; text-align:left;">
-                        <i class="fa-solid fa-up-right-and-down-left-from-center"></i> Tam Ekran Modal
-                    </button>
+                <div class="card" style="background: linear-gradient(145deg, rgba(59,130,246,0.05) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(59,130,246,0.2); text-align:center; padding: 1.5rem;">
+                    <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-chart-line"></i> +%5 Üzeri Kâr</div>
+                    <div id="stats-tab-plus5-rate" style="font-size:2.5rem; font-weight:800; color:var(--accent-blue);">-</div>
+                    <div id="stats-tab-plus5-cnt-sub" style="font-size:0.8rem; color:var(--accent-blue); margin-top:5px; opacity:0.8;">- Hisse</div>
                 </div>
-            </aside>
+            </div>
 
-            <!-- SAĞ İÇERİK ALANI (Tab Panes) -->
-            <div class="tab-content-area">
-
-                <!-- === TAB 1: GENEL ÖZET (KPI Kartları) === -->
-                <div id="stab-ozet" class="tab-pane" style="display:block;">
-                    <div style="margin-bottom:1rem;">
-                        <h3 style="color:#10b981; font-size:1.1rem; margin:0; display:flex; align-items:center; gap:8px;">
-                            <i class="fa-solid fa-chart-pie"></i> Haftalık Başarı Özeti
-                            <span style="font-size:0.72rem; color:var(--text-muted); font-weight:400; background:rgba(16,185,129,0.1); padding:2px 8px; border-radius:4px; border:1px solid rgba(16,185,129,0.25);">📅 Bu Hafta (Pzt - Cuma)</span>
-                        </h3>
-                    </div>
-                    
-                    <!-- 1. SİNYAL BAŞARI KARNESİ (Giriş Sayfasından Kopyalandı) -->
-                    <div class="card" style="border:1px solid rgba(234, 179, 8, 0.4); background: linear-gradient(135deg, rgba(234, 179, 8, 0.05) 0%, rgba(15,23,42,0.95) 100%); box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin-bottom:1.5rem;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem;">
-                            <h3 class="card-title" style="margin:0; font-size:1.05rem; color:var(--accent-yellow);"><i class="fa-solid fa-trophy text-yellow"></i> Sistem Başarı Karnesi</h3>
-                            <div style="display:flex; align-items:center; gap:6px;">
-                                <span class="badge" style="background:rgba(16,185,129,0.15); color:#10b981; font-weight:700; border:1px solid rgba(16,185,129,0.3); padding:3px 8px; border-radius:12px; font-size:0.72rem;">Bu Hafta</span>
-                                <span class="badge" style="background:rgba(234, 179, 8, 0.2); color:var(--accent-yellow); font-weight:700; border:1px solid rgba(234, 179, 8, 0.4); padding:3px 8px; border-radius:12px; font-size:0.72rem;"><span class="pulse" style="display:inline-block; margin-right:3px;"></span>Canlı</span>
-                            </div>
-                        </div>
-
-                        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:0.6rem; margin-bottom:1rem;">
-                            <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:8px; padding:0.6rem; text-align:center;">
-                                <div style="font-size:0.72rem; color:var(--text-muted);">Tavan Başarı</div>
-                                <div id="stat-winrate-stats" style="font-size:1.3rem; font-weight:800; color:var(--accent-green); margin-top:2px;"><i class="fa-solid fa-spinner fa-spin" style="font-size:1rem;"></i></div>
-                                <div id="stat-winrate-sub-stats" style="font-size:0.65rem; color:var(--text-muted); margin-top:1px;">yükleniyor...</div>
-                            </div>
-                            <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:8px; padding:0.6rem; text-align:center;">
-                                <div style="font-size:0.72rem; color:var(--text-muted);">+%5 Kâr Oranı</div>
-                                <div id="stat-avgprofit-stats" style="font-size:1.3rem; font-weight:800; color:var(--accent-blue); margin-top:2px;"><i class="fa-solid fa-spinner fa-spin" style="font-size:1rem;"></i></div>
-                                <div id="stat-avgprofit-sub-stats" style="font-size:0.65rem; color:var(--text-muted); margin-top:1px;">yükleniyor...</div>
-                            </div>
-                            <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:8px; padding:0.6rem; text-align:center;">
-                                <div style="font-size:0.72rem; color:var(--text-muted);">Ort. Zirve Primi</div>
-                                <div id="stat-pfactor-stats" style="font-size:1.3rem; font-weight:800; color:var(--accent-purple); margin-top:2px;"><i class="fa-solid fa-spinner fa-spin" style="font-size:1rem;"></i></div>
-                                <div id="stat-pfactor-sub-stats" style="font-size:0.65rem; color:var(--text-muted); margin-top:1px;">yükleniyor...</div>
-                            </div>
-                        </div>
-
-                        <!-- Kategori Dağılımı (gerçek veriden) -->
-                        <div style="display:flex; flex-direction:column; gap:0.5rem;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; background:rgba(255,255,255,0.02); padding:0.4rem 0.6rem; border-radius:6px;">
-                                <span><i class="fa-solid fa-rocket" style="color:var(--accent-red); margin-right:5px;"></i> <span>Toplam Seans:</span></span>
-                                <span id="stat-days-val-stats" style="font-weight:700; color:var(--accent-green);">...</span>
-                            </div>
-                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; background:rgba(255,255,255,0.02); padding:0.4rem 0.6rem; border-radius:6px;">
-                                <span><i class="fa-solid fa-building-columns" style="color:var(--accent-purple); margin-right:5px;"></i> Ahlatcı Varant Ort.:</span>
-                                <span id="stat-warrant-val-stats" style="font-weight:700; color:var(--accent-purple);">...</span>
-                            </div>
-                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; background:rgba(255,255,255,0.02); padding:0.4rem 0.6rem; border-radius:6px;">
-                                <span><i class="fa-solid fa-calendar" style="color:var(--accent-blue); margin-right:5px;"></i> Kapanis Ort. Getiri:</span>
-                                <span id="stat-close-val-stats" style="font-weight:700; color:var(--accent-blue);">...</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 5 KPI Kartı -->
-                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
-                        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:1.2rem; text-align:center;">
-                            <div style="color:var(--text-muted); font-size:0.72rem; text-transform:uppercase; font-weight:600;"><i class="fa-regular fa-calendar-days"></i> Takip Edilen Seans</div>
-                            <div id="stats-tab-total-days" style="font-size:1.8rem; font-weight:800; color:#fff; margin-top:6px;">-</div>
-                            <div id="stats-tab-total-candidates-sub" style="font-size:0.72rem; color:var(--text-muted); margin-top:3px;">Toplam - Öneri</div>
-                        </div>
-                        <div style="background:rgba(16,185,129,0.07); border:1px solid rgba(16,185,129,0.3); border-radius:10px; padding:1.2rem; text-align:center;">
-                            <div style="color:#10b981; font-size:0.72rem; text-transform:uppercase; font-weight:700;"><i class="fa-solid fa-rocket"></i> Tavan Kilitleme</div>
-                            <div id="stats-tab-tavan-rate" style="font-size:1.8rem; font-weight:800; color:#10b981; margin-top:6px;">-</div>
-                            <div id="stats-tab-tavan-cnt-sub" style="font-size:0.72rem; color:#6ee7b7; margin-top:3px;">- Tavan</div>
-                        </div>
-                        <div style="background:rgba(56,189,248,0.07); border:1px solid rgba(56,189,248,0.3); border-radius:10px; padding:1.2rem; text-align:center;">
-                            <div style="color:#38bdf8; font-size:0.72rem; text-transform:uppercase; font-weight:700;"><i class="fa-solid fa-chart-line"></i> +%5 Üzeri Kâr</div>
-                            <div id="stats-tab-plus5-rate" style="font-size:1.8rem; font-weight:800; color:#38bdf8; margin-top:6px;">-</div>
-                            <div id="stats-tab-plus5-cnt-sub" style="font-size:0.72rem; color:#7dd3fc; margin-top:3px;">- Hisse</div>
-                        </div>
-                        <div style="background:rgba(234,179,8,0.07); border:1px solid rgba(234,179,8,0.3); border-radius:10px; padding:1.2rem; text-align:center;">
-                            <div style="color:#facc15; font-size:0.72rem; text-transform:uppercase; font-weight:700;"><i class="fa-solid fa-fire"></i> Ort. Zirve Primi</div>
-                            <div id="stats-tab-avg-max-gain" style="font-size:1.8rem; font-weight:800; color:#facc15; margin-top:6px;">-</div>
-                            <div id="stats-tab-avg-close-sub" style="font-size:0.72rem; color:var(--text-muted); margin-top:3px;">Kapanış: -</div>
-                        </div>
-                        <div style="background:rgba(168,85,247,0.07); border:1px solid rgba(168,85,247,0.3); border-radius:10px; padding:1.2rem; text-align:center;">
-                            <div style="color:#c084fc; font-size:0.72rem; text-transform:uppercase; font-weight:700;"><i class="fa-solid fa-building-columns"></i> Ahlatcı Varant</div>
-                            <div id="stats-tab-warrant-avg-gain" style="font-size:1.8rem; font-weight:800; color:#c084fc; margin-top:6px;">-</div>
-                            <div style="font-size:0.72rem; color:#d8b4fe; margin-top:3px;">~6.2x Kaldıraçlı Kâr</div>
-                        </div>
-                    </div>
-
-                    <!-- Boş veri / Bekleme bilgi kutusu -->
-                    <div id="stats-empty-notice" style="display:none; text-align:center; padding:3rem 1rem; background:rgba(16,185,129,0.04); border:1px dashed rgba(16,185,129,0.3); border-radius:10px;">
-                        <div style="font-size:3rem; margin-bottom:1rem;">📅</div>
-                        <div style="font-size:1.15rem; font-weight:800; color:#10b981; margin-bottom:0.5rem;">Sistem 04 Ağustos 2026 Sabahı Hazır!</div>
-                        <div style="font-size:0.9rem; color:var(--text-muted); max-width:450px; margin:0 auto; line-height:1.7;">
-                            Sabah <b style="color:#facc15;">10:15</b>'te ilk tavan taraması yapıldığında istatistikler buraya otomatik kaydedilecek.<br>
-                            Her gün seans saatlerinde <b style="color:#38bdf8;">(10:15 / 11:30 / 14:00 / 16:00)</b> ve <b style="color:#10b981;">18:10 kapanışında</b> güncellenir.
-                        </div>
-                    </div>
+            <!-- Main KPIs Row 2 -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1.5rem; margin-bottom:2rem;">
+                <div class="card" style="background: linear-gradient(145deg, rgba(234,179,8,0.05) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(234,179,8,0.2); text-align:center; padding: 1.5rem;">
+                    <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-fire"></i> Ort. Zirve Primi</div>
+                    <div id="stats-tab-avg-max-gain" style="font-size:2.5rem; font-weight:800; color:var(--accent-yellow);">-</div>
+                    <div id="stats-tab-avg-close-sub" style="font-size:0.8rem; color:var(--text-muted); margin-top:5px;">Kapanış: -</div>
                 </div>
-
-                <!-- === TAB 2: SAAT DİLİMİ ANALİZİ === -->
-                <div id="stab-saatlik" class="tab-pane" style="display:none;">
-                    <div style="margin-bottom:1rem;">
-                        <h3 style="color:#6ee7b7; font-size:1.1rem; margin:0; display:flex; align-items:center; gap:8px;">
-                            <i class="fa-solid fa-clock-rotate-left"></i> Saat Dilimi Başarı Karnesi
-                        </h3>
-                        <p style="color:var(--text-muted); font-size:0.82rem; margin-top:4px;">Önerinin yapıldığı saate göre tavan kilitleme, +%5 kâr ve Ahlatcı varant getirisi karşılaştırması</p>
-                    </div>
-                    <div id="stats-tab-hourly-cards-container" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:1.2rem;">
-                        <div style="color:var(--text-muted); font-size:0.85rem; padding:2rem; text-align:center;">Saatlik başarı verileri yükleniyor...</div>
-                    </div>
+                <div class="card" style="background: linear-gradient(145deg, rgba(168,85,247,0.05) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(168,85,247,0.2); text-align:center; padding: 1.5rem;">
+                    <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-building-columns"></i> Ahlatcı Varant Ort. Kâr</div>
+                    <div id="stats-tab-warrant-avg-gain" style="font-size:2.5rem; font-weight:800; color:var(--accent-purple);">-</div>
+                    <div style="font-size:0.8rem; color:var(--accent-purple); margin-top:5px; opacity:0.8;">~6.2x Kaldıraç</div>
                 </div>
+            </div>
 
-                <!-- === TAB 3: GÜN GÜN SEANS KARNESİ === -->
-                <div id="stab-gunluk" class="tab-pane" style="display:none;">
-                    <div style="margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <h3 style="color:#10b981; font-size:1.1rem; margin:0; display:flex; align-items:center; gap:8px;">
-                                <i class="fa-solid fa-calendar-check"></i> Gün Gün Seans Karnesi
-                            </h3>
-                            <p style="color:var(--text-muted); font-size:0.82rem; margin-top:4px;">Günlük tavan başarısı, +%5 kâr oranı ve günün yıldız hissesi</p>
-                        </div>
-                    </div>
-                    <div style="overflow-x:auto;">
-                        <table class="data-table" style="width:100%; font-size:0.84rem; max-height:600px;">
-                            <thead>
-                                <tr>
-                                    <th>Tarih</th>
-                                    <th>Öneri</th>
-                                    <th>Başarı Oranı</th>
-                                    <th>Günlük Net K/Z & Zirve</th>
-                                    <th>Günün Yıldızı & Varantı</th>
-                                    <th style="width:100px;">Kapanış Karnesi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="stats-tab-daily-tbody">
-                                <tr><td colspan="6" class="text-muted text-center" style="padding:2rem;">Veriler yükleniyor...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
+            <!-- Stats Table for Daily History -->
+            <div class="card" style="border:1px solid var(--border-color); background: var(--bg-card); box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                <h3 class="card-title" style="margin-bottom: 1.5rem; font-size: 1.2rem;"><i class="fa-solid fa-calendar-check text-green"></i> Geçmiş Günlerin Karnesi</h3>
+                <div class="table-scroll-wrapper" style="max-height: 400px; overflow-y: auto;">
+                    <table class="data-table" style="width:100%; border-collapse: separate; border-spacing: 0;">
+                        <thead>
+                            <tr>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Tarih</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Toplam Sinyal</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Tavan Sayısı</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">+%5 Üzeri</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Ort. Zirve (%)</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Ort. Kapanış (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stats-history-tbody">
+                            <tr><td colspan="6" class="text-muted text-center" style="padding:3rem;"><i class="fa-solid fa-spinner fa-spin"></i> İstatistikler Yükleniyor...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
-
-                <!-- === TAB 4: HALL OF FAME === -->
-                <div id="stab-hallfame" class="tab-pane" style="display:none;">
-                    <div style="margin-bottom:1rem;">
-                        <h3 style="color:#facc15; font-size:1.1rem; margin:0; display:flex; align-items:center; gap:8px;">
-                            <i class="fa-solid fa-crown"></i> Hall of Fame &mdash; En Cok Kazandiran Hisseler
-                        </h3>
-                        <p style="color:var(--text-muted); font-size:0.82rem; margin-top:4px;">04 Agustos 2026'dan bu yana en yuksek tavan kilitleme ve +%5 basari oranina sahip hisseler</p>
-                    </div>
-                    <div style="overflow-x:auto;">
-                        <table class="data-table" style="width:100%; font-size:0.84rem; max-height:600px;">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Hisse</th>
-                                    <th>Seans Sayisi</th>
-                                    <th>Tavan Kilidi</th>
-                                    <th>+%5 Basarisi</th>
-                                    <th>Ort. Zirve</th>
-                                    <th>Ahlatci Varant</th>
-                                </tr>
-                            </thead>
-                            <tbody id="stats-tab-hall-of-fame-tbody">
-                                <tr><td colspan="7" class="text-muted text-center" style="padding:2rem;">Veriler yukleniyor...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-            </div> <!-- END TAB-CONTENT-AREA -->
-        </div> <!-- END DASHBOARD-LAYOUT -->
+            </div>
+        </div>
     </div> <!-- END STATS-WRAPPER -->
 
     <!-- 🧮 VARANT SİMÜLATÖRÜ TAM SAYFA WRAPPER -->
@@ -1293,118 +1123,62 @@
     </div> <!-- END VARANT-WRAPPER -->
 
     <div id="simulation-wrapper" class="main-wrapper" style="display: none;">
-      <div style="max-width:1100px; margin:0 auto;">
-        <!-- Title -->
-        <div style="margin-bottom:1.5rem;">
-          <h2><i class="fa-solid fa-flask"></i> Gerçekçi Simülasyon Motoru (Ağırlıklı Sepet)</h2>
-          <p>Tavan adaylarına "AL Puanı" ve "Sıçrama Potansiyeli" ağırlığıyla yatırım yapıp, UZAK DUR (Sat) sinyaliyle çıkış yapan test motoru.</p>
-          
-          <div style="background:rgba(59,130,246,0.1); border-left:4px solid var(--accent-blue); padding:1rem; border-radius:6px; margin-top:1rem;">
-            <h4 style="margin:0 0 0.5rem 0; color:var(--accent-blue);"><i class="fa-solid fa-circle-info"></i> Hisseler Neye Göre Seçildi?</h4>
-            <p style="margin:0; font-size:0.85rem; color:var(--text-light); line-height:1.5;">
-              Bu simülasyon <strong>"Puan Ağırlıklı Sepet"</strong> (Gerçekçi) mantığıyla çalışır. Günün tavan adaylarından <strong>en fazla 5 hisse</strong> seçilir. 10.000 TL bütçe bu hisselere <strong>AL Puanı ve Sıçrama Potansiyeli ağırlıklı</strong> paylaştırılarak eşzamanlı pozisyon açılır. (Yüksek puanlı hisseye daha büyük bütçe ayrılır). Satışlar ise hissede <strong>UZAK DUR</strong> sinyali (1 saatlik negatif momentum) oluştuğu anda otomatik gerçekleşir. Bu bir "Oracle" (geleceği bilen) değil, tamamen gerçek verilere dayalı bir testtir.
-            </p>
-          </div>
-          
-          <!-- Canlı Tarama Durumu -->
-          <div style="margin-top:1.5rem; background:linear-gradient(90deg, rgba(16,185,129,0.1), transparent); border-left:4px solid var(--accent-green); padding:0.8rem 1rem; border-radius:6px; display:flex; justify-content:space-between; align-items:center;">
-             <div style="display:flex; align-items:center; gap:10px;">
-                <span class="pulse" style="width:10px; height:10px; background:var(--accent-green); display:inline-block; border-radius:50%; box-shadow:0 0 10px var(--accent-green);"></span>
-                <span style="font-weight:700; color:var(--accent-green); font-size:0.95rem;">Sistem Canlı (Otonom Mod Aktif)</span>
-                <span style="font-family:monospace; color:var(--text-muted); font-size:0.85rem; margin-left:10px;" id="sim-live-log">📡 Piyasa taranıyor... Fırsatlar aranıyor...</span>
-             </div>
-             <div style="font-size:0.85rem; font-weight:700; color:var(--text-light); background:rgba(255,255,255,0.05); padding:4px 10px; border-radius:20px; border:1px solid rgba(255,255,255,0.1);">
-                📊 GÜNLÜK İŞLEM KOTASI: <span style="color:var(--accent-blue);" id="sim-live-quota">0/100</span>
-             </div>
-          </div>
-        </div>
-
-        <!-- 4 KPI Cards row -->
-        <div id="sim-kpi-row" style="display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:1.5rem;">
-          <div class="card" style="border:1px solid var(--border-color); text-align:center;">
-            <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; text-transform:uppercase; letter-spacing:1px;">Kümülatif K/Z (₺)</div>
-            <div id="sim-kpi-cumulative" style="font-size:1.8rem; font-weight:800;">-</div>
-          </div>
-          <div class="card" style="border:1px solid var(--border-color); text-align:center;">
-            <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; text-transform:uppercase; letter-spacing:1px;">Toplam Getiri (%)</div>
-            <div id="sim-kpi-total-pct" style="font-size:1.8rem; font-weight:800;">-</div>
-          </div>
-          <div class="card" style="border:1px solid var(--border-color); text-align:center;">
-            <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; text-transform:uppercase; letter-spacing:1px;">İşlem Günü</div>
-            <div id="sim-kpi-days" style="font-size:1.8rem; font-weight:800; color:var(--text-main);">-</div>
-          </div>
-          <div class="card" style="border:1px solid var(--border-color); text-align:center;">
-            <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; text-transform:uppercase; letter-spacing:1px;">Günlük Ort. Getiri</div>
-            <div id="sim-kpi-avg-daily" style="font-size:1.8rem; font-weight:800;">-</div>
-          </div>
-        </div>
-
-        <!-- Controls Row: Period tabs & Stop-Loss -->
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:1rem;">
-          <div style="display:flex; gap:8px;">
-            <button class="pill-btn active" onclick="switchSimPeriod('daily',this)" id="sim-period-daily">Günlük</button>
-            <button class="pill-btn" onclick="switchSimPeriod('weekly',this)" id="sim-period-weekly">Haftalık</button>
-            <button class="pill-btn" onclick="switchSimPeriod('monthly',this)" id="sim-period-monthly">Aylık</button>
-          </div>
-          <div style="display:flex; gap:10px; align-items:center; background:rgba(30,41,59,0.5); padding:4px 12px; border-radius:6px; border:1px solid var(--border-color);">
-            <label for="sim-stoploss" style="color:var(--text-muted); font-size:0.85rem; font-weight:600;"><i class="fa-solid fa-shield-halved"></i> ZARAR KES (STOP-LOSS):</label>
-            <div style="display:flex; align-items:center;">
-              <span style="color:var(--text-main); font-weight:700; margin-right:4px;">%</span>
-              <input type="number" id="sim-stoploss" value="-2.0" step="0.5" max="0" style="width:70px; background:transparent; border:none; color:var(--accent-red); font-weight:800; font-family:monospace; outline:none; font-size:1.1rem; text-align:right;">
+        <div style="max-width:1200px; margin:0 auto; padding: 1rem;">
+            <div style="margin-bottom:2rem; text-align: center;">
+                <h2 style="color:var(--accent-blue); font-size: 1.8rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-flask"></i> Gerçekçi Simülasyon Motoru</h2>
+                <p style="color:var(--text-muted); font-size: 0.95rem;">Tavan adaylarına yatırım yapan ve UZAK DUR sinyaliyle çıkış yapan test motoru.</p>
             </div>
-            <button onclick="fetchSimulationData()" class="btn-sm" style="background:var(--accent-blue); color:white; border:none; border-radius:4px; padding:4px 12px; cursor:pointer; font-weight:600; transition:0.2s;"><i class="fa-solid fa-arrows-rotate"></i> Yenile</button>
-          </div>
-        </div>
 
-        <!-- Main simulation results table -->
-        <div class="card" style="border:1px solid var(--border-color);">
-          <table class="data-table" style="width:100%;">
-            <thead>
-              <tr>
-                <th>Tarih</th>
-                <th>Hisse Sayısı</th>
-                <th>Yatırılan (₺)</th>
-                <th>Geri Dönüş (₺)</th>
-                <th>Günlük K/Z (₺)</th>
-                <th>Günlük %</th>
-                <th>Kümülatif K/Z (₺)</th>
-                <th>Detay</th>
-              </tr>
-            </thead>
-            <tbody id="sim-daily-tbody">
-              <tr><td colspan="8" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Simülasyon hesaplanıyor...</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Expanded trade detail container (shown when clicking Detay) -->
-        <div id="sim-detail-container" style="display:none; margin-top:1rem;">
-          <div class="card" style="border:1px solid rgba(59,130,246,0.3);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem;">
-              <h4 id="sim-detail-title" style="color:var(--accent-blue); margin:0;"><i class="fa-solid fa-list"></i> Gün Detayı</h4>
-              <button id="sim-btn-telegram" style="background:#2481cc; color:#fff; border:none; border-radius:6px; padding:6px 12px; font-size:0.8rem; font-weight:700; cursor:pointer;"><i class="fa-brands fa-telegram"></i> Telegram'a Gönder</button>
+            <!-- 4 KPI Cards row -->
+            <div id="sim-kpi-row" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1.5rem; margin-bottom:2rem;">
+                <div class="card" style="background: linear-gradient(145deg, rgba(30,41,59,0.5) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(255,255,255,0.05); text-align:center; padding: 1.5rem;">
+                    <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-wallet"></i> Başlangıç Bakiyesi</div>
+                    <div id="sim-kpi-start" style="font-size:2rem; font-weight:800; color:var(--text-main);">-</div>
+                </div>
+                <div class="card" style="background: linear-gradient(145deg, rgba(30,41,59,0.5) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(16,185,129,0.2); text-align:center; padding: 1.5rem;">
+                    <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-sack-dollar"></i> Son Bakiye</div>
+                    <div id="sim-kpi-end" style="font-size:2rem; font-weight:800; color:var(--accent-green);">-</div>
+                </div>
+                <div class="card" style="background: linear-gradient(145deg, rgba(30,41,59,0.5) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(59,130,246,0.2); text-align:center; padding: 1.5rem;">
+                    <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-arrow-trend-up"></i> Toplam Getiri (%)</div>
+                    <div id="sim-kpi-total-pct" style="font-size:2rem; font-weight:800; color:var(--accent-blue);">-</div>
+                </div>
+                <div class="card" style="background: linear-gradient(145deg, rgba(30,41,59,0.5) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(168,85,247,0.2); text-align:center; padding: 1.5rem;">
+                    <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-list-check"></i> İşlem Sayısı</div>
+                    <div id="sim-kpi-trades" style="font-size:2rem; font-weight:800; color:var(--accent-purple);">-</div>
+                </div>
             </div>
-            <table class="data-table" style="width:100%; font-size:0.82rem;">
-              <thead>
-                <tr>
-                  <th>Sembol</th>
-                  <th>AL Puanı</th>
-                  <th>Alış (Saat - ₺)</th>
-                  <th>Satış (Saat - ₺)</th>
-                  <th>Satış Nedeni</th>
-                  <th>Lot</th>
-                  <th>Yatırılan (₺)</th>
-                  <th>Net K/Z (₺)</th>
-                  <th>K/Z %</th>
-                  <th>Maks %</th>
-                  <th>Sonuç</th>
-                </tr>
-              </thead>
-              <tbody id="sim-detail-tbody"></tbody>
-            </table>
-          </div>
+
+            <!-- Chart -->
+            <div class="card" style="border:1px solid var(--border-color); margin-bottom: 2rem; background: var(--bg-card); box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                <h3 class="card-title" style="margin-bottom: 1.5rem; font-size: 1.2rem;"><i class="fa-solid fa-chart-line text-blue"></i> Bakiye Grafiği (Equity Curve)</h3>
+                <div style="position: relative; height: 400px; width: 100%;">
+                    <canvas id="equityCurveChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Sleek Trade Log Table -->
+            <div class="card" style="border:1px solid var(--border-color); background: var(--bg-card); box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                <h3 class="card-title" style="margin-bottom: 1.5rem; font-size: 1.2rem;"><i class="fa-solid fa-clock-rotate-left text-green"></i> İşlem Geçmişi (Trade Log)</h3>
+                <div class="table-scroll-wrapper" style="max-height: 500px; overflow-y: auto;">
+                    <table class="data-table" style="width:100%; border-collapse: separate; border-spacing: 0;">
+                        <thead>
+                            <tr>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Giriş Zamanı</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Sembol</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Giriş Fiyatı</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Çıkış Fiyatı</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Kar / Zarar (%)</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Çıkış Nedeni</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sim-trade-log-tbody">
+                            <tr><td colspan="6" class="text-muted text-center" style="padding:3rem;"><i class="fa-solid fa-spinner fa-spin"></i> İşlem Geçmişi Yükleniyor...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
 
     <div id="news-wrapper" class="main-wrapper" style="display: none;">

@@ -942,6 +942,64 @@ class TechnicalEngine(BaseEngine):
             anti_trap_badge = "🟡 GÖZLEM / NÖTR"
             anti_trap_color = "#facc15"
             teyit_score = max(50, int(score * 0.75))
+            
+        # ==========================================
+        # 🧪 AR-GE: SAF MADDE (ZENGİNLEŞTİRİLMİŞ ARITMA)
+        # ==========================================
+        # 1. Bollinger Daralması (Fiyat Sıkışması)
+        roll_mean = close.rolling(20).mean()
+        roll_std = close.rolling(20).std(ddof=0)
+        upper_band = roll_mean + (roll_std * 2)
+        lower_band = roll_mean - (roll_std * 2)
+        
+        current_upper = float(upper_band.iloc[-1])
+        current_lower = float(lower_band.iloc[-1])
+        current_mid = float(roll_mean.iloc[-1])
+        
+        squeeze_pct = ((current_upper - current_lower) / current_mid) * 100 if current_mid > 0 else 0
+        
+        # 2. Patlama Olasılığı (P-Score)
+        rsi_weight = 0
+        if 55 < current_rsi < 75: rsi_weight = 35
+        elif current_rsi >= 75: rsi_weight = 15  # Aşırı alım
+        elif current_rsi > 40: rsi_weight = 10
+        
+        # Squeeze Pct ne kadar düşükse, bantlar o kadar dardır (Patlama ihtimali yüksek)
+        # Squeeze 2.0% (Dar) -> 40 Puan | Squeeze 10.0% (Geniş) -> 0 Puan
+        sqz_weight = max(0, 40 - (squeeze_pct * 4)) 
+        
+        # Hacim çarpanı 3x ise 25 puan, 1x ise 8 puan
+        vol_weight = min(25, vol_multiplier * 8)
+        
+        p_score = int(rsi_weight + sqz_weight + vol_weight)
+        p_score = min(99, max(1, p_score))
+        
+        # 3. Kurumsal Ayak İzi (Tahtacı Akümülasyon/Dağıtım)
+        candle_range_hf = current_high - current_low
+        if candle_range_hf > 0:
+            close_position = (current_price - current_low) / candle_range_hf
+            if close_position > 0.7 and vol_multiplier >= 1.2:
+                footprint = "Toplama (Akümülasyon)"
+                footprint_color = "green"
+            elif close_position < 0.35 and vol_multiplier >= 1.2:
+                footprint = "Dağıtım (Tuzak)"
+                footprint_color = "red"
+            else:
+                footprint = "Nötr (Bekleme)"
+                footprint_color = "yellow"
+        else:
+            footprint = "Nötr (Bekleme)"
+            footprint_color = "yellow"
+            
+        # 4. Kısa Vade İvme (Momentum Hızlanması)
+        momentum_accel = False
+        if len(close) >= 3:
+            change_1 = float(close.iloc[-1]) - float(close.iloc[-2])
+            change_2 = float(close.iloc[-2]) - float(close.iloc[-3])
+            if change_1 > change_2 and change_1 > 0 and change_2 > 0:
+                momentum_accel = True
+        
+        
         
         return {
             "Symbol": symbol,
@@ -970,6 +1028,11 @@ class TechnicalEngine(BaseEngine):
             "Warrant_Match": warrant_match,
             "Streak_Score": streak_score,
             "Streak_Potential": streak_potential,
+            "Squeeze_Pct": round(squeeze_pct, 2),
+            "P_Score": p_score,
+            "Footprint": footprint,
+            "Footprint_Color": footprint_color,
+            "Momentum_Accel": momentum_accel,
             "Score": score,
             "Report": report,
             "Position": position
