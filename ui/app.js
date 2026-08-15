@@ -3477,3 +3477,57 @@ function renderDailyBreakdown(dailyList, tbody, prefix = '') {
         tbody.appendChild(tr);
     });
 }
+
+
+async function fetchLiveOrders() {
+    const container = document.getElementById('live-orders-container');
+    if (!container) return;
+    
+    try {
+        const res = await fetch('/api/simulation/live_orders');
+        const data = await res.json();
+        
+        if (data.status === 'success' && data.orders && data.orders.length > 0) {
+            container.innerHTML = '';
+            data.orders.forEach(order => {
+                let card = document.createElement('div');
+                card.style.cssText = "background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; padding:1rem; display:flex; flex-direction:column; gap: 0.5rem;";
+                
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem; margin-bottom:0.5rem;">
+                        <strong style="color:var(--text-light); font-size:1.1rem;"><i class="fa-solid fa-crosshairs text-blue"></i> ${order.symbol}</strong>
+                        <span style="background:var(--accent-blue); color:#fff; font-size:0.75rem; padding:0.1rem 0.4rem; border-radius:4px;">Güç: ${order.score}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
+                        <span style="color:var(--text-muted);">Alış Fiyatı:</span>
+                        <strong style="color:var(--text-main);">₺${order.entry_price.toFixed(2)}</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
+                        <span style="color:var(--text-muted);">Miktar (Lot):</span>
+                        <strong style="color:var(--text-main); font-family:monospace;">${order.shares} Lot</strong>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.02); padding:0.5rem; border-radius:4px; margin-top:0.5rem;">
+                        <div style="font-size:0.8rem; color:var(--accent-yellow); margin-bottom:0.3rem;"><i class="fa-solid fa-link"></i> <strong>Zincir Emirler (OCO)</strong></div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:0.2rem;">
+                            <span style="color:var(--accent-red);">Stop-Loss (-%3):</span>
+                            <strong>₺${order.stop_price.toFixed(2)}</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:0.2rem;">
+                            <span style="color:var(--accent-green);">Kâr Al TP1 (+%5):</span>
+                            <strong>₺${order.tp1_price.toFixed(2)}</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+                            <span style="color:var(--accent-green);">Kâr Al TP2 (Tavan):</span>
+                            <strong>₺${order.tp2_price.toFixed(2)}</strong>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        } else {
+            container.innerHTML = '<div style="color:var(--text-muted);"><i class="fa-solid fa-circle-exclamation"></i> Bugün için geçerli "Çelik Emir" kriterlerine uyan sinyal bulunamadı.</div>';
+        }
+    } catch (e) {
+        container.innerHTML = '<div style="color:var(--accent-red);">Hata: ' + e.message + '</div>';
+    }
+}
