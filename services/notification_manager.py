@@ -76,7 +76,8 @@ class NotificationManager:
         return all_success
 
     def send_system_startup_alert(self) -> bool:
-        """Sunucu başladığında Telegram bağlantısının çalıştığını bildiren ilk mesaj."""
+        """Sunucu başladığında Telegram bağlantısının çalıştığını bildiren ilk mesaj. KULLANICI İSTEĞİ: İptal edildi."""
+        return True
         now_str = datetime.now().strftime("%d.%m.%Y %H:%M:%S")
         msg = (
             f"🚀 <b>VARANTRADAR PRO AKTİF!</b> 🚀\n\n"
@@ -89,6 +90,9 @@ class NotificationManager:
 
     def send_tavan_alert(self, symbol: str, score: int, reason: str, position: dict = None, extra: dict = None) -> bool:
         """Yüksek Tavan Olasılığı tespit edildiğinde profesyonel detaylı şablonla tetiklenir."""
+        if score < 100:
+            return True  # Kullanıcı isteği: Yalnızca VIP (score >= 100) mesajlar gitsin
+        
         extra = extra or {}
         clean_sym = symbol.replace(".IS", "").upper()
         
@@ -179,7 +183,8 @@ class NotificationManager:
         return self.send_telegram_message(msg)
 
     def send_1h_opportunity_alert(self, opp: dict) -> bool:
-        """1 Saatlik Güçlü Teknik Fırsat tespit edildiğinde tetiklenir."""
+        """1 Saatlik grafikte fırsat tespit edildiğinde atılacak mesaj."""
+        return True # Kullanıcı isteği: Devre dışı bırakıldı
         clean_sym = opp.get("Symbol", "").replace(".IS", "").upper()
         raw_price = opp.get("Price")
         price_str = f"{float(raw_price):.2f}" if raw_price is not None else "-"
@@ -225,7 +230,8 @@ class NotificationManager:
         return self.send_telegram_message(msg)
 
     def send_5m_rsi_alert(self, symbol: str, signal: str, rsi: float, price: float) -> bool:
-        """5 Dakikalık Kısa Vade RSI Kesişimi."""
+        """5 Dakikalık grafikte aşırı alım/satım veya RSI uyumsuzluğu tespit edildiğinde."""
+        return True # Kullanıcı isteği: Devre dışı bırakıldı
         clean_sym = symbol.replace(".IS", "").upper()
         icon = "🟢" if signal == "AL" else "🔴"
         action_text = "GÜÇLÜ AL (Dipten Dönüş)" if signal == "AL" else "GÜÇLÜ SAT (Tepeden Çıkış)"
@@ -242,7 +248,10 @@ class NotificationManager:
         return self.send_telegram_message(msg)
 
     def send_radar_alert(self, symbol: str, score: int, level: str, reason: str, price: float = None, change_pct: float = None) -> bool:
-        """Radar yeni bir fırsat bulduğunda tetiklenir."""
+        """Genel Radar uyarıları (düşük skorlular için vs. yedek amaçlı)."""
+        if score < 100:
+            return True # Kullanıcı isteği: Yalnızca VIP mesajlar
+
         clean_sym = symbol.replace(".IS", "").upper()
         msg = f"🚨 <b>YENİ RADAR FIRSATI</b> 🚨\n\n"
         msg += f"📌 <b>Hisse:</b> #{clean_sym}\n"
