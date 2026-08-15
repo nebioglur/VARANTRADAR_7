@@ -1898,7 +1898,25 @@ function renderAllDashboardTables() {
         displayItems.forEach(res => {
             let tr = document.createElement('tr');
             
+            // "Squaze (yukarı ok) + Güçlü Giriş + Pozitif Alpha" Kontrolü
+            let alphaStrVal = res.Alpha_Str || "";
+            let sqzStrVal = res.Short_Squeeze || "";
+            let smStrVal = res.Smart_Money || "";
+            
+            let isGolden = false;
+            if (alphaStrVal.includes("Pozitif") && 
+                (smStrVal.includes("Giriş") || smStrVal.includes("Akümülasyon")) &&
+                (sqzStrVal.includes("Yükseliyor") || sqzStrVal.includes("Patlatma"))) {
+                isGolden = true;
+            }
+            
+            tr.className = isGolden ? "golden-row card-fade-in" : "card-fade-in";
+            
             let symStr = res.Symbol;
+            if (isGolden) {
+                symStr += ` <i class="fa-solid fa-crown" style="color:var(--accent-yellow); text-shadow: 0 0 5px var(--accent-yellow);" title="Golden Kesişim: Squeeze⬆️ + Para Girişi + Pozitif Alpha"></i>`;
+            }
+            
             // Eger bu hisse icin 5m RSI sinyali varsa blink ikonu ekle
             if (globalDashboardData['signals_5m'] && (cat === 'tavan_adaylari' || cat === 'opportunities_1h')) {
                 let sigObj = globalDashboardData['signals_5m'].find(s => s.Symbol === res.Symbol);

@@ -1016,3 +1016,15 @@ body {
     font-size: 1.5rem !important;
     margin-bottom: 1.5rem !important;
 }
+
+/* Golden Row Highlight */
+.golden-row {
+    background: linear-gradient(90deg, rgba(234, 179, 8, 0.1) 0%, rgba(234, 179, 8, 0.2) 50%, rgba(234, 179, 8, 0.1) 100%);
+    border-left: 3px solid var(--accent-yellow) !important;
+    transition: all 0.3s ease;
+}
+.golden-row:hover {
+    background: linear-gradient(90deg, rgba(234, 179, 8, 0.2) 0%, rgba(234, 179, 8, 0.35) 50%, rgba(234, 179, 8, 0.2) 100%);
+    transform: scale(1.01);
+    box-shadow: 0 0 15px rgba(234, 179, 8, 0.3);
+}
