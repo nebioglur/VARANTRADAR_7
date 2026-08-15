@@ -255,7 +255,22 @@ class SimulationEngine:
                     if s['symbol'] in open_symbols:
                         continue
                         
-                    allocation = min(current_cash, ideal_allocation)
+                    # "Squaze (yukarı ok) + Güçlü Giriş + Pozitif Alpha" Kontrolü
+                    alpha_str = str(s.get("Alpha_Str", ""))
+                    sqz_str = str(s.get("Short_Squeeze", ""))
+                    sm_str = str(s.get("Smart_Money", ""))
+                    
+                    is_super_green = (
+                        "Pozitif" in alpha_str and 
+                        ("Giriş" in sm_str or "Akümülasyon" in sm_str) and 
+                        ("Yükseliyor" in sqz_str or "Patlatma" in sqz_str)
+                    )
+                    
+                    if is_super_green:
+                        allocation = min(current_cash, self.daily_budget) # Tam sermaye (Maksimum Giriş)
+                    else:
+                        allocation = min(current_cash, ideal_allocation)
+                        
                     if allocation >= 1000:
                         sym = s['symbol']
                         df = dfs.get(sym)
@@ -294,7 +309,23 @@ class SimulationEngine:
             # Kestik attık ama trend dönerse alarm çalar!
             for sym in list(stopped_out_symbols):
                 if sym not in open_symbols:
-                    allocation = min(current_cash, ideal_allocation)
+                    sig = next((x for x in selected if x['symbol'] == sym), None)
+                    is_super_green = False
+                    if sig:
+                        alpha_str = str(sig.get("Alpha_Str", ""))
+                        sqz_str = str(sig.get("Short_Squeeze", ""))
+                        sm_str = str(sig.get("Smart_Money", ""))
+                        is_super_green = (
+                            "Pozitif" in alpha_str and 
+                            ("Giriş" in sm_str or "Akümülasyon" in sm_str) and 
+                            ("Yükseliyor" in sqz_str or "Patlatma" in sqz_str)
+                        )
+                        
+                    if is_super_green:
+                        allocation = min(current_cash, self.daily_budget)
+                    else:
+                        allocation = min(current_cash, ideal_allocation)
+                        
                     if allocation >= 1000:
                         df = dfs.get(sym)
                         if df is not None and current_time in df.index:
