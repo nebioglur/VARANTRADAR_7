@@ -61,6 +61,45 @@ def send_vip_signal(stock_data: dict) -> bool:
     
     return send_telegram_message(text)
 
+def send_batch_vip_signals(vip_list: list) -> bool:
+    """
+    Birden fazla VIP hisseyi tek bir mesajda gönderir. En iyiden kötüye sıralar ve numaralandırır.
+    """
+    if not vip_list:
+        return False
+        
+    # Sıralama (Puan 100 olduğu için Vol_Multiplier ve Hacim gibi değerlere göre sırala)
+    sorted_vips = sorted(
+        vip_list,
+        key=lambda x: (-x.get("Vol_Multiplier", 0), x.get("Distance_To_Ceiling_Pct", 99))
+    )
+    
+    text = f"🚨 <b>YENİ VIP SİNYALLERİ TESPİT EDİLDİ!</b> 🚨\n\n"
+    text += f"🏆 <b>GÜNÜN EN İYİ VIP HİSSELERİ (100 Puan)</b> 🏆\n\n"
+    
+    for idx, data in enumerate(sorted_vips, 1):
+        symbol = data.get("Symbol", "Bilinmiyor")
+        price = data.get("Price", 0)
+        alpha = data.get("Alpha_Str", "Nötr")
+        cmf = data.get("Smart_Money", "Nötr")
+        squeeze = data.get("Short_Squeeze", "Yok")
+        domino = data.get("Domino_Str", "Yok")
+        
+        # İlk 5 hisseye özel görünüm (Farklı emoji ve daha detaylı)
+        if idx <= 5:
+            medals = {1: "🥇", 2: "🥈", 3: "🥉", 4: "🎖️", 5: "🏅"}
+            medal = medals.get(idx, "💎")
+            text += f"{medal} <b>{idx}. #{symbol}</b> (₺{price})\n"
+            text += f"   🐺 Alpha: {alpha} | 💸 Para Akışı: {cmf}\n"
+            text += f"   🧨 Şort: {squeeze} | ♟️ Domino: {domino}\n\n"
+        else:
+            # 6 ve sonrası daha sade bir görünüm
+            text += f"🔹 <b>{idx}. #{symbol}</b> (₺{price})\n"
+            
+    text += f"\n<i>Not: Bu hisseler tüm teknik filtreleri geçerek AR-GE sisteminden 100 tam puan almıştır!</i>"
+    
+    return send_telegram_message(text)
+
 def send_simulation_report(total_trades: int, total_profit: float, return_pct: float) -> bool:
     """
     Gün sonu simülasyon raporunu gönderir.

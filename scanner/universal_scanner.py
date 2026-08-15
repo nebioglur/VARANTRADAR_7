@@ -212,6 +212,7 @@ class UniversalScanner:
         opportunities = []
         tavan_adaylari = []
         stay_away_1h = []
+        vip_candidates = []
         
         symbols_to_process = [symbols[0]] if len(symbols) == 1 else symbols
         
@@ -265,7 +266,8 @@ class UniversalScanner:
                     
                     # VIP Sinyal Kontrolü (100 Puan)
                     if res_tavan.get("Score", 0) == 100:
-                        self._trigger_vip_signal(sym, res_tavan)
+                        res_tavan["Symbol"] = sym
+                        vip_candidates.append(res_tavan)
                         
             if is_match_sat:
                 time_label_sat = "ŞİMDİ (Sıcak)" if bars_ago_sat == 0 else f"{bars_ago_sat} Saat Önce"
@@ -276,6 +278,9 @@ class UniversalScanner:
                     res_stay_away["Bars_Ago"] = bars_ago_sat
                     stay_away_1h.append(res_stay_away)
                     
+        if vip_candidates:
+            self._trigger_batch_vip_signals(vip_candidates)
+
         opportunities = sorted(
             opportunities,
             key=lambda x: (x.get("Crossover_Bars_Ago", 999), -x.get("EMA_Gap_Pct", 0))
@@ -294,12 +299,12 @@ class UniversalScanner:
             "tavan_adaylari": tavan_adaylari
         }
 
-    def _trigger_vip_signal(self, symbol: str, data: dict):
+    def _trigger_batch_vip_signals(self, vips: list):
         try:
             import os
             import json
             from datetime import datetime
-            from services.telegram_bot import send_vip_signal
+            from services.telegram_bot import send_batch_vip_signals
             
             today = datetime.now().strftime("%Y-%m-%d")
             cache_file = "data/sent_vip_signals.json"
@@ -316,12 +321,15 @@ class UniversalScanner:
             if sent_data.get("date") != today:
                 sent_data = {"date": today, "symbols": []}
                 
-            if symbol not in sent_data["symbols"]:
-                # Sinyali gönder
-                success = send_vip_signal(data)
+            new_vips = [v for v in vips if v["Symbol"] not in sent_data["symbols"]]
+            
+            if new_vips:
+                # Sinyalleri toplu gönder
+                success = send_batch_vip_signals(new_vips)
                 if success:
-                    sent_data["symbols"].append(symbol)
+                    for v in new_vips:
+                        sent_data["symbols"].append(v["Symbol"])
                     with open(cache_file, "w") as f:
                         json.dump(sent_data, f)
         except Exception as e:
-            print(f"[VIP SİNYAL HATA] {str(e)}")
+            print(f"[VIP BATCH SİNYAL HATA] {str(e)}")
