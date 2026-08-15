@@ -1708,6 +1708,19 @@ window.onload = function() {
     fetchDashboardData();
     // Her 5 saniyede bir arka plandaki scanner'in bitip bitmediğini kontrol et
     dashboardPollInterval = setInterval(fetchDashboardData, 5000);
+    
+    // KULLANICI İSTEĞİ: TABLOYA ÇİFT TIKLAYINCA TAM TABLOYU TEK GÖSTER
+    document.querySelectorAll('#radar-cards-grid .card').forEach(card => {
+        card.ondblclick = function(e) {
+            // Eğer butona veya input'a çift tıklandıysa büyütme
+            if (e.target.closest('button') || e.target.closest('input') || e.target.closest('a')) {
+                return;
+            }
+            this.classList.toggle('fullscreen-card');
+        };
+        // Kullanıcının anlaması için imleci pointer veya title ekleyebiliriz
+        card.title = "Tam ekran yapmak için çift tıklayın";
+    });
 };
 
 async function fetchDashboardData() {

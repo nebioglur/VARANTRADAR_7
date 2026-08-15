@@ -90,9 +90,33 @@ class SimulationEngine:
             return
 
         valid_signals = []
+        import json
         for s in signals:
             score = float(s['score'])
             phase = str(s['morning_phase'])
+            
+            # KULLANICI İSTEĞİ: SİMULASYONDA EMA 50 EMA 200 ÜSTÜ FILTRESİNE UYAN HİSSELERİ ELE AL
+            metadata_str = s.get('metadata')
+            meta = {}
+            if metadata_str:
+                try:
+                    meta = json.loads(metadata_str)
+                except:
+                    pass
+            
+            price = float(meta.get('Price') or meta.get('Daily_Close') or s.get('morning_price', 0))
+            ema50 = meta.get('Daily_EMA50')
+            ema200 = meta.get('Daily_EMA200')
+            
+            if ema50 is None or ema200 is None:
+                if 'Indicators' in meta:
+                    ema50 = ema50 or meta['Indicators'].get('EMA_50')
+                    ema200 = ema200 or meta['Indicators'].get('EMA_200')
+                    
+            if ema50 and ema200 and price:
+                if price <= float(ema50) or price <= float(ema200):
+                    continue # EMA filtrelerine uymadığı için simülasyona alınmaz
+                    
             if score >= 80 and "YATAY" not in phase and "NEGATİF" not in phase and "UZAK DUR" not in phase:
                 valid_signals.append(s)
                 

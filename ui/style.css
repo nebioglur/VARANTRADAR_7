@@ -992,6 +992,27 @@ body {
 }
 @keyframes cardFadeIn {
     from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
 }
 
+/* Fullscreen Card for Double Click */
+.fullscreen-card {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 999999 !important;
+    background: var(--bg-base, #0b0f19) !important;
+    margin: 0 !important;
+    padding: 2rem !important;
+    border-radius: 0 !important;
+    box-sizing: border-box !important;
+    overflow-y: auto !important;
+}
+.fullscreen-card .table-scroll-wrapper {
+    max-height: calc(100vh - 120px) !important;
+}
+.fullscreen-card .card-title {
+    font-size: 1.5rem !important;
+    margin-bottom: 1.5rem !important;
+}
