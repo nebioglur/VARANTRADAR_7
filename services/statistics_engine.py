@@ -131,7 +131,31 @@ class StatisticsEngine:
                 history.append(daily)
                 
         if not history:
-            return {"status": "error", "message": "No data"}
+            return {
+                "status": "success",
+                "summary": {
+                    "total_days_tracked": 0,
+                    "total_candidates_tracked": 0,
+                    "total_hit_ceiling": 0,
+                    "tavan_success_pct": 0.0,
+                    "total_hit_plus5": 0,
+                    "plus5_success_pct": 0.0,
+                    "cumulative_avg_max_gain_pct": 0.0,
+                    "cumulative_avg_closing_gain_pct": 0.0,
+                    "ahlatci_warrant_avg_gain_pct": 0.0,
+                    "total_closed_positive": 0,
+                    "avg_positive_close_gain": 0.0,
+                    "total_closed_negative": 0,
+                    "avg_negative_close_gain": 0.0,
+                    "net_profit_pct": 0.0,
+                    "elite_closed_positive": 0,
+                    "elite_avg_positive_gain": 0.0,
+                    "elite_closed_negative": 0,
+                    "elite_avg_negative_gain": 0.0,
+                    "elite_net_profit_pct": 0.0
+                },
+                "history": []
+            }
             
         total_days = len(history)
         total_cands = sum(h['total_signals'] for h in history)
