@@ -1017,14 +1017,20 @@ body {
     margin-bottom: 1.5rem !important;
 }
 
-/* Golden Row Highlight */
-.golden-row {
-    background: linear-gradient(90deg, rgba(234, 179, 8, 0.1) 0%, rgba(234, 179, 8, 0.2) 50%, rgba(234, 179, 8, 0.1) 100%);
-    border-left: 3px solid var(--accent-yellow) !important;
+/* Super Green Row Highlight (Blinking) */
+@keyframes pulse-green {
+    0% { background-color: rgba(16, 185, 129, 0.1); box-shadow: inset 0 0 5px rgba(16, 185, 129, 0.2); }
+    50% { background-color: rgba(16, 185, 129, 0.35); box-shadow: inset 0 0 20px rgba(16, 185, 129, 0.6); }
+    100% { background-color: rgba(16, 185, 129, 0.1); box-shadow: inset 0 0 5px rgba(16, 185, 129, 0.2); }
+}
+
+.super-green-row {
+    border-left: 4px solid var(--accent-green) !important;
+    animation: pulse-green 1.5s infinite;
     transition: all 0.3s ease;
 }
-.golden-row:hover {
-    background: linear-gradient(90deg, rgba(234, 179, 8, 0.2) 0%, rgba(234, 179, 8, 0.35) 50%, rgba(234, 179, 8, 0.2) 100%);
-    transform: scale(1.01);
-    box-shadow: 0 0 15px rgba(234, 179, 8, 0.3);
+.super-green-row:hover {
+    transform: scale(1.015);
+    z-index: 10;
+    position: relative;
 }

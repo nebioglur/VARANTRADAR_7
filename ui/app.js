@@ -1886,6 +1886,30 @@ function renderAllDashboardTables() {
             }
         }
 
+        // "Squaze (yukarı ok) + Güçlü Giriş + Pozitif Alpha" kontrolü için yardımcı fonksiyon
+        const checkSuperGreen = (res) => {
+            let alphaStrVal = res.Alpha_Str || "";
+            let sqzStrVal = res.Short_Squeeze || "";
+            let smStrVal = res.Smart_Money || "";
+            return (alphaStrVal.includes("Pozitif") && 
+                (smStrVal.includes("Giriş") || smStrVal.includes("Akümülasyon")) &&
+                (sqzStrVal.includes("Yükseliyor") || sqzStrVal.includes("Patlatma")));
+        };
+
+        // Eğer bu Tavan Adayları veya AR-GE tablosu ise, Super Green olanları en başa al
+        if (cat === 'tavan_adaylari' || cat === 'arge_tavan') {
+            let superGreenItems = [];
+            let regularItems = [];
+            items.forEach(item => {
+                if (checkSuperGreen(item)) {
+                    superGreenItems.push(item);
+                } else {
+                    regularItems.push(item);
+                }
+            });
+            items = superGreenItems.concat(regularItems);
+        }
+
         tbody.innerHTML = '';
         // 10'a kadar hisse göster
         const displayItems = items.slice(0, 10);
@@ -1898,23 +1922,12 @@ function renderAllDashboardTables() {
         displayItems.forEach(res => {
             let tr = document.createElement('tr');
             
-            // "Squaze (yukarı ok) + Güçlü Giriş + Pozitif Alpha" Kontrolü
-            let alphaStrVal = res.Alpha_Str || "";
-            let sqzStrVal = res.Short_Squeeze || "";
-            let smStrVal = res.Smart_Money || "";
-            
-            let isGolden = false;
-            if (alphaStrVal.includes("Pozitif") && 
-                (smStrVal.includes("Giriş") || smStrVal.includes("Akümülasyon")) &&
-                (sqzStrVal.includes("Yükseliyor") || sqzStrVal.includes("Patlatma"))) {
-                isGolden = true;
-            }
-            
-            tr.className = isGolden ? "golden-row card-fade-in" : "card-fade-in";
+            let isSuperGreen = checkSuperGreen(res);
+            tr.className = isSuperGreen ? "super-green-row card-fade-in" : "card-fade-in";
             
             let symStr = res.Symbol;
-            if (isGolden) {
-                symStr += ` <i class="fa-solid fa-crown" style="color:var(--accent-yellow); text-shadow: 0 0 5px var(--accent-yellow);" title="Golden Kesişim: Squeeze⬆️ + Para Girişi + Pozitif Alpha"></i>`;
+            if (isSuperGreen) {
+                symStr += ` <i class="fa-solid fa-rocket" style="color:var(--accent-green); text-shadow: 0 0 8px var(--accent-green);" title="Süper Kesişim: Squeeze⬆️ + Para Girişi + Pozitif Alpha"></i>`;
             }
             
             // Eger bu hisse icin 5m RSI sinyali varsa blink ikonu ekle
