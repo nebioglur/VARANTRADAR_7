@@ -68,10 +68,20 @@ def send_batch_vip_signals(vip_list: list) -> bool:
     if not vip_list:
         return False
         
-    # Sıralama (Puan 100 olduğu için Vol_Multiplier ve Hacim gibi değerlere göre sırala)
+    def is_super_green(d):
+        alpha = d.get("Alpha_Str", "")
+        sm = d.get("Smart_Money", "")
+        sqz = d.get("Short_Squeeze", "")
+        return (
+            "Pozitif" in alpha and 
+            ("Giriş" in sm or "Akümülasyon" in sm) and 
+            ("Yükseliyor" in sqz or "Patlatma" in sqz)
+        )
+
+    # Sıralama: Önce Super Green olanlar, sonra Puan 100 olduğu için Vol_Multiplier ve Hacim gibi değerlere göre
     sorted_vips = sorted(
         vip_list,
-        key=lambda x: (-x.get("Vol_Multiplier", 0), x.get("Distance_To_Ceiling_Pct", 99))
+        key=lambda x: (-1 if is_super_green(x) else 0, -x.get("Vol_Multiplier", 0), x.get("Distance_To_Ceiling_Pct", 99))
     )
     
     text = f"🚨 <b>YENİ VIP SİNYALLERİ TESPİT EDİLDİ!</b> 🚨\n\n"
@@ -85,8 +95,14 @@ def send_batch_vip_signals(vip_list: list) -> bool:
         squeeze = data.get("Short_Squeeze", "Yok")
         domino = data.get("Domino_Str", "Yok")
         
-        # İlk 5 hisseye özel görünüm (Farklı emoji ve daha detaylı)
-        if idx <= 5:
+        is_sg = is_super_green(data)
+        
+        # İlk 5 hisseye özel görünüm veya Süper Kesişim
+        if is_sg:
+            text += f"🟢🚀 <b>{idx}. #{symbol} [SÜPER KESİŞİM]</b> (₺{price})\n"
+            text += f"   🐺 Alpha: <b>{alpha}</b> | 💸 Para Akışı: <b>{cmf}</b>\n"
+            text += f"   🧨 Şort: <b>{squeeze}</b> | ♟️ Domino: {domino}\n\n"
+        elif idx <= 5:
             medals = {1: "🥇", 2: "🥈", 3: "🥉", 4: "🎖️", 5: "🏅"}
             medal = medals.get(idx, "💎")
             text += f"{medal} <b>{idx}. #{symbol}</b> (₺{price})\n"
