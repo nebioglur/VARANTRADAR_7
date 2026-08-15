@@ -6,7 +6,7 @@ import time
 import threading
 import numpy as np
 import pandas as pd
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, make_response
 from flask_cors import CORS
 import feedparser
 
@@ -333,15 +333,20 @@ def api_online():
     return jsonify({"online": len(_online_users)})
 
 
-@app.route('/')
-def serve_ui():
-    """Varsayılan olarak index.html'i açar"""
-    return send_from_directory('ui', 'index.html')
+@app.route("/")
+def index():
+    response = make_response(send_from_directory("ui", "index.html"))
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
-@app.route('/<path:path>')
-def serve_static(path):
-    """CSS ve JS dosyalarını UI klasöründen sunar"""
-    return send_from_directory('ui', path)
+@app.route("/<path:filename>")
+def static_files(filename):
+    response = make_response(send_from_directory("ui", filename))
+    if filename.endswith(".js") or filename.endswith(".css"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return response
 
 @app.route('/api/analyze', methods=['GET'])
 def api_analyze():
