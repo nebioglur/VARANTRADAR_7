@@ -379,6 +379,7 @@ class TechnicalEngine(BaseEngine):
         high = df['High']
         low = df['Low']
         
+        df['EMA8'] = close.ewm(span=8, adjust=False).mean()
         df['EMA9'] = close.ewm(span=9, adjust=False).mean()
         df['EMA21'] = close.ewm(span=21, adjust=False).mean()
         
