@@ -1080,6 +1080,14 @@ class TechnicalEngine(BaseEngine):
             "ETA": eta_str,
             "Breakdown_Risk": breakdown_risk,
             "Breakdown_Warning": breakdown_warning,
+            "Indicators": {
+                "RSI": round(current_rsi, 1) if 'current_rsi' in locals() else None,
+                "ADX": round(current_adx, 1) if 'current_adx' in locals() else None,
+                "EMA_50": round(float(ema50.iloc[-1]), 2) if 'ema50' in locals() else None,
+                "EMA_200": round(float(ema200.iloc[-1]), 2) if 'ema200' in locals() else None,
+                "MACD_Positive": bool(current_macd > current_signal) if 'current_macd' in locals() else None
+            },
+            "Details": details,
             "Domino_Sector": domino_sector,
             "Domino_Peers": domino_peers,
             "Domino_Str": domino_str,

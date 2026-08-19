@@ -2067,7 +2067,7 @@ function renderAllDashboardTables() {
                 }
                 
                 // AI Skor, Teyit Skoru, Çift Tavan ve Varant Eşleşmesi
-                let scoreStr = `<div style="color:${scoreColor}; font-weight:800; font-size:0.85rem;">${scoreValue}/100</div>`;
+                let scoreStr = `<div style="font-weight:700; color:${scoreColor}; font-size:1.1rem;">${scoreValue}/100</div>`;
                 if (res.Teyit_Score) {
                     let tcColor = res.Teyit_Score >= 80 ? '#10b981' : (res.Teyit_Score >= 60 ? '#facc15' : '#ef4444');
                     scoreStr += `<div style="font-size:0.68rem; color:${tcColor}; font-weight:700;" title="Kurumsal Para ve Mum Teyit Skoru"><i class="fa-solid fa-shield-check"></i> %${res.Teyit_Score} Teyit</div>`;
@@ -2076,6 +2076,14 @@ function renderAllDashboardTables() {
                     scoreStr += `<div style="font-size:0.68rem; color:#38bdf8;" title="Çift Tavan İhtimali"><i class="fa-solid fa-link"></i> %${res.Streak_Score} Seri</div>`;
                 }
                 
+                // YENİ: İndikatör Güçlendirmesi (RSI & MACD)
+                if (res.Indicators && res.Indicators.RSI) {
+                    let rsiVal = res.Indicators.RSI;
+                    let rsiColor = rsiVal >= 70 ? 'var(--accent-red)' : (rsiVal <= 40 ? 'var(--accent-green)' : 'var(--text-muted)');
+                    let macdIcon = res.Indicators.MACD_Positive ? '<i class="fa-solid fa-arrow-trend-up" style="color:var(--accent-green)"></i>' : '<i class="fa-solid fa-arrow-trend-down" style="color:var(--accent-red)"></i>';
+                    scoreStr += `<div style="font-size:0.7rem; color:${rsiColor}; margin-top:4px; display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,0.05); padding:2px 5px; border-radius:4px; border:1px solid rgba(255,255,255,0.1);" title="Anlık RSI ve MACD Trendi"><span>RSI:${rsiVal}</span> ${macdIcon}</div>`;
+                }
+
                 if (res.Warrant_Match) {
                     scoreStr += `<div style="margin-top:2px;"><span style="background:rgba(234, 179, 8, 0.2); color:#facc15; padding:1px 4px; border-radius:3px; font-size:0.68rem; font-weight:700;" title="${res.Warrant_Match.Desc}"><i class="fa-solid fa-crosshairs"></i> Varant: ${res.Warrant_Match.Leverage} (+%${res.Warrant_Match.Potential_Gain_Pct})</span></div>`;
                 }
