@@ -4,6 +4,14 @@ import math
 import json
 import time
 import threading
+import time
+from datetime import datetime, timedelta
+
+# Render (Linux) üzerinde saat dilimini Türkiye (UTC+3) yapmak için
+if hasattr(time, 'tzset'):
+    os.environ['TZ'] = 'Europe/Istanbul'
+    time.tzset()
+
 import numpy as np
 import pandas as pd
 from flask import Flask, request, jsonify, send_from_directory, make_response
