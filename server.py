@@ -319,9 +319,23 @@ WARRANT_SYMBOLS = [
 
 # Tüm sembol listesi (autocomplete için)
 ALL_SYMBOLS = [s.replace('.IS','') for s in BIST_SYMBOLS] + [w.replace('.IS','') for w in WARRANT_SYMBOLS] + FX_SYMBOLS + COMMODITY_SYMBOLS + CRYPTO_SYMBOLS
+from analysis.technical import TechnicalEngine
 
-app = Flask(__name__, static_folder='ui')
-CORS(app) # Geliştirme aşaması için Cross-Origin izin verilir
+app = Flask(__name__, static_folder='ui', static_url_path='')
+CORS(app)
+
+@app.route('/api/chart_data', methods=['GET'])
+def api_chart_data():
+    symbol = request.args.get('symbol', '')
+    interval = request.args.get('interval', '1d')
+    if not symbol:
+        return jsonify({"status": "error", "message": "Symbol required"}), 400
+        
+    try:
+        data = TechnicalEngine.get_chart_data(symbol, interval)
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 # ============ Online Kullanıcı Sayacı (Heartbeat) ============
 import time as _time
