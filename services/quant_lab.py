@@ -17,8 +17,8 @@ class QuantLab:
         Gerçekleşen işlemlerin sırasını rastgele karıştırarak binlerce alternatif evren yaratır.
         Stratejinin tesadüfen mi (Luck factor) kazandırdığını yoksa sağlam mı olduğunu ölçer.
         """
-        if not backtest_trades or len(backtest_trades) < 5:
-            return {"error": "Monte Carlo için yeterli işlem geçmişi yok (En az 5 işlem gerekli)."}
+        if not backtest_trades or len(backtest_trades) < 1:
+            return {"error": "Monte Carlo için yeterli işlem geçmişi yok (En az 1 işlem gerekli)."}
             
         returns = [t['pnl_pct'] for t in backtest_trades]
         
