@@ -39,22 +39,31 @@ class BacktestEngine:
         # İşlem Simülasyonu
         position = 0 # 1=Long, 0=Flat
         entry_price = 0.0
+        current_capital = self.initial_capital
+        position_size = 0.0
         trades = []
         
         for index, row in data.iterrows():
             if row['Signal'] == 1 and position == 0:
                 # AL
                 entry_price = row['close'] * (1 + self.slippage_pct)
+                # Tüm sermaye ile alım yap (bileşik getiri)
+                position_size = current_capital / entry_price
                 position = 1
                 entry_date = row['date']
             elif row['Signal'] == -1 and position == 1:
                 # SAT
                 exit_price = row['close'] * (1 - self.slippage_pct)
                 
-                # Komisyon Hesabı
-                cost = (entry_price * self.commission_pct) + (exit_price * self.commission_pct)
-                pnl = (exit_price - entry_price) - cost
-                pnl_pct = (pnl / entry_price) * 100
+                # Komisyon ve PnL Hesabı
+                entry_value = position_size * entry_price
+                exit_value = position_size * exit_price
+                cost = (entry_value * self.commission_pct) + (exit_value * self.commission_pct)
+                
+                pnl = (exit_value - entry_value) - cost
+                pnl_pct = (pnl / current_capital) * 100
+                
+                current_capital += pnl
                 
                 trades.append({
                     "entry_date": entry_date,
@@ -66,19 +75,27 @@ class BacktestEngine:
                     "duration": (row['date'] - entry_date).days if isinstance(row['date'], pd.Timestamp) else 0
                 })
                 position = 0
+                position_size = 0.0
 
         # Açık kalan pozisyonu güncel fiyatla kapat (Mark-to-market)
         if position == 1:
             exit_price = data['close'].iloc[-1] * (1 - self.slippage_pct)
-            cost = (entry_price * self.commission_pct) + (exit_price * self.commission_pct)
-            pnl = (exit_price - entry_price) - cost
+            entry_value = position_size * entry_price
+            exit_value = position_size * exit_price
+            cost = (entry_value * self.commission_pct) + (exit_value * self.commission_pct)
+            
+            pnl = (exit_value - entry_value) - cost
+            pnl_pct = (pnl / current_capital) * 100
+            
+            current_capital += pnl
+            
             trades.append({
                 "entry_date": entry_date,
                 "exit_date": data['date'].iloc[-1],
                 "entry_price": entry_price,
                 "exit_price": exit_price,
                 "pnl": pnl,
-                "pnl_pct": (pnl / entry_price) * 100,
+                "pnl_pct": pnl_pct,
                 "duration": 0
             })
 
