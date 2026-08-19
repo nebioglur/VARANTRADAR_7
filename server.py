@@ -617,8 +617,9 @@ def api_simulation_live_orders():
     try:
         from services.market_data import MarketDataManager
         import datetime
-        # Canlı sistemde bugün olması lazım, ama simülasyon testinde en son gün
-        date_str = request.args.get('date', '2026-08-13') 
+        # Canlı sistemde bugün olması lazım
+        today = datetime.datetime.now().strftime("%Y-%m-%d")
+        date_str = request.args.get('date', today) 
         signals = MarketDataManager.get_signals(date_str)
         
         valid_signals = []
@@ -665,14 +666,42 @@ def api_simulation_live_orders():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/api/tavan_history', methods=['GET'])
+def api_tavan_history():
+    try:
+        from services.statistics_engine import StatisticsEngine
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        symbol_filter = request.args.get('symbol_filter')
+        res = StatisticsEngine.get_all_time_kpis(start_date=start_date, end_date=end_date, symbol_filter=symbol_filter)
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/api/winrate_stats', methods=['GET'])
+def api_winrate_stats():
+    try:
+        from services.win_rate_engine import WinRateEngine
+        stats = WinRateEngine.get_performance_stats()
+        return jsonify({"status": "success", "stats": stats})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/api/tavan_tracker', methods=['GET'])
+def api_tavan_tracker():
+    try:
+        from services.tavan_tracker import TavanAuditTracker
+        date_str = request.args.get('date')
+        res = TavanAuditTracker.get_audit_report(date_str)
+        return jsonify({"status": "success", "audit": res})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
 @app.route('/api/simulation/daily_pnl', methods=['GET'])
 def api_simulation_daily_pnl():
     try:
         from services.trade_database import get_connection
         conn = get_connection()
-        
-        # Get equity log
-        equity_df = pd.read_sql_query("SELECT * FROM equity_log ORDER BY date_str ASC", conn)
         
         # Get all trades
         import sqlite3
