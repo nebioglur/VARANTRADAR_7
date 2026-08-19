@@ -2011,21 +2011,22 @@ function renderAllDashboardTables() {
                 let phaseBg = phaseColor === 'red' ? 'rgba(239, 68, 68, 0.2)' : (phaseColor === 'yellow' ? 'rgba(234, 179, 8, 0.2)' : 'rgba(16, 185, 129, 0.2)');
                 let phaseTxtColor = phaseColor === 'red' ? 'var(--accent-red)' : (phaseColor === 'yellow' ? 'var(--accent-yellow)' : 'var(--accent-green)');
                 let phaseIcon = phaseColor === 'red' ? 'fa-lock' : (phaseColor === 'yellow' ? 'fa-bolt' : 'fa-seedling');
-                let evreStr = `<span style="background:${phaseBg}; color:${phaseTxtColor}; padding:3px 7px; border-radius:4px; font-weight:700; font-size:0.72rem; white-space:nowrap;"><i class="fa-solid ${phaseIcon}"></i> ${phaseBadge}</span>`;
+                let phaseTooltip = phaseBadge.includes("KİLİTLEME") ? "Tavana kilitlenme aşaması. Alım riski yüksek." : (phaseBadge.includes("İVMELENME") ? "Hacimle birlikte sert yukarı momentum başladı." : "Trendin başlangıcı. Yüksek kazanç potansiyeli.");
+                let evreStr = `<span title="${phaseTooltip}" style="background:${phaseBg}; color:${phaseTxtColor}; padding:3px 7px; border-radius:4px; font-weight:700; font-size:0.72rem; white-space:nowrap; cursor:help;"><i class="fa-solid ${phaseIcon}"></i> ${phaseBadge}</span>`;
                 
                 // 🛡️ Anti-Trap Shield (Tuzak Önleme Rozeti) & Teyit Skoru
                 if (res.Anti_Trap_Badge) {
                     let atColor = res.Anti_Trap_Color || '#10b981';
                     let atBg = atColor === '#10b981' ? 'rgba(16, 185, 129, 0.15)' : (atColor === '#ef4444' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(234, 179, 8, 0.15)');
-                    evreStr += `<div style="margin-top:3px;"><span style="background:${atBg}; color:${atColor}; border:1px solid ${atColor}; padding:2px 5px; border-radius:3px; font-size:0.68rem; font-weight:700; white-space:nowrap;">${res.Anti_Trap_Badge}</span></div>`;
+                    evreStr += `<div style="margin-top:3px;"><span title="Tuzak Kalkanı: Kurumsal para girişi ve mum formasyonu ile alım onayı." style="background:${atBg}; color:${atColor}; border:1px solid ${atColor}; padding:2px 5px; border-radius:3px; font-size:0.68rem; font-weight:700; white-space:nowrap; cursor:help;">${res.Anti_Trap_Badge}</span></div>`;
                 }
 
                 if (res.ORB_Breakout) {
-                    evreStr += `<div style="margin-top:2px;"><span style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; border:1px solid #38bdf8; padding:1px 4px; border-radius:3px; font-size:0.66rem; font-weight:700;"><i class="fa-solid fa-bullseye"></i> ORB Açılış Kırılımı</span></div>`;
+                    evreStr += `<div style="margin-top:2px;"><span title="Açılış Aralığı Kırılımı (ORB): Hisse günün ilk saatlerindeki tepe noktasını hacimli şekilde yukarı kırdı." style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; border:1px solid #38bdf8; padding:1px 4px; border-radius:3px; font-size:0.66rem; font-weight:700; cursor:help;"><i class="fa-solid fa-bullseye"></i> ORB Açılış Kırılımı</span></div>`;
                 }
 
                 if (res.V_Reversal) {
-                    evreStr += `<div style="margin-top:3px;"><span style="background:rgba(168, 85, 247, 0.2); color:#c084fc; padding:2px 5px; border-radius:3px; font-size:0.68rem; font-weight:700;"><i class="fa-solid fa-bolt-lightning"></i> V-Dönüş +%${res.V_Power}</span></div>`;
+                    evreStr += `<div style="margin-top:3px;"><span title="V-Dönüş: Gün içi dip seviyesinden çok hızlı ve güçlü bir şekilde toparlanıp ivme kazandı." style="background:rgba(168, 85, 247, 0.2); color:#c084fc; padding:2px 5px; border-radius:3px; font-size:0.68rem; font-weight:700; cursor:help;"><i class="fa-solid fa-bolt-lightning"></i> V-Dönüş +%${(res.V_Power||0).toFixed(1)}</span></div>`;
                 }
                 
                 // Tavan Fiyatı, Kalan % ve ETA
