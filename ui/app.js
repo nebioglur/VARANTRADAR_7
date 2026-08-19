@@ -3611,8 +3611,9 @@ async function fetchLiveOrders() {
     }
 }
 
-  
- 
+
+
+
 // ========== BACKTEST ENGINE ==========
 async function runBacktest() {
     const symbol = document.getElementById('bt-symbol').value || 'THYAO';
@@ -3632,7 +3633,7 @@ async function runBacktest() {
     btn.disabled = true;
     
     try {
-        const response = await fetch(\/api/backtest/run?symbol=\&strategy=\&capital=\&period=\&interval=\);
+        const response = await fetch(`/api/backtest/run?symbol=${symbol}&strategy=${strategy}&capital=${capital}&period=${period}&interval=${interval}`);
         const data = await response.json();
         
         loading.style.display = 'none';
