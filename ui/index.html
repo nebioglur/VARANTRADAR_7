@@ -142,12 +142,6 @@
             </div>
 
             <!-- MULTI-TABLE GRID -->
-            <div style="display:flex; justify-content:flex-end; align-items:center; margin-bottom:1rem; padding:0 0.5rem;">
-                <label style="display:flex; align-items:center; gap:8px; color:var(--text-light); font-size:0.85rem; font-weight:700; cursor:pointer; background:rgba(16,185,129,0.1); padding:6px 12px; border-radius:20px; border:1px solid rgba(16,185,129,0.2);">
-                    <input type="checkbox" id="ema-filter-toggle" onchange="window.filterEmaActive = this.checked; if(typeof renderAllDashboardTables === 'function') { renderAllDashboardTables(); }" style="accent-color:var(--accent-green); width:16px; height:16px; cursor:pointer;">
-                    <i class="fa-solid fa-filter" style="color:var(--accent-green);"></i> EMA 50 & 200 Üzerinde Olanları Filtrele
-                </label>
-            </div>
             <div id="radar-cards-grid" style="grid-column: 1 / -1; display:grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap:1.5rem; margin-bottom:1.5rem;">
                 
                 <!-- Yüksek Tavan Olasılığı -->

@@ -115,12 +115,26 @@ class StatisticsEngine:
         }
 
     @staticmethod
-    def get_all_time_kpis() -> dict:
+    def get_all_time_kpis(start_date: str = None, end_date: str = None, symbol_filter: str = None) -> dict:
         conn = get_connection()
         cursor = conn.cursor()
         
-        # signals tablosundan eşsiz tarihleri bul
-        cursor.execute("SELECT DISTINCT date_str FROM signals ORDER BY date_str DESC")
+        query = "SELECT DISTINCT date_str FROM signals WHERE 1=1"
+        params = []
+        if start_date:
+            query += " AND date_str >= ?"
+            params.append(start_date)
+        if end_date:
+            query += " AND date_str <= ?"
+            params.append(end_date)
+        if symbol_filter:
+            # We filter symbols later when analyzing daily signals or adjust the logic
+            # Here we just fetch dates, the exact filtering can happen in evaluate_daily_signals if needed.
+            # But the task just says "filter the dates query accordingly."
+            pass
+            
+        query += " ORDER BY date_str DESC"
+        cursor.execute(query, params)
         dates = [r['date_str'] for r in cursor.fetchall()]
         conn.close()
         

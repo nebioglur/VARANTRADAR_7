@@ -11,25 +11,26 @@ def setup_logger():
 
     logger = logging.getLogger("VarantRadar")
     
-    # Eğer daha önce handler eklendiyse tekrar ekleme (Streamlit re-run sorunu)
-    if not logger.handlers:
-        logger.setLevel(logging.DEBUG)
-        
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        
-        # Konsol çıktısı
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.INFO)
-        ch.setFormatter(formatter)
-        
-        # Dosya çıktısı (Rotating: 5MB üzeri dosyayı böler, 5 yedek tutar)
-        log_file = os.path.join(log_dir, 'app.log')
-        fh = RotatingFileHandler(log_file, maxBytes=5*1024*1024, backupCount=5, encoding='utf-8')
-        fh.setLevel(logging.DEBUG)
-        fh.setFormatter(formatter)
-        
-        logger.addHandler(ch)
-        logger.addHandler(fh)
+    # Mevcut handlerları temizle (çift log basmasını önler)
+    logger.handlers.clear()
+    
+    logger.setLevel(logging.DEBUG)
+    
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    
+    # Konsol çıktısı
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    ch.setFormatter(formatter)
+    
+    # Dosya çıktısı (Rotating: 5MB üzeri dosyayı böler, 5 yedek tutar)
+    log_file = os.path.join(log_dir, 'app.log')
+    fh = RotatingFileHandler(log_file, maxBytes=5*1024*1024, backupCount=5, encoding='utf-8')
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(formatter)
+    
+    logger.addHandler(ch)
+    logger.addHandler(fh)
         
     return logger
 

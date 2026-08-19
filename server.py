@@ -53,7 +53,8 @@ def load_stats():
         try:
             with open(STATS_FILE, "r") as f:
                 return json.load(f)
-        except:
+        except Exception as e:
+            print(f"[Server] load_stats Error: {e}")
             return {"total_analyzed": 0}
     return {"total_analyzed": 0}
 
@@ -71,7 +72,8 @@ def load_dashboard_cache():
         try:
             with open(CACHE_FILE, "r", encoding="utf-8") as f:
                 return json.load(f)
-        except:
+        except Exception as e:
+            print(f"[Server] load_dashboard_cache Error: {e}")
             return {}
     return {}
 
@@ -284,6 +286,9 @@ def background_scanner():
         time.sleep(900)
 
 # Varant Sembolleri (Örnek Liste - IS Warrant yapısı)
+# ⚠️ DİKKAT: Bu varant sembolleri eski vadeli (Temmuz 2024). Güncel vadeli sembollerle değiştirilmelidir.
+import warnings
+warnings.warn("WARRANT_SYMBOLS listesi eski vadeli semboller içeriyor (240726). Lütfen güncelleyin.", stacklevel=2)
 WARRANT_SYMBOLS = [
     "GARAN-240726-C-130.IS", "GARAN-240726-P-120.IS",
     "THYAO-240726-C-350.IS", "THYAO-240726-P-300.IS",
@@ -423,8 +428,8 @@ def api_dashboard_init():
     last_updated = "Bilinmiyor"
     import os
     from datetime import datetime
-    if os.path.exists("data/dashboard_cache.json"):
-        mtime = os.path.getmtime("data/dashboard_cache.json")
+    if os.path.exists("dashboard_cache.json"):
+        mtime = os.path.getmtime("dashboard_cache.json")
         last_updated = datetime.fromtimestamp(mtime).strftime("%H:%M")
         
     return jsonify({
@@ -596,160 +601,6 @@ def api_brokerage(symbol):
         chg_pct = ((c - p) / p) * 100 if p > 0 else 0
         
         akd_data = generate_ai_akd(symbol, c, chg_pct, vol)
-        return jsonify(akd_data)
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-@app.route('/api/settings', methods=['GET', 'POST'])
-def api_settings():
-    """Ayarları getiren ve güncelleyen API ucu."""
-    # Bu endpoint'ler normalde bir yetkilendirme (API Key vb.) ile korunmalıdır.
-    from database.db_manager import DBManager
-    from services.notification_manager import NotificationManager
-
-    if request.method == 'GET':
-        try:
-            notif = NotificationManager()
-            db = DBManager()
-            gemini_key = db.get_setting('gemini_api_key')
-            
-            return jsonify({
-                "status": "success",
-                "telegram_token": notif.telegram_token,
-                "telegram_chat_id": notif.telegram_chat_id,
-                "gemini_api_key": gemini_key
-            })
-        except Exception as e:
-            return jsonify({"status": "error", "message": str(e)}), 500
-
-    if request.method == 'POST':
-        try:
-            data = request.json
-            notif = NotificationManager()
-            notif.update_settings(data.get('telegram_token'), data.get('telegram_chat_id'))
-            
-            db = DBManager()
-            db.save_setting('gemini_api_key', data.get('gemini_api_key'))
-            return jsonify({"status": "success", "message": "Ayarlar başarıyla kaydedildi."})
-        except Exception as e:
-            return jsonify({"status": "error", "message": str(e)}), 500
-
-@app.route('/api/test_telegram', methods=['GET', 'POST'])
-def api_test_telegram():
-    """Telegram entegrasyonunu anında test eden endpoint."""
-    try:
-        from services.notification_manager import NotificationManager
-        from datetime import datetime
-        notif = NotificationManager()
-        now_time = datetime.now().strftime("%H:%M:%S")
-        test_msg = (
-            f"🔔 <b>VARANTRADAR PRO - TELEGRAM TEST BİLDİRİMİ</b>\n\n"
-            f"✅ <b>Bağlantı:</b> Başarılı! Telegram Botu ve Chat ID tam uyumlu çalışıyor.\n"
-            f"💰 <b>Örnek Fiyat:</b> ₺125.40 (+%4.50)\n"
-            f"🎯 <b>Tavan Hedefi:</b> ₺138.00 (Kalan: %+10.0)\n"
-            f"🛡 <b>Zarar Kes (Stop):</b> ₺121.50\n"
-            f"⏱ <b>Test Saati:</b> {now_time}\n\n"
-            f"🤖 <i>Artık tüm tavan adayları, 1 saatlik fırsatlar ve 5D RSI sinyalleri otomatik olarak bu kanala iletilecektir.</i>"
-        )
-        ok = notif.send_telegram_message(test_msg)
-        if ok:
-            return jsonify({"status": "success", "message": "Test mesajı Telegram'a başarıyla iletildi!"})
-        else:
-            return jsonify({"status": "error", "message": "Telegram bildirimi gönderilemedi. Lütfen Token ve Chat ID'nizi kontrol ediniz."}), 500
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-@app.route('/api/chart_data', methods=['GET'])
-def api_chart_data():
-    symbol = request.args.get('symbol', 'AAPL').upper()
-    interval = request.args.get('interval', '1d')
-    try:
-        from analysis.technical import TechnicalEngine
-        data = TechnicalEngine.get_chart_data(symbol, interval)
-        return jsonify(sanitize_for_json(data))
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-@app.route('/api/varant_simulator', methods=['GET'])
-def api_varant_simulator():
-    """Seçilen hisse için Altın Varantları ve hedef kâr simülasyonunu döner."""
-    symbol = request.args.get('symbol', 'THYAO').upper()
-    issuer = request.args.get('issuer', 'ALL')
-    try:
-        current_price = float(request.args.get('price', 0.0))
-    except:
-        current_price = 0.0
-    try:
-        target_price = float(request.args.get('target', 0.0))
-    except:
-        target_price = 0.0
-        
-    try:
-        from services.varant_simulator import VarantSimulator
-        if current_price <= 0:
-            # En son fiyatı cache'den veya hisse analizinden al
-            clean_cache = GLOBAL_DASHBOARD_CACHE or {}
-            for k, items in clean_cache.items():
-                if isinstance(items, list):
-                    for it in items:
-                        if it.get('Symbol', '').replace('.IS', '') == symbol.replace('.IS', ''):
-                            current_price = float(it.get('Price', 100.0))
-                            break
-                    if current_price > 0:
-                        break
-            if current_price <= 0:
-                current_price = 100.0
-                
-        if target_price <= 0:
-            target_price = round(current_price * 1.099, 2)
-            
-        warrants = VarantSimulator.get_warrants_for_symbol(symbol, current_price, target_price, issuer=issuer)
-        return jsonify({
-            "status": "success",
-            "symbol": symbol,
-            "issuer": issuer,
-            "current_price": current_price,
-            "target_price": target_price,
-            "warrants": sanitize_for_json(warrants)
-        })
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-@app.route('/api/winrate_stats', methods=['GET'])
-def api_winrate_stats():
-    """Sistemin şeffaf sinyal başarı istatistiklerini ve geçmiş karne verilerini döner."""
-    try:
-        from services.win_rate_engine import WinRateEngine
-        stats = WinRateEngine.get_performance_stats()
-        return jsonify({
-            "status": "success",
-            "stats": sanitize_for_json(stats)
-        })
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-@app.route('/api/tavan_tracker', methods=['GET'])
-def api_tavan_tracker():
-    """Sabah 10:15 tavan listesi ve 18:10 kapanış performans denetim raporunu döner."""
-    selected_date = request.args.get('date', None)
-    try:
-        from services.statistics_engine import StatisticsEngine
-        data = StatisticsEngine.evaluate_daily_signals(selected_date)
-        return jsonify(sanitize_for_json(data))
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-@app.route('/api/tavan_history', methods=['GET'])
-def api_tavan_history():
-    """05 Ağustos 2026'dan itibaren veya istenen aralıkta uzun vadeli kümülatif tavan ve saat bazlı başarı arşivi."""
-    start_date = request.args.get('start_date', '2026-08-04')
-    end_date = request.args.get('end_date', None)
-    symbol_filter = request.args.get('symbol', None)
-    time_filter = request.args.get('time', None)
-    try:
-        from services.statistics_engine import StatisticsEngine
-        data = StatisticsEngine.get_all_time_kpis()
-        return jsonify(sanitize_for_json(data))
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 

@@ -66,7 +66,8 @@ class DataCache:
             with open(path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             return pd.DataFrame(data)
-        except:
+        except Exception as e:
+            print(f"[Cache] Error: {e}")
             return None
     
     def set_disk(self, symbol: str, period: str, interval: str, df: pd.DataFrame):
@@ -75,8 +76,8 @@ class DataCache:
         try:
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(df.to_dict(orient="list"), f)
-        except:
-            pass
+        except Exception as e:
+            print(f"[Cache] Error: {e}")
     
     # ==================== HISTORICAL CACHE ====================
     def get_historical(self, symbol: str, period: str, interval: str) -> Optional[pd.DataFrame]:
@@ -89,7 +90,8 @@ class DataCache:
             with open(path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             return pd.DataFrame(data)
-        except:
+        except Exception as e:
+            print(f"[Cache] Error: {e}")
             return None
     
     def set_historical(self, symbol: str, period: str, interval: str, df: pd.DataFrame):
@@ -99,8 +101,8 @@ class DataCache:
         try:
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(df.to_dict(orient="list"), f)
-        except:
-            pass
+        except Exception as e:
+            print(f"[Cache] Error: {e}")
     
     # ==================== UNIFIED GET ====================
     def get(self, symbol: str, period: str, interval: str) -> Optional[pd.DataFrame]:

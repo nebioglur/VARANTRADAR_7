@@ -40,6 +40,7 @@ class NotificationManager:
 
     def send_telegram_message(self, message: str) -> bool:
         """Belirtilen Chat ID'ye veya virgülle ayrılmış ID'lere Telegram mesajı gönderir."""
+        import time
         if not self.telegram_token or not self.telegram_chat_id or "BURAYA_" in str(self.telegram_token):
             self._load_settings()
             
@@ -59,19 +60,38 @@ class NotificationManager:
                 "disable_web_page_preview": True
             }
             
-            try:
-                response = requests.post(url, json=payload, timeout=10)
-                if response.status_code == 200:
-                    self._log_alert(message, "TELEGRAM", f"SUCCESS_{chat_id}")
-                    logger.info(f"Telegram bildirimi başarıyla iletildi (Chat ID: {chat_id})")
-                else:
-                    logger.error(f"Telegram API Hatası ({chat_id}): {response.text}")
-                    self._log_alert(message, "TELEGRAM", f"FAILED_{chat_id}")
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    response = requests.post(url, json=payload, timeout=10)
+                    if response.status_code == 200:
+                        self._log_alert(message, "TELEGRAM", f"SUCCESS_{chat_id}")
+                        logger.info(f"Telegram bildirimi başarıyla iletildi (Chat ID: {chat_id})")
+                        time.sleep(1) # Minimum 1 second delay
+                        break
+                    elif response.status_code == 429:
+                        try:
+                            error_data = response.json()
+                            retry_after = error_data.get("parameters", {}).get("retry_after", 1)
+                        except:
+                            retry_after = 1
+                        logger.warning(f"Telegram API Hatası: Too Many Requests: retry after {retry_after}")
+                        time.sleep(retry_after)
+                        if attempt == max_retries - 1:
+                            self._log_alert(message, "TELEGRAM", f"FAILED_{chat_id}")
+                            all_success = False
+                    else:
+                        logger.error(f"Telegram API Hatası ({chat_id}): {response.text}")
+                        self._log_alert(message, "TELEGRAM", f"FAILED_{chat_id}")
+                        all_success = False
+                        time.sleep(1)
+                        break
+                except Exception as e:
+                    logger.error(f"Telegram gönderim istisnası ({chat_id}): {e}")
+                    self._log_alert(message, "TELEGRAM", f"ERROR_{chat_id}")
                     all_success = False
-            except Exception as e:
-                logger.error(f"Telegram gönderim istisnası ({chat_id}): {e}")
-                self._log_alert(message, "TELEGRAM", f"ERROR_{chat_id}")
-                all_success = False
+                    time.sleep(1)
+                    break
                 
         return all_success
 

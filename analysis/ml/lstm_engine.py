@@ -195,15 +195,18 @@ class LSTMProjectionEngine:
         import yfinance as yf
         try:
             df_hourly = yf.Ticker(symbol).history(period="6mo", interval="1h")
-        except:
+        except Exception as e:
+            print(f"[LSTM] Error: {e}")
             df_hourly = pd.DataFrame()
         try:
             df_daily = yf.Ticker(symbol).history(period="1y", interval="1d")
-        except:
+        except Exception as e:
+            print(f"[LSTM] Error: {e}")
             df_daily = pd.DataFrame()
         try:
             df_weekly = yf.Ticker(symbol).history(period="5y", interval="1wk")
-        except:
+        except Exception as e:
+            print(f"[LSTM] Error: {e}")
             df_weekly = pd.DataFrame()
 
         return {

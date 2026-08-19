@@ -1725,7 +1725,7 @@ window.onload = function() {
 
 async function fetchDashboardData() {
     try {
-        const response = await fetch('/api/dashboard_init');
+        const response = await fetch('/api/dashboard_init?t=' + Date.now());
         if (!response.ok) {
             console.error("Dashboard HTTP error: ", response.status);
             return;
@@ -1865,25 +1865,24 @@ function renderAllDashboardTables() {
             continue;
         }
 
-        if (window.filterEmaActive) {
-            items = items.filter(res => {
-                let price = res.Price || res.Daily_Close;
-                let ema50 = res.Daily_EMA50;
-                let ema200 = res.Daily_EMA200;
-                
-                if (ema50 === undefined && res.Indicators) ema50 = res.Indicators.EMA_50;
-                if (ema200 === undefined && res.Indicators) ema200 = res.Indicators.EMA_200;
-                
-                if (price && ema50 && ema200) {
-                    return price > ema50 && price > ema200;
-                }
-                return true;
-            });
+        // EMA 50 & 200 filtresini her zaman uygula
+        items = items.filter(res => {
+            let price = res.Price || res.Daily_Close;
+            let ema50 = res.Daily_EMA50;
+            let ema200 = res.Daily_EMA200;
             
-            if (items.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;" class="text-muted">Filtreye uygun hisse bulunamadı (EMA 50 & 200 Üzeri).</td></tr>`;
-                continue;
+            if (ema50 === undefined && res.Indicators) ema50 = res.Indicators.EMA_50;
+            if (ema200 === undefined && res.Indicators) ema200 = res.Indicators.EMA_200;
+            
+            if (price && ema50 && ema200) {
+                return price > ema50 && price > ema200;
             }
+            return true;
+        });
+        
+        if (items.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;" class="text-muted">Filtreye uygun hisse bulunamadı (EMA 50 & 200 Üzeri).</td></tr>`;
+            continue;
         }
 
         // "Squaze (yukarı ok) + Güçlü Giriş + Pozitif Alpha" kontrolü için yardımcı fonksiyon
@@ -2435,7 +2434,7 @@ async function runVarantSimulation() {
     resBox.innerHTML = `<div style="text-align:center; padding:1rem; color:var(--text-muted);"><div class="spinner small" style="display:inline-block; margin-right:8px;"></div> ${issuer !== 'ALL' ? issuer + ' ' : ''}Varantları ve Black-Scholes kâr hesabı yapılıyor...</div>`;
 
     try {
-        const response = await fetch(`/api/varant_simulator?symbol=${symbol}&issuer=${encodeURIComponent(issuer)}`);
+        const response = await fetch(`/api/varant_simulator?symbol=${symbol}&issuer=${encodeURIComponent(issuer)}&t=${Date.now()}`);
         const data = await response.json();
         
         if (data.status === 'success' && data.warrants && data.warrants.length > 0) {
@@ -2477,12 +2476,12 @@ async function runVarantSimulation() {
 
 async function fetchWinRateScorecard() {
     try {
-        const res = await fetch('/api/winrate_stats');
+        const res = await fetch(`/api/winrate_stats?t=${Date.now()}`);
         const data = await res.json();
         if (data.status === 'success' && data.stats) {
             const s = data.stats.summary;
             setElText('stat-winrate', `%${s.win_rate_pct}`);
-            setElText('stat-avgprofit', `+%{s.avg_profit_pct}`);
+            setElText('stat-avgprofit', `+%${s.avg_profit_pct}`);
             setElText('stat-pfactor', s.profit_factor);
 
             setElText('dt-stat-total', s.total_signals_30d);
@@ -2535,7 +2534,7 @@ async function loadDetailedVarantSim(symbol, spotPrice) {
 
     try {
         const cleanSym = symbol.replace('.IS', '').toUpperCase();
-        const response = await fetch(`/api/varant_simulator?symbol=${cleanSym}&price=${spotPrice}&target=${defaultTarget}&issuer=${encodeURIComponent(issuer)}`);
+        const response = await fetch(`/api/varant_simulator?symbol=${cleanSym}&price=${spotPrice}&target=${defaultTarget}&issuer=${encodeURIComponent(issuer)}&t=${Date.now()}`);
         const data = await response.json();
 
         if (data.status === 'success' && data.warrants && data.warrants.length > 0) {
@@ -2580,7 +2579,7 @@ async function recalculateDetailVarantSim() {
 
     try {
         const cleanSym = sym.replace('.IS', '').toUpperCase();
-        const response = await fetch(`/api/varant_simulator?symbol=${cleanSym}&price=${spot}&target=${targetVal}&issuer=${encodeURIComponent(issuer)}`);
+        const response = await fetch(`/api/varant_simulator?symbol=${cleanSym}&price=${spot}&target=${targetVal}&issuer=${encodeURIComponent(issuer)}&t=${Date.now()}`);
         const data = await response.json();
 
         if (data.status === 'success' && data.warrants && data.warrants.length > 0) {
@@ -3549,7 +3548,7 @@ async function fetchLiveOrders() {
     if (!container) return;
     
     try {
-        const res = await fetch('/api/simulation/live_orders');
+        const res = await fetch(`/api/simulation/live_orders?t=${Date.now()}`);
         const data = await res.json();
         
         if (data.status === 'success' && data.orders && data.orders.length > 0) {

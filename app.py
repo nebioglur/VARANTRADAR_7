@@ -5,8 +5,11 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import streamlit as st
 import pandas as pd
 import requests
+import sqlite3
 
 from config.bist_symbols import BIST30_SYMBOLS
+from database.db_manager import DBManager
+db = DBManager()
 
 # Initialize system
 st.set_page_config(page_title="VARANTRADAR PRO Workspace", layout="wide", page_icon="🏦")
@@ -28,6 +31,9 @@ def get_dashboard_data():
         if data.get("status") == "success" and data.get("dashboard_data"):
             # Gelen JSON verisini DataFrame'e çevir
             df = pd.DataFrame(data["dashboard_data"].get("opportunities", []))
+            # Veri güncelleme saatini kaydet
+            st.session_state['last_updated'] = data.get("last_updated", "Bilinmiyor")
+            st.session_state['total_analyzed'] = data.get("total_analyzed", 0)
             return df
     except requests.exceptions.RequestException as e:
         st.error(f"API Sunucusuna Bağlanılamadı: {e}")
@@ -108,6 +114,10 @@ if st.sidebar.button("🔄 Verileri Yenile"):
     st.cache_data.clear()
     st.rerun()
 
+# Veri güncelleme saati göster
+last_upd = st.session_state.get('last_updated', 'Bilinmiyor')
+st.sidebar.caption(f"📅 Son Güncelleme: {last_upd}")
+
 # Telegram / Gemini Ayarları (Eski App'ten Kalan)
 with st.sidebar.expander("🤖 Otomasyon & Kurumsal Ayarlar", expanded=False):
     # Bu kısım da idealde API üzerinden yönetilmelidir. Şimdilik bırakıyorum.
@@ -137,15 +147,29 @@ from engines.history_engine import HistoryEngine
 history_engine = HistoryEngine()
 hit_rate = history_engine.get_signal_hit_rate()
 
-# 7 SEKME (TABS) OLUŞTUR
-tab_market, tab_scanner, tab_chart, tab_watchlist, tab_portfolio, tab_ai, tab_research = st.tabs([
+# 18 SEKME (TABS) OLUŞTUR
+(tab_market, tab_scanner, tab_chart, tab_watchlist, tab_portfolio, tab_ai, tab_research,
+ tab_smart_money, tab_ai_intel, tab_collaboration, tab_auto_radar,
+ tab_finos, tab_automation, tab_digital_twin,
+ tab_market_intel, tab_sentiment_alerts, tab_ecosystem, tab_stats) = st.tabs([
     "🌍 Market Overview", 
     "🔍 Asset Scanner", 
     "📈 Chart Center", 
     "⭐ Watchlist Manager", 
     "💼 Portfolio Intelligence",
     "🤖 AI Command Center",
-    "🧪 Quant Research Lab"
+    "🧪 Quant Research Lab",
+    "🐋 Smart Money",
+    "🧠 AI Intelligence",
+    "🤝 AI Collaboration",
+    "🛸 Auto Radar",
+    "⚙️ FinOS Kernel",
+    "⚡ Automation",
+    "🕰️ Digital Twin",
+    "🏢 Market Intel",
+    "📰 Sentiment & Alerts",
+    "👑 Investment Office",
+    "📊 Win Rate & Stats"
 ])
 
 # ---------------------------------------------------------
@@ -189,8 +213,24 @@ with tab_market:
 # ---------------------------------------------------------
 with tab_scanner:
     st.markdown("### 🚀 TOP 10 ASSET OPPORTUNITIES")
-    top_10 = df_results.head(10)[['symbol', 'decision', 'final_score', 'confidence', 'risk_level', 'eta']]
-    top_10.columns = ['Varlık', 'Karar', 'Skor', 'Güven', 'Risk', 'Hedef Süre']
+    # Son güncelleme saatini göster
+    st.caption(f"📅 Son Veri Güncellemesi: {st.session_state.get('last_updated', 'Bilinmiyor')}")
+    
+    # EMA sütunları varsa ekle
+    base_cols = ['symbol', 'decision', 'final_score', 'confidence', 'risk_level', 'eta']
+    col_names = ['Varlık', 'Karar', 'Skor', 'Güven', 'Risk', 'Hedef Süre']
+    
+    # EMA 50 ve EMA 200 sütunlarını kontrol et ve ekle
+    for ema_col, ema_name in [('Daily_EMA50', 'EMA 50'), ('Daily_EMA200', 'EMA 200'), ('EMA_50', 'EMA 50'), ('EMA_200', 'EMA 200')]:
+        if ema_col in df_results.columns and ema_col not in base_cols:
+            base_cols.append(ema_col)
+            col_names.append(ema_name)
+    
+    available_cols = [c for c in base_cols if c in df_results.columns]
+    available_names = [col_names[base_cols.index(c)] for c in available_cols]
+    
+    top_10 = df_results.head(10)[available_cols]
+    top_10.columns = available_names
     st.dataframe(top_10, use_container_width=True, hide_index=True)
 
     st.markdown("---")
@@ -218,15 +258,17 @@ with tab_scanner:
                 
                 st.markdown("#### Trading Plan & Asset Valuation")
                 s1, s2, s3 = st.columns(3)
-                s1.success(f"**Hedef / Fair Value:**\n{ai_report['Scenarios']['En_Iyi']}")
-                s2.info(f"**Beklenen Senaryo:**\n{ai_report['Scenarios']['Normal']}")
-                s3.error(f"**Stop Risk:**\n{ai_report['Scenarios']['Kotu_Stop']}")
+                scenarios = ai_report.get('Scenarios', ai_report.get('trade_plan', {}))
+                s1.success(f"**Hedef / Fair Value:**\n{scenarios.get('En_Iyi', scenarios.get('best_case', 'Veri Yok'))}")
+                s2.info(f"**Beklenen Senaryo:**\n{scenarios.get('Normal', scenarios.get('base_case', 'Veri Yok'))}")
+                s3.error(f"**Stop Risk:**\n{scenarios.get('Kotu_Stop', scenarios.get('worst_case', 'Veri Yok'))}")
                 
                 st.markdown("#### Asset History & AI Insights")
                 m1, m2, m3, m4 = st.columns(4)
                 m1.metric("Güven Aralığı (95%)", ai_report.get('Confidence_Interval', 'Belirsiz'))
-                m2.metric("Tarihsel Eşleşme", ai_report.get('Historical_Similarity', {}).get('Similar_Date', 'Yok'))
-                m3.metric("Benzer Dönem Sonucu", ai_report.get('Historical_Similarity', {}).get('Outcome', 'Belirsiz'))
+                hist_sim = ai_report.get('Historical_Similarity', {})
+                m2.metric("Tarihsel Eşleşme", hist_sim.get('Similar_Date', 'Yok'))
+                m3.metric("Benzer Dönem Sonucu", hist_sim.get('Outcome', 'Belirsiz'))
                 m4.metric("Multi-Timeframe Uyumu", f"+{ai_report.get('Scores', {}).get('Multi_Timeframe', 0)} Puan")
                 
                 st.markdown("#### Risk Center & Asset Quality Score")
@@ -249,26 +291,45 @@ with tab_chart:
     chart_symbol = st.selectbox("Grafik Çizilecek Varlığı Seçin:", df_results['symbol'].tolist())
     if st.button("Canlı Grafiği Yükle"):
         with st.spinner("Grafik Motoru Yükleniyor..."):
-            df_chart = core.analyzer.calculate_indicators(chart_symbol, "1d")
-            if not df_chart.empty:
-                try:
+            try:
+                # API tabanlı grafik verisi çek
+                api_sym = chart_symbol.replace(".IS", "")
+                chart_resp = requests.get(f"{API_BASE_URL}/api/chart_data?symbol={api_sym}&interval=1d")
+                chart_resp.raise_for_status()
+                chart_data = chart_resp.json()
+                
+                if chart_data.get("status") != "error" and chart_data.get("candles"):
+                    df_chart = pd.DataFrame(chart_data["candles"])
+                    
                     import plotly.graph_objects as go
                     fig = go.Figure(data=[go.Candlestick(
-                        x=df_chart['date'],
+                        x=df_chart['date'] if 'date' in df_chart.columns else df_chart.index,
                         open=df_chart['open'],
                         high=df_chart['high'],
                         low=df_chart['low'],
                         close=df_chart['close'],
                         name='Fiyat'
                     )])
-                    # EMA Ekle
-                    if 'EMA' in df_chart.columns:
-                        fig.add_trace(go.Scatter(x=df_chart['date'], y=df_chart['EMA'], mode='lines', name='EMA(20)', line=dict(color='orange')))
+                    # EMA Çizgileri Ekle
+                    close = df_chart['close'].astype(float)
+                    x_axis = df_chart['date'] if 'date' in df_chart.columns else df_chart.index
+                    
+                    ema20 = close.ewm(span=20, adjust=False).mean()
+                    ema50 = close.ewm(span=50, adjust=False).mean()
+                    ema200 = close.ewm(span=200, adjust=False).mean()
+                    
+                    fig.add_trace(go.Scatter(x=x_axis, y=ema20, mode='lines', name='EMA(20)', line=dict(color='orange', width=1)))
+                    fig.add_trace(go.Scatter(x=x_axis, y=ema50, mode='lines', name='EMA(50)', line=dict(color='blue', width=1.5)))
+                    fig.add_trace(go.Scatter(x=x_axis, y=ema200, mode='lines', name='EMA(200)', line=dict(color='red', width=2)))
                         
                     fig.update_layout(title=f"{chart_symbol} Kurumsal Mum Grafiği", xaxis_title='Tarih', yaxis_title='Fiyat ₺', height=600)
                     st.plotly_chart(fig, use_container_width=True)
-                except ImportError:
-                    st.error("⚠️ Plotly kütüphanesi eksik.")
+                else:
+                    st.warning("Grafik verisi alınamadı.")
+            except requests.exceptions.RequestException as e:
+                st.error(f"API Bağlantı Hatası: {e}")
+            except ImportError:
+                st.error("⚠️ Plotly kütüphanesi eksik.")
 
 # ---------------------------------------------------------
 # TAB 4: WATCHLIST MANAGER
@@ -334,21 +395,21 @@ with tab_ai:
 # TAB 6: QUANT RESEARCH LAB
 # ---------------------------------------------------------
 with tab_research:
-    st.markdown("### ?? Quant Research Laboratory")
-    st.caption("Gelimi backtest, strateji optimizasyonu ve Monte Carlo simlasyonlar (CFG-05)")
+    st.markdown("### 🧪 Quant Research Laboratory")
+    st.caption("Gelişmiş backtest, strateji optimizasyonu ve Monte Carlo simülasyonları (CFG-05)")
     
     col_strat1, col_strat2 = st.columns(2)
     with col_strat1:
-        selected_strategy = st.selectbox("Strateji Seiniz", ["EMA_Crossover", "RSI_Reversal", "MACD_Trend"])
+        selected_strategy = st.selectbox("Strateji Seçiniz", ["EMA_Crossover", "RSI_Reversal", "MACD_Trend"])
         test_symbol = st.text_input("Test Edilecek Sembol", value="ASELS.IS")
     
     with col_strat2:
         st.write("Optimizasyon Hedefi")
         target_metric = st.selectbox("Metrik", ["Sharpe_Ratio", "CAGR", "Max_Drawdown"])
-        run_backtest_btn = st.button("?? Backtest ve Optimize Et", use_container_width=True)
+        run_backtest_btn = st.button("🧪 Backtest ve Optimize Et", use_container_width=True)
         
     if run_backtest_btn:
-        with st.spinner("Stratejiler test ediliyor ve Monte Carlo simlasyonlar altrlyor..."):
+        with st.spinner("Stratejiler test ediliyor ve Monte Carlo simülasyonları çalıştırılıyor..."):
             from engines.market_data_engine import MarketDataEngine
             from engines.strategy_engine import StrategyEngine
             from engines.optimization_engine import OptimizationEngine
@@ -373,16 +434,16 @@ with tab_research:
                 best_perf = opt_result.get("Best_Metrics", {})
                 
                 if best_perf:
-                    st.success("Optimizasyon Tamamland!")
+                    st.success("Optimizasyon Tamamlandı!")
                     
                     m1, m2, m3, m4 = st.columns(4)
-                    m1.metric("En yi Parametreler", str(opt_result["Best_Parameters"]))
+                    m1.metric("En İyi Parametreler", str(opt_result["Best_Parameters"]))
                     m2.metric("CAGR", f"%{best_perf.get('CAGR', 0)}")
                     m3.metric("Sharpe Ratio", best_perf.get('Sharpe_Ratio', 0))
                     m4.metric("Max Drawdown", f"%{best_perf.get('Max_Drawdown', 0)}")
                     
-                    st.markdown("#### ?? Monte Carlo Simlasyonu (Gelecek 1 Yl / 1000 Senaryo)")
-                    # Monte carlo sim iin en iyi parametrelere gre sinyal bulmalyz
+                    st.markdown("#### 📊 Monte Carlo Simülasyonu (Gelecek 1 Yıl / 1000 Senaryo)")
+                    # Monte carlo sim için en iyi parametrelere göre sinyal bulmalıyız
                     best_signals = strat_func(df_test, **opt_result["Best_Parameters"])
                     from engines.backtest_engine import BacktestEngine
                     bt = BacktestEngine()
@@ -392,14 +453,14 @@ with tab_research:
                     if "error" not in mc_res:
                         sm1, sm2, sm3, sm4 = st.columns(4)
                         sm1.metric("Ortalama Beklenen Sermaye", f"{mc_res['Mean_Final_Capital']} TL")
-                        sm2.metric("Kazanma Olasl", f"%{mc_res['Probability_of_Profit']}")
-                        sm3.metric("En Kt Senaryo (%99 VaR)", f"{mc_res['Worst_Case_1_Percent']} TL")
-                        sm4.metric("En yi Senaryo", f"{mc_res['Best_Case_1_Percent']} TL")
-                        st.info("Laboratuvar aktif olarak gemii analiz etti ve 1000 olas gelecei simle etti.")
+                        sm2.metric("Kazanma Olasılığı", f"%{mc_res['Probability_of_Profit']}")
+                        sm3.metric("En Kötü Senaryo (%99 VaR)", f"{mc_res['Worst_Case_1_Percent']} TL")
+                        sm4.metric("En İyi Senaryo", f"{mc_res['Best_Case_1_Percent']} TL")
+                        st.info("Laboratuvar aktif olarak geçmişi analiz etti ve 1000 olası geleceği simüle etti.")
                     else:
                         st.warning(mc_res["error"])
             else:
-                st.error("Veri ekilemedi.")
+                st.error("Veri çekilemedi.")
 
 
 # ---------------------------------------------------------
@@ -607,15 +668,24 @@ with tab_portfolio:
             with st.spinner("Tüm veriler (Volatilite, Korelasyon, Faktörler) analiz ediliyor..."):
                 from engines.ai_coach_engine import AICoachEngine
                 
-                # Mock veya örnek verilerle koçluk simülasyonu (Gerçek senaryoda üstteki panellerden beslenir)
-                # Örnek senaryo:
+                # Dinamik değerler (mevcut state'den veya hesaplanan)
+                div_score = st.session_state.get('diversification_score', 1.0)
+                ann_vol = st.session_state.get('annual_volatility', 25.0)
+                exp_ret = st.session_state.get('expected_return', 30.0)
+                high_corr = st.session_state.get('high_corr_count', 0)
+                liq_warn = st.session_state.get('liquidity_warnings', 0)
+                
                 health_report = AICoachEngine.evaluate_portfolio_health(
-                    diversification_score=1.35, 
-                    annual_volatility=28.5, 
-                    expected_return=45.0, 
-                    high_corr_count=1,
-                    liquidity_warnings=0
+                    diversification_score=div_score,
+                    annual_volatility=ann_vol,
+                    expected_return=exp_ret,
+                    high_corr_count=high_corr,
+                    liquidity_warnings=liq_warn
                 )
+                
+                st.session_state['portfolio_health_score'] = health_report['Portfolio_Health_Score']
+                st.session_state['ai_confidence_score'] = health_report['AI_Confidence_Score']
+                st.session_state['ai_reasons'] = health_report['Explainable_AI_Reasons']
                 
                 st.write(f"**Portföy Genel Durumu:** {health_report['Summary_Verdict']}")
                 
@@ -635,17 +705,15 @@ with tab_portfolio:
         
         rep_col1, rep_col2 = st.columns(2)
         
-        # Rapor için mock data (gerçekte state'den alınmalı)
-        mock_portfolio_data = {
-            "health_score": 85.5,
-            "confidence": 88.0,
-            "diversification": 1.45
+        # Rapor için dinamik data (session state'den)
+        report_portfolio_data = {
+            "health_score": st.session_state.get('portfolio_health_score', 0),
+            "confidence": st.session_state.get('ai_confidence_score', 0),
+            "diversification": st.session_state.get('diversification_score', 0)
         }
-        mock_ai_reasons = [
-            "Portföy son derece iyi çeşitlendirilmiş (Mükemmel risk dağılımı).",
-            "Portföy Volatilitesi düşük (%18.5). Güvenli liman ağırlıklı.",
-            "Birim risk başına düşen beklenen getiri yüksek. Risk-Ödül dengesi pozitif."
-        ]
+        report_ai_reasons = st.session_state.get('ai_reasons', [
+            "Henüz AI Koçu çalıştırılmadı. Lütfen önce 'AI Koçu'nu Çalıştır' butonuna tıklayın."
+        ])
         
         import pandas as pd
         mock_factor_data = pd.DataFrame({"Sembol": ["ASELS.IS"], "Momentum": [80], "Quality": [90]})
@@ -655,7 +723,7 @@ with tab_portfolio:
         
         with rep_col1:
             try:
-                excel_bytes = ReportingEngine.generate_excel_report(mock_portfolio_data, mock_factor_data, mock_corr_data)
+                excel_bytes = ReportingEngine.generate_excel_report(report_portfolio_data, mock_factor_data, mock_corr_data)
                 st.download_button(
                     label="📊 Excel Raporu İndir",
                     data=excel_bytes,
@@ -667,7 +735,7 @@ with tab_portfolio:
                 
         with rep_col2:
             try:
-                html_str = ReportingEngine.generate_html_report(mock_portfolio_data, mock_ai_reasons)
+                html_str = ReportingEngine.generate_html_report(report_portfolio_data, report_ai_reasons)
                 st.download_button(
                     label="📄 HTML/PDF Raporu İndir",
                     data=html_str,

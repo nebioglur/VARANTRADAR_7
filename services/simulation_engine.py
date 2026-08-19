@@ -44,6 +44,13 @@ class SimulationEngine:
         win_trades = sum(1 for t in trades if t.get('pnl_val', 0) > 0)
         
         try:
+            cursor.execute("SELECT end_equity FROM equity_log ORDER BY date_str DESC LIMIT 1")
+            prev = cursor.fetchone()
+            start_eq = float(prev['end_equity']) if prev else self.daily_budget
+        except Exception as e:
+            start_eq = self.daily_budget
+
+        try:
             cursor.execute("""
                 INSERT INTO equity_log (date_str, start_equity, end_equity, daily_pnl, total_trades, win_trades)
                 VALUES (?, ?, ?, ?, ?, ?)
@@ -53,7 +60,7 @@ class SimulationEngine:
                     total_trades=excluded.total_trades,
                     win_trades=excluded.win_trades
             """, (
-                date_str, self.daily_budget, self.daily_budget + total_pnl, 
+                date_str, start_eq, start_eq + total_pnl, 
                 total_pnl, len(trades), win_trades
             ))
         except Exception as e:
@@ -101,21 +108,26 @@ class SimulationEngine:
             if metadata_str:
                 try:
                     meta = json.loads(metadata_str)
-                except:
-                    pass
+                except Exception as e_meta:
+                    print(f"[SimEngine] Metadata parse hatası {s.get('symbol', '?')}: {e_meta}")
             
             price = float(meta.get('Price') or meta.get('Daily_Close') or s.get('morning_price', 0))
+            
+            # EMA değerlerini birden fazla olası anahtardan ara
             ema50 = meta.get('Daily_EMA50')
             ema200 = meta.get('Daily_EMA200')
             
             if ema50 is None or ema200 is None:
-                if 'Indicators' in meta:
-                    ema50 = ema50 or meta['Indicators'].get('EMA_50')
-                    ema200 = ema200 or meta['Indicators'].get('EMA_200')
+                indicators = meta.get('Indicators', {})
+                ema50 = ema50 or indicators.get('EMA_50') or indicators.get('EMA_50')
+                ema200 = ema200 or indicators.get('EMA_200') or indicators.get('EMA_200')
                     
             if ema50 and ema200 and price:
-                if price <= float(ema50) or price <= float(ema200):
-                    continue # EMA filtrelerine uymadığı için simülasyona alınmaz
+                try:
+                    if float(price) <= float(ema50) or float(price) <= float(ema200):
+                        continue # EMA filtrelerine uymadığı için simülasyona alınmaz
+                except (ValueError, TypeError):
+                    pass  # Dönüşüm hatası olursa filtreyi atla
                     
             if score >= 80 and "YATAY" not in phase and "NEGATİF" not in phase and "UZAK DUR" not in phase:
                 valid_signals.append(s)
