@@ -626,8 +626,8 @@ class TechnicalEngine(BaseEngine):
             change_pct = ((current_price - prev_close) / prev_close) * 100 if prev_close > 0 else 0.0
             
             # KULLANICI ŞİKAYETİ: "PROGRAM ZATEN TAVAN OLMUŞ HİSSLERİ VERMİŞ"
-            # Eğer hisse zaten tavan (%9.8 ve üzeri) ise taramaya (aday listesine) alma
-            if change_pct >= 9.8:
+            # KULLANICI ŞART KOŞTU: %6.5 ve üzeri yükselmiş olan hisseleri listeye alma (Kar marjı en az %3.5 olmalı)
+            if change_pct >= 6.5:
                 return None
             
             # Borsa İstanbul Tavanı (%10 teorik)
