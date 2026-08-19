@@ -70,6 +70,13 @@ CACHE_FILE = "dashboard_cache.json"
 def load_dashboard_cache():
     if os.path.exists(CACHE_FILE):
         try:
+            # Sadece 30 dakikadan yeni cache'leri kabul et
+            import time
+            mtime = os.path.getmtime(CACHE_FILE)
+            if time.time() - mtime > 1800:
+                print("[Server] Eski cache dosyası reddedildi (30 dk'dan eski).")
+                return {}
+            
             with open(CACHE_FILE, "r", encoding="utf-8") as f:
                 return json.load(f)
         except Exception as e:
