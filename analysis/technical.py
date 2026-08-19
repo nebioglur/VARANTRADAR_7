@@ -625,10 +625,13 @@ class TechnicalEngine(BaseEngine):
             # Günlük % Değişim
             change_pct = ((current_price - prev_close) / prev_close) * 100 if prev_close > 0 else 0.0
             
-            # Borsa İstanbul Tavanı (%9.95 - %10.00)
-            tavan_price = round(prev_close * 1.0995, 2)
-            if tavan_price <= current_price:
-                tavan_price = round(current_price * 1.0995, 2)
+            # KULLANICI ŞİKAYETİ: "PROGRAM ZATEN TAVAN OLMUŞ HİSSLERİ VERMİŞ"
+            # Eğer hisse zaten tavan (%9.8 ve üzeri) ise taramaya (aday listesine) alma
+            if change_pct >= 9.8:
+                return None
+            
+            # Borsa İstanbul Tavanı (%10 teorik)
+            tavan_price = round(prev_close * 1.10, 2)
                 
             # Tavana Kalan Mesafe (%)
             distance_to_ceiling_pct = ((tavan_price - current_price) / current_price) * 100 if current_price > 0 else 0.0

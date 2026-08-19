@@ -1,0 +1,1312 @@
+
+[     UTC     ] Logs for varantradarpro-rg4ah9qeu5jg22un7nj2wv.streamlit.app/
+────────────────────────────────────────────────────────────────────────────────────────
+[23:10:06] 🚀 Starting up repository: 'varantradar', branch: 'main', main module: 'app.py'
+[23:10:06] 🐙 Cloning repository...
+[23:10:09] 🐙 Cloning into '/mount/src/varantradar'...
+
+[23:10:09] 🐙 Cloned repository!
+[23:10:09] 🐙 Pulling code changes from Github...
+[23:10:10] 📦 Processing dependencies...
+
+──────────────────────────────────────── uv ───────────────────────────────────────────
+
+Using uv pip install.
+Using Python 3.14.6 environment at /home/adminuser/venv
+Resolved 82 packages in 934ms
+Prepared 82 packages in 4.84s
+Installed 82 packages in 156ms
+ + altair==6.2.2
+ + annotated-doc==0.0.4
+ + annotated-types==0.7.0
+ + anyio==4.14.2
+ + attrs==26.1.0
+ +[2026-07-13 23:10:17.097446]  beautifulsoup4==4.15.0
+ + blinker==1.9.0
+ + cachetools==7.1.4
+ + certifi==2026.6.17
+ + cffi==2.1.0
+ + charset-normalizer==3.4.9
+ + [2026-07-13 23:10:17.097662] click==8.4.2
+ + cryptography==49.0.0
+ + curl-cffi==0.15.0
+ + fastapi==0.139.0
+ + gitdb==4.0.12
+ + gitpython==3.1.51[2026-07-13 23:10:17.097892] 
+ + google-ai-generativelanguage==0.6.15
+ + google-api-core==2.25.2
+ + google-api-python-client==2.198.0
+ + google-auth==2.56.0
+ + google-auth-httplib2==0.4.0
+ + google-generativeai==[2026-07-13 23:10:17.098095] 0.8.6
+ + googleapis-common-protos==1.75.0
+ + grpcio==1.82.1
+ + grpcio-status==1.71.2
+ + h11==0.16.0
+ + httplib2==0.32.0[2026-07-13 23:10:17.098354] 
+ + httptools==0.8.0
+ + idna==3.18
+ + itsdangerous==2.2.0
+ + jinja2==[2026-07-13 23:10:17.098572] 3.1.6
+ + jsonschema==4.26.0
+ + jsonschema-specifications==2025.9.1
+ + markdown-it-py==4.2.0[2026-07-13 23:10:17.098780] 
+ + markupsafe==3.0.3
+ + mdurl==0.1.2
+ + multitasking==0.0.13
+ + narwhals==2.24.0[2026-07-13 23:10:17.098989] 
+ + numpy==2.5.1
+ + packaging==26.2
+ + pandas==3.0.3
+ +[2026-07-13 23:10:17.099256]  peewee==4.2.2
+ + pillow==12.3.0
+ + platformdirs==4.10.0
+ + plotly==6.9.0
+ + proto-plus==1.28.1
+ + protobuf==5.29.6
+ + pyarrow==24.0.0
+ + pyasn1==0.6.4[2026-07-13 23:10:17.099586] 
+ + pyasn1-modules==0.4.2
+ + pycparser==3.0
+ + pydantic==2.13.4
+ + pydantic-core==2.46.4
+ +[2026-07-13 23:10:17.099745]  pydeck==0.9.3
+ + pygments==2.20.0
+ + pyparsing==3.3.2
+ + python-dateutil==2.9.0.post0
+ + python-multipart[2026-07-13 23:10:17.099907] ==0.0.32
+ + pytz==2026.2
+ + referencing==0.37.0
+ + requests==2.34.2
+ + [2026-07-13 23:10:17.100061] rich==15.0.0
+ + rpds-py==2026.6.3
+ + schedule==1.2.2
+ + scipy==1.18.0
+ + [2026-07-13 23:10:17.100268] six==1.17.0
+ + smmap==5.0.3
+ + soupsieve==2.8.4
+ + starlette==1.3.1
+ + streamlit==1.59.2
+ + tenacity==9.1.4
+ + toml==0.10.2
+ + tqdm==[2026-07-13 23:10:17.100600] 4.68.4
+ + typing-extensions==4.16.0
+ + typing-inspection==0.4.2
+ + uritemplate==4.2.0
+ + urllib3==[2026-07-13 23:10:17.100752] 2.7.0
+ + uvicorn==0.51.0
+ + watchdog==6.0.0
+ + websockets==16.1
+ + yfinance==1.5.1[2026-07-13 23:10:17.100903] 
+Checking if Streamlit is installed
+Found Streamlit version 1.59.2 in the environment
+Installing rich for an improved exception logging
+Using uv pip install.
+Using Python 3.14.6 environment at /home/adminuser/venv
+Audited 1 package in 2ms
+
+────────────────────────────────────────────────────────────────────────────────────────
+
+[23:10:20] 🐍 Python dependencies were installed from /mount/src/varantradar/requirements.txt using uv.
+Check if streamlit is installed
+Streamlit is already installed
+[23:10:21] 📦 Processed dependencies!
+2026-07-13 23:10:23.026 Uvicorn server started on :::8501
+
+
+
+2026-07-13 23:11:13,779 - VarantRadar - INFO - Initializing Antigravity Core...
+2026-07-13 23:11:13,781 - VarantRadar - INFO - Database tables created.
+2026-07-13 23:11:13,808 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-13 23:11:29,015 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+[23:13:55] 🐙 Pulling code changes from Github...
+2026-07-13 23:13:57,193 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+[23:13:57] 📦 Processing dependencies...
+[23:13:57] 📦 Processed dependencies!
+[23:13:58] 🔄 Updated app!
+2026-07-13 23:14:09,840 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-13 23:14:18,535 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-13 23:14:18,538 - VarantRadar - INFO - V7 Otomasyon Botu Başladı. Tarama Aralığı: 60 dakika.
+2026-07-13 23:14:18,538 - VarantRadar - INFO - Piyasa kapalı, tarama atlandı.
+2026-07-13 23:14:18,637 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-13 23:14:21,205 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-13 23:54:39,481 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-13 23:55:03.116 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+/mount/src/varantradar/services/llm_advisor.py:1: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+2026-07-13 23:55:04.824 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-13 23:55:05.007 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-13 23:55:05.037 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-13 23:55:26,439 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-13 23:55:33,187 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-13 23:55:33,190 - VarantRadar - INFO - V7 Otomasyon Botu Başladı. Tarama Aralığı: 60 dakika.
+2026-07-13 23:55:33,190 - VarantRadar - INFO - Piyasa kapalı, tarama atlandı.
+2026-07-13 23:55:33,314 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-13 23:55:46.572 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-13 23:55:46.680 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-13 23:55:46.781 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-13 23:55:46.805 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-13 23:56:05.690 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+────────────────────── Traceback (most recent call last) ───────────────────────
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+  nner/exec_code.py:129 in exec_func_with_error_handling                        
+                                                                                
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+  nner/script_runner.py:795 in code_to_exec                                     
+                                                                                
+  /mount/src/varantradar/app.py:208 in <module>                                 
+                                                                                
+    205 │   │   │   scan_bist100 = r2.button("🚀 BIST100 Tara (~30 sn)")        
+    206 │   │   │                                                               
+    207 │   │   │   if scan_bist30 or scan_bist100:                             
+  ❱ 208 │   │   │   │   from config.bist_symbols import BIST30_SYMBOLS, BIST10  
+    209 │   │   │   │   from services.radar_engine import RadarEngine           
+    210 │   │   │   │                                                           
+    211 │   │   │   │   target_symbols = BIST30_SYMBOLS if scan_bist30 else BI  
+────────────────────────────────────────────────────────────────────────────────
+ImportError: cannot import name 'BIST100_SYMBOLS' from 'config.bist_symbols' 
+(/mount/src/varantradar/config/bist_symbols.py)
+2026-07-13 23:56:15.390 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+────────────────────── Traceback (most recent call last) ───────────────────────
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+  nner/exec_code.py:129 in exec_func_with_error_handling                        
+                                                                                
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+  nner/script_runner.py:795 in code_to_exec                                     
+                                                                                
+  /mount/src/varantradar/app.py:208 in <module>                                 
+                                                                                
+    205 │   │   │   scan_bist100 = r2.button("🚀 BIST100 Tara (~30 sn)")        
+    206 │   │   │                                                               
+    207 │   │   │   if scan_bist30 or scan_bist100:                             
+  ❱ 208 │   │   │   │   from config.bist_symbols import BIST30_SYMBOLS, BIST10  
+    209 │   │   │   │   from services.radar_engine import RadarEngine           
+    210 │   │   │   │                                                           
+    211 │   │   │   │   target_symbols = BIST30_SYMBOLS if scan_bist30 else BI  
+────────────────────────────────────────────────────────────────────────────────
+ImportError: cannot import name 'BIST100_SYMBOLS' from 'config.bist_symbols' 
+(/mount/src/varantradar/config/bist_symbols.py)
+2026-07-13 23:56:19.355 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+────────────────────── Traceback (most recent call last) ───────────────────────
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+  nner/exec_code.py:129 in exec_func_with_error_handling                        
+                                                                                
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+  nner/script_runner.py:795 in code_to_exec                                     
+                                                                                
+  /mount/src/varantradar/app.py:208 in <module>                                 
+                                                                                
+    205 │   │   │   scan_bist100 = r2.button("🚀 BIST100 Tara (~30 sn)")        
+    206 │   │   │                                                               
+    207 │   │   │   if scan_bist30 or scan_bist100:                             
+  ❱ 208 │   │   │   │   from config.bist_symbols import BIST30_SYMBOLS, BIST10  
+    209 │   │   │   │   from services.radar_engine import RadarEngine           
+    210 │   │   │   │                                                           
+    211 │   │   │   │   target_symbols = BIST30_SYMBOLS if scan_bist30 else BI  
+────────────────────────────────────────────────────────────────────────────────
+ImportError: cannot import name 'BIST100_SYMBOLS' from 'config.bist_symbols' 
+(/mount/src/varantradar/config/bist_symbols.py)
+2026-07-13 23:57:00,349 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-13 23:57:36,683 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+[23:57:43] 🐙 Pulling code changes from Github...
+[23:57:45] 📦 Processing dependencies...
+[23:57:45] 📦 Processed dependencies!
+[23:57:46] 🔄 Updated app!
+2026-07-13 23:57:54,418 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-13 23:57:55,756 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-13 23:57:56,624 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-14 00:14:18,979 - VarantRadar - INFO - Piyasa kapalı, tarama atlandı.
+2026-07-14 00:55:33,678 - VarantRadar - INFO - Piyasa kapalı, tarama atlandı.
+2026-07-14 01:14:19,315 - VarantRadar - INFO - Piyasa kapalı, tarama atlandı.
+2026-07-14 01:55:34,015 - VarantRadar - INFO - Piyasa kapalı, tarama atlandı.
+2026-07-14 02:14:19,658 - VarantRadar - INFO - Piyasa kapalı, tarama atlandı.
+2026-07-14 02:55:34,354 - VarantRadar - INFO - Piyasa kapalı, tarama atlandı.
+2026-07-14 03:14:20,006 - VarantRadar - INFO - Piyasa kapalı, tarama atlandı.
+2026-07-14 03:55:34,689 - VarantRadar - INFO - Piyasa kapalı, tarama atlandı.
+2026-07-14 04:14:20,341 - VarantRadar - INFO - Piyasa kapalı, tarama atlandı.
+2026-07-14 04:55:35,030 - VarantRadar - INFO - Piyasa kapalı, tarama atlandı.
+2026-07-14 05:14:20,684 - VarantRadar - INFO - Piyasa kapalı, tarama atlandı.
+2026-07-14 05:55:35,371 - VarantRadar - INFO - Piyasa kapalı, tarama atlandı.
+2026-07-14 06:14:21,019 - VarantRadar - INFO - Piyasa kapalı, tarama atlandı.
+2026-07-14 06:55:35,711 - VarantRadar - INFO - Piyasa kapalı, tarama atlandı.
+2026-07-14 07:14:21,361 - VarantRadar - INFO - Piyasa kapalı, tarama atlandı.
+2026-07-14 07:32:30,459 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-14 07:33:02,386 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-14 07:48:55,014 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-14 07:52:53.790 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 07:52:53.898 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 07:52:54.035 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 07:52:54.063 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 07:52:56,419 - VarantRadar - INFO - Starting data update cycle for single symbol: AHSGY.IS
+2026-07-14 07:52:56,419 - VarantRadar - INFO - Fetching data for AHSGY.IS (period=1y, interval=1d)
+2026-07-14 07:52:58,111 - VarantRadar - INFO - Successfully saved 255 records for AHSGY.IS at 1d
+2026-07-14 07:52:58,111 - VarantRadar - INFO - Fetching data for AHSGY.IS (period=1mo, interval=4h)
+2026-07-14 07:52:58,505 - VarantRadar - INFO - Successfully saved 64 records for AHSGY.IS at 4h
+2026-07-14 07:52:58,506 - VarantRadar - INFO - Fetching data for AHSGY.IS (period=1mo, interval=1h)
+2026-07-14 07:52:58,865 - VarantRadar - INFO - Successfully saved 191 records for AHSGY.IS at 1h
+2026-07-14 07:52:58,866 - VarantRadar - INFO - Fetching data for AHSGY.IS (period=5d, interval=15m)
+2026-07-14 07:52:59,347 - VarantRadar - INFO - Successfully saved 136 records for AHSGY.IS at 15m
+2026-07-14 07:52:59,348 - VarantRadar - INFO - Fetching data for AHSGY.IS (period=5d, interval=5m)
+2026-07-14 07:53:00,328 - VarantRadar - INFO - Successfully saved 400 records for AHSGY.IS at 5m
+2026-07-14 07:53:00,329 - VarantRadar - INFO - Fetching data for XU100.IS (period=1y, interval=1d)
+2026-07-14 07:53:01,843 - VarantRadar - INFO - Successfully saved 252 records for XU100.IS at 1d
+2026-07-14 07:53:01,845 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=4h)
+2026-07-14 07:53:03,473 - VarantRadar - INFO - Successfully saved 64 records for XU100.IS at 4h
+2026-07-14 07:53:03,473 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=1h)
+2026-07-14 07:53:05,182 - VarantRadar - INFO - Successfully saved 191 records for XU100.IS at 1h
+2026-07-14 07:53:05,183 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=15m)
+2026-07-14 07:53:06,794 - VarantRadar - INFO - Successfully saved 136 records for XU100.IS at 15m
+2026-07-14 07:53:06,795 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=5m)
+2026-07-14 07:53:09,968 - VarantRadar - INFO - Successfully saved 401 records for XU100.IS at 5m
+2026-07-14 07:53:09,969 - VarantRadar - INFO - Data update complete for AHSGY.IS.
+2026-07-14 07:53:10.334 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 07:53:10.442 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 07:53:10.556 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 07:53:10.584 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 07:53:23.438 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+────────────────────── Traceback (most recent call last) ───────────────────────
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+  nner/exec_code.py:129 in exec_func_with_error_handling                        
+                                                                                
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+  nner/script_runner.py:795 in code_to_exec                                     
+                                                                                
+  /mount/src/varantradar/app.py:208 in <module>                                 
+                                                                                
+    205 │   │   │   scan_bist100 = r2.button("🚀 BIST100 Tara (~30 sn)")        
+    206 │   │   │                                                               
+    207 │   │   │   if scan_bist30 or scan_bist100:                             
+  ❱ 208 │   │   │   │   from config.bist_symbols import BIST30_SYMBOLS, BIST10  
+    209 │   │   │   │   from services.radar_engine import RadarEngine           
+    210 │   │   │   │                                                           
+    211 │   │   │   │   target_symbols = BIST30_SYMBOLS if scan_bist30 else BI  
+────────────────────────────────────────────────────────────────────────────────
+ImportError: cannot import name 'BIST100_SYMBOLS' from 'config.bist_symbols' 
+(/mount/src/varantradar/config/bist_symbols.py)
+2026-07-14 07:55:36,109 - VarantRadar - INFO - Piyasa kapalı, tarama atlandı.
+2026-07-14 08:12:15,561 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-14 08:14:05,308 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-14 08:14:21,867 - VarantRadar - INFO - Piyasa kapalı, tarama atlandı.
+2026-07-14 08:15:58,839 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-14 08:16:38.931 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 08:16:39.029 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 08:16:39.148 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 08:16:39.172 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 08:16:42,404 - VarantRadar - INFO - Starting data update cycle for single symbol: ALARK.IS
+2026-07-14 08:16:42,404 - VarantRadar - INFO - Fetching data for ALARK.IS (period=1y, interval=1d)
+2026-07-14 08:16:43,258 - VarantRadar - INFO - Successfully saved 255 records for ALARK.IS at 1d
+2026-07-14 08:16:43,259 - VarantRadar - INFO - Fetching data for ALARK.IS (period=1mo, interval=4h)
+2026-07-14 08:16:43,542 - VarantRadar - INFO - Successfully saved 64 records for ALARK.IS at 4h
+2026-07-14 08:16:43,543 - VarantRadar - INFO - Fetching data for ALARK.IS (period=1mo, interval=1h)
+2026-07-14 08:16:43,824 - VarantRadar - INFO - Successfully saved 191 records for ALARK.IS at 1h
+2026-07-14 08:16:43,824 - VarantRadar - INFO - Fetching data for ALARK.IS (period=5d, interval=15m)
+2026-07-14 08:16:44,316 - VarantRadar - INFO - Successfully saved 138 records for ALARK.IS at 15m
+2026-07-14 08:16:44,317 - VarantRadar - INFO - Fetching data for ALARK.IS (period=5d, interval=5m)
+2026-07-14 08:16:45,073 - VarantRadar - INFO - Successfully saved 406 records for ALARK.IS at 5m
+2026-07-14 08:16:45,073 - VarantRadar - INFO - Fetching data for XU100.IS (period=1y, interval=1d)
+2026-07-14 08:16:46,487 - VarantRadar - INFO - Successfully saved 252 records for XU100.IS at 1d
+2026-07-14 08:16:46,488 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=4h)
+2026-07-14 08:16:47,983 - VarantRadar - INFO - Successfully saved 64 records for XU100.IS at 4h
+2026-07-14 08:16:47,984 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=1h)
+2026-07-14 08:16:49,582 - VarantRadar - INFO - Successfully saved 191 records for XU100.IS at 1h
+2026-07-14 08:16:49,582 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=15m)
+2026-07-14 08:16:51,134 - VarantRadar - INFO - Successfully saved 138 records for XU100.IS at 15m
+2026-07-14 08:16:51,135 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=5m)
+2026-07-14 08:16:54,437 - VarantRadar - INFO - Successfully saved 406 records for XU100.IS at 5m
+2026-07-14 08:16:54,437 - VarantRadar - INFO - Data update complete for ALARK.IS.
+2026-07-14 08:16:54.904 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 08:16:55.030 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 08:16:55.155 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 08:16:55.179 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 08:19:36,180 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-14 08:20:15.939 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 08:20:16.058 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 08:20:16.174 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 08:20:16.198 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 08:20:19,509 - VarantRadar - INFO - Starting data update cycle for single symbol: BIMAS.IS
+2026-07-14 08:20:19,510 - VarantRadar - INFO - Fetching data for BIMAS.IS (period=1y, interval=1d)
+2026-07-14 08:20:20,351 - VarantRadar - INFO - Successfully saved 257 records for BIMAS.IS at 1d
+2026-07-14 08:20:20,351 - VarantRadar - INFO - Fetching data for BIMAS.IS (period=1mo, interval=4h)
+2026-07-14 08:20:20,740 - VarantRadar - INFO - Successfully saved 64 records for BIMAS.IS at 4h
+2026-07-14 08:20:20,741 - VarantRadar - INFO - Fetching data for BIMAS.IS (period=1mo, interval=1h)
+2026-07-14 08:20:21,066 - VarantRadar - INFO - Successfully saved 191 records for BIMAS.IS at 1h
+2026-07-14 08:20:21,066 - VarantRadar - INFO - Fetching data for BIMAS.IS (period=5d, interval=15m)
+2026-07-14 08:20:21,551 - VarantRadar - INFO - Successfully saved 138 records for BIMAS.IS at 15m
+2026-07-14 08:20:21,551 - VarantRadar - INFO - Fetching data for BIMAS.IS (period=5d, interval=5m)
+2026-07-14 08:20:22,352 - VarantRadar - INFO - Successfully saved 407 records for BIMAS.IS at 5m
+2026-07-14 08:20:22,353 - VarantRadar - INFO - Fetching data for XU100.IS (period=1y, interval=1d)
+2026-07-14 08:20:23,720 - VarantRadar - INFO - Successfully saved 252 records for XU100.IS at 1d
+2026-07-14 08:20:23,721 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=4h)
+2026-07-14 08:20:25,302 - VarantRadar - INFO - Successfully saved 64 records for XU100.IS at 4h
+2026-07-14 08:20:25,303 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=1h)
+2026-07-14 08:20:26,706 - VarantRadar - INFO - Successfully saved 191 records for XU100.IS at 1h
+2026-07-14 08:20:26,707 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=15m)
+2026-07-14 08:20:27,974 - VarantRadar - INFO - Successfully saved 138 records for XU100.IS at 15m
+2026-07-14 08:20:27,974 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=5m)
+2026-07-14 08:20:30,524 - VarantRadar - INFO - Successfully saved 407 records for XU100.IS at 5m
+2026-07-14 08:20:30,524 - VarantRadar - INFO - Data update complete for BIMAS.IS.
+2026-07-14 08:20:31.001 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 08:20:31.144 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 08:20:31.256 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 08:20:31.281 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 08:21:13.060 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 08:21:13.184 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 08:21:13.304 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 08:21:13.329 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 08:22:20,668 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-14 08:42:39,773 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-14 08:44:53.240 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 08:44:56,848 - VarantRadar - INFO - Starting data update cycle for single symbol: ALGYO.IS
+2026-07-14 08:44:56,854 - VarantRadar - INFO - Fetching data for ALGYO.IS (period=1y, interval=1d)
+2026-07-14 08:45:02,195 - VarantRadar - INFO - Successfully saved 255 records for ALGYO.IS at 1d
+2026-07-14 08:45:02,201 - VarantRadar - INFO - Fetching data for ALGYO.IS (period=1mo, interval=4h)
+2026-07-14 08:45:05,040 - VarantRadar - INFO - Successfully saved 64 records for ALGYO.IS at 4h
+2026-07-14 08:45:05,056 - VarantRadar - INFO - Fetching data for ALGYO.IS (period=1mo, interval=1h)
+2026-07-14 08:45:08,321 - VarantRadar - INFO - Successfully saved 191 records for ALGYO.IS at 1h
+2026-07-14 08:45:08,322 - VarantRadar - INFO - Fetching data for ALGYO.IS (period=5d, interval=15m)
+2026-07-14 08:45:12,787 - VarantRadar - INFO - Successfully saved 140 records for ALGYO.IS at 15m
+2026-07-14 08:45:12,817 - VarantRadar - INFO - Fetching data for ALGYO.IS (period=5d, interval=5m)
+2026-07-14 08:45:20,581 - VarantRadar - INFO - Successfully saved 412 records for ALGYO.IS at 5m
+2026-07-14 08:45:20,602 - VarantRadar - INFO - Fetching data for XU100.IS (period=1y, interval=1d)
+2026-07-14 08:45:32,604 - VarantRadar - INFO - Successfully saved 252 records for XU100.IS at 1d
+2026-07-14 08:45:32,610 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=4h)
+2026-07-14 08:45:41,981 - VarantRadar - INFO - Successfully saved 64 records for XU100.IS at 4h
+2026-07-14 08:45:41,998 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=1h)
+2026-07-14 08:45:51,739 - VarantRadar - INFO - Successfully saved 192 records for XU100.IS at 1h
+2026-07-14 08:45:51,760 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=15m)
+2026-07-14 08:45:54,303 - VarantRadar - INFO - Starting data update cycle for single symbol: ALGYO.IS
+2026-07-14 08:45:54,316 - VarantRadar - INFO - Fetching data for ALGYO.IS (period=1y, interval=1d)
+2026-07-14 08:46:01,661 - VarantRadar - INFO - Successfully saved 255 records for ALGYO.IS at 1d
+2026-07-14 08:46:01,677 - VarantRadar - INFO - Fetching data for ALGYO.IS (period=1mo, interval=4h)
+2026-07-14 08:46:03,182 - VarantRadar - INFO - Successfully saved 140 records for XU100.IS at 15m
+2026-07-14 08:46:03,183 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=5m)
+2026-07-14 08:46:05,338 - VarantRadar - INFO - Successfully saved 64 records for ALGYO.IS at 4h
+2026-07-14 08:46:05,338 - VarantRadar - INFO - Fetching data for ALGYO.IS (period=1mo, interval=1h)
+2026-07-14 08:46:10,060 - VarantRadar - INFO - Successfully saved 192 records for ALGYO.IS at 1h
+2026-07-14 08:46:10,083 - VarantRadar - INFO - Fetching data for ALGYO.IS (period=5d, interval=15m)
+2026-07-14 08:46:16,367 - VarantRadar - INFO - Successfully saved 140 records for ALGYO.IS at 15m
+2026-07-14 08:46:16,372 - VarantRadar - INFO - Fetching data for ALGYO.IS (period=5d, interval=5m)
+2026-07-14 08:46:27,637 - VarantRadar - INFO - Successfully saved 412 records for ALGYO.IS at 5m
+2026-07-14 08:46:27,645 - VarantRadar - INFO - Fetching data for XU100.IS (period=1y, interval=1d)
+2026-07-14 08:46:43,868 - VarantRadar - INFO - Successfully saved 412 records for XU100.IS at 5m
+2026-07-14 08:46:43,868 - VarantRadar - INFO - Data update complete for ALGYO.IS.
+2026-07-14 08:46:46,467 - VarantRadar - INFO - Successfully saved 252 records for XU100.IS at 1d
+2026-07-14 08:46:46,483 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=4h)
+2026-07-14 08:47:00,988 - VarantRadar - INFO - Successfully saved 64 records for XU100.IS at 4h
+2026-07-14 08:47:00,994 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=1h)
+2026-07-14 08:47:13.982 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 08:47:15.137 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 08:47:17.486 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 08:47:17.568 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-07-14 08:47:20,432 - VarantRadar - INFO - Successfully saved 192 records for XU100.IS at 1h
+2026-07-14 08:47:20,444 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=15m)
+2026-07-14 08:47:37,276 - VarantRadar - INFO - Successfully saved 140 records for XU100.IS at 15m
+2026-07-14 08:47:37,287 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=5m)
+2026-07-14 08:48:10,843 - VarantRadar - INFO - Successfully saved 412 records for XU100.IS at 5m
+2026-07-14 08:48:10,843 - VarantRadar - INFO - Data update complete for ALGYO.IS.
+2026-07-14 08:51:33,816 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-14 08:54:24,697 - VarantRadar - INFO - Starting data update cycle for single symbol: BMSTL.IS
+2026-07-14 08:54:24,827 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1y, interval=1d)
+2026-07-14 08:54:28,951 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-14 08:54:28,979 - VarantRadar - INFO - Successfully saved 258 records for BMSTL.IS at 1d
+2026-07-14 08:54:29,001 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1mo, interval=4h)
+2026-07-14 08:54:34,419 - VarantRadar - INFO - Successfully saved 64 records for BMSTL.IS at 4h
+2026-07-14 08:54:34,425 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1mo, interval=1h)
+2026-07-14 08:54:40,230 - VarantRadar - INFO - Successfully saved 192 records for BMSTL.IS at 1h
+2026-07-14 08:54:40,245 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=5d, interval=15m)
+2026-07-14 08:54:45,994 - VarantRadar - INFO - Successfully saved 140 records for BMSTL.IS at 15m
+2026-07-14 08:54:46,006 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=5d, interval=5m)
+2026-07-14 08:54:57,287 - VarantRadar - INFO - Successfully saved 413 records for BMSTL.IS at 5m
+2026-07-14 08:54:57,299 - VarantRadar - INFO - Fetching data for XU100.IS (period=1y, interval=1d)
+2026-07-14 08:55:15,601 - VarantRadar - INFO - Successfully saved 252 records for XU100.IS at 1d
+2026-07-14 08:55:15,602 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=4h)
+2026-07-14 08:55:33,237 - VarantRadar - INFO - Successfully saved 64 records for XU100.IS at 4h
+2026-07-14 08:55:33,263 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=1h)
+2026-07-14 08:55:40,757 - VarantRadar - INFO - Piyasa kapalı, tarama atlandı.
+2026-07-14 08:55:51,435 - VarantRadar - INFO - Successfully saved 192 records for XU100.IS at 1h
+2026-07-14 08:55:51,441 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=15m)
+2026-07-14 08:56:05,465 - VarantRadar - INFO - Successfully saved 140 records for XU100.IS at 15m
+2026-07-14 08:56:05,476 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=5m)
+2026-07-14 08:56:40,974 - VarantRadar - INFO - Successfully saved 414 records for XU100.IS at 5m
+2026-07-14 08:56:40,990 - VarantRadar - INFO - Data update complete for BMSTL.IS.
+2026-07-14 09:00:14,060 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-14 09:03:00,340 - VarantRadar - INFO - Starting data update cycle for single symbol: BMSTL.IS
+2026-07-14 09:03:00,348 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1y, interval=1d)
+2026-07-14 09:03:00,493 - VarantRadar - INFO - Starting data update cycle for single symbol: BMSTL.IS
+2026-07-14 09:03:00,500 - VarantRadar - INFO - Starting data update cycle for single symbol: BMSTL.IS
+2026-07-14 09:03:00,652 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1y, interval=1d)
+2026-07-14 09:03:01,082 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1y, interval=1d)
+2026-07-14 09:03:01,352 - VarantRadar - INFO - Starting data update cycle for single symbol: BMSTL.IS
+2026-07-14 09:03:01,353 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1y, interval=1d)
+2026-07-14 09:03:02,096 - VarantRadar - INFO - Starting data update cycle for single symbol: BMSTL.IS
+2026-07-14 09:03:02,356 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1y, interval=1d)
+2026-07-14 09:03:06,080 - VarantRadar - INFO - Successfully saved 258 records for BMSTL.IS at 1d
+2026-07-14 09:03:06,128 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1mo, interval=4h)
+2026-07-14 09:03:08,656 - VarantRadar - ERROR - Error fetching data for BMSTL.IS: Error inserting stock data for BMSTL.IS: database is locked
+2026-07-14 09:03:08,657 - VarantRadar - ERROR - Error during data update for BMSTL.IS: Failed to fetch BMSTL.IS data: Error inserting stock data for BMSTL.IS: database is locked
+2026-07-14 09:03:08,819 - VarantRadar - ERROR - Error fetching data for BMSTL.IS: Error inserting stock data for BMSTL.IS: database is locked
+2026-07-14 09:03:08,819 - VarantRadar - ERROR - Error during data update for BMSTL.IS: Failed to fetch BMSTL.IS data: Error inserting stock data for BMSTL.IS: database is locked
+2026-07-14 09:03:08,994 - VarantRadar - INFO - Successfully saved 258 records for BMSTL.IS at 1d
+2026-07-14 09:03:09,021 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1mo, interval=4h)
+2026-07-14 09:03:12,033 - VarantRadar - INFO - Successfully saved 258 records for BMSTL.IS at 1d
+2026-07-14 09:03:12,042 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1mo, interval=4h)
+2026-07-14 09:03:13,322 - VarantRadar - INFO - Successfully saved 64 records for BMSTL.IS at 4h
+2026-07-14 09:03:13,338 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1mo, interval=1h)
+2026-07-14 09:03:15,655 - VarantRadar - INFO - Successfully saved 64 records for BMSTL.IS at 4h
+2026-07-14 09:03:15,666 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1mo, interval=1h)
+2026-07-14 09:03:18,664 - VarantRadar - INFO - Successfully saved 64 records for BMSTL.IS at 4h
+2026-07-14 09:03:18,670 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1mo, interval=1h)
+2026-07-14 09:03:21,529 - VarantRadar - INFO - Successfully saved 192 records for BMSTL.IS at 1h
+2026-07-14 09:03:21,535 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=5d, interval=15m)
+2026-07-14 09:03:24,186 - VarantRadar - INFO - Successfully saved 192 records for BMSTL.IS at 1h
+2026-07-14 09:03:24,206 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=5d, interval=15m)
+2026-07-14 09:03:26,510 - VarantRadar - INFO - Successfully saved 192 records for BMSTL.IS at 1h
+2026-07-14 09:03:26,544 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=5d, interval=15m)
+2026-07-14 09:03:29,171 - VarantRadar - INFO - Successfully saved 141 records for BMSTL.IS at 15m
+2026-07-14 09:03:29,183 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=5d, interval=5m)
+2026-07-14 09:03:31,815 - VarantRadar - INFO - Successfully saved 141 records for BMSTL.IS at 15m
+2026-07-14 09:03:31,816 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=5d, interval=5m)
+2026-07-14 09:03:33,968 - VarantRadar - INFO - Successfully saved 141 records for BMSTL.IS at 15m
+2026-07-14 09:03:33,975 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=5d, interval=5m)
+2026-07-14 09:03:43,464 - VarantRadar - INFO - Successfully saved 415 records for BMSTL.IS at 5m
+2026-07-14 09:03:43,465 - VarantRadar - INFO - Fetching data for XU100.IS (period=1y, interval=1d)
+2026-07-14 09:03:46,518 - VarantRadar - ERROR - Error fetching data for BMSTL.IS: Error inserting stock data for BMSTL.IS: database is locked
+2026-07-14 09:03:46,521 - VarantRadar - ERROR - Error during data update for BMSTL.IS: Failed to fetch BMSTL.IS data: Error inserting stock data for BMSTL.IS: database is locked
+2026-07-14 09:03:47,079 - VarantRadar - INFO - Successfully saved 415 records for BMSTL.IS at 5m
+2026-07-14 09:03:47,091 - VarantRadar - INFO - Fetching data for XU100.IS (period=1y, interval=1d)
+2026-07-14 09:04:02,383 - VarantRadar - INFO - Successfully saved 252 records for XU100.IS at 1d
+2026-07-14 09:04:02,414 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=4h)
+2026-07-14 09:04:06,120 - VarantRadar - INFO - Successfully saved 252 records for XU100.IS at 1d
+2026-07-14 09:04:06,127 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=4h)
+2026-07-14 09:04:21,644 - VarantRadar - INFO - Successfully saved 64 records for XU100.IS at 4h
+2026-07-14 09:04:21,650 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=1h)
+2026-07-14 09:04:25,486 - VarantRadar - INFO - Successfully saved 64 records for XU100.IS at 4h
+2026-07-14 09:04:25,508 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=1h)
+2026-07-14 09:04:42,012 - VarantRadar - INFO - Successfully saved 192 records for XU100.IS at 1h
+2026-07-14 09:04:42,020 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=15m)
+2026-07-14 09:04:46,002 - VarantRadar - INFO - Successfully saved 192 records for XU100.IS at 1h
+2026-07-14 09:04:46,004 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=15m)
+2026-07-14 09:04:56,598 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-14 09:05:02,068 - VarantRadar - INFO - Successfully saved 141 records for XU100.IS at 15m
+2026-07-14 09:05:02,074 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=5m)
+2026-07-14 09:05:06,220 - VarantRadar - INFO - Successfully saved 141 records for XU100.IS at 15m
+2026-07-14 09:05:06,233 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=5m)
+2026-07-14 09:05:33,829 - VarantRadar - INFO - Successfully saved 416 records for XU100.IS at 5m
+2026-07-14 09:05:33,830 - VarantRadar - INFO - Data update complete for BMSTL.IS.
+2026-07-14 09:05:37,183 - VarantRadar - INFO - Successfully saved 416 records for XU100.IS at 5m
+2026-07-14 09:05:37,204 - VarantRadar - INFO - Data update complete for BMSTL.IS.
+2026-07-14 09:07:49,929 - VarantRadar - INFO - Starting data update cycle for single symbol: BMSTL.IS
+2026-07-14 09:07:49,929 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1y, interval=1d)
+2026-07-14 09:07:54,231 - VarantRadar - INFO - Successfully saved 258 records for BMSTL.IS at 1d
+2026-07-14 09:07:54,232 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1mo, interval=4h)
+2026-07-14 09:07:59,116 - VarantRadar - INFO - Successfully saved 64 records for BMSTL.IS at 4h
+2026-07-14 09:07:59,116 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1mo, interval=1h)
+2026-07-14 09:08:03,884 - VarantRadar - INFO - Successfully saved 192 records for BMSTL.IS at 1h
+2026-07-14 09:08:03,890 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=5d, interval=15m)
+2026-07-14 09:08:08,419 - VarantRadar - INFO - Successfully saved 141 records for BMSTL.IS at 15m
+2026-07-14 09:08:08,430 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=5d, interval=5m)
+2026-07-14 09:08:16,828 - VarantRadar - INFO - Successfully saved 416 records for BMSTL.IS at 5m
+2026-07-14 09:08:16,833 - VarantRadar - INFO - Fetching data for XU100.IS (period=1y, interval=1d)
+2026-07-14 09:08:31,753 - VarantRadar - INFO - Successfully saved 252 records for XU100.IS at 1d
+2026-07-14 09:08:31,769 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=4h)
+2026-07-14 09:08:46,730 - VarantRadar - INFO - Successfully saved 64 records for XU100.IS at 4h
+2026-07-14 09:08:46,731 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=1h)
+2026-07-14 09:09:02,589 - VarantRadar - INFO - Successfully saved 192 records for XU100.IS at 1h
+2026-07-14 09:09:02,595 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=15m)
+2026-07-14 09:09:17,186 - VarantRadar - INFO - Successfully saved 141 records for XU100.IS at 15m
+2026-07-14 09:09:17,213 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=5m)
+2026-07-14 09:09:45,944 - VarantRadar - INFO - Successfully saved 416 records for XU100.IS at 5m
+2026-07-14 09:09:45,950 - VarantRadar - INFO - Data update complete for BMSTL.IS.
+2026-07-14 09:14:32,683 - VarantRadar - INFO - Otomatik Tarama Tetiklendi...
+2026-07-14 09:14:32,688 - VarantRadar - INFO - V3 Radar başlatılıyor. Toplam Hisse: 30
+2026-07-14 09:14:36,761 - VarantRadar - INFO - Ön filtreden geçen hisse sayısı: 28
+2026-07-14 09:35:10,426 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-14 09:38:03,960 - VarantRadar - INFO - Starting data update cycle for single symbol: BMSTL.IS
+2026-07-14 09:38:03,968 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1y, interval=1d)
+2026-07-14 09:38:04,116 - VarantRadar - INFO - Starting data update cycle for single symbol: BMSTL.IS
+2026-07-14 09:38:04,116 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1y, interval=1d)
+2026-07-14 09:38:05,479 - VarantRadar - INFO - Starting data update cycle for single symbol: BMSTL.IS
+2026-07-14 09:38:05,487 - VarantRadar - INFO - Starting data update cycle for single symbol: BMSTL.IS
+2026-07-14 09:38:05,487 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1y, interval=1d)
+2026-07-14 09:38:05,488 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1y, interval=1d)
+2026-07-14 09:38:07,699 - VarantRadar - INFO - Successfully saved 258 records for BMSTL.IS at 1d
+2026-07-14 09:38:07,704 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1mo, interval=4h)
+2026-07-14 09:38:10,225 - VarantRadar - INFO - Successfully saved 258 records for BMSTL.IS at 1d
+2026-07-14 09:38:10,232 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1mo, interval=4h)
+2026-07-14 09:38:11,557 - VarantRadar - ERROR - Error fetching data for BMSTL.IS: Error inserting stock data for BMSTL.IS: database is locked
+2026-07-14 09:38:11,562 - VarantRadar - ERROR - Error during data update for BMSTL.IS: Failed to fetch BMSTL.IS data: Error inserting stock data for BMSTL.IS: database is locked
+2026-07-14 09:38:13,739 - VarantRadar - INFO - Successfully saved 258 records for BMSTL.IS at 1d
+2026-07-14 09:38:13,758 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1mo, interval=4h)
+2026-07-14 09:38:14,605 - VarantRadar - INFO - Successfully saved 64 records for BMSTL.IS at 4h
+2026-07-14 09:38:14,610 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1mo, interval=1h)
+2026-07-14 09:38:17,526 - VarantRadar - INFO - Successfully saved 64 records for BMSTL.IS at 4h
+2026-07-14 09:38:17,558 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1mo, interval=1h)
+2026-07-14 09:38:20,948 - VarantRadar - INFO - Successfully saved 64 records for BMSTL.IS at 4h
+2026-07-14 09:38:20,960 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=1mo, interval=1h)
+2026-07-14 09:38:23,000 - VarantRadar - INFO - Successfully saved 192 records for BMSTL.IS at 1h
+2026-07-14 09:38:23,015 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=5d, interval=15m)
+2026-07-14 09:38:26,066 - VarantRadar - INFO - Successfully saved 192 records for BMSTL.IS at 1h
+2026-07-14 09:38:26,080 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=5d, interval=15m)
+2026-07-14 09:38:29,643 - VarantRadar - INFO - Successfully saved 192 records for BMSTL.IS at 1h
+2026-07-14 09:38:29,649 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=5d, interval=15m)
+2026-07-14 09:38:31,420 - VarantRadar - INFO - Successfully saved 143 records for BMSTL.IS at 15m
+2026-07-14 09:38:31,429 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=5d, interval=5m)
+2026-07-14 09:38:34,273 - VarantRadar - INFO - Successfully saved 143 records for BMSTL.IS at 15m
+2026-07-14 09:38:34,279 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=5d, interval=5m)
+2026-07-14 09:38:37,821 - VarantRadar - INFO - Successfully saved 143 records for BMSTL.IS at 15m
+2026-07-14 09:38:37,823 - VarantRadar - INFO - Fetching data for BMSTL.IS (period=5d, interval=5m)
+2026-07-14 09:38:46,871 - VarantRadar - INFO - Successfully saved 422 records for BMSTL.IS at 5m
+2026-07-14 09:38:46,884 - VarantRadar - INFO - Fetching data for XU100.IS (period=1y, interval=1d)
+2026-07-14 09:38:50,851 - VarantRadar - INFO - Successfully saved 422 records for BMSTL.IS at 5m
+2026-07-14 09:38:50,856 - VarantRadar - INFO - Fetching data for XU100.IS (period=1y, interval=1d)
+2026-07-14 09:38:55,674 - VarantRadar - INFO - Successfully saved 422 records for BMSTL.IS at 5m
+2026-07-14 09:38:55,682 - VarantRadar - INFO - Fetching data for XU100.IS (period=1y, interval=1d)
+2026-07-14 09:39:08,596 - VarantRadar - INFO - Successfully saved 252 records for XU100.IS at 1d
+2026-07-14 09:39:08,603 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=4h)
+2026-07-14 09:39:12,795 - VarantRadar - INFO - Successfully saved 252 records for XU100.IS at 1d
+2026-07-14 09:39:12,797 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=4h)
+2026-07-14 09:39:15,296 - VarantRadar - INFO - Successfully saved 252 records for XU100.IS at 1d
+2026-07-14 09:39:15,307 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=4h)
+2026-07-14 09:39:30,748 - VarantRadar - INFO - Successfully saved 64 records for XU100.IS at 4h
+2026-07-14 09:39:30,773 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=1h)
+2026-07-14 09:39:35,136 - VarantRadar - INFO - Successfully saved 64 records for XU100.IS at 4h
+2026-07-14 09:39:35,143 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=1h)
+2026-07-14 09:39:37,770 - VarantRadar - INFO - Successfully saved 64 records for XU100.IS at 4h
+2026-07-14 09:39:37,793 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=1h)
+2026-07-14 09:39:56,068 - VarantRadar - INFO - Successfully saved 192 records for XU100.IS at 1h
+2026-07-14 09:39:56,082 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=15m)
+2026-07-14 09:40:00,256 - VarantRadar - INFO - Successfully saved 192 records for XU100.IS at 1h
+2026-07-14 09:40:00,258 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=15m)
+2026-07-14 09:40:03,085 - VarantRadar - INFO - Successfully saved 192 records for XU100.IS at 1h
+2026-07-14 09:40:03,086 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=15m)
+2026-07-14 09:40:18,229 - VarantRadar - INFO - Successfully saved 143 records for XU100.IS at 15m
+2026-07-14 09:40:18,247 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=5m)
+2026-07-14 09:40:19,851 - VarantRadar - INFO - Successfully saved 143 records for XU100.IS at 15m
+2026-07-14 09:40:19,873 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=5m)
+2026-07-14 09:40:22,436 - VarantRadar - INFO - Successfully saved 143 records for XU100.IS at 15m
+2026-07-14 09:40:22,453 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=5m)
+2026-07-14 09:40:55,009 - VarantRadar - INFO - Successfully saved 423 records for XU100.IS at 5m
+2026-07-14 09:40:55,015 - VarantRadar - INFO - Data update complete for BMSTL.IS.
+2026-07-14 09:40:57,325 - VarantRadar - INFO - Successfully saved 423 records for XU100.IS at 5m
+2026-07-14 09:40:57,346 - VarantRadar - INFO - Data update complete for BMSTL.IS.
+2026-07-14 09:40:59,966 - VarantRadar - INFO - Successfully saved 423 records for XU100.IS at 5m
+2026-07-14 09:40:59,972 - VarantRadar - INFO - Data update complete for BMSTL.IS.
+2026-07-14 09:45:37,249 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-14 09:48:18,208 - VarantRadar - INFO - Starting data update cycle for single symbol: EDATA.IS
+2026-07-14 09:48:18,208 - VarantRadar - INFO - Starting data update cycle for single symbol: EDATA.IS
+2026-07-14 09:48:18,233 - VarantRadar - INFO - Starting data update cycle for single symbol: EDATA.IS
+2026-07-14 09:48:18,246 - VarantRadar - INFO - Fetching data for EDATA.IS (period=1y, interval=1d)
+2026-07-14 09:48:18,257 - VarantRadar - INFO - Fetching data for EDATA.IS (period=1y, interval=1d)
+2026-07-14 09:48:18,264 - VarantRadar - INFO - Fetching data for EDATA.IS (period=1y, interval=1d)
+2026-07-14 09:48:25,267 - VarantRadar - INFO - Successfully saved 255 records for EDATA.IS at 1d
+2026-07-14 09:48:25,286 - VarantRadar - INFO - Fetching data for EDATA.IS (period=1mo, interval=4h)
+2026-07-14 09:48:27,536 - VarantRadar - INFO - Successfully saved 255 records for EDATA.IS at 1d
+2026-07-14 09:48:27,542 - VarantRadar - INFO - Fetching data for EDATA.IS (period=1mo, interval=4h)
+2026-07-14 09:48:30,002 - VarantRadar - INFO - Successfully saved 255 records for EDATA.IS at 1d
+2026-07-14 09:48:30,009 - VarantRadar - INFO - Fetching data for EDATA.IS (period=1mo, interval=4h)
+2026-07-14 09:48:30,720 - VarantRadar - INFO - Successfully saved 64 records for EDATA.IS at 4h
+2026-07-14 09:48:30,740 - VarantRadar - INFO - Fetching data for EDATA.IS (period=1mo, interval=1h)
+2026-07-14 09:48:31,812 - VarantRadar - INFO - Successfully saved 64 records for EDATA.IS at 4h
+2026-07-14 09:48:31,829 - VarantRadar - INFO - Fetching data for EDATA.IS (period=1mo, interval=1h)
+2026-07-14 09:48:34,604 - VarantRadar - INFO - Successfully saved 64 records for EDATA.IS at 4h
+2026-07-14 09:48:34,617 - VarantRadar - INFO - Fetching data for EDATA.IS (period=1mo, interval=1h)
+2026-07-14 09:48:36,464 - VarantRadar - INFO - Successfully saved 193 records for EDATA.IS at 1h
+2026-07-14 09:48:36,495 - VarantRadar - INFO - Fetching data for EDATA.IS (period=5d, interval=15m)
+2026-07-14 09:48:38,775 - VarantRadar - INFO - Successfully saved 193 records for EDATA.IS at 1h
+2026-07-14 09:48:38,796 - VarantRadar - INFO - Fetching data for EDATA.IS (period=5d, interval=15m)
+2026-07-14 09:48:41,128 - VarantRadar - INFO - Successfully saved 193 records for EDATA.IS at 1h
+2026-07-14 09:48:41,139 - VarantRadar - INFO - Fetching data for EDATA.IS (period=5d, interval=15m)
+2026-07-14 09:48:43,989 - VarantRadar - INFO - Successfully saved 144 records for EDATA.IS at 15m
+2026-07-14 09:48:44,019 - VarantRadar - INFO - Fetching data for EDATA.IS (period=5d, interval=5m)
+2026-07-14 09:48:46,334 - VarantRadar - INFO - Successfully saved 144 records for EDATA.IS at 15m
+2026-07-14 09:48:46,352 - VarantRadar - INFO - Fetching data for EDATA.IS (period=5d, interval=5m)
+2026-07-14 09:48:48,307 - VarantRadar - INFO - Successfully saved 144 records for EDATA.IS at 15m
+2026-07-14 09:48:48,310 - VarantRadar - INFO - Fetching data for EDATA.IS (period=5d, interval=5m)
+2026-07-14 09:48:59,654 - VarantRadar - INFO - Successfully saved 423 records for EDATA.IS at 5m
+2026-07-14 09:48:59,661 - VarantRadar - INFO - Fetching data for XU100.IS (period=1y, interval=1d)
+2026-07-14 09:49:03,454 - VarantRadar - INFO - Successfully saved 423 records for EDATA.IS at 5m
+2026-07-14 09:49:03,466 - VarantRadar - INFO - Fetching data for XU100.IS (period=1y, interval=1d)
+2026-07-14 09:49:08,649 - VarantRadar - INFO - Successfully saved 423 records for EDATA.IS at 5m
+2026-07-14 09:49:08,667 - VarantRadar - INFO - Fetching data for XU100.IS (period=1y, interval=1d)
+2026-07-14 09:49:21,001 - VarantRadar - INFO - Successfully saved 252 records for XU100.IS at 1d
+2026-07-14 09:49:21,002 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=4h)
+2026-07-14 09:49:26,064 - VarantRadar - INFO - Successfully saved 252 records for XU100.IS at 1d
+2026-07-14 09:49:26,064 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=4h)
+2026-07-14 09:49:32,263 - VarantRadar - INFO - Successfully saved 252 records for XU100.IS at 1d
+2026-07-14 09:49:32,275 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=4h)
+2026-07-14 09:49:42,970 - VarantRadar - INFO - Successfully saved 64 records for XU100.IS at 4h
+2026-07-14 09:49:42,975 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=1h)
+2026-07-14 09:49:48,098 - VarantRadar - INFO - Successfully saved 64 records for XU100.IS at 4h
+2026-07-14 09:49:48,104 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=1h)
+2026-07-14 09:49:54,655 - VarantRadar - INFO - Successfully saved 64 records for XU100.IS at 4h
+2026-07-14 09:49:54,656 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=1h)
+2026-07-14 09:50:07,985 - VarantRadar - INFO - Successfully saved 193 records for XU100.IS at 1h
+2026-07-14 09:50:07,992 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=15m)
+2026-07-14 09:50:13,715 - VarantRadar - INFO - Successfully saved 193 records for XU100.IS at 1h
+2026-07-14 09:50:13,738 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=15m)
+2026-07-14 09:50:19,596 - VarantRadar - INFO - Successfully saved 193 records for XU100.IS at 1h
+2026-07-14 09:50:19,622 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=15m)
+2026-07-14 09:50:27,341 - VarantRadar - INFO - Successfully saved 144 records for XU100.IS at 15m
+2026-07-14 09:50:27,347 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=5m)
+2026-07-14 09:50:33,136 - VarantRadar - INFO - Successfully saved 144 records for XU100.IS at 15m
+2026-07-14 09:50:33,141 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=5m)
+2026-07-14 09:50:39,390 - VarantRadar - INFO - Successfully saved 144 records for XU100.IS at 15m
+2026-07-14 09:50:39,398 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=5m)
+2026-07-14 09:51:05,869 - VarantRadar - INFO - Successfully saved 425 records for XU100.IS at 5m
+2026-07-14 09:51:05,877 - VarantRadar - INFO - Data update complete for EDATA.IS.
+2026-07-14 09:51:11,280 - VarantRadar - INFO - Successfully saved 425 records for XU100.IS at 5m
+2026-07-14 09:51:11,293 - VarantRadar - INFO - Data update complete for EDATA.IS.
+2026-07-14 09:51:14,552 - VarantRadar - INFO - Successfully saved 425 records for XU100.IS at 5m
+2026-07-14 09:51:14,558 - VarantRadar - INFO - Data update complete for EDATA.IS.
+2026-07-14 09:56:02,746 - VarantRadar - INFO - Otomatik Tarama Tetiklendi...
+2026-07-14 09:56:02,752 - VarantRadar - INFO - V3 Radar başlatılıyor. Toplam Hisse: 30
+2026-07-14 09:56:05,991 - VarantRadar - INFO - Ön filtreden geçen hisse sayısı: 28
+2026-07-14 10:16:11,796 - VarantRadar - INFO - Otomatik Tarama Tetiklendi...
+2026-07-14 10:16:11,801 - VarantRadar - INFO - V3 Radar başlatılıyor. Toplam Hisse: 30
+2026-07-14 10:16:14,857 - VarantRadar - INFO - Ön filtreden geçen hisse sayısı: 28
+2026-07-14 10:57:41,167 - VarantRadar - INFO - Otomatik Tarama Tetiklendi...
+2026-07-14 10:57:41,178 - VarantRadar - INFO - V3 Radar başlatılıyor. Toplam Hisse: 30
+2026-07-14 10:57:44,217 - VarantRadar - INFO - Ön filtreden geçen hisse sayısı: 28
+2026-07-14 11:13:09,898 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-14 11:16:00,474 - VarantRadar - INFO - Starting data update cycle for single symbol: ALGYO.IS
+2026-07-14 11:16:00,479 - VarantRadar - INFO - Fetching data for ALGYO.IS (period=1y, interval=1d)
+2026-07-14 11:16:00,506 - VarantRadar - INFO - Starting data update cycle for single symbol: ALGYO.IS
+2026-07-14 11:16:00,522 - VarantRadar - INFO - Fetching data for ALGYO.IS (period=1y, interval=1d)
+2026-07-14 11:16:00,691 - VarantRadar - INFO - Starting data update cycle for single symbol: ALGYO.IS
+2026-07-14 11:16:00,719 - VarantRadar - INFO - Fetching data for ALGYO.IS (period=1y, interval=1d)
+2026-07-14 11:16:09,561 - VarantRadar - INFO - Successfully saved 255 records for ALGYO.IS at 1d
+2026-07-14 11:16:09,576 - VarantRadar - INFO - Fetching data for ALGYO.IS (period=1mo, interval=4h)
+2026-07-14 11:16:11,324 - VarantRadar - INFO - Successfully saved 255 records for ALGYO.IS at 1d
+2026-07-14 11:16:11,325 - VarantRadar - INFO - Fetching data for ALGYO.IS (period=1mo, interval=4h)
+2026-07-14 11:16:14,038 - VarantRadar - INFO - Successfully saved 255 records for ALGYO.IS at 1d
+2026-07-14 11:16:14,039 - VarantRadar - INFO - Fetching data for ALGYO.IS (period=1mo, interval=4h)
+2026-07-14 11:16:14,902 - VarantRadar - INFO - Successfully saved 65 records for ALGYO.IS at 4h
+2026-07-14 11:16:14,918 - VarantRadar - INFO - Fetching data for ALGYO.IS (period=1mo, interval=1h)
+2026-07-14 11:16:15,730 - VarantRadar - INFO - Successfully saved 65 records for ALGYO.IS at 4h
+2026-07-14 11:16:15,730 - VarantRadar - INFO - Fetching data for ALGYO.IS (period=1mo, interval=1h)
+2026-07-14 11:16:18,883 - VarantRadar - INFO - Successfully saved 65 records for ALGYO.IS at 4h
+2026-07-14 11:16:18,906 - VarantRadar - INFO - Fetching data for ALGYO.IS (period=1mo, interval=1h)
+2026-07-14 11:16:20,916 - VarantRadar - INFO - Successfully saved 194 records for ALGYO.IS at 1h
+2026-07-14 11:16:20,942 - VarantRadar - INFO - Fetching data for ALGYO.IS (period=5d, interval=15m)
+2026-07-14 11:16:22,933 - VarantRadar - INFO - Successfully saved 194 records for ALGYO.IS at 1h
+2026-07-14 11:16:22,955 - VarantRadar - INFO - Fetching data for ALGYO.IS (period=5d, interval=15m)
+2026-07-14 11:16:24,509 - VarantRadar - INFO - Successfully saved 194 records for ALGYO.IS at 1h
+2026-07-14 11:16:24,523 - VarantRadar - INFO - Fetching data for ALGYO.IS (period=5d, interval=15m)
+2026-07-14 11:16:28,967 - VarantRadar - INFO - Successfully saved 150 records for ALGYO.IS at 15m
+2026-07-14 11:16:28,989 - VarantRadar - INFO - Fetching data for ALGYO.IS (period=5d, interval=5m)
+2026-07-14 11:16:30,629 - VarantRadar - INFO - Successfully saved 150 records for ALGYO.IS at 15m
+2026-07-14 11:16:30,632 - VarantRadar - INFO - Fetching data for ALGYO.IS (period=5d, interval=5m)
+2026-07-14 11:16:31,923 - VarantRadar - INFO - Successfully saved 150 records for ALGYO.IS at 15m
+2026-07-14 11:16:31,934 - VarantRadar - INFO - Fetching data for ALGYO.IS (period=5d, interval=5m)
+2026-07-14 11:16:42,991 - VarantRadar - INFO - Successfully saved 442 records for ALGYO.IS at 5m
+2026-07-14 11:16:43,007 - VarantRadar - INFO - Fetching data for XU100.IS (period=1y, interval=1d)
+2026-07-14 11:16:45,742 - VarantRadar - ERROR - Error fetching data for ALGYO.IS: Error inserting stock data for ALGYO.IS: database is locked
+2026-07-14 11:16:45,749 - VarantRadar - ERROR - Error during data update for ALGYO.IS: Failed to fetch ALGYO.IS data: Error inserting stock data for ALGYO.IS: database is locked
+2026-07-14 11:16:46,661 - VarantRadar - INFO - Successfully saved 442 records for ALGYO.IS at 5m
+2026-07-14 11:16:46,672 - VarantRadar - INFO - Fetching data for XU100.IS (period=1y, interval=1d)
+2026-07-14 11:17:03,161 - VarantRadar - INFO - Successfully saved 252 records for XU100.IS at 1d
+2026-07-14 11:17:03,161 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=4h)
+2026-07-14 11:17:07,157 - VarantRadar - INFO - Successfully saved 252 records for XU100.IS at 1d
+2026-07-14 11:17:07,163 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=4h)
+2026-07-14 11:17:22,610 - VarantRadar - INFO - Successfully saved 65 records for XU100.IS at 4h
+2026-07-14 11:17:22,623 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=1h)
+2026-07-14 11:17:26,908 - VarantRadar - INFO - Successfully saved 65 records for XU100.IS at 4h
+2026-07-14 11:17:26,909 - VarantRadar - INFO - Fetching data for XU100.IS (period=1mo, interval=1h)
+2026-07-14 11:17:41,876 - VarantRadar - INFO - Successfully saved 194 records for XU100.IS at 1h
+2026-07-14 11:17:41,878 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=15m)
+2026-07-14 11:17:46,784 - VarantRadar - INFO - Successfully saved 194 records for XU100.IS at 1h
+2026-07-14 11:17:46,790 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=15m)
+2026-07-14 11:17:48,582 - VarantRadar - INFO - Otomatik Tarama Tetiklendi...
+2026-07-14 11:17:48,582 - VarantRadar - INFO - V3 Radar başlatılıyor. Toplam Hisse: 30
+2026-07-14 11:17:52,487 - VarantRadar - INFO - Ön filtreden geçen hisse sayısı: 28
+2026-07-14 11:18:15,410 - VarantRadar - ERROR - Error fetching data for XU100.IS: Error inserting stock data for XU100.IS: database is locked
+2026-07-14 11:18:15,410 - VarantRadar - ERROR - Error during data update for ALGYO.IS: Failed to fetch XU100.IS data: Error inserting stock data for XU100.IS: database is locked
+2026-07-14 11:18:18,531 - VarantRadar - INFO - Successfully saved 150 records for XU100.IS at 15m
+2026-07-14 11:18:18,540 - VarantRadar - INFO - Fetching data for XU100.IS (period=5d, interval=5m)
+2026-07-14 11:19:19,765 - VarantRadar - INFO - Successfully saved 442 records for XU100.IS at 5m
+2026-07-14 11:19:19,854 - VarantRadar - INFO - Data update complete for ALGYO.IS.
+2026-07-14 11:48:21,607 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+2026-07-14 11:59:19,218 - VarantRadar - INFO - Otomatik Tarama Tetiklendi...
+2026-07-14 11:59:19,224 - VarantRadar - INFO - V3 Radar başlatılıyor. Toplam Hisse: 30
+2026-07-14 11:59:22,242 - VarantRadar - INFO - Ön filtreden geçen hisse sayısı: 28
+2026-07-14 12:19:40,367 - VarantRadar - INFO - Otomatik Tarama Tetiklendi...
+2026-07-14 12:19:40,372 - VarantRadar - INFO - V3 Radar başlatılıyor. Toplam Hisse: 30
+2026-07-14 12:19:43,222 - VarantRadar - INFO - Ön filtreden geçen hisse sayısı: 28
+2026-07-14 12:41:39,539 - VarantRadar - WARNING - No data to analyze for A1CAP.IS at 1d
+[12:47:03] 🐙 Pulling code changes from Github...
+[12:47:05] 📦 Processing dependencies...
+[12:47:05] 📦 Processed dependencies!
+[12:47:06] 🔄 Updated app!
+[12:48:41] 🐙 Pulling code changes from Github...
+[12:48:43] 📦 Processing dependencies...
+[12:48:43] 📦 Processed dependencies!
+[12:49:50] 🔄 Updated app!
+2026-07-14 12:52:48,006 - VarantRadar - INFO - [RadarEngine] Parallel scan started for 30 symbols.
+2026-07-14 12:52:48,007 - VarantRadar - INFO - [RadarEngine] Parallel scan started for 30 symbols.
+2026-07-14 12:52:48,148 - VarantRadar - INFO - [MarketDataEngine] Fetching data for AKBNK.IS (period=1mo, interval=1d)
+2026-07-14 12:52:48,171 - VarantRadar - INFO - [MarketDataEngine] Fetching data for AKBNK.IS (period=1mo, interval=1d)
+2026-07-14 12:52:48,182 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ARCLK.IS (period=1mo, interval=1d)
+2026-07-14 12:52:48,191 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ARCLK.IS (period=1mo, interval=1d)
+2026-07-14 12:52:48,218 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ASELS.IS (period=1mo, interval=1d)
+2026-07-14 12:52:48,226 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ASELS.IS (period=1mo, interval=1d)
+2026-07-14 12:52:48,256 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ASTOR.IS (period=1mo, interval=1d)
+2026-07-14 12:52:48,286 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ASTOR.IS (period=1mo, interval=1d)
+2026-07-14 12:52:48,308 - VarantRadar - INFO - [MarketDataEngine] Fetching data for BIMAS.IS (period=1mo, interval=1d)
+2026-07-14 12:52:48,321 - VarantRadar - INFO - [MarketDataEngine] Fetching data for BIMAS.IS (period=1mo, interval=1d)
+2026-07-14 12:52:51,450 - VarantRadar - INFO - [MarketDataEngine] Fetching data for AKBNK.IS (period=1mo, interval=4h)
+2026-07-14 12:52:51,480 - VarantRadar - INFO - [MarketDataEngine] Fetching data for AKBNK.IS (period=1mo, interval=4h)
+2026-07-14 12:52:51,601 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ARCLK.IS (period=1mo, interval=4h)
+2026-07-14 12:52:51,662 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ASELS.IS (period=1mo, interval=4h)
+2026-07-14 12:52:51,755 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ARCLK.IS (period=1mo, interval=4h)
+2026-07-14 12:52:51,769 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ASELS.IS (period=1mo, interval=4h)
+2026-07-14 12:52:51,778 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ASTOR.IS (period=1mo, interval=4h)
+2026-07-14 12:52:51,821 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ASTOR.IS (period=1mo, interval=4h)
+2026-07-14 12:52:52,229 - VarantRadar - INFO - [MarketDataEngine] Fetching data for BIMAS.IS (period=1mo, interval=4h)
+2026-07-14 12:52:52,326 - VarantRadar - INFO - [MarketDataEngine] Fetching data for BIMAS.IS (period=1mo, interval=4h)
+2026-07-14 12:52:58,747 - VarantRadar - ERROR - [RadarEngine] Error scanning AKBNK.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:52:58,753 - VarantRadar - INFO - [MarketDataEngine] Fetching data for EKGYO.IS (period=1mo, interval=1d)
+2026-07-14 12:53:00,264 - VarantRadar - INFO - [MarketDataEngine] Fetching data for EKGYO.IS (period=1mo, interval=4h)
+2026-07-14 12:53:00,931 - VarantRadar - ERROR - [RadarEngine] Error scanning ASELS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:00,933 - VarantRadar - INFO - [MarketDataEngine] Fetching data for EKGYO.IS (period=1mo, interval=1d)
+2026-07-14 12:53:02,203 - VarantRadar - INFO - [MarketDataEngine] Fetching data for EKGYO.IS (period=1mo, interval=4h)
+2026-07-14 12:53:02,801 - VarantRadar - ERROR - [RadarEngine] Error scanning BIMAS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:02,801 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ENKAI.IS (period=1mo, interval=1d)
+2026-07-14 12:53:03,356 - VarantRadar - ERROR - [RadarEngine] Error scanning ASTOR.IS: Error inserting stock data for ASTOR.IS: database is locked
+2026-07-14 12:53:03,383 - VarantRadar - INFO - [MarketDataEngine] Fetching data for EREGL.IS (period=1mo, interval=1d)
+2026-07-14 12:53:03,703 - VarantRadar - ERROR - [RadarEngine] Error scanning ASTOR.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:03,711 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ENKAI.IS (period=1mo, interval=1d)
+2026-07-14 12:53:03,973 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ENKAI.IS (period=1mo, interval=4h)
+2026-07-14 12:53:04,215 - VarantRadar - ERROR - [RadarEngine] Error scanning ARCLK.IS: Error inserting stock data for ARCLK.IS: database is locked
+2026-07-14 12:53:04,238 - VarantRadar - INFO - [MarketDataEngine] Fetching data for EREGL.IS (period=1mo, interval=1d)
+2026-07-14 12:53:04,553 - VarantRadar - INFO - [MarketDataEngine] Fetching data for EREGL.IS (period=1mo, interval=4h)
+2026-07-14 12:53:04,743 - VarantRadar - ERROR - [RadarEngine] Error scanning ARCLK.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:04,744 - VarantRadar - INFO - [MarketDataEngine] Fetching data for FROTO.IS (period=1mo, interval=1d)
+2026-07-14 12:53:04,744 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ENKAI.IS (period=1mo, interval=4h)
+2026-07-14 12:53:05,472 - VarantRadar - INFO - [MarketDataEngine] Fetching data for EREGL.IS (period=1mo, interval=4h)
+2026-07-14 12:53:05,799 - VarantRadar - INFO - [MarketDataEngine] Fetching data for FROTO.IS (period=1mo, interval=4h)
+2026-07-14 12:53:05,835 - VarantRadar - ERROR - [RadarEngine] Error scanning ASELS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:05,838 - VarantRadar - INFO - [MarketDataEngine] Fetching data for FROTO.IS (period=1mo, interval=1d)
+2026-07-14 12:53:06,886 - VarantRadar - ERROR - [RadarEngine] Error scanning AKBNK.IS: Error inserting stock data for AKBNK.IS: database is locked
+2026-07-14 12:53:06,895 - VarantRadar - INFO - [MarketDataEngine] Fetching data for GARAN.IS (period=1mo, interval=1d)
+2026-07-14 12:53:07,114 - VarantRadar - INFO - [MarketDataEngine] Fetching data for FROTO.IS (period=1mo, interval=4h)
+2026-07-14 12:53:07,789 - VarantRadar - ERROR - [RadarEngine] Error scanning BIMAS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:07,808 - VarantRadar - INFO - [MarketDataEngine] Fetching data for GARAN.IS (period=1mo, interval=1d)
+2026-07-14 12:53:08,398 - VarantRadar - INFO - [MarketDataEngine] Fetching data for GARAN.IS (period=1mo, interval=4h)
+2026-07-14 12:53:09,244 - VarantRadar - INFO - [MarketDataEngine] Fetching data for GARAN.IS (period=1mo, interval=4h)
+2026-07-14 12:53:09,701 - VarantRadar - ERROR - [RadarEngine] Error scanning EKGYO.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:09,701 - VarantRadar - INFO - [MarketDataEngine] Fetching data for GUBRF.IS (period=1mo, interval=1d)
+2026-07-14 12:53:11,251 - VarantRadar - INFO - [MarketDataEngine] Fetching data for GUBRF.IS (period=1mo, interval=4h)
+2026-07-14 12:53:11,934 - VarantRadar - ERROR - [RadarEngine] Error scanning ENKAI.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:11,940 - VarantRadar - INFO - [MarketDataEngine] Fetching data for GUBRF.IS (period=1mo, interval=1d)
+2026-07-14 12:53:13,017 - VarantRadar - INFO - [MarketDataEngine] Fetching data for GUBRF.IS (period=1mo, interval=4h)
+2026-07-14 12:53:13,559 - VarantRadar - ERROR - [RadarEngine] Error scanning EKGYO.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:13,583 - VarantRadar - INFO - [MarketDataEngine] Fetching data for HEKTS.IS (period=1mo, interval=1d)
+2026-07-14 12:53:14,628 - VarantRadar - ERROR - [RadarEngine] Error scanning ENKAI.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:14,628 - VarantRadar - INFO - [MarketDataEngine] Fetching data for HEKTS.IS (period=1mo, interval=1d)
+2026-07-14 12:53:14,658 - VarantRadar - INFO - [MarketDataEngine] Fetching data for HEKTS.IS (period=1mo, interval=4h)
+2026-07-14 12:53:15,743 - VarantRadar - INFO - [MarketDataEngine] Fetching data for HEKTS.IS (period=1mo, interval=4h)
+2026-07-14 12:53:15,801 - VarantRadar - ERROR - [RadarEngine] Error scanning GARAN.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:15,801 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ISCTR.IS (period=1mo, interval=1d)
+2026-07-14 12:53:16,684 - VarantRadar - ERROR - [RadarEngine] Error scanning EREGL.IS: Error inserting stock data for EREGL.IS: database is locked
+2026-07-14 12:53:16,684 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KCHOL.IS (period=1mo, interval=1d)
+2026-07-14 12:53:16,776 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ISCTR.IS (period=1mo, interval=4h)
+2026-07-14 12:53:17,006 - VarantRadar - ERROR - [RadarEngine] Error scanning EREGL.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:17,008 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ISCTR.IS (period=1mo, interval=1d)
+2026-07-14 12:53:17,857 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KCHOL.IS (period=1mo, interval=4h)
+2026-07-14 12:53:17,981 - VarantRadar - ERROR - [RadarEngine] Error scanning FROTO.IS: Error inserting stock data for FROTO.IS: database is locked
+2026-07-14 12:53:17,987 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KOZAA.IS (period=1mo, interval=1d)
+2026-07-14 12:53:18,120 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ISCTR.IS (period=1mo, interval=4h)
+2026-07-14 12:53:18,193 - VarantRadar - ERROR - [RadarEngine] Error scanning FROTO.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:18,199 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KCHOL.IS (period=1mo, interval=1d)
+2026-07-14 12:53:18,836 - VarantRadar - WARNING - [MarketDataEngine] No data found for KOZAA.IS at 1d
+2026-07-14 12:53:18,878 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KOZAA.IS (period=1mo, interval=4h)
+2026-07-14 12:53:19,471 - VarantRadar - WARNING - [MarketDataEngine] No data found for KOZAA.IS at 4h
+2026-07-14 12:53:19,500 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KOZAL.IS (period=1mo, interval=1d)
+2026-07-14 12:53:19,526 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KCHOL.IS (period=1mo, interval=4h)
+2026-07-14 12:53:19,630 - VarantRadar - ERROR - [RadarEngine] Error scanning GARAN.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:19,636 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KOZAA.IS (period=1mo, interval=1d)
+2026-07-14 12:53:20,263 - VarantRadar - WARNING - [MarketDataEngine] No data found for KOZAL.IS at 1d
+2026-07-14 12:53:20,264 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KOZAL.IS (period=1mo, interval=4h)
+2026-07-14 12:53:20,318 - VarantRadar - WARNING - [MarketDataEngine] No data found for KOZAA.IS at 1d
+2026-07-14 12:53:20,324 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KOZAA.IS (period=1mo, interval=4h)
+2026-07-14 12:53:21,063 - VarantRadar - WARNING - [MarketDataEngine] No data found for KOZAA.IS at 4h
+2026-07-14 12:53:21,065 - VarantRadar - WARNING - [MarketDataEngine] No data found for KOZAL.IS at 4h
+2026-07-14 12:53:21,065 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KRDMD.IS (period=1mo, interval=1d)
+2026-07-14 12:53:21,066 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KOZAL.IS (period=1mo, interval=1d)
+2026-07-14 12:53:21,209 - VarantRadar - ERROR - [RadarEngine] Error scanning GUBRF.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:21,219 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KRDMD.IS (period=1mo, interval=1d)
+2026-07-14 12:53:22,118 - VarantRadar - WARNING - [MarketDataEngine] No data found for KOZAL.IS at 1d
+2026-07-14 12:53:22,123 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KOZAL.IS (period=1mo, interval=4h)
+2026-07-14 12:53:22,142 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KRDMD.IS (period=1mo, interval=4h)
+2026-07-14 12:53:22,155 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KRDMD.IS (period=1mo, interval=4h)
+2026-07-14 12:53:22,534 - VarantRadar - ERROR - [RadarEngine] Error scanning HEKTS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:22,538 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ODAS.IS (period=1mo, interval=1d)
+2026-07-14 12:53:22,914 - VarantRadar - WARNING - [MarketDataEngine] No data found for KOZAL.IS at 4h
+2026-07-14 12:53:22,915 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ODAS.IS (period=1mo, interval=1d)
+2026-07-14 12:53:23,436 - VarantRadar - ERROR - [RadarEngine] Error scanning HEKTS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:23,439 - VarantRadar - INFO - [MarketDataEngine] Fetching data for PETKM.IS (period=1mo, interval=1d)
+2026-07-14 12:53:23,587 - VarantRadar - ERROR - [RadarEngine] Error scanning GUBRF.IS: Error inserting stock data for GUBRF.IS: database is locked
+2026-07-14 12:53:23,590 - VarantRadar - INFO - [MarketDataEngine] Fetching data for PETKM.IS (period=1mo, interval=1d)
+2026-07-14 12:53:23,889 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ODAS.IS (period=1mo, interval=4h)
+2026-07-14 12:53:24,184 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ODAS.IS (period=1mo, interval=4h)
+2026-07-14 12:53:24,746 - VarantRadar - INFO - [MarketDataEngine] Fetching data for PETKM.IS (period=1mo, interval=4h)
+2026-07-14 12:53:24,771 - VarantRadar - INFO - [MarketDataEngine] Fetching data for PETKM.IS (period=1mo, interval=4h)
+2026-07-14 12:53:25,447 - VarantRadar - ERROR - [RadarEngine] Error scanning ISCTR.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:25,447 - VarantRadar - INFO - [MarketDataEngine] Fetching data for PGSUS.IS (period=1mo, interval=1d)
+2026-07-14 12:53:26,551 - VarantRadar - INFO - [MarketDataEngine] Fetching data for PGSUS.IS (period=1mo, interval=4h)
+2026-07-14 12:53:27,013 - VarantRadar - ERROR - [RadarEngine] Error scanning KCHOL.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:27,037 - VarantRadar - INFO - [MarketDataEngine] Fetching data for SAHOL.IS (period=1mo, interval=1d)
+2026-07-14 12:53:28,019 - VarantRadar - ERROR - [RadarEngine] Error scanning KCHOL.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:28,019 - VarantRadar - INFO - [MarketDataEngine] Fetching data for PGSUS.IS (period=1mo, interval=1d)
+2026-07-14 12:53:28,237 - VarantRadar - INFO - [MarketDataEngine] Fetching data for SAHOL.IS (period=1mo, interval=4h)
+2026-07-14 12:53:29,155 - VarantRadar - INFO - [MarketDataEngine] Fetching data for PGSUS.IS (period=1mo, interval=4h)
+2026-07-14 12:53:29,875 - VarantRadar - ERROR - [RadarEngine] Error scanning ISCTR.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:29,901 - VarantRadar - INFO - [MarketDataEngine] Fetching data for SAHOL.IS (period=1mo, interval=1d)
+2026-07-14 12:53:31,072 - VarantRadar - INFO - [MarketDataEngine] Fetching data for SAHOL.IS (period=1mo, interval=4h)
+2026-07-14 12:53:31,536 - VarantRadar - ERROR - [RadarEngine] Error scanning PETKM.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:31,536 - VarantRadar - INFO - [MarketDataEngine] Fetching data for SASA.IS (period=1mo, interval=1d)
+2026-07-14 12:53:33,272 - VarantRadar - ERROR - [RadarEngine] Error scanning ODAS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:33,272 - VarantRadar - INFO - [MarketDataEngine] Fetching data for SASA.IS (period=1mo, interval=1d)
+2026-07-14 12:53:33,530 - VarantRadar - ERROR - [RadarEngine] Error scanning KRDMD.IS: Error inserting stock data for KRDMD.IS: database is locked
+2026-07-14 12:53:33,541 - VarantRadar - INFO - [MarketDataEngine] Fetching data for SISE.IS (period=1mo, interval=1d)
+2026-07-14 12:53:34,186 - VarantRadar - ERROR - [RadarEngine] Error scanning ODAS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:34,197 - VarantRadar - INFO - [MarketDataEngine] Fetching data for SISE.IS (period=1mo, interval=1d)
+2026-07-14 12:53:34,443 - VarantRadar - INFO - [MarketDataEngine] Fetching data for SISE.IS (period=1mo, interval=4h)
+2026-07-14 12:53:34,949 - VarantRadar - ERROR - [RadarEngine] Error scanning PETKM.IS: Error inserting stock data for PETKM.IS: database is locked
+2026-07-14 12:53:34,950 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TCELL.IS (period=1mo, interval=1d)
+2026-07-14 12:53:35,316 - VarantRadar - INFO - [MarketDataEngine] Fetching data for SISE.IS (period=1mo, interval=4h)
+2026-07-14 12:53:35,571 - VarantRadar - ERROR - [RadarEngine] Error scanning KRDMD.IS: Error inserting stock data for KRDMD.IS: database is locked
+2026-07-14 12:53:35,571 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TCELL.IS (period=1mo, interval=1d)
+2026-07-14 12:53:35,789 - VarantRadar - ERROR - [RadarEngine] Error scanning PGSUS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:35,790 - VarantRadar - INFO - [MarketDataEngine] Fetching data for THYAO.IS (period=1mo, interval=1d)
+2026-07-14 12:53:36,190 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TCELL.IS (period=1mo, interval=4h)
+2026-07-14 12:53:36,621 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TCELL.IS (period=1mo, interval=4h)
+2026-07-14 12:53:36,782 - VarantRadar - INFO - [MarketDataEngine] Fetching data for THYAO.IS (period=1mo, interval=4h)
+2026-07-14 12:53:36,820 - VarantRadar - ERROR - [RadarEngine] Error scanning SAHOL.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:36,831 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TOASO.IS (period=1mo, interval=1d)
+2026-07-14 12:53:38,047 - VarantRadar - ERROR - [RadarEngine] Error scanning PGSUS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:38,047 - VarantRadar - INFO - [MarketDataEngine] Fetching data for THYAO.IS (period=1mo, interval=1d)
+2026-07-14 12:53:38,070 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TOASO.IS (period=1mo, interval=4h)
+2026-07-14 12:53:39,348 - VarantRadar - INFO - [MarketDataEngine] Fetching data for SASA.IS (period=1mo, interval=4h)
+2026-07-14 12:53:39,393 - VarantRadar - INFO - [MarketDataEngine] Fetching data for THYAO.IS (period=1mo, interval=4h)
+2026-07-14 12:53:40,037 - VarantRadar - ERROR - [RadarEngine] Error scanning SAHOL.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:40,043 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TOASO.IS (period=1mo, interval=1d)
+2026-07-14 12:53:40,656 - VarantRadar - INFO - [MarketDataEngine] Fetching data for SASA.IS (period=1mo, interval=4h)
+2026-07-14 12:53:41,264 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TOASO.IS (period=1mo, interval=4h)
+2026-07-14 12:53:42,322 - VarantRadar - ERROR - [RadarEngine] Error scanning SISE.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:42,322 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TTKOM.IS (period=1mo, interval=1d)
+2026-07-14 12:53:43,341 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TTKOM.IS (period=1mo, interval=4h)
+2026-07-14 12:53:44,724 - VarantRadar - ERROR - [RadarEngine] Error scanning THYAO.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:44,725 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TTKOM.IS (period=1mo, interval=1d)
+2026-07-14 12:53:45,917 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TTKOM.IS (period=1mo, interval=4h)
+2026-07-14 12:53:45,977 - VarantRadar - ERROR - [RadarEngine] Error scanning SISE.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:45,978 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TUPRS.IS (period=1mo, interval=1d)
+2026-07-14 12:53:46,853 - VarantRadar - ERROR - [RadarEngine] Error scanning TCELL.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:46,857 - VarantRadar - INFO - [MarketDataEngine] Fetching data for YKBNK.IS (period=1mo, interval=1d)
+2026-07-14 12:53:47,007 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TUPRS.IS (period=1mo, interval=4h)
+2026-07-14 12:53:47,900 - VarantRadar - INFO - [MarketDataEngine] Fetching data for YKBNK.IS (period=1mo, interval=4h)
+2026-07-14 12:53:48,543 - VarantRadar - ERROR - [RadarEngine] Error scanning TCELL.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:48,557 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TUPRS.IS (period=1mo, interval=1d)
+2026-07-14 12:53:49,485 - VarantRadar - ERROR - [RadarEngine] Error scanning THYAO.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:49,485 - VarantRadar - INFO - [MarketDataEngine] Fetching data for YKBNK.IS (period=1mo, interval=1d)
+2026-07-14 12:53:49,937 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TUPRS.IS (period=1mo, interval=4h)
+2026-07-14 12:53:50,362 - VarantRadar - ERROR - [RadarEngine] Error scanning SASA.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:50,363 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ALFAS.IS (period=1mo, interval=1d)
+2026-07-14 12:53:50,491 - VarantRadar - INFO - [MarketDataEngine] Fetching data for YKBNK.IS (period=1mo, interval=4h)
+2026-07-14 12:53:50,560 - VarantRadar - ERROR - [RadarEngine] Error scanning SASA.IS: Error inserting stock data for SASA.IS: database is locked
+2026-07-14 12:53:50,572 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ALFAS.IS (period=1mo, interval=1d)
+2026-07-14 12:53:51,374 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ALFAS.IS (period=1mo, interval=4h)
+2026-07-14 12:53:51,439 - VarantRadar - ERROR - [RadarEngine] Error scanning TOASO.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:51,563 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ALFAS.IS (period=1mo, interval=4h)
+2026-07-14 12:53:52,814 - VarantRadar - ERROR - [RadarEngine] Error scanning TTKOM.IS: Error inserting stock data for TTKOM.IS: database is locked
+2026-07-14 12:53:52,947 - VarantRadar - ERROR - [RadarEngine] Error scanning TOASO.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:54,449 - VarantRadar - ERROR - [RadarEngine] Error scanning YKBNK.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:56,073 - VarantRadar - ERROR - [RadarEngine] Error scanning TTKOM.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:56,919 - VarantRadar - ERROR - [RadarEngine] Error scanning ALFAS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:57,841 - VarantRadar - ERROR - [RadarEngine] Error scanning TUPRS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:57,921 - VarantRadar - INFO - [RadarEngine] Parallel scan finished.
+2026-07-14 12:53:58,374 - VarantRadar - ERROR - [RadarEngine] Error scanning ALFAS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:58,848 - VarantRadar - ERROR - [RadarEngine] Error scanning YKBNK.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:59,461 - VarantRadar - ERROR - [RadarEngine] Error scanning TUPRS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 12:53:59,546 - VarantRadar - INFO - [RadarEngine] Parallel scan finished.
+2026-07-14 13:00:56,091 - VarantRadar - INFO - Otomatik Tarama Tetiklendi...
+2026-07-14 13:00:56,097 - VarantRadar - INFO - V3 Radar başlatılıyor. Toplam Hisse: 30
+2026-07-14 13:00:59,335 - VarantRadar - INFO - Ön filtreden geçen hisse sayısı: 28
+2026-07-14 13:06:41,070 - VarantRadar - INFO - [RadarEngine] Parallel scan started for 30 symbols.
+2026-07-14 13:06:41,078 - VarantRadar - INFO - [MarketDataEngine] Fetching data for AKBNK.IS (period=1mo, interval=1d)
+2026-07-14 13:06:41,094 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ARCLK.IS (period=1mo, interval=1d)
+2026-07-14 13:06:41,121 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ASELS.IS (period=1mo, interval=1d)
+2026-07-14 13:06:41,133 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ASTOR.IS (period=1mo, interval=1d)
+2026-07-14 13:06:41,155 - VarantRadar - INFO - [MarketDataEngine] Fetching data for BIMAS.IS (period=1mo, interval=1d)
+2026-07-14 13:06:42,202 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ARCLK.IS (period=1mo, interval=4h)
+2026-07-14 13:06:42,218 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ASTOR.IS (period=1mo, interval=4h)
+2026-07-14 13:06:42,249 - VarantRadar - INFO - [MarketDataEngine] Fetching data for AKBNK.IS (period=1mo, interval=4h)
+2026-07-14 13:06:42,330 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ASELS.IS (period=1mo, interval=4h)
+2026-07-14 13:06:42,670 - VarantRadar - INFO - [MarketDataEngine] Fetching data for BIMAS.IS (period=1mo, interval=4h)
+2026-07-14 13:06:49,080 - VarantRadar - ERROR - [RadarEngine] Error scanning ASELS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:06:49,081 - VarantRadar - INFO - [MarketDataEngine] Fetching data for EKGYO.IS (period=1mo, interval=1d)
+2026-07-14 13:06:50,048 - VarantRadar - ERROR - [RadarEngine] Error scanning ARCLK.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:06:50,056 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ENKAI.IS (period=1mo, interval=1d)
+2026-07-14 13:06:50,272 - VarantRadar - INFO - [MarketDataEngine] Fetching data for EKGYO.IS (period=1mo, interval=4h)
+2026-07-14 13:06:51,204 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ENKAI.IS (period=1mo, interval=4h)
+2026-07-14 13:06:51,698 - VarantRadar - ERROR - [RadarEngine] Error scanning AKBNK.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:06:51,699 - VarantRadar - INFO - [MarketDataEngine] Fetching data for EREGL.IS (period=1mo, interval=1d)
+2026-07-14 13:06:52,846 - VarantRadar - INFO - [MarketDataEngine] Fetching data for EREGL.IS (period=1mo, interval=4h)
+2026-07-14 13:06:53,002 - VarantRadar - ERROR - [RadarEngine] Error scanning BIMAS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:06:53,015 - VarantRadar - INFO - [MarketDataEngine] Fetching data for FROTO.IS (period=1mo, interval=1d)
+2026-07-14 13:06:54,118 - VarantRadar - INFO - [MarketDataEngine] Fetching data for FROTO.IS (period=1mo, interval=4h)
+2026-07-14 13:06:54,176 - VarantRadar - ERROR - [RadarEngine] Error scanning ASTOR.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:06:54,176 - VarantRadar - INFO - [MarketDataEngine] Fetching data for GARAN.IS (period=1mo, interval=1d)
+2026-07-14 13:06:55,242 - VarantRadar - INFO - [MarketDataEngine] Fetching data for GARAN.IS (period=1mo, interval=4h)
+2026-07-14 13:06:57,694 - VarantRadar - ERROR - [RadarEngine] Error scanning ENKAI.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:06:57,695 - VarantRadar - INFO - [MarketDataEngine] Fetching data for GUBRF.IS (period=1mo, interval=1d)
+2026-07-14 13:06:58,693 - VarantRadar - INFO - [MarketDataEngine] Fetching data for GUBRF.IS (period=1mo, interval=4h)
+2026-07-14 13:06:58,802 - VarantRadar - ERROR - [RadarEngine] Error scanning EKGYO.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:06:58,808 - VarantRadar - INFO - [MarketDataEngine] Fetching data for HEKTS.IS (period=1mo, interval=1d)
+2026-07-14 13:06:59,877 - VarantRadar - INFO - [MarketDataEngine] Fetching data for HEKTS.IS (period=1mo, interval=4h)
+2026-07-14 13:06:59,966 - VarantRadar - ERROR - [RadarEngine] Error scanning EREGL.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:06:59,972 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ISCTR.IS (period=1mo, interval=1d)
+2026-07-14 13:07:01,008 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ISCTR.IS (period=1mo, interval=4h)
+2026-07-14 13:07:01,303 - VarantRadar - ERROR - [RadarEngine] Error scanning GARAN.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:07:01,308 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KCHOL.IS (period=1mo, interval=1d)
+2026-07-14 13:07:02,276 - VarantRadar - ERROR - [RadarEngine] Error scanning FROTO.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:07:02,276 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KOZAA.IS (period=1mo, interval=1d)
+2026-07-14 13:07:02,656 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KCHOL.IS (period=1mo, interval=4h)
+2026-07-14 13:07:02,999 - VarantRadar - WARNING - [MarketDataEngine] No data found for KOZAA.IS at 1d
+2026-07-14 13:07:03,006 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KOZAA.IS (period=1mo, interval=4h)
+2026-07-14 13:07:03,796 - VarantRadar - WARNING - [MarketDataEngine] No data found for KOZAA.IS at 4h
+2026-07-14 13:07:03,837 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KOZAL.IS (period=1mo, interval=1d)
+2026-07-14 13:07:04,642 - VarantRadar - WARNING - [MarketDataEngine] No data found for KOZAL.IS at 1d
+2026-07-14 13:07:04,659 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KOZAL.IS (period=1mo, interval=4h)
+2026-07-14 13:07:04,678 - VarantRadar - ERROR - [RadarEngine] Error scanning GUBRF.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:07:04,679 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KRDMD.IS (period=1mo, interval=1d)
+2026-07-14 13:07:05,282 - VarantRadar - WARNING - [MarketDataEngine] No data found for KOZAL.IS at 4h
+2026-07-14 13:07:05,284 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ODAS.IS (period=1mo, interval=1d)
+2026-07-14 13:07:05,575 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KRDMD.IS (period=1mo, interval=4h)
+2026-07-14 13:07:05,979 - VarantRadar - ERROR - [RadarEngine] Error scanning HEKTS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:07:05,980 - VarantRadar - INFO - [MarketDataEngine] Fetching data for PETKM.IS (period=1mo, interval=1d)
+2026-07-14 13:07:06,213 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ODAS.IS (period=1mo, interval=4h)
+2026-07-14 13:07:07,242 - VarantRadar - INFO - [MarketDataEngine] Fetching data for PETKM.IS (period=1mo, interval=4h)
+2026-07-14 13:07:07,257 - VarantRadar - ERROR - [RadarEngine] Error scanning ISCTR.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:07:07,259 - VarantRadar - INFO - [MarketDataEngine] Fetching data for PGSUS.IS (period=1mo, interval=1d)
+2026-07-14 13:07:08,290 - VarantRadar - INFO - [MarketDataEngine] Fetching data for PGSUS.IS (period=1mo, interval=4h)
+2026-07-14 13:07:08,473 - VarantRadar - ERROR - [RadarEngine] Error scanning KCHOL.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:07:08,479 - VarantRadar - INFO - [MarketDataEngine] Fetching data for SAHOL.IS (period=1mo, interval=1d)
+2026-07-14 13:07:09,730 - VarantRadar - INFO - [MarketDataEngine] Fetching data for SAHOL.IS (period=1mo, interval=4h)
+2026-07-14 13:07:11,769 - VarantRadar - ERROR - [RadarEngine] Error scanning KRDMD.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:07:11,769 - VarantRadar - INFO - [MarketDataEngine] Fetching data for SASA.IS (period=1mo, interval=1d)
+2026-07-14 13:07:13,261 - VarantRadar - ERROR - [RadarEngine] Error scanning ODAS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:07:13,314 - VarantRadar - INFO - [MarketDataEngine] Fetching data for SISE.IS (period=1mo, interval=1d)
+2026-07-14 13:07:14,448 - VarantRadar - INFO - [MarketDataEngine] Fetching data for SISE.IS (period=1mo, interval=4h)
+2026-07-14 13:07:14,604 - VarantRadar - ERROR - [RadarEngine] Error scanning PETKM.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:07:14,626 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TCELL.IS (period=1mo, interval=1d)
+2026-07-14 13:07:15,489 - VarantRadar - ERROR - [RadarEngine] Error scanning PGSUS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:07:15,489 - VarantRadar - INFO - [MarketDataEngine] Fetching data for THYAO.IS (period=1mo, interval=1d)
+2026-07-14 13:07:15,606 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TCELL.IS (period=1mo, interval=4h)
+2026-07-14 13:07:16,567 - VarantRadar - INFO - [MarketDataEngine] Fetching data for THYAO.IS (period=1mo, interval=4h)
+2026-07-14 13:07:16,786 - VarantRadar - ERROR - [RadarEngine] Error scanning SAHOL.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:07:16,787 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TOASO.IS (period=1mo, interval=1d)
+2026-07-14 13:07:17,828 - VarantRadar - INFO - [MarketDataEngine] Fetching data for SASA.IS (period=1mo, interval=4h)
+2026-07-14 13:07:17,992 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TOASO.IS (period=1mo, interval=4h)
+2026-07-14 13:07:20,502 - VarantRadar - ERROR - [RadarEngine] Error scanning SISE.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:07:20,502 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TTKOM.IS (period=1mo, interval=1d)
+2026-07-14 13:07:21,491 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TTKOM.IS (period=1mo, interval=4h)
+2026-07-14 13:07:21,642 - VarantRadar - ERROR - [RadarEngine] Error scanning TCELL.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:07:21,642 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TUPRS.IS (period=1mo, interval=1d)
+2026-07-14 13:07:22,661 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TUPRS.IS (period=1mo, interval=4h)
+2026-07-14 13:07:23,307 - VarantRadar - ERROR - [RadarEngine] Error scanning SASA.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:07:23,308 - VarantRadar - INFO - [MarketDataEngine] Fetching data for YKBNK.IS (period=1mo, interval=1d)
+2026-07-14 13:07:24,317 - VarantRadar - ERROR - [RadarEngine] Error scanning THYAO.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:07:24,318 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ALFAS.IS (period=1mo, interval=1d)
+2026-07-14 13:07:24,324 - VarantRadar - INFO - [MarketDataEngine] Fetching data for YKBNK.IS (period=1mo, interval=4h)
+2026-07-14 13:07:25,040 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ALFAS.IS (period=1mo, interval=4h)
+2026-07-14 13:07:25,369 - VarantRadar - ERROR - [RadarEngine] Error scanning TOASO.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:07:26,924 - VarantRadar - ERROR - [RadarEngine] Error scanning TTKOM.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:07:28,645 - VarantRadar - ERROR - [RadarEngine] Error scanning TUPRS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:07:29,617 - VarantRadar - ERROR - [RadarEngine] Error scanning YKBNK.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:07:30,622 - VarantRadar - ERROR - [RadarEngine] Error scanning ALFAS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:07:30,722 - VarantRadar - INFO - [RadarEngine] Parallel scan finished.
+2026-07-14 13:14:53,470 - VarantRadar - INFO - [RadarEngine] Parallel scan started for 30 symbols.
+2026-07-14 13:14:53,496 - VarantRadar - INFO - [MarketDataEngine] Fetching data for AKBNK.IS (period=1mo, interval=1d)
+2026-07-14 13:14:53,502 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ARCLK.IS (period=1mo, interval=1d)
+2026-07-14 13:14:53,519 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ASELS.IS (period=1mo, interval=1d)
+2026-07-14 13:14:53,530 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ASTOR.IS (period=1mo, interval=1d)
+2026-07-14 13:14:53,558 - VarantRadar - INFO - [MarketDataEngine] Fetching data for BIMAS.IS (period=1mo, interval=1d)
+2026-07-14 13:14:54,756 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ASELS.IS (period=1mo, interval=4h)
+2026-07-14 13:14:54,822 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ARCLK.IS (period=1mo, interval=4h)
+2026-07-14 13:14:54,830 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ASTOR.IS (period=1mo, interval=4h)
+2026-07-14 13:14:54,871 - VarantRadar - INFO - [MarketDataEngine] Fetching data for AKBNK.IS (period=1mo, interval=4h)
+2026-07-14 13:14:55,440 - VarantRadar - INFO - [MarketDataEngine] Fetching data for BIMAS.IS (period=1mo, interval=4h)
+2026-07-14 13:15:01,967 - VarantRadar - ERROR - [RadarEngine] Error scanning ASELS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:01,968 - VarantRadar - INFO - [MarketDataEngine] Fetching data for EKGYO.IS (period=1mo, interval=1d)
+2026-07-14 13:15:02,623 - VarantRadar - ERROR - [RadarEngine] Error scanning ARCLK.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:02,629 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ENKAI.IS (period=1mo, interval=1d)
+2026-07-14 13:15:02,938 - VarantRadar - INFO - [MarketDataEngine] Fetching data for EKGYO.IS (period=1mo, interval=4h)
+2026-07-14 13:15:03,611 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ENKAI.IS (period=1mo, interval=4h)
+2026-07-14 13:15:03,778 - VarantRadar - ERROR - [RadarEngine] Error scanning AKBNK.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:03,778 - VarantRadar - INFO - [MarketDataEngine] Fetching data for EREGL.IS (period=1mo, interval=1d)
+2026-07-14 13:15:04,858 - VarantRadar - ERROR - [RadarEngine] Error scanning BIMAS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:04,858 - VarantRadar - INFO - [MarketDataEngine] Fetching data for FROTO.IS (period=1mo, interval=1d)
+2026-07-14 13:15:05,026 - VarantRadar - INFO - [MarketDataEngine] Fetching data for EREGL.IS (period=1mo, interval=4h)
+2026-07-14 13:15:05,936 - VarantRadar - INFO - [MarketDataEngine] Fetching data for FROTO.IS (period=1mo, interval=4h)
+2026-07-14 13:15:06,286 - VarantRadar - ERROR - [RadarEngine] Error scanning ASTOR.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:06,305 - VarantRadar - INFO - [MarketDataEngine] Fetching data for GARAN.IS (period=1mo, interval=1d)
+2026-07-14 13:15:07,484 - VarantRadar - INFO - [MarketDataEngine] Fetching data for GARAN.IS (period=1mo, interval=4h)
+2026-07-14 13:15:10,567 - VarantRadar - ERROR - [RadarEngine] Error scanning ENKAI.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:10,567 - VarantRadar - INFO - [MarketDataEngine] Fetching data for GUBRF.IS (period=1mo, interval=1d)
+2026-07-14 13:15:11,541 - VarantRadar - INFO - [MarketDataEngine] Fetching data for GUBRF.IS (period=1mo, interval=4h)
+2026-07-14 13:15:12,067 - VarantRadar - ERROR - [RadarEngine] Error scanning EREGL.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:12,067 - VarantRadar - INFO - [MarketDataEngine] Fetching data for HEKTS.IS (period=1mo, interval=1d)
+2026-07-14 13:15:12,744 - VarantRadar - ERROR - [RadarEngine] Error scanning FROTO.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:12,755 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ISCTR.IS (period=1mo, interval=1d)
+2026-07-14 13:15:12,862 - VarantRadar - INFO - [MarketDataEngine] Fetching data for HEKTS.IS (period=1mo, interval=4h)
+2026-07-14 13:15:13,704 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ISCTR.IS (period=1mo, interval=4h)
+2026-07-14 13:15:14,006 - VarantRadar - ERROR - [RadarEngine] Error scanning EKGYO.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:14,006 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KCHOL.IS (period=1mo, interval=1d)
+2026-07-14 13:15:14,929 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KCHOL.IS (period=1mo, interval=4h)
+2026-07-14 13:15:15,189 - VarantRadar - ERROR - [RadarEngine] Error scanning GARAN.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:15,190 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KOZAA.IS (period=1mo, interval=1d)
+2026-07-14 13:15:16,028 - VarantRadar - WARNING - [MarketDataEngine] No data found for KOZAA.IS at 1d
+2026-07-14 13:15:16,051 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KOZAA.IS (period=1mo, interval=4h)
+2026-07-14 13:15:16,555 - VarantRadar - WARNING - [MarketDataEngine] No data found for KOZAA.IS at 4h
+2026-07-14 13:15:16,610 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KOZAL.IS (period=1mo, interval=1d)
+2026-07-14 13:15:16,881 - VarantRadar - ERROR - [RadarEngine] Error scanning GUBRF.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:16,898 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KRDMD.IS (period=1mo, interval=1d)
+2026-07-14 13:15:17,174 - VarantRadar - WARNING - [MarketDataEngine] No data found for KOZAL.IS at 1d
+2026-07-14 13:15:17,206 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KOZAL.IS (period=1mo, interval=4h)
+2026-07-14 13:15:17,876 - VarantRadar - INFO - [MarketDataEngine] Fetching data for KRDMD.IS (period=1mo, interval=4h)
+2026-07-14 13:15:17,899 - VarantRadar - ERROR - [RadarEngine] Error scanning HEKTS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:17,900 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ODAS.IS (period=1mo, interval=1d)
+2026-07-14 13:15:17,985 - VarantRadar - WARNING - [MarketDataEngine] No data found for KOZAL.IS at 4h
+2026-07-14 13:15:17,990 - VarantRadar - INFO - [MarketDataEngine] Fetching data for PETKM.IS (period=1mo, interval=1d)
+2026-07-14 13:15:18,884 - VarantRadar - INFO - [MarketDataEngine] Fetching data for PETKM.IS (period=1mo, interval=4h)
+2026-07-14 13:15:18,982 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ODAS.IS (period=1mo, interval=4h)
+2026-07-14 13:15:19,686 - VarantRadar - ERROR - [RadarEngine] Error scanning ISCTR.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:19,687 - VarantRadar - INFO - [MarketDataEngine] Fetching data for PGSUS.IS (period=1mo, interval=1d)
+2026-07-14 13:15:20,700 - VarantRadar - INFO - [MarketDataEngine] Fetching data for PGSUS.IS (period=1mo, interval=4h)
+2026-07-14 13:15:20,888 - VarantRadar - ERROR - [RadarEngine] Error scanning KCHOL.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:20,888 - VarantRadar - INFO - [MarketDataEngine] Fetching data for SAHOL.IS (period=1mo, interval=1d)
+2026-07-14 13:15:21,846 - VarantRadar - INFO - [MarketDataEngine] Fetching data for SAHOL.IS (period=1mo, interval=4h)
+2026-07-14 13:15:24,127 - VarantRadar - ERROR - [RadarEngine] Error scanning KRDMD.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:24,128 - VarantRadar - INFO - [MarketDataEngine] Fetching data for SASA.IS (period=1mo, interval=1d)
+2026-07-14 13:15:25,432 - VarantRadar - ERROR - [RadarEngine] Error scanning ODAS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:25,438 - VarantRadar - INFO - [MarketDataEngine] Fetching data for SISE.IS (period=1mo, interval=1d)
+2026-07-14 13:15:26,364 - VarantRadar - ERROR - [RadarEngine] Error scanning PETKM.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:26,364 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TCELL.IS (period=1mo, interval=1d)
+2026-07-14 13:15:26,622 - VarantRadar - INFO - [MarketDataEngine] Fetching data for SISE.IS (period=1mo, interval=4h)
+2026-07-14 13:15:27,191 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TCELL.IS (period=1mo, interval=4h)
+2026-07-14 13:15:27,494 - VarantRadar - ERROR - [RadarEngine] Error scanning SAHOL.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:27,495 - VarantRadar - INFO - [MarketDataEngine] Fetching data for THYAO.IS (period=1mo, interval=1d)
+2026-07-14 13:15:28,563 - VarantRadar - INFO - [MarketDataEngine] Fetching data for THYAO.IS (period=1mo, interval=4h)
+2026-07-14 13:15:28,788 - VarantRadar - ERROR - [RadarEngine] Error scanning PGSUS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:28,788 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TOASO.IS (period=1mo, interval=1d)
+2026-07-14 13:15:29,445 - VarantRadar - INFO - [MarketDataEngine] Fetching data for SASA.IS (period=1mo, interval=4h)
+2026-07-14 13:15:29,831 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TOASO.IS (period=1mo, interval=4h)
+2026-07-14 13:15:32,303 - VarantRadar - ERROR - [RadarEngine] Error scanning SISE.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:32,303 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TTKOM.IS (period=1mo, interval=1d)
+2026-07-14 13:15:33,281 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TTKOM.IS (period=1mo, interval=4h)
+2026-07-14 13:15:33,434 - VarantRadar - ERROR - [RadarEngine] Error scanning TCELL.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:33,434 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TUPRS.IS (period=1mo, interval=1d)
+2026-07-14 13:15:34,553 - VarantRadar - INFO - [MarketDataEngine] Fetching data for TUPRS.IS (period=1mo, interval=4h)
+2026-07-14 13:15:35,240 - VarantRadar - ERROR - [RadarEngine] Error scanning THYAO.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:35,257 - VarantRadar - INFO - [MarketDataEngine] Fetching data for YKBNK.IS (period=1mo, interval=1d)
+2026-07-14 13:15:36,097 - VarantRadar - INFO - [MarketDataEngine] Fetching data for YKBNK.IS (period=1mo, interval=4h)
+2026-07-14 13:15:36,193 - VarantRadar - ERROR - [RadarEngine] Error scanning SASA.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:36,199 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ALFAS.IS (period=1mo, interval=1d)
+2026-07-14 13:15:37,095 - VarantRadar - INFO - [MarketDataEngine] Fetching data for ALFAS.IS (period=1mo, interval=4h)
+2026-07-14 13:15:37,549 - VarantRadar - ERROR - [RadarEngine] Error scanning TOASO.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:39,023 - VarantRadar - ERROR - [RadarEngine] Error scanning TTKOM.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:40,200 - VarantRadar - ERROR - [RadarEngine] Error scanning TUPRS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:41,151 - VarantRadar - ERROR - [RadarEngine] Error scanning YKBNK.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:41,884 - VarantRadar - ERROR - [RadarEngine] Error scanning ALFAS.IS: 'Analyzer' object has no attribute 'calculate_indicators_on_df'
+2026-07-14 13:15:41,934 - VarantRadar - INFO - [RadarEngine] Parallel scan finished.
+2026-07-14 13:21:16,969 - VarantRadar - INFO - Otomatik Tarama Tetiklendi...
+2026-07-14 13:21:16,974 - VarantRadar - INFO - V3 Radar başlatılıyor. Toplam Hisse: 30
+2026-07-14 13:21:20,294 - VarantRadar - INFO - Ön filtreden geçen hisse sayısı: 28
