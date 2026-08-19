@@ -359,7 +359,7 @@ def api_backtest_run():
             return jsonify({"status": "error", "message": "Veri bulunamadı"}), 404
             
         # Sütunları küçük harfe çevir (BacktestEngine öyle bekliyor)
-        df.columns = [c.lower() for c in df.columns]
+        df.columns = [c[0].lower() if isinstance(c, tuple) else str(c).lower() for c in df.columns]
         df['date'] = df.index.astype(str)
         
         # İndikatörleri hesapla (BacktestEngine kullanıyor)
