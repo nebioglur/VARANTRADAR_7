@@ -38,6 +38,7 @@
             <button class="nav-btn" onclick="switchMainTab('news', this)"><i class="fa-solid fa-newspaper"></i> HABERLER (KAP)</button>
             <button class="nav-btn" onclick="switchMainTab('varant', this)"><i class="fa-solid fa-calculator"></i> VARANT</button>
             <button class="nav-btn" onclick="switchMainTab('simulation', this)"><i class="fa-solid fa-flask"></i> SİMÜLASYON</button>
+            <button class="nav-btn" onclick="switchMainTab('backtest', this)" style="color:var(--accent-purple);"><i class="fa-solid fa-microscope"></i> BACKTEST</button>
             <button class="nav-btn" onclick="switchMainTab('guide', this)" style="color:var(--accent-yellow); border:1px solid rgba(234, 179, 8, 0.4);"><i class="fa-solid fa-book-open"></i> NASIL KULLANILIR?</button>
             <div class="status-indicator">
                 <span class="pulse"></span>
@@ -1417,6 +1418,84 @@
             <span>İleri</span>
         </button>
     </div>
+    <!-- BACKTEST & OPTIMIZASYON TAB -->
+    <div id="backtest-wrapper" class="main-wrapper" style="display:none; max-width:1200px; margin:0 auto; padding:1rem;">
+        <div style="margin-bottom:2rem; text-align: center;">
+            <h2 style="color:var(--accent-purple); font-size: 1.8rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-microscope"></i> Quant Laboratuvarı & Backtest</h2>
+            <p style="color:var(--text-muted); font-size: 0.95rem;">Geçmiş verilerle stratejilerinizi test edin ve Monte Carlo simülasyonlarıyla geleceği modelleyin.</p>
+        </div>
+        
+        <div class="card" style="margin-bottom:2rem;">
+            <div style="display:flex; gap:15px; align-items:flex-end; flex-wrap:wrap;">
+                <div style="flex:1; min-width:200px;">
+                    <label style="color:var(--text-muted); font-size:0.8rem; margin-bottom:5px; display:block;">Hisse Sembolü (Örn: THYAO)</label>
+                    <input type="text" id="bt-symbol" class="search-input" value="THYAO" style="width:100%; border:1px solid rgba(255,255,255,0.1); padding:10px; border-radius:6px; background:rgba(0,0,0,0.2); color:white;" />
+                </div>
+                <div style="flex:1; min-width:200px;">
+                    <label style="color:var(--text-muted); font-size:0.8rem; margin-bottom:5px; display:block;">Strateji Modeli</label>
+                    <select id="bt-strategy" style="width:100%; border:1px solid rgba(255,255,255,0.1); padding:10px; border-radius:6px; background:rgba(0,0,0,0.2); color:white;">
+                        <option value="MACD_RSI_CROSS">MACD & RSI Kesişimi (Trend Takibi)</option>
+                        <option value="RSI_MEAN_REVERSION">RSI Mean Reversion (Aşırı Alım/Satım)</option>
+                    </select>
+                </div>
+                <div style="flex:1; min-width:150px;">
+                    <label style="color:var(--text-muted); font-size:0.8rem; margin-bottom:5px; display:block;">Sermaye (TL)</label>
+                    <input type="number" id="bt-capital" class="search-input" value="10000" style="width:100%; border:1px solid rgba(255,255,255,0.1); padding:10px; border-radius:6px; background:rgba(0,0,0,0.2); color:white;" />
+                </div>
+                <div style="flex:1; min-width:150px;">
+                    <label style="color:var(--text-muted); font-size:0.8rem; margin-bottom:5px; display:block;">Geçmiş Veri</label>
+                    <select id="bt-period" style="width:100%; border:1px solid rgba(255,255,255,0.1); padding:10px; border-radius:6px; background:rgba(0,0,0,0.2); color:white;">
+                        <option value="1y">Son 1 Yıl (Günlük)</option>
+                        <option value="2y">Son 2 Yıl (Günlük)</option>
+                        <option value="5y">Son 5 Yıl (Günlük)</option>
+                        <option value="1mo">Son 1 Ay (Saatlik)</option>
+                    </select>
+                </div>
+                <div>
+                    <button onclick="runBacktest()" class="btn-primary" id="btn-run-backtest" style="background:var(--accent-purple); color:white; padding:10px 20px; font-weight:bold; height:41px;"><i class="fa-solid fa-play"></i> Simülasyonu Başlat</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="bt-loading" style="display:none; text-align:center; padding:3rem; color:var(--text-muted);">
+            <i class="fa-solid fa-spinner fa-spin fa-3x" style="color:var(--accent-purple); margin-bottom:1rem;"></i>
+            <h3>Laboratuvar Analizi Yapılıyor...</h3>
+            <p>1000 olası gelecek senaryosu hesaplanıyor, lütfen bekleyin (5-10 sn).</p>
+        </div>
+
+        <div id="bt-results" style="display:none;">
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; margin-bottom:1rem;">
+                <div class="card" style="text-align:center; padding:1.5rem;">
+                    <div style="color:var(--text-muted); font-size:0.85rem; margin-bottom:5px;">Toplam Kazanç / Kayıp</div>
+                    <div id="bt-res-pnl" style="font-size:1.8rem; font-weight:bold;">%0.00</div>
+                </div>
+                <div class="card" style="text-align:center; padding:1.5rem;">
+                    <div style="color:var(--text-muted); font-size:0.85rem; margin-bottom:5px;">Kazanma Oranı (Win Rate)</div>
+                    <div id="bt-res-winrate" style="font-size:1.8rem; font-weight:bold; color:var(--accent-blue);">%0.00</div>
+                </div>
+                <div class="card" style="text-align:center; padding:1.5rem;">
+                    <div style="color:var(--text-muted); font-size:0.85rem; margin-bottom:5px;">Maksimum Düşüş (Drawdown)</div>
+                    <div id="bt-res-dd" style="font-size:1.8rem; font-weight:bold; color:var(--accent-red);">%0.00</div>
+                </div>
+                <div class="card" style="text-align:center; padding:1.5rem;">
+                    <div style="color:var(--text-muted); font-size:0.85rem; margin-bottom:5px;">Monte Carlo %99 VaR (En Kötü)</div>
+                    <div id="bt-res-var" style="font-size:1.8rem; font-weight:bold; color:var(--accent-orange);">%0.00</div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom:1rem;">
+                <h3 class="card-title"><i class="fa-solid fa-chart-line"></i> Portföy Büyüme Eğrisi (Equity Curve)</h3>
+                <div id="bt-equity-chart" style="width:100%; height:400px;"></div>
+            </div>
+            
+            <div class="card">
+                <h3 class="card-title"><i class="fa-solid fa-dice-d20"></i> Monte Carlo Simülasyonu Sonuçları (1000 Senaryo)</h3>
+                <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:10px;">Geçmişte yapılan işlemler rastgele sıralanarak şans faktörü filtrelenmiştir.</p>
+                <div id="bt-mc-chart" style="width:100%; height:300px;"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- KULLANIM KILAVUZU TAB -->
     <div id="guide-wrapper" class="main-wrapper" style="display:none; max-width:900px; margin:0 auto; padding:2rem; color:var(--text-light, #f8fafc);">
         <h2 style="color:var(--accent-yellow); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-top:0;"><i class="fa-solid fa-book-open"></i> VarantRadar Pro v7 - Kullanım Kılavuzu</h2>

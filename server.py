@@ -337,6 +337,100 @@ def api_chart_data():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/api/backtest/run', methods=['GET'])
+def api_backtest_run():
+    symbol = request.args.get('symbol', 'THYAO.IS')
+    strategy = request.args.get('strategy', 'MACD_RSI_CROSS')
+    period = request.args.get('period', '1y')
+    interval = request.args.get('interval', '1d')
+    capital = float(request.args.get('capital', 10000.0))
+    
+    if not symbol.endswith('.IS'):
+        symbol += '.IS'
+        
+    try:
+        import yfinance as yf
+        import pandas as pd
+        from services.backtest_engine import BacktestEngine
+        from services.quant_lab import QuantLab
+        
+        df = yf.download(symbol, period=period, interval=interval, progress=False)
+        if df.empty:
+            return jsonify({"status": "error", "message": "Veri bulunamadı"}), 404
+            
+        # Sütunları küçük harfe çevir (BacktestEngine öyle bekliyor)
+        df.columns = [c.lower() for c in df.columns]
+        df['date'] = df.index.astype(str)
+        
+        # İndikatörleri hesapla (BacktestEngine kullanıyor)
+        close = df['close']
+        df['ema'] = close.ewm(span=20, adjust=False).mean()
+        df['sma'] = close.ewm(span=50, adjust=False).mean()
+        
+        delta = close.diff()
+        gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+        rs = gain / loss
+        df['rsi'] = 100 - (100 / (1 + rs))
+        
+        ema12 = close.ewm(span=12, adjust=False).mean()
+        ema26 = close.ewm(span=26, adjust=False).mean()
+        df['macd'] = ema12 - ema26
+        df['macd_signal'] = df['macd'].ewm(span=9, adjust=False).mean()
+        
+        # Backtest Motorunu Çalıştır
+        engine = BacktestEngine(initial_capital=capital)
+        bt_results = engine.run_backtest(df, strategy_name=strategy)
+        
+        if "error" in bt_results:
+            return jsonify({"status": "error", "message": bt_results["error"]}), 400
+            
+        # UI formatlamaları
+        trades = bt_results.get('trades', [])
+        bt_results['final_capital'] = capital + sum(t['pnl'] for t in trades)
+        bt_results['dates'] = [t['exit_date'] for t in trades]
+        
+        eq = capital
+        eq_curve = []
+        for t in trades:
+            eq += t['pnl']
+            eq_curve.append(round(eq, 2))
+        bt_results['equity_curve'] = eq_curve
+            
+        # Monte Carlo Simülasyonu
+        quant = QuantLab()
+        mc_results = quant.run_monte_carlo(trades, iterations=1000)
+        
+        # UI Grafiği için örnek 10 yol üret
+        sample_paths = []
+        if "error" not in mc_results and len(trades) > 0:
+            import random
+            returns = [t['pnl_pct'] for t in trades]
+            for _ in range(10):
+                path = [capital]
+                eq = capital
+                for _ in range(len(trades)):
+                    eq *= (1 + (random.choice(returns)/100))
+                    path.append(round(eq, 2))
+                sample_paths.append(path)
+        
+        mc_results['simulated_paths'] = sample_paths
+        # VaR_99'u Worst Case üzerinden simüle et
+        mc_results['VaR_99'] = mc_results.get('worst_case_return', 0.0)
+        
+        # Sonuçları Birleştir
+        return jsonify({
+            "status": "success",
+            "symbol": symbol,
+            "strategy": strategy,
+            "backtest": bt_results,
+            "monte_carlo": mc_results
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 # ============ Online Kullanıcı Sayacı (Heartbeat) ============
 import time as _time
 _online_users = {}  # {session_id: last_heartbeat_timestamp}

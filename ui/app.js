@@ -247,6 +247,9 @@ function switchMainTab(tabName, btnElement) {
     const guideWrapper = document.getElementById('guide-wrapper');
     if (guideWrapper) guideWrapper.style.display = tabName === 'guide' ? 'block' : 'none';
     
+    const btWrapper = document.getElementById('backtest-wrapper');
+    if (btWrapper) btWrapper.style.display = tabName === 'backtest' ? 'block' : 'none';
+    
     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
     if (btnElement) btnElement.classList.add('active');
     
@@ -3605,5 +3608,95 @@ async function fetchLiveOrders() {
         }
     } catch (e) {
         container.innerHTML = '<div style="color:var(--accent-red);">Hata: ' + e.message + '</div>';
+    }
+}
+
+  
+ 
+// ========== BACKTEST ENGINE ==========
+async function runBacktest() {
+    const symbol = document.getElementById('bt-symbol').value || 'THYAO';
+    const strategy = document.getElementById('bt-strategy').value;
+    const capital = document.getElementById('bt-capital').value;
+    const period = document.getElementById('bt-period').value;
+    
+    // Set interval based on period
+    const interval = period === '1mo' ? '1h' : '1d';
+    
+    const loading = document.getElementById('bt-loading');
+    const results = document.getElementById('bt-results');
+    const btn = document.getElementById('btn-run-backtest');
+    
+    loading.style.display = 'block';
+    results.style.display = 'none';
+    btn.disabled = true;
+    
+    try {
+        const response = await fetch(\/api/backtest/run?symbol=\&strategy=\&capital=\&period=\&interval=\);
+        const data = await response.json();
+        
+        loading.style.display = 'none';
+        btn.disabled = false;
+        
+        if (data.status !== 'success') {
+            alert('Backtest Hatası: ' + data.message);
+            return;
+        }
+        
+        results.style.display = 'block';
+        
+        // Fill metrics
+        const bt = data.backtest;
+        const mc = data.monte_carlo;
+        
+        const pnlPct = ((bt.final_capital - capital) / capital) * 100;
+        document.getElementById('bt-res-pnl').textContent = '%' + pnlPct.toFixed(2);
+        document.getElementById('bt-res-pnl').style.color = pnlPct >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+        
+        document.getElementById('bt-res-winrate').textContent = '%' + bt.win_rate.toFixed(1);
+        document.getElementById('bt-res-dd').textContent = '%' + bt.max_drawdown.toFixed(2);
+        document.getElementById('bt-res-var').textContent = '%' + mc.VaR_99.toFixed(2);
+        
+        // Equity Chart
+        const equityOptions = {
+            series: [{ name: 'Portföy (TL)', data: bt.equity_curve }],
+            chart: { type: 'area', height: 400, toolbar: { show: false }, background: 'transparent' },
+            colors: ['#8b5cf6'],
+            fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05, stops: [0, 100] } },
+            dataLabels: { enabled: false },
+            stroke: { curve: 'smooth', width: 2 },
+            xaxis: { type: 'category', categories: bt.dates, labels: { style: { colors: '#94a3b8' } } },
+            yaxis: { labels: { style: { colors: '#94a3b8' }, formatter: (val) => val.toFixed(0) + ' TL' } },
+            theme: { mode: 'dark' }
+        };
+        
+        if(window.equityChart) window.equityChart.destroy();
+        window.equityChart = new ApexCharts(document.querySelector('#bt-equity-chart'), equityOptions);
+        window.equityChart.render();
+        
+        // Monte Carlo Histogram (Simplified as Line Chart for 10 random paths)
+        const mcPaths = mc.simulated_paths.slice(0, 10);
+        const mcSeries = mcPaths.map((path, idx) => ({ name: 'Senaryo ' + (idx+1), data: path }));
+        
+        const mcOptions = {
+            series: mcSeries,
+            chart: { type: 'line', height: 300, toolbar: { show: false }, background: 'transparent', animations: { enabled: false } },
+            stroke: { curve: 'straight', width: 1 },
+            dataLabels: { enabled: false },
+            xaxis: { labels: { show: false } },
+            yaxis: { labels: { style: { colors: '#94a3b8' } } },
+            legend: { show: false },
+            theme: { mode: 'dark' }
+        };
+        
+        if(window.mcChart) window.mcChart.destroy();
+        window.mcChart = new ApexCharts(document.querySelector('#bt-mc-chart'), mcOptions);
+        window.mcChart.render();
+        
+    } catch (err) {
+        console.error(err);
+        loading.style.display = 'none';
+        btn.disabled = false;
+        alert('Sunucu hatası: ' + err.message);
     }
 }
