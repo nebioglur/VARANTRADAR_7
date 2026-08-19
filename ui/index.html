@@ -38,7 +38,7 @@
             <button class="nav-btn" onclick="switchMainTab('news', this)"><i class="fa-solid fa-newspaper"></i> HABERLER (KAP)</button>
             <button class="nav-btn" onclick="switchMainTab('varant', this)"><i class="fa-solid fa-calculator"></i> VARANT</button>
             <button class="nav-btn" onclick="switchMainTab('simulation', this)"><i class="fa-solid fa-flask"></i> SİMÜLASYON</button>
-            <button class="nav-btn" onclick="document.getElementById('guide-modal').style.display='block'" style="color:var(--accent-yellow); border:1px solid rgba(234, 179, 8, 0.4);"><i class="fa-solid fa-book-open"></i> NASIL KULLANILIR?</button>
+            <button class="nav-btn" onclick="switchMainTab('guide', this)" style="color:var(--accent-yellow); border:1px solid rgba(234, 179, 8, 0.4);"><i class="fa-solid fa-book-open"></i> NASIL KULLANILIR?</button>
             <div class="status-indicator">
                 <span class="pulse"></span>
                 <span>SİSTEM AKTİF</span>
@@ -1417,7 +1417,45 @@
             <span>İleri</span>
         </button>
     </div>
+    <!-- KULLANIM KILAVUZU TAB -->
+    <div id="guide-wrapper" class="main-wrapper" style="display:none; max-width:900px; margin:0 auto; padding:2rem; color:var(--text-light, #f8fafc);">
+        <h2 style="color:var(--accent-yellow); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-top:0;"><i class="fa-solid fa-book-open"></i> VarantRadar Pro v7 - Kullanım Kılavuzu</h2>
+        
+        <div style="line-height:1.6; font-size:0.95rem; margin-top:20px;">
+            <h3 style="color:var(--accent-blue);"><i class="fa-regular fa-clock"></i> 1. Hangi Saatte Nereye Bakmalıyım?</h3>
+            <div style="background:rgba(0,0,0,0.2); padding:15px; border-radius:8px; border-left:3px solid var(--accent-blue); margin-bottom:20px;">
+                <p><strong>🌅 Sabah Seansı (10:00 - 10:30):</strong> Ana Sayfa > <strong>Yüksek Tavan Adayları</strong> tablosuna bakın. <em>🎯 ORB Açılış Kırılımı</em> veya <em>🌱 ERKEN KOPUŞ</em> arayın.</p>
+                <p><strong>☀️ Gün İçi (11:00 - 17:00):</strong> Yine <strong>Tavan Adayları</strong> tablosunda <em>⚡ İVMELENME</em> ve <em>⚡ V-Dönüş</em> yapan (hacmi artan) hisselere odaklanın.</p>
+                <p><strong>🌙 Akşam / Piyasa Kapalıyken (18:10 Sonrası):</strong> Tavan tablosu "gün içi" (Intraday) çalışır. Yarın için hazırlık (Swing) yapmak istiyorsanız, Ana Sayfadaki <strong>1 Saatlik Teknik Fırsatlar</strong> tablosunu kullanın.</p>
+            </div>
 
+            <h3 style="color:var(--accent-green);"><i class="fa-solid fa-shield-halved"></i> 2. Rozetler (Evre ve Kalkanlar) Ne Anlama Geliyor?</h3>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap:15px; margin-bottom:20px;">
+                <div style="background:rgba(16, 185, 129, 0.1); border:1px solid rgba(16, 185, 129, 0.3); padding:10px; border-radius:6px;">
+                    <span style="color:#10b981; font-weight:bold;">🌱 ERKEN KOPUŞ / ⚡ İVMELENME:</span> Trendin başı veya hacimli hızlanma evresi. En güvenli/potansiyelli alım bölgesidir.
+                </div>
+                <div style="background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239, 68, 68, 0.3); padding:10px; border-radius:6px;">
+                    <span style="color:#ef4444; font-weight:bold;">🔒 TAVANA YAKIN (Kilitleme):</span> Hisse %8-9 üzerine çıkmış. Yeni alım tehlikelidir, tuzak riski barındırır.
+                </div>
+                <div style="background:rgba(56, 189, 248, 0.1); border:1px solid rgba(56, 189, 248, 0.3); padding:10px; border-radius:6px;">
+                    <span style="color:#38bdf8; font-weight:bold;">🎯 ORB Açılış Kırılımı:</span> Sabah görülen ilk zirve hacimle yukarı kırıldı. Güçlü yükseliş onayıdır.
+                </div>
+                <div style="background:rgba(168, 85, 247, 0.1); border:1px solid rgba(168, 85, 247, 0.3); padding:10px; border-radius:6px;">
+                    <span style="color:#c084fc; font-weight:bold;">⚡ V-DÖNÜŞ:</span> Gün içi sert düşüp hızla toparlanan (dipten alınan) formasyondur.
+                </div>
+            </div>
+
+            <h3 style="color:var(--text-light);"><i class="fa-solid fa-chart-line"></i> 3. Canlı İndikatörler (RSI & MACD)</h3>
+            <p style="background:rgba(255,255,255,0.05); padding:10px; border-radius:6px;">Tablonun sağındaki <strong>AI & Teyit</strong> sütununda artık RSI ve MACD bulunur. <span style="color:var(--accent-red); font-weight:bold;">RSI>70 Kırmızı (Aşırı Şişmiş)</span>, <span style="color:var(--accent-green); font-weight:bold;">RSI<40 Yeşil (Soğumuş/Fırsat)</span> demektir. MACD <span style="color:var(--accent-red)">Aşağı Ok</span> ise hissenin o an yatay dinlenmede olduğunu gösterir.</p>
+
+            <h3 style="color:var(--accent-purple);"><i class="fa-solid fa-robot"></i> 4. Diğer Modüller</h3>
+            <ul style="background:rgba(0,0,0,0.2); padding:15px 15px 15px 35px; border-radius:8px;">
+                <li style="margin-bottom:8px;"><strong>Simülasyon (Zincir Emir):</strong> Sistemi yarın ne yapacağınızı bulmak (Take-Profit / Stop-Loss) için kullanabilirsiniz. Çıkan seviyeleri bankanıza "Zincir Emir" olarak girmeniz önerilir.</li>
+                <li style="margin-bottom:8px;"><strong>Varant Simülatörü:</strong> Bir hissenin yükseleceğine inanıyorsanız, en çok kazandıracak varantı hesaplamak için Varant sekmesini kullanın.</li>
+                <li><strong>AI Yönetim Kurulu:</strong> Herhangi bir hisseyi üstteki arama kutusundan arattığınızda, Yapay Zeka Risk, Makro ve Teknik analizini otomatik yaparak tartışır ve ortak bir karar çıkarır.</li>
+            </ul>
+        </div>
+    </div>
     <!-- 📊 10:15 SABAH TAVAN LİSTESİ ➔ 18:10 SEANS KAPANIŞ DENETİM MODALI -->
     <div id="tavan-audit-modal" style="display:none; position:fixed; z-index:999999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); overflow-y:auto; padding:1.5rem 1rem;">
         <div style="background:var(--card-bg, #0f172a); border:1px solid rgba(239, 68, 68, 0.4); box-shadow:0 0 30px rgba(239,68,68,0.25); border-radius:12px; max-width:1150px; margin:0 auto; padding:1.5rem; position:relative; color:var(--text-light, #f8fafc);">
@@ -1542,53 +1580,7 @@
         <div class="chart-fs-body" id="chart-fs-body"></div>
     </div>
 
-    <!-- KULLANIM KILAVUZU MODAL -->
-    <div id="guide-modal" style="display:none; position:fixed; z-index:999999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); overflow-y:auto; padding:1.5rem 1rem;">
-        <div style="background:var(--card-bg, #0f172a); border:1px solid rgba(234, 179, 8, 0.4); box-shadow:0 0 30px rgba(234, 179, 8, 0.25); border-radius:12px; max-width:900px; margin:0 auto; padding:2rem; position:relative; color:var(--text-light, #f8fafc);">
-            <button onclick="document.getElementById('guide-modal').style.display='none'" style="position:absolute; top:15px; right:20px; background:transparent; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
-            
-            <h2 style="color:var(--accent-yellow); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-top:0;"><i class="fa-solid fa-book-open"></i> VarantRadar Pro v7 - Kullanım Kılavuzu</h2>
-            
-            <div style="line-height:1.6; font-size:0.95rem; margin-top:20px;">
-                <h3 style="color:var(--accent-blue);"><i class="fa-regular fa-clock"></i> 1. Hangi Saatte Nereye Bakmalıyım?</h3>
-                <div style="background:rgba(0,0,0,0.2); padding:15px; border-radius:8px; border-left:3px solid var(--accent-blue); margin-bottom:20px;">
-                    <p><strong>🌅 Sabah Seansı (10:00 - 10:30):</strong> Ana Sayfa > <strong>Yüksek Tavan Adayları</strong> tablosuna bakın. <em>🎯 ORB Açılış Kırılımı</em> veya <em>🌱 ERKEN KOPUŞ</em> arayın.</p>
-                    <p><strong>☀️ Gün İçi (11:00 - 17:00):</strong> Yine <strong>Tavan Adayları</strong> tablosunda <em>⚡ İVMELENME</em> ve <em>⚡ V-Dönüş</em> yapan (hacmi artan) hisselere odaklanın.</p>
-                    <p><strong>🌙 Akşam / Piyasa Kapalıyken (18:10 Sonrası):</strong> Tavan tablosu "gün içi" (Intraday) çalışır. Yarın için hazırlık (Swing) yapmak istiyorsanız, Ana Sayfadaki <strong>1 Saatlik Teknik Fırsatlar</strong> tablosunu kullanın.</p>
-                </div>
 
-                <h3 style="color:var(--accent-green);"><i class="fa-solid fa-shield-halved"></i> 2. Rozetler (Evre ve Kalkanlar) Ne Anlama Geliyor?</h3>
-                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap:15px; margin-bottom:20px;">
-                    <div style="background:rgba(16, 185, 129, 0.1); border:1px solid rgba(16, 185, 129, 0.3); padding:10px; border-radius:6px;">
-                        <span style="color:#10b981; font-weight:bold;">🌱 ERKEN KOPUŞ / ⚡ İVMELENME:</span> Trendin başı veya hacimli hızlanma evresi. En güvenli/potansiyelli alım bölgesidir.
-                    </div>
-                    <div style="background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239, 68, 68, 0.3); padding:10px; border-radius:6px;">
-                        <span style="color:#ef4444; font-weight:bold;">🔒 TAVANA YAKIN (Kilitleme):</span> Hisse %8-9 üzerine çıkmış. Yeni alım tehlikelidir, tuzak riski barındırır.
-                    </div>
-                    <div style="background:rgba(56, 189, 248, 0.1); border:1px solid rgba(56, 189, 248, 0.3); padding:10px; border-radius:6px;">
-                        <span style="color:#38bdf8; font-weight:bold;">🎯 ORB Açılış Kırılımı:</span> Sabah görülen ilk zirve hacimle yukarı kırıldı. Güçlü yükseliş onayıdır.
-                    </div>
-                    <div style="background:rgba(168, 85, 247, 0.1); border:1px solid rgba(168, 85, 247, 0.3); padding:10px; border-radius:6px;">
-                        <span style="color:#c084fc; font-weight:bold;">⚡ V-DÖNÜŞ:</span> Gün içi sert düşüp hızla toparlanan (dipten alınan) formasyondur.
-                    </div>
-                </div>
-
-                <h3 style="color:var(--text-light);"><i class="fa-solid fa-chart-line"></i> 3. Canlı İndikatörler (RSI & MACD)</h3>
-                <p style="background:rgba(255,255,255,0.05); padding:10px; border-radius:6px;">Tablonun sağındaki <strong>AI & Teyit</strong> sütununda artık RSI ve MACD bulunur. <span style="color:var(--accent-red); font-weight:bold;">RSI>70 Kırmızı (Aşırı Şişmiş)</span>, <span style="color:var(--accent-green); font-weight:bold;">RSI<40 Yeşil (Soğumuş/Fırsat)</span> demektir. MACD <span style="color:var(--accent-red)">Aşağı Ok</span> ise hissenin o an yatay dinlenmede olduğunu gösterir.</p>
-
-                <h3 style="color:var(--accent-purple);"><i class="fa-solid fa-robot"></i> 4. Diğer Modüller</h3>
-                <ul style="background:rgba(0,0,0,0.2); padding:15px 15px 15px 35px; border-radius:8px;">
-                    <li style="margin-bottom:8px;"><strong>Simülasyon (Zincir Emir):</strong> Sistemi yarın ne yapacağınızı bulmak (Take-Profit / Stop-Loss) için kullanabilirsiniz. Çıkan seviyeleri bankanıza "Zincir Emir" olarak girmeniz önerilir.</li>
-                    <li style="margin-bottom:8px;"><strong>Varant Simülatörü:</strong> Bir hissenin yükseleceğine inanıyorsanız, en çok kazandıracak varantı hesaplamak için Varant sekmesini kullanın.</li>
-                    <li><strong>AI Yönetim Kurulu:</strong> Herhangi bir hisseyi üstteki arama kutusundan arattığınızda, Yapay Zeka Risk, Makro ve Teknik analizini otomatik yaparak tartışır ve ortak bir karar çıkarır.</li>
-                </ul>
-            </div>
-            
-            <div style="margin-top:20px; text-align:right;">
-                <button onclick="document.getElementById('guide-modal').style.display='none'" class="btn-primary" style="background:var(--accent-yellow); color:#000; font-weight:bold;">Anladım, Kapat</button>
-            </div>
-        </div>
-    </div>
 
     <script src="app.js?v=20260819_v20"></script>
 </body>

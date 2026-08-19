@@ -244,6 +244,9 @@ function switchMainTab(tabName, btnElement) {
     const simWrapper = document.getElementById('simulation-wrapper');
     if (simWrapper) simWrapper.style.display = tabName === 'simulation' ? 'block' : 'none';
     
+    const guideWrapper = document.getElementById('guide-wrapper');
+    if (guideWrapper) guideWrapper.style.display = tabName === 'guide' ? 'block' : 'none';
+    
     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
     if (btnElement) btnElement.classList.add('active');
     
