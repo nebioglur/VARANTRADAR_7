@@ -99,7 +99,6 @@
                 <div class="slider-indicators" id="slider-indicators">
                     <button type="button" class="indicator-dot active" onclick="jumpToCard(0)"><i class="fa-solid fa-rocket"></i> Tavan Radarı</button>
                     <button type="button" class="indicator-dot" onclick="jumpToCard(6); loadMTFRadar();" style="color:#0ea5e9;"><i class="fa-solid fa-bolt-lightning"></i> MTF İvme (1S/15D)</button>
-                    <button type="button" class="indicator-dot" onclick="jumpToCard(6)" style="color:#0ea5e9;"><i class="fa-solid fa-bolt-lightning"></i> MTF Radarı</button>
                     <button type="button" class="indicator-dot" onclick="jumpToCard(1)"><i class="fa-solid fa-clock"></i> 1S Fırsat</button>
                     <button type="button" class="indicator-dot" onclick="jumpToCard(2)"><i class="fa-solid fa-bolt"></i> 5D RSI</button>
                     <button type="button" class="indicator-dot" onclick="jumpToCard(3)"><i class="fa-solid fa-chart-line"></i> Günlük</button>
@@ -117,7 +116,6 @@
                     <i class="fa-solid fa-border-all"></i> Tümü
                 </button>
                     <button type="button" class="pill-btn" onclick="filterRadarGrid('mtf-card', this); loadMTFRadar();" style="background:rgba(14,165,233,0.1); color:#0ea5e9; border:1px solid rgba(14,165,233,0.4); padding:7px 15px; border-radius:20px; font-weight:700; font-size:0.85rem; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:6px;"><i class="fa-solid fa-bolt-lightning"></i> MTF İvme (1S/15D)</button>
-                    <button type="button" class="pill-btn" onclick="filterRadarGrid('mtf', this)" style="background:rgba(14,165,233,0.1); color:#0ea5e9; border:1px solid rgba(14,165,233,0.4); padding:7px 15px; border-radius:20px; font-weight:700; font-size:0.85rem; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:6px;"><i class="fa-solid fa-bolt-lightning"></i> MTF İvme Radarı (1S/15D)</button>
                 <button type="button" class="pill-btn" onclick="filterRadarGrid('radar-card-0', this)" style="background:rgba(30,41,59,0.8); color:var(--text-muted); border:1px solid rgba(255,255,255,0.1); padding:7px 15px; border-radius:20px; font-weight:700; font-size:0.85rem; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:6px;">
                     <i class="fa-solid fa-rocket" style="color:var(--accent-red);"></i> 🚀 Tavan Radarı
                 </button>
@@ -149,6 +147,43 @@
 
             <!-- MULTI-TABLE GRID -->
             <div id="radar-cards-grid" style="grid-column: 1 / -1; display:grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap:1.5rem; margin-bottom:1.5rem;">
+
+            <!-- MTF İvme Radarı -->
+            <div class="card" id="mtf-card" style="display:none; padding:1rem; border:1px solid rgba(14, 165, 233, 0.4); box-shadow: 0 0 15px rgba(14, 165, 233, 0.1); background: linear-gradient(145deg, rgba(14, 165, 233, 0.05) 0%, rgba(15,23,42,1) 100%); grid-column: 1 / -1;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem; flex-wrap:wrap; gap:6px;">
+                    <h3 class="card-title" style="font-size:1rem; color:#0ea5e9; margin:0;"><i class="fa-solid fa-layer-group"></i> Çoklu Zaman Dilimi (MTF) İvme Radarı</h3>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span class="badge" style="background:rgba(14,165,233,0.2); color:#0ea5e9;" id="mtf-count">... Hisse</span>
+                    </div>
+                </div>
+                <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:1rem; display:flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-shield-halved text-green"></i> Teyitli: 1S grafikte trend (EMA9>21) + 15D grafikte hacimli ivmelenme (Son 10 mum)
+                </div>
+                
+                <div id="mtf-loading" style="display:none; text-align:center; padding: 20px; color:#0ea5e9;">
+                    <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>
+                    <p style="margin-top:10px; font-size:0.85rem;">MTF İvme Verileri Arka Plandan Yükleniyor...</p>
+                </div>
+                
+                <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>SEMBOL</th>
+                                <th>FİYAT</th>
+                                <th>MTF SKOR</th>
+                                <th>MOMENTUM & HACİM</th>
+                                <th>KISA HEDEF</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mtf-table-body">
+                            <!-- JS ile dolacak -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            
                 
                 <!-- Yüksek Tavan Olasılığı -->
                 <div class="card" id="radar-card-0" style="padding:1rem; border:1px solid rgba(239, 68, 68, 0.5); box-shadow: 0 0 15px rgba(239, 68, 68, 0.15); background: linear-gradient(145deg, rgba(239, 68, 68, 0.05) 0%, rgba(15,23,42,1) 100%);">
