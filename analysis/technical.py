@@ -1387,10 +1387,46 @@ class TechnicalEngine(BaseEngine):
                     p_mom = float(momentum.iloc[j-1])
                     curr_mom = float(momentum.iloc[j])
                     
-                    if direction == "AL":
-                        if p_rsi <= 50 and curr_rsi > 50: crossed_recently = True
-                        if p_mom <= 0 and curr_mom > 0: crossed_recently = True
-                    elif direction == "SAT":
+                    
+                if direction == "AL":
+                    ema50 = close.ewm(span=50, adjust=False).mean()
+                    ema200 = close.ewm(span=200, adjust=False).mean()
+                    
+                    e9 = ema9.iloc[i]
+                    e21 = ema21.iloc[i]
+                    e50_val = ema50.iloc[i]
+                    e200_val = ema200.iloc[i]
+                    
+                    # KOŞUL 1: Kusursuz Yükseliş Trendi (EMA Dizilimi)
+                    ema_ok = (e9 > e21) and (e21 > e50_val) and (e50_val > e200_val)
+                    
+                    if not ema_ok:
+                        continue
+                        
+                    # KOŞUL 2: RSI 50 Yukarı Kesen (veya taze kesmiş olan)
+                    r = rsi.iloc[i]
+                    r_prev = rsi.iloc[i-1] if i > 0 else r
+                    rsi_cross = (r > 50) and (r_prev <= 50)
+                    # Tolerans: Son 3 barda kesişmiş olması
+                    if not rsi_cross and i > 2:
+                        rsi_cross = (r > 50) and (rsi.iloc[i-1] <= 50 or rsi.iloc[i-2] <= 50 or rsi.iloc[i-3] <= 50)
+                    
+                    if not rsi_cross:
+                        continue
+                        
+                    # KOŞUL 3: Momentum 0 Yukarı Kesen
+                    m = momentum.iloc[i]
+                    m_prev = momentum.iloc[i-1] if i > 0 else m
+                    mom_cross = (m > 0) and (m_prev <= 0)
+                    if not mom_cross and i > 2:
+                        mom_cross = (m > 0) and (momentum.iloc[i-1] <= 0 or momentum.iloc[i-2] <= 0 or momentum.iloc[i-3] <= 0)
+                        
+                    if not mom_cross:
+                        continue
+                        
+                    # Tüm zorlu koşullar sağlandıysa bingo!
+                    condition_met = True
+                if direction == "SAT":
                         if p_rsi >= 50 and curr_rsi < 50: crossed_recently = True
                         if p_mom >= 0 and curr_mom < 0: crossed_recently = True
                 
