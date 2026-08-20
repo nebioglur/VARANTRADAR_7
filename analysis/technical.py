@@ -1323,7 +1323,7 @@ class TechnicalEngine(BaseEngine):
 
     def check_custom_strict_strategy(self, df, direction: str = "AL", lookback_bars: int = 50):
         """
-        AL sinyali: EMA50>EMA200, EMA9>EMA21, RSI>50 (veya son 8 barda kesmiş), Momentum>0
+        AL sinyali: EMA9>EMA21 (kisa vade yükselis), RSI>45, Momentum>0 (veya yakin kesmis)
         SAT sinyali: EMA9<EMA21, RSI<50, Momentum<0, MACD<Signal
         Returns: (bool, int, str) -> (is_match, bars_ago, timestamp_str)
         """
@@ -1338,8 +1338,6 @@ class TechnicalEngine(BaseEngine):
 
             ema9   = close.ewm(span=9,   adjust=False).mean()
             ema21  = close.ewm(span=21,  adjust=False).mean()
-            ema50  = close.ewm(span=50,  adjust=False).mean()
-            ema200 = close.ewm(span=200, adjust=False).mean()
 
             delta  = close.diff()
             gain   = delta.where(delta > 0, 0).rolling(14).mean()
@@ -1360,25 +1358,19 @@ class TechnicalEngine(BaseEngine):
             for i in range(max_idx, start_idx - 1, -1):
                 e9   = float(ema9.iloc[i])
                 e21  = float(ema21.iloc[i])
-                e50  = float(ema50.iloc[i])
-                e200 = float(ema200.iloc[i])
                 r    = float(rsi.iloc[i])
                 m    = float(momentum.iloc[i])
 
                 if direction == "AL":
-                    # EMA dizilimi: ana trend yukari + kisa vade toparlanmis
-                    if not (e50 > e200 and e9 > e21):
+                    # KOŞUL 1: EMA9 > EMA21 (kısa vadede yükseliş başlamış)
+                    if not (e9 > e21):
                         continue
-                    # RSI 50 uzerinde veya son 8 barda 50yi gectmis
-                    rsi_ok = r > 50
-                    if not rsi_ok and i > 7:
-                        for k in range(1, 9):
-                            if float(rsi.iloc[i - k]) <= 50:
-                                rsi_ok = True
-                                break
-                    if not rsi_ok:
+
+                    # KOŞUL 2: RSI > 45 (ne aşırı satılmış ne olgunlaşmış - toparlanma bölgesi)
+                    if r < 45:
                         continue
-                    # Momentum pozitif veya son 8 barda 0i gectmis
+
+                    # KOŞUL 3: Momentum pozitif VEYA son 8 barda 0'ı yukarı kesmiş
                     mom_ok = m > 0
                     if not mom_ok and i > 7:
                         for k in range(1, 9):
@@ -1387,6 +1379,7 @@ class TechnicalEngine(BaseEngine):
                                 break
                     if not mom_ok:
                         continue
+
                     return True, max_idx - i, str(df.index[i])
 
                 elif direction == "SAT":
