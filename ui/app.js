@@ -1629,6 +1629,7 @@ async function startRadar(type) {
     else if (type === 'fx') endpoint = '/api/scan_fx';
     else if (type === 'commodity') endpoint = '/api/scan_commodity';
     else if (type === 'crypto') endpoint = '/api/scan_crypto';
+    else if (type === 'mtf') endpoint = '/api/scan_mtf';
     
     const loadingEl = document.getElementById(type + '-loading');
     const resultsEl = document.getElementById(type + '-results');
@@ -3784,3 +3785,61 @@ if (btSymbolInput && btAcDropdown) {
         }
     });
 }
+
+
+// --- MTF SCANNER LOGIC ---
+async function loadMTFRadar() {
+    const tbody = document.getElementById('mtf-table-body');
+    const countBadge = document.getElementById('mtf-count');
+    const loading = document.getElementById('mtf-loading');
+    
+    // Show only MTF card
+    document.querySelectorAll('#radar-cards-grid > .card').forEach(c => c.style.display = 'none');
+    document.getElementById('mtf-card').style.display = 'flex';
+    
+    tbody.innerHTML = '';
+    loading.style.display = 'block';
+    
+    try {
+        const response = await fetch('/api/scan_mtf');
+        const data = await response.json();
+        
+        loading.style.display = 'none';
+        
+        if (data.status === 'success') {
+            countBadge.innerText = data.count + ' HİSSE';
+            if (data.count === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">Şu an MTF kriterlerine uyan hisse bulunamadı.</td></tr>';
+                return;
+            }
+            
+            data.results.forEach(res => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong style="color:var(--text-light);">${res.Symbol}</strong></td>
+                    <td>
+                        <div class="progress-bar"><div class="fill" style="width: ${res.Score}%; background: linear-gradient(90deg, #0284c7, #38bdf8);"></div></div>
+                        <div style="font-size:0.75rem; text-align:right; margin-top:2px; color:var(--text-muted);">${res.Score.toFixed(1)} / 100</div>
+                    </td>
+                    <td>
+                        <div style="font-weight:bold; color:var(--text-light);">${res.Price.toFixed(2)}</div>
+                        <div style="font-size:0.75rem; color:#10b981;">Hedef: ${res.Target.toFixed(2)}</div>
+                    </td>
+                    <td>
+                        <span class="status-badge status-positive" style="background:rgba(14,165,233,0.1); color:#38bdf8; border:1px solid rgba(56,189,248,0.3);">${res.Momentum}</span>
+                    </td>
+                    <td>
+                        <button class="btn-primary" onclick="analyzeSymbol('${res.Symbol}')" style="padding:5px 10px; font-size:0.8rem; background:rgba(30,41,59,0.8); border:1px solid rgba(255,255,255,0.1);"><i class="fa-solid fa-microscope"></i> Analiz</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } else {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--accent-red);">Hata: ' + data.message + '</td></tr>';
+        }
+    } catch (e) {
+        loading.style.display = 'none';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--accent-red);">Bağlantı hatası: ' + e.message + '</td></tr>';
+    }
+}
+// --- END MTF SCANNER LOGIC ---

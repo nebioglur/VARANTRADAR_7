@@ -98,6 +98,8 @@
                 <button type="button" class="slider-nav-btn prev-card-btn" onclick="navigateCard(-1)"><i class="fa-solid fa-chevron-left"></i> Geri</button>
                 <div class="slider-indicators" id="slider-indicators">
                     <button type="button" class="indicator-dot active" onclick="jumpToCard(0)"><i class="fa-solid fa-rocket"></i> Tavan Radarı</button>
+                    <button type="button" class="indicator-dot" onclick="jumpToCard(6); loadMTFRadar();" style="color:#0ea5e9;"><i class="fa-solid fa-bolt-lightning"></i> MTF İvme (1S/15D)</button>
+                    <button type="button" class="indicator-dot" onclick="jumpToCard(6)" style="color:#0ea5e9;"><i class="fa-solid fa-bolt-lightning"></i> MTF Radarı</button>
                     <button type="button" class="indicator-dot" onclick="jumpToCard(1)"><i class="fa-solid fa-clock"></i> 1S Fırsat</button>
                     <button type="button" class="indicator-dot" onclick="jumpToCard(2)"><i class="fa-solid fa-bolt"></i> 5D RSI</button>
                     <button type="button" class="indicator-dot" onclick="jumpToCard(3)"><i class="fa-solid fa-chart-line"></i> Günlük</button>
@@ -114,6 +116,8 @@
                 <button type="button" class="pill-btn active" onclick="filterRadarGrid('all', this)" style="background:rgba(59,130,246,0.18); color:#38bdf8; border:1px solid rgba(56,189,248,0.4); padding:7px 15px; border-radius:20px; font-weight:700; font-size:0.85rem; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:6px;">
                     <i class="fa-solid fa-border-all"></i> Tümü
                 </button>
+                    <button type="button" class="pill-btn" onclick="filterRadarGrid('mtf-card', this); loadMTFRadar();" style="background:rgba(14,165,233,0.1); color:#0ea5e9; border:1px solid rgba(14,165,233,0.4); padding:7px 15px; border-radius:20px; font-weight:700; font-size:0.85rem; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:6px;"><i class="fa-solid fa-bolt-lightning"></i> MTF İvme (1S/15D)</button>
+                    <button type="button" class="pill-btn" onclick="filterRadarGrid('mtf', this)" style="background:rgba(14,165,233,0.1); color:#0ea5e9; border:1px solid rgba(14,165,233,0.4); padding:7px 15px; border-radius:20px; font-weight:700; font-size:0.85rem; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:6px;"><i class="fa-solid fa-bolt-lightning"></i> MTF İvme Radarı (1S/15D)</button>
                 <button type="button" class="pill-btn" onclick="filterRadarGrid('radar-card-0', this)" style="background:rgba(30,41,59,0.8); color:var(--text-muted); border:1px solid rgba(255,255,255,0.1); padding:7px 15px; border-radius:20px; font-weight:700; font-size:0.85rem; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:6px;">
                     <i class="fa-solid fa-rocket" style="color:var(--accent-red);"></i> 🚀 Tavan Radarı
                 </button>
@@ -1674,6 +1678,6 @@
 
 
 
-    <script src="app.js?v=20260820_v23"></script>
+    <script src="app.js?v=20260820_mtf_v1"></script>
 </body>
 </html>

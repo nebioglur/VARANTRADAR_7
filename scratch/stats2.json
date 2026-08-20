@@ -1,0 +1,626 @@
+{
+  "status": "success",
+  "summary": {
+    "total_days_tracked": 3,
+    "total_candidates_tracked": 54,
+    "total_hit_ceiling": 20,
+    "total_hit_plus5": 2,
+    "tavan_success_pct": 37.0,
+    "plus5_success_pct": 3.7,
+    "cumulative_avg_max_gain_pct": 38.6,
+    "cumulative_avg_closing_gain_pct": 36.78,
+    "ahlatci_warrant_avg_gain_pct": 239.32,
+    "total_closed_positive": 25,
+    "total_closed_negative": 25,
+    "avg_positive_close_gain": 46.75,
+    "avg_negative_close_gain": -6.56,
+    "net_profit_pct": 40.19,
+    "elite_closed_positive": 3,
+    "elite_closed_negative": 1,
+    "elite_avg_positive_gain": 5.09,
+    "elite_avg_negative_gain": -1.05,
+    "elite_net_profit_pct": 4.04
+  },
+  "history": [
+    {
+      "date": "2026-08-13",
+      "total_signals": 36,
+      "hit_ceiling": 13,
+      "hit_plus5": 2,
+      "avg_max_gain": 2.9,
+      "avg_close_gain": 0.59,
+      "hit_positive": 16,
+      "hit_negative": 16,
+      "total_positive_gain": 47.6,
+      "total_negative_gain": -26.51,
+      "elite_hit_positive": 3,
+      "elite_hit_negative": 1,
+      "elite_total_positive_gain": 15.26,
+      "elite_total_negative_gain": -1.05,
+      "tavan_rate": 36.1,
+      "plus5_rate": 5.6,
+      "items": [
+        {
+          "symbol": "ANELE.IS",
+          "morning_price": 132.0,
+          "ceiling_target": 141.29,
+          "high_price": 140.8000030517578,
+          "close_price": 137.0,
+          "max_gain_pct": 6.67,
+          "close_gain_pct": 3.79,
+          "badge": "🚀 TAVAN KİLİT"
+        },
+        {
+          "symbol": "ASTOR.IS",
+          "morning_price": 331.75,
+          "ceiling_target": 332.32,
+          "high_price": 353.0,
+          "close_price": 346.5,
+          "max_gain_pct": 6.41,
+          "close_gain_pct": 4.45,
+          "badge": "🚀 TAVAN KİLİT"
+        },
+        {
+          "symbol": "AVGYO.IS",
+          "morning_price": 16.16,
+          "ceiling_target": 16.94,
+          "high_price": 16.860000610351562,
+          "close_price": 15.989999771118164,
+          "max_gain_pct": 4.33,
+          "close_gain_pct": -1.05,
+          "badge": "🚀 TAVAN KİLİT"
+        },
+        {
+          "symbol": "BOBET.IS",
+          "morning_price": 18.52,
+          "ceiling_target": 20.11,
+          "high_price": 19.959999084472656,
+          "close_price": 19.81999969482422,
+          "max_gain_pct": 7.78,
+          "close_gain_pct": 7.02,
+          "badge": "🎯 +%5 ÜZERİ KÂR"
+        },
+        {
+          "symbol": "COSMO.IS",
+          "morning_price": 119.4,
+          "ceiling_target": 127.54,
+          "high_price": 121.0,
+          "close_price": 118.4000015258789,
+          "max_gain_pct": 1.34,
+          "close_gain_pct": -0.84,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "DCTTR.IS",
+          "morning_price": 8.17,
+          "ceiling_target": 8.19,
+          "high_price": 8.479999542236328,
+          "close_price": 7.630000114440918,
+          "max_gain_pct": 3.79,
+          "close_gain_pct": -6.61,
+          "badge": "🚀 TAVAN KİLİT"
+        },
+        {
+          "symbol": "DOCO.IS",
+          "morning_price": 11610.0,
+          "ceiling_target": 12556.29,
+          "high_price": 11800.0,
+          "close_price": 11590.0,
+          "max_gain_pct": 1.64,
+          "close_gain_pct": -0.17,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "ETYAT.IS",
+          "morning_price": 15.3,
+          "ceiling_target": 15.91,
+          "high_price": 15.899999618530273,
+          "close_price": 15.770000457763672,
+          "max_gain_pct": 3.92,
+          "close_gain_pct": 3.07,
+          "badge": "🚀 TAVAN KİLİT"
+        },
+        {
+          "symbol": "EUKYO.IS",
+          "morning_price": 12.99,
+          "ceiling_target": 14.24,
+          "high_price": 13.0,
+          "close_price": 12.899999618530273,
+          "max_gain_pct": 0.08,
+          "close_gain_pct": -0.69,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "GEREL.IS",
+          "morning_price": 44.22,
+          "ceiling_target": 44.68,
+          "high_price": 46.0,
+          "close_price": 44.779998779296875,
+          "max_gain_pct": 4.03,
+          "close_gain_pct": 1.27,
+          "badge": "🚀 TAVAN KİLİT"
+        },
+        {
+          "symbol": "HURGZ.IS",
+          "morning_price": 7.6,
+          "ceiling_target": 8.1,
+          "high_price": 8.0600004196167,
+          "close_price": 7.860000133514404,
+          "max_gain_pct": 6.05,
+          "close_gain_pct": 3.42,
+          "badge": "🚀 TAVAN KİLİT"
+        },
+        {
+          "symbol": "IHEVA.IS",
+          "morning_price": 2.01,
+          "ceiling_target": 2.17,
+          "high_price": 2.059999942779541,
+          "close_price": 2.009999990463257,
+          "max_gain_pct": 2.49,
+          "close_gain_pct": -0.0,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "IHGZT.IS",
+          "morning_price": 1.2,
+          "ceiling_target": 1.26,
+          "high_price": 1.2100000381469727,
+          "close_price": 1.1799999475479126,
+          "max_gain_pct": 0.83,
+          "close_gain_pct": -1.67,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "IHLAS.IS",
+          "morning_price": 1.08,
+          "ceiling_target": 1.13,
+          "high_price": 1.1299999952316284,
+          "close_price": 1.1299999952316284,
+          "max_gain_pct": 4.63,
+          "close_gain_pct": 4.63,
+          "badge": "🚀 TAVAN KİLİT"
+        },
+        {
+          "symbol": "IHLGM.IS",
+          "morning_price": 1.59,
+          "ceiling_target": 1.69,
+          "high_price": 1.649999976158142,
+          "close_price": 1.590000033378601,
+          "max_gain_pct": 3.77,
+          "close_gain_pct": 0.0,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "IHYAY.IS",
+          "morning_price": 1.29,
+          "ceiling_target": 1.4,
+          "high_price": 1.340000033378601,
+          "close_price": 1.2899999618530273,
+          "max_gain_pct": 3.88,
+          "close_gain_pct": -0.0,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "KCAER.IS",
+          "morning_price": 16.01,
+          "ceiling_target": 16.79,
+          "high_price": 16.149999618530273,
+          "close_price": 15.829999923706055,
+          "max_gain_pct": 0.87,
+          "close_gain_pct": -1.12,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "LIDFA.IS",
+          "morning_price": 2.67,
+          "ceiling_target": 2.87,
+          "high_price": 2.700000047683716,
+          "close_price": 2.6600000858306885,
+          "max_gain_pct": 1.12,
+          "close_gain_pct": -0.37,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "LYDYE.IS",
+          "morning_price": 14010.0,
+          "ceiling_target": 14205.54,
+          "high_price": 14010.0,
+          "close_price": 14010.0,
+          "max_gain_pct": 0.0,
+          "close_gain_pct": 0.0,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "MERIT.IS",
+          "morning_price": 16.25,
+          "ceiling_target": 17.59,
+          "high_price": 17.200000762939453,
+          "close_price": 16.799999237060547,
+          "max_gain_pct": 5.85,
+          "close_gain_pct": 3.38,
+          "badge": "🎯 +%5 ÜZERİ KÂR"
+        },
+        {
+          "symbol": "METRO.IS",
+          "morning_price": 8.45,
+          "ceiling_target": 9.11,
+          "high_price": 8.640000343322754,
+          "close_price": 8.569999694824219,
+          "max_gain_pct": 2.25,
+          "close_gain_pct": 1.42,
+          "badge": "📈 POZİTİF"
+        },
+        {
+          "symbol": "ODINE.IS",
+          "morning_price": 3505.0,
+          "ceiling_target": 3639.34,
+          "high_price": 3512.5,
+          "close_price": 3287.5,
+          "max_gain_pct": 0.21,
+          "close_gain_pct": -6.21,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "OZKGY.IS",
+          "morning_price": 12.82,
+          "ceiling_target": 13.79,
+          "high_price": 12.869999885559082,
+          "close_price": 12.729999542236328,
+          "max_gain_pct": 0.39,
+          "close_gain_pct": -0.7,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "PEKGY.IS",
+          "morning_price": 15.26,
+          "ceiling_target": 16.16,
+          "high_price": 15.489999771118164,
+          "close_price": 15.300000190734863,
+          "max_gain_pct": 1.51,
+          "close_gain_pct": 0.26,
+          "badge": "📈 POZİTİF"
+        },
+        {
+          "symbol": "PENGD.IS",
+          "morning_price": 9.55,
+          "ceiling_target": 10.41,
+          "high_price": 9.640000343322754,
+          "close_price": 9.520000457763672,
+          "max_gain_pct": 0.94,
+          "close_gain_pct": -0.31,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "POLTK.IS",
+          "morning_price": 4600.0,
+          "ceiling_target": 4763.58,
+          "high_price": 4762.5,
+          "close_price": 4762.5,
+          "max_gain_pct": 3.53,
+          "close_gain_pct": 3.53,
+          "badge": "🚀 TAVAN KİLİT"
+        },
+        {
+          "symbol": "QUAGR.IS",
+          "morning_price": 3.27,
+          "ceiling_target": 3.54,
+          "high_price": 3.2699999809265137,
+          "close_price": 3.240000009536743,
+          "max_gain_pct": -0.0,
+          "close_gain_pct": -0.92,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "SASA.IS",
+          "morning_price": 2.51,
+          "ceiling_target": 2.58,
+          "high_price": 2.5299999713897705,
+          "close_price": 2.4600000381469727,
+          "max_gain_pct": 0.8,
+          "close_gain_pct": -1.99,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "SDTTR.IS",
+          "morning_price": 257.0,
+          "ceiling_target": 271.91,
+          "high_price": 271.5,
+          "close_price": 262.0,
+          "max_gain_pct": 5.64,
+          "close_gain_pct": 1.95,
+          "badge": "🚀 TAVAN KİLİT"
+        },
+        {
+          "symbol": "SELEC.IS",
+          "morning_price": 237.9,
+          "ceiling_target": 251.79,
+          "high_price": 250.75,
+          "close_price": 246.5,
+          "max_gain_pct": 5.4,
+          "close_gain_pct": 3.61,
+          "badge": "🚀 TAVAN KİLİT"
+        },
+        {
+          "symbol": "SKTAS.IS",
+          "morning_price": 3.32,
+          "ceiling_target": 3.47,
+          "high_price": 3.4100000858306885,
+          "close_price": 3.2300000190734863,
+          "max_gain_pct": 2.71,
+          "close_gain_pct": -2.71,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "SOKM.IS",
+          "morning_price": 53.05,
+          "ceiling_target": 57.28,
+          "high_price": 53.400001525878906,
+          "close_price": 52.75,
+          "max_gain_pct": 0.66,
+          "close_gain_pct": -0.57,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "TEHOL.IS",
+          "morning_price": 51.4,
+          "ceiling_target": 55.8,
+          "high_price": 51.54999923706055,
+          "close_price": 51.099998474121094,
+          "max_gain_pct": 0.29,
+          "close_gain_pct": -0.58,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "TGSAS.IS",
+          "morning_price": 182.9,
+          "ceiling_target": 195.93,
+          "high_price": 187.0,
+          "close_price": 186.6999969482422,
+          "max_gain_pct": 2.24,
+          "close_gain_pct": 2.08,
+          "badge": "📈 POZİTİF"
+        },
+        {
+          "symbol": "TRHOL.IS",
+          "morning_price": 2136.0,
+          "ceiling_target": 2157.22,
+          "high_price": 2195.0,
+          "close_price": 2172.0,
+          "max_gain_pct": 2.76,
+          "close_gain_pct": 1.69,
+          "badge": "🚀 TAVAN KİLİT"
+        },
+        {
+          "symbol": "VANGD.IS",
+          "morning_price": 98.5,
+          "ceiling_target": 101.76,
+          "high_price": 104.0,
+          "close_price": 100.5,
+          "max_gain_pct": 5.58,
+          "close_gain_pct": 2.03,
+          "badge": "🚀 TAVAN KİLİT"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-06",
+      "total_signals": 8,
+      "hit_ceiling": 3,
+      "hit_plus5": 0,
+      "avg_max_gain": 59.18,
+      "avg_close_gain": 56.9,
+      "hit_positive": 4,
+      "hit_negative": 4,
+      "total_positive_gain": 529.11,
+      "total_negative_gain": -73.89,
+      "elite_hit_positive": 0,
+      "elite_hit_negative": 0,
+      "elite_total_positive_gain": 0.0,
+      "elite_total_negative_gain": 0.0,
+      "tavan_rate": 37.5,
+      "plus5_rate": 0.0,
+      "items": [
+        {
+          "symbol": "AKBNK.IS",
+          "morning_price": 61.0,
+          "ceiling_target": 67.0,
+          "high_price": 68.8499984741211,
+          "close_price": 67.0999984741211,
+          "max_gain_pct": 12.87,
+          "close_gain_pct": 10.0,
+          "badge": "🚀 TAVAN KİLİT"
+        },
+        {
+          "symbol": "ASELS.IS",
+          "morning_price": 66.5,
+          "ceiling_target": 73.0,
+          "high_price": 364.5,
+          "close_price": 363.0,
+          "max_gain_pct": 448.12,
+          "close_gain_pct": 445.86,
+          "badge": "🚀 TAVAN KİLİT"
+        },
+        {
+          "symbol": "EREGL.IS",
+          "morning_price": 56.8,
+          "ceiling_target": 62.4,
+          "high_price": 42.2599983215332,
+          "close_price": 41.560001373291016,
+          "max_gain_pct": -25.6,
+          "close_gain_pct": -26.83,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "GARAN.IS",
+          "morning_price": 125.0,
+          "ceiling_target": 137.3,
+          "high_price": 131.10000610351562,
+          "close_price": 127.80000305175781,
+          "max_gain_pct": 4.88,
+          "close_gain_pct": 2.24,
+          "badge": "📈 POZİTİF"
+        },
+        {
+          "symbol": "KCHOL.IS",
+          "morning_price": 235.0,
+          "ceiling_target": 258.0,
+          "high_price": 205.89999389648438,
+          "close_price": 195.89999389648438,
+          "max_gain_pct": -12.38,
+          "close_gain_pct": -16.64,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "SISE.IS",
+          "morning_price": 52.6,
+          "ceiling_target": 57.8,
+          "high_price": 42.880001068115234,
+          "close_price": 41.880001068115234,
+          "max_gain_pct": -18.48,
+          "close_gain_pct": -20.38,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "THYAO.IS",
+          "morning_price": 346.0,
+          "ceiling_target": 380.0,
+          "high_price": 318.25,
+          "close_price": 311.25,
+          "max_gain_pct": -8.02,
+          "close_gain_pct": -10.04,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "TUPRS.IS",
+          "morning_price": 188.0,
+          "ceiling_target": 206.5,
+          "high_price": 323.5,
+          "close_price": 321.5,
+          "max_gain_pct": 72.07,
+          "close_gain_pct": 71.01,
+          "badge": "🚀 TAVAN KİLİT"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-04",
+      "total_signals": 10,
+      "hit_ceiling": 4,
+      "hit_plus5": 0,
+      "avg_max_gain": 53.72,
+      "avg_close_gain": 52.84,
+      "hit_positive": 5,
+      "hit_negative": 5,
+      "total_positive_gain": 592.04,
+      "total_negative_gain": -63.66,
+      "elite_hit_positive": 0,
+      "elite_hit_negative": 0,
+      "elite_total_positive_gain": 0.0,
+      "elite_total_negative_gain": 0.0,
+      "tavan_rate": 40.0,
+      "plus5_rate": 0.0,
+      "items": [
+        {
+          "symbol": "AKBNK.IS",
+          "morning_price": 55.4,
+          "ceiling_target": 60.85,
+          "high_price": 68.30000305175781,
+          "close_price": 68.0999984741211,
+          "max_gain_pct": 23.29,
+          "close_gain_pct": 22.92,
+          "badge": "🚀 TAVAN KİLİT"
+        },
+        {
+          "symbol": "ASELS.IS",
+          "morning_price": 60.2,
+          "ceiling_target": 66.15,
+          "high_price": 351.25,
+          "close_price": 349.25,
+          "max_gain_pct": 483.47,
+          "close_gain_pct": 480.15,
+          "badge": "🚀 TAVAN KİLİT"
+        },
+        {
+          "symbol": "BIMAS.IS",
+          "morning_price": 485.0,
+          "ceiling_target": 533.0,
+          "high_price": 385.75,
+          "close_price": 385.75,
+          "max_gain_pct": -20.46,
+          "close_gain_pct": -20.46,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "EREGL.IS",
+          "morning_price": 51.5,
+          "ceiling_target": 56.5,
+          "high_price": 42.02000045776367,
+          "close_price": 41.7400016784668,
+          "max_gain_pct": -18.41,
+          "close_gain_pct": -18.95,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "GARAN.IS",
+          "morning_price": 113.5,
+          "ceiling_target": 124.7,
+          "high_price": 132.39999389648438,
+          "close_price": 131.8000030517578,
+          "max_gain_pct": 16.65,
+          "close_gain_pct": 16.12,
+          "badge": "🚀 TAVAN KİLİT"
+        },
+        {
+          "symbol": "KCHOL.IS",
+          "morning_price": 213.0,
+          "ceiling_target": 234.0,
+          "high_price": 198.89999389648438,
+          "close_price": 198.89999389648438,
+          "max_gain_pct": -6.62,
+          "close_gain_pct": -6.62,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "SAHOL.IS",
+          "morning_price": 95.0,
+          "ceiling_target": 104.4,
+          "high_price": 89.0,
+          "close_price": 88.9000015258789,
+          "max_gain_pct": -6.32,
+          "close_gain_pct": -6.42,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "SISE.IS",
+          "morning_price": 47.8,
+          "ceiling_target": 52.5,
+          "high_price": 42.619998931884766,
+          "close_price": 42.439998626708984,
+          "max_gain_pct": -10.84,
+          "close_gain_pct": -11.21,
+          "badge": "🛑 YATAY / DÜZELTME"
+        },
+        {
+          "symbol": "THYAO.IS",
+          "morning_price": 314.0,
+          "ceiling_target": 345.0,
+          "high_price": 325.5,
+          "close_price": 323.75,
+          "max_gain_pct": 3.66,
+          "close_gain_pct": 3.11,
+          "badge": "📈 POZİTİF"
+        },
+        {
+          "symbol": "TUPRS.IS",
+          "morning_price": 171.0,
+          "ceiling_target": 187.9,
+          "high_price": 295.5,
+          "close_price": 290.25,
+          "max_gain_pct": 72.81,
+          "close_gain_pct": 69.74,
+          "badge": "🚀 TAVAN KİLİT"
+        }
+      ]
+    }
+  ]
+}

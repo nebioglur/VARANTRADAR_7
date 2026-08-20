@@ -576,6 +576,18 @@ def pool_info():
     pool = BIST30_SYMBOLS
     return jsonify({"status": "success", "pool_size": len(pool), "pool": pool})
 
+@app.route('/api/scan_mtf', methods=['GET'])
+def api_scan_mtf():
+    """MTF (Multi-Timeframe) İvme Radarı"""
+    try:
+        from services.mtf_scanner import MTFScanner
+        pool = BIST30_SYMBOLS + ['SASA.IS', 'HEKTS.IS', 'THYAO.IS']  # Örnek genişletme
+        pool = list(set(pool)) # Tekilleştir
+        results = MTFScanner.scan_pool(pool)
+        return jsonify({"status": "success", "count": len(results), "results": sanitize_for_json(results)})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 @app.route('/api/scan', methods=['GET'])
 def api_scan():
     """Hisse Radarı: BIST30 listesini tarar."""
