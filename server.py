@@ -344,6 +344,8 @@ def api_backtest_run():
     period = request.args.get('period', '1y')
     interval = request.args.get('interval', '1d')
     capital = float(request.args.get('capital', 10000.0))
+    trailing_stop = float(request.args.get('trailing_stop', 0.0))
+    stop_loss = float(request.args.get('stop_loss', 0.0))
     
     if not symbol.endswith('.IS'):
         symbol += '.IS'
@@ -373,6 +375,12 @@ def api_backtest_run():
         rs = gain / loss
         df['rsi'] = 100 - (100 / (1 + rs))
         
+        # Bollinger Bands
+        sma20 = close.rolling(window=20).mean()
+        std20 = close.rolling(window=20).std()
+        df['bollinger_upper'] = sma20 + (std20 * 2)
+        df['bollinger_lower'] = sma20 - (std20 * 2)
+        
         ema12 = close.ewm(span=12, adjust=False).mean()
         ema26 = close.ewm(span=26, adjust=False).mean()
         df['macd'] = ema12 - ema26
@@ -380,7 +388,7 @@ def api_backtest_run():
         
         # Backtest Motorunu Çalıştır
         engine = BacktestEngine(initial_capital=capital)
-        bt_results = engine.run_backtest(df, strategy_name=strategy)
+        bt_results = engine.run_backtest(df, strategy_name=strategy, trailing_stop_pct=trailing_stop, stop_loss_pct=stop_loss)
         
         if "error" in bt_results:
             return jsonify({"status": "error", "message": bt_results["error"]}), 400

@@ -1439,6 +1439,8 @@
                     <select id="bt-strategy" style="width:100%; border:1px solid rgba(255,255,255,0.1); padding:10px; border-radius:6px; background:rgba(0,0,0,0.2); color:white;">
                         <option value="MACD_RSI_CROSS">MACD & RSI Kesişimi (Trend Takibi)</option>
                         <option value="RSI_MEAN_REVERSION">RSI Mean Reversion (Aşırı Alım/Satım)</option>
+                        <option value="BOLLINGER_BREAKOUT">Bollinger Kırılımı (Volatilite Patlaması)</option>
+                        <option value="GOLDEN_CROSS">Golden Cross (SMA 50/200 Uzun Vade)</option>
                     </select>
                 </div>
                 <div style="flex:1; min-width:150px;">
@@ -1453,6 +1455,14 @@
                         <option value="5y">Son 5 Yıl (Günlük)</option>
                         <option value="1mo">Son 1 Ay (Saatlik)</option>
                     </select>
+                </div>
+                <div style="flex:1; min-width:120px;">
+                    <label style="color:var(--text-muted); font-size:0.8rem; margin-bottom:5px; display:block;">İzleyen Stop (%)</label>
+                    <input type="number" id="bt-trailing-stop" value="0.0" step="0.1" min="0" style="width:100%; border:1px solid rgba(255,255,255,0.1); padding:10px; border-radius:6px; background:rgba(0,0,0,0.2); color:white;" title="0 yaparsanız kapalı olur." />
+                </div>
+                <div style="flex:1; min-width:120px;">
+                    <label style="color:var(--text-muted); font-size:0.8rem; margin-bottom:5px; display:block;">Sabit Zarar Kes (%)</label>
+                    <input type="number" id="bt-stop-loss" value="0.0" step="0.1" min="0" style="width:100%; border:1px solid rgba(255,255,255,0.1); padding:10px; border-radius:6px; background:rgba(0,0,0,0.2); color:white;" title="0 yaparsanız kapalı olur." />
                 </div>
                 <div>
                     <button onclick="runBacktest()" class="btn-primary" id="btn-run-backtest" style="background:var(--accent-purple); color:white; padding:10px 20px; font-weight:bold; height:41px;"><i class="fa-solid fa-play"></i> Simülasyonu Başlat</button>
@@ -1664,6 +1674,6 @@
 
 
 
-    <script src="app.js?v=20260820_v22"></script>
+    <script src="app.js?v=20260820_v23"></script>
 </body>
 </html>

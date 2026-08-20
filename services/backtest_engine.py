@@ -11,7 +11,7 @@ class BacktestEngine:
         self.commission_pct = commission_pct
         self.slippage_pct = slippage_pct
         
-    def run_backtest(self, df: pd.DataFrame, strategy_name: str = "MACD_RSI_CROSS") -> dict:
+    def run_backtest(self, df: pd.DataFrame, strategy_name: str = "MACD_RSI_CROSS", trailing_stop_pct: float = 0.0, stop_loss_pct: float = 0.0) -> dict:
         """
         Geçmiş veri üzerinde simülasyon çalıştırır (Modül 1, 2).
         Parametreler vectorize mantığıyla hızlıca hesaplanır.
@@ -32,6 +32,15 @@ class BacktestEngine:
         elif strategy_name == "RSI_MEAN_REVERSION":
             data.loc[data['rsi'] < 30, 'Signal'] = 1
             data.loc[data['rsi'] > 70, 'Signal'] = -1
+        elif strategy_name == "BOLLINGER_BREAKOUT":
+            # Üst bandı kırınca AL (trend başladı), Alt bandı kırınca SAT (trend bitti)
+            if 'bollinger_upper' in data.columns:
+                data.loc[data['close'] > data['bollinger_upper'], 'Signal'] = 1
+                data.loc[data['close'] < data['bollinger_lower'], 'Signal'] = -1
+        elif strategy_name == "GOLDEN_CROSS":
+            # EMA(20) > SMA(50) AL, tam tersi SAT
+            data.loc[(data['ema'] > data['sma']), 'Signal'] = 1
+            data.loc[(data['ema'] < data['sma']), 'Signal'] = -1
         else:
             # Sadece elde tut (Buy and Hold benchmark)
             data['Signal'] = 1
@@ -41,9 +50,51 @@ class BacktestEngine:
         entry_price = 0.0
         current_capital = self.initial_capital
         position_size = 0.0
+        highest_price = 0.0
         trades = []
         
         for index, row in data.iterrows():
+            if position == 1:
+                if row['high'] > highest_price:
+                    highest_price = row['high']
+                
+                sell_triggered = False
+                # 1) İzleyen Stop
+                if trailing_stop_pct > 0 and row['low'] < highest_price * (1 - trailing_stop_pct / 100.0):
+                    sell_triggered = True
+                # 2) Sabit Stop
+                if stop_loss_pct > 0 and row['low'] < entry_price * (1 - stop_loss_pct / 100.0):
+                    sell_triggered = True
+                # 3) Strateji Satış Sinyali
+                if row['Signal'] == -1:
+                    sell_triggered = True
+                    
+                if sell_triggered:
+                    exit_price = row['close'] * (1 - self.slippage_pct)
+                    
+                    # Komisyon ve PnL Hesabı
+                    entry_value = position_size * entry_price
+                    exit_value = position_size * exit_price
+                    cost = (entry_value * self.commission_pct) + (exit_value * self.commission_pct)
+                    
+                    pnl = (exit_value - entry_value) - cost
+                    pnl_pct = (pnl / current_capital) * 100
+                    
+                    current_capital += pnl
+                    
+                    trades.append({
+                        "entry_date": entry_date,
+                        "exit_date": row['date'],
+                        "entry_price": entry_price,
+                        "exit_price": exit_price,
+                        "pnl": pnl,
+                        "pnl_pct": pnl_pct,
+                        "duration": (row['date'] - entry_date).days if isinstance(row['date'], pd.Timestamp) else 0
+                    })
+                    position = 0
+                    position_size = 0.0
+                    highest_price = 0.0
+
             if row['Signal'] == 1 and position == 0:
                 # AL
                 entry_price = row['close'] * (1 + self.slippage_pct)
@@ -51,31 +102,7 @@ class BacktestEngine:
                 position_size = current_capital / entry_price
                 position = 1
                 entry_date = row['date']
-            elif row['Signal'] == -1 and position == 1:
-                # SAT
-                exit_price = row['close'] * (1 - self.slippage_pct)
-                
-                # Komisyon ve PnL Hesabı
-                entry_value = position_size * entry_price
-                exit_value = position_size * exit_price
-                cost = (entry_value * self.commission_pct) + (exit_value * self.commission_pct)
-                
-                pnl = (exit_value - entry_value) - cost
-                pnl_pct = (pnl / current_capital) * 100
-                
-                current_capital += pnl
-                
-                trades.append({
-                    "entry_date": entry_date,
-                    "exit_date": row['date'],
-                    "entry_price": entry_price,
-                    "exit_price": exit_price,
-                    "pnl": pnl,
-                    "pnl_pct": pnl_pct,
-                    "duration": (row['date'] - entry_date).days if isinstance(row['date'], pd.Timestamp) else 0
-                })
-                position = 0
-                position_size = 0.0
+                highest_price = entry_price
 
         # Açık kalan pozisyonu güncel fiyatla kapat (Mark-to-market)
         if position == 1:

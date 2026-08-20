@@ -3621,14 +3621,6 @@ async function runBacktest() {
     const capital = document.getElementById('bt-capital').value;
     const period = document.getElementById('bt-period').value;
     
-    let trailingStop = 0.0;
-    const tsEl = document.getElementById('bt-trailing-stop');
-    if (tsEl) trailingStop = parseFloat(tsEl.value) || 0.0;
-    
-    let stopLoss = 0.0;
-    const slEl = document.getElementById('bt-stop-loss');
-    if (slEl) stopLoss = parseFloat(slEl.value) || 0.0;
-    
     // Set interval based on period
     const interval = period === '1mo' ? '1h' : '1d';
     
@@ -3641,7 +3633,7 @@ async function runBacktest() {
     btn.disabled = true;
     
     try {
-        const response = await fetch(`/api/backtest/run?symbol=${symbol}&strategy=${strategy}&capital=${capital}&period=${period}&interval=${interval}&trailing_stop=${trailingStop}&stop_loss=${stopLoss}`);
+        const response = await fetch(`/api/backtest/run?symbol=${symbol}&strategy=${strategy}&capital=${capital}&period=${period}&interval=${interval}`);
         const data = await response.json();
         
         loading.style.display = 'none';
@@ -3708,79 +3700,4 @@ async function runBacktest() {
         btn.disabled = false;
         alert('Sunucu hatası: ' + err.message);
     }
-}// ========== BACKTEST AUTOCOMPLETE LOGIC ==========
-const btSymbolInput = document.getElementById('bt-symbol');
-const btAcDropdown = document.getElementById('bt-ac-dropdown');
-let btAcTimeout = null;
-let btAcSelectedIndex = -1;
-let btAcItems = [];
-
-function updateBtAcSelection() {
-    btAcItems.forEach((item, index) => {
-        if (index === btAcSelectedIndex) {
-            item.classList.add('active');
-            item.scrollIntoView({ block: 'nearest' });
-        } else {
-            item.classList.remove('active');
-        }
-    });
-}
-
-if (btSymbolInput && btAcDropdown) {
-    btSymbolInput.addEventListener('input', function() {
-        clearTimeout(btAcTimeout);
-        const q = this.value.trim();
-        btAcSelectedIndex = -1;
-        if (q.length < 1) { btAcDropdown.style.display = 'none'; return; }
-        
-        btAcTimeout = setTimeout(async () => {
-            try {
-                const res = await fetch('/api/autocomplete?q=' + q);
-                const matches = await res.json();
-                if (matches.length === 0) { btAcDropdown.style.display = 'none'; return; }
-                
-                btAcDropdown.innerHTML = '';
-                btAcItems = [];
-                matches.forEach((m, index) => {
-                    let div = document.createElement('div');
-                    div.className = 'ac-item';
-                    div.innerText = m;
-                    div.dataset.index = index;
-                    div.onclick = function() {
-                        btSymbolInput.value = m;
-                        btAcDropdown.style.display = 'none';
-                    };
-                    btAcItems.push(div);
-                    btAcDropdown.appendChild(div);
-                });
-                btAcDropdown.style.display = 'block';
-            } catch(e) { btAcDropdown.style.display = 'none'; }
-        }, 200);
-    });
-
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('#backtest-wrapper .search-container')) btAcDropdown.style.display = 'none';
-    });
-
-    btSymbolInput.addEventListener('keydown', function(event) {
-        if (btAcDropdown.style.display === 'block' && btAcItems.length > 0) {
-            if (event.key === 'ArrowDown') {
-                event.preventDefault();
-                btAcSelectedIndex++;
-                if (btAcSelectedIndex >= btAcItems.length) btAcSelectedIndex = 0;
-                updateBtAcSelection();
-            } else if (event.key === 'ArrowUp') {
-                event.preventDefault();
-                btAcSelectedIndex--;
-                if (btAcSelectedIndex < 0) btAcSelectedIndex = btAcItems.length - 1;
-                updateBtAcSelection();
-            } else if (event.key === 'Enter') {
-                event.preventDefault();
-                if (btAcSelectedIndex > -1 && btAcSelectedIndex < btAcItems.length) {
-                    btSymbolInput.value = btAcItems[btAcSelectedIndex].innerText;
-                }
-                btAcDropdown.style.display = 'none';
-            }
-        }
-    });
 }
