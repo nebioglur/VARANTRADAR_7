@@ -123,10 +123,12 @@ class MarketDataManager:
         return [dict(r) for r in rows]
 
     @staticmethod
-    def get_market_data(date_str: str, symbol: str) -> pd.DataFrame:
+    def get_market_data(date_str: str, symbol: str):
         """
         Backtester için veritabanından Pandas DataFrame döndürür.
+        Eğer veritabanında yoksa yfinance üzerinden anlık çeker.
         """
+        import pandas as pd
         conn = get_connection()
         df = pd.read_sql_query("""
             SELECT timestamp as Datetime, open as Open, high as High, low as Low, close as Close, volume as Volume 
@@ -139,5 +141,20 @@ class MarketDataManager:
         if not df.empty:
             df['Datetime'] = pd.to_datetime(df['Datetime'])
             df.set_index('Datetime', inplace=True)
+            return df
             
-        return df
+        # Fallback to yfinance if missing in DB
+        try:
+            import yfinance as yf
+            from datetime import datetime, timedelta
+            dt = datetime.strptime(date_str, '%Y-%m-%d')
+            next_dt = dt + timedelta(days=1)
+            dl_df = yf.download(symbol, start=date_str, end=next_dt.strftime('%Y-%m-%d'), interval='1d', progress=False)
+            if not dl_df.empty:
+                dl_df.columns = [c[0] if isinstance(c, tuple) else c for c in dl_df.columns]
+                return dl_df
+        except Exception as e:
+            pass
+            
+        return pd.DataFrame()
+
