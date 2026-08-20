@@ -297,6 +297,19 @@ def background_scanner():
             import traceback
             traceback.print_exc()
             
+
+        # --- MTF BACKGROUND SCAN ---
+        try:
+            print("[BACKGROUND] MTF (1h+15m) taramasi basladi...")
+            from services.mtf_scanner import MTFScanner
+            from config.bist_symbols import YILDIZ_SYMBOLS
+            mtf_results = MTFScanner.scan_pool(YILDIZ_SYMBOLS, max_symbols=200)
+            GLOBAL_DASHBOARD_CACHE["mtf_results"] = sanitize_for_json(mtf_results)
+            save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
+            print(f"[BACKGROUND] MTF tamamlandi: {len(mtf_results)} hisse bulundu.")
+        except Exception as e_mtf:
+            print(f"[BACKGROUND] MTF Hatasi: {e_mtf}")
+
         # Dinlen (15 dakika)
         time.sleep(900)
 
@@ -578,14 +591,35 @@ def pool_info():
 
 @app.route('/api/scan_mtf', methods=['GET'])
 def api_scan_mtf():
-    """MTF (Multi-Timeframe) İvme Radarı"""
+    """MTF (Multi-Timeframe) İvme Radarı - Arka plandan cache'lenmiş veriyi döner."""
     try:
+        # Oncelikle cache'e bak - background thread dolduruyor
+        cached = GLOBAL_DASHBOARD_CACHE.get("mtf_results", None)
+        
+        if cached is not None:
+            return jsonify({
+                "status": "success",
+                "count": len(cached),
+                "results": cached,
+                "source": "cache"
+            })
+        
+        # Cache bos: ilk acilis, hizli BIST50 taramasi yap (50 hisse, tolere edilebilir sure)
+        print("[MTF API] Cache bos, hizli BIST50 taramasi yapiliyor...")
         from services.mtf_scanner import MTFScanner
-        pool = BIST_SYMBOLS + ['SASA.IS', 'HEKTS.IS', 'THYAO.IS']  # Örnek genişletme
-        pool = list(set(pool)) # Tekilleştir
-        results = MTFScanner.scan_pool(pool)
-        return jsonify({"status": "success", "count": len(results), "results": sanitize_for_json(results)})
+        from config.bist_symbols import BIST50_SYMBOLS
+        results = MTFScanner.scan_pool(BIST50_SYMBOLS, max_symbols=50)
+        GLOBAL_DASHBOARD_CACHE["mtf_results"] = sanitize_for_json(results)
+        save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
+        return jsonify({
+            "status": "success",
+            "count": len(results),
+            "results": sanitize_for_json(results),
+            "source": "live_bist50"
+        })
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/scan', methods=['GET'])

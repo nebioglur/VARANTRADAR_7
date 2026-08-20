@@ -1323,7 +1323,7 @@ class TechnicalEngine(BaseEngine):
 
     def check_custom_strict_strategy(self, df, direction: str = "AL", lookback_bars: int = 50):
         """
-        AL sinyali: EMA9>EMA21 (kisa vade yükselis) + RSI>45
+        AL sinyali: EMA9 >= EMA21*0.998 (yakin veya yukari) + RSI>45
         SAT sinyali: EMA9<EMA21 + RSI<50 + Momentum<0 + MACD<Signal
         Returns: (bool, int, str) -> (is_match, bars_ago, timestamp_str)
         """
@@ -1362,13 +1362,13 @@ class TechnicalEngine(BaseEngine):
                 m   = float(momentum.iloc[i])
 
                 if direction == "AL":
-                    # EMA9 > EMA21: kisa vadede yükselis basladi
-                    if e9 <= e21:
+                    # EMA9 >= EMA21*0.998: kucuk toleransla yükselis veya yükselis esiginde
+                    # (0.2% tolerans: 301.51 vs 301.65 gibi cok yakin durumlar dahil)
+                    if e9 < e21 * 0.998:
                         continue
-                    # RSI > 45: ne asiri satilmis ne de olgunlasmis
+                    # RSI > 45: toparlanma bolgesi
                     if r < 45:
                         continue
-                    # Gecti - bu bar yeterli
                     return True, max_idx - i, str(df.index[i])
 
                 elif direction == "SAT":
