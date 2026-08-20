@@ -573,7 +573,7 @@ def api_dashboard_init():
 @app.route('/api/pool_info', methods=['GET'])
 def pool_info():
     """Önyüze radar havuzunun boyutunu döndürür."""
-    pool = YILDIZ_SYMBOLS
+    pool = BIST_SYMBOLS
     return jsonify({"status": "success", "pool_size": len(pool), "pool": pool})
 
 @app.route('/api/scan_mtf', methods=['GET'])
@@ -581,7 +581,7 @@ def api_scan_mtf():
     """MTF (Multi-Timeframe) İvme Radarı"""
     try:
         from services.mtf_scanner import MTFScanner
-        pool = YILDIZ_SYMBOLS + ['SASA.IS', 'HEKTS.IS', 'THYAO.IS']  # Örnek genişletme
+        pool = BIST_SYMBOLS + ['SASA.IS', 'HEKTS.IS', 'THYAO.IS']  # Örnek genişletme
         pool = list(set(pool)) # Tekilleştir
         results = MTFScanner.scan_pool(pool)
         return jsonify({"status": "success", "count": len(results), "results": sanitize_for_json(results)})
@@ -591,7 +591,7 @@ def api_scan_mtf():
 @app.route('/api/scan', methods=['GET'])
 def api_scan():
     """Hisse Radarı: BIST30 listesini tarar."""
-    pool = YILDIZ_SYMBOLS
+    pool = BIST_SYMBOLS
     try:
         pipeline = DataPipeline()
         scanner = UniversalScanner(pipeline)
@@ -625,7 +625,7 @@ def api_scan_bist50():
 
 @app.route('/api/scan_yildiz', methods=['GET'])
 def api_scan_yildiz():
-    pool = YILDIZ_SYMBOLS
+    pool = BIST_SYMBOLS
     try:
         pipeline = DataPipeline()
         scanner = UniversalScanner(pipeline)
