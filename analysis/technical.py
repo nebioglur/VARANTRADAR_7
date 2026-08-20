@@ -1323,8 +1323,8 @@ class TechnicalEngine(BaseEngine):
 
     def check_custom_strict_strategy(self, df, direction: str = "AL", lookback_bars: int = 50):
         """
-        AL sinyali: EMA9>EMA21 (kisa vade yükselis), RSI>45, Momentum>0 (veya yakin kesmis)
-        SAT sinyali: EMA9<EMA21, RSI<50, Momentum<0, MACD<Signal
+        AL sinyali: EMA9>EMA21 (kisa vade yükselis) + RSI>45
+        SAT sinyali: EMA9<EMA21 + RSI<50 + Momentum<0 + MACD<Signal
         Returns: (bool, int, str) -> (is_match, bars_ago, timestamp_str)
         """
         if df is None or df.empty or len(df) < 30:
@@ -1336,14 +1336,14 @@ class TechnicalEngine(BaseEngine):
             high  = df["high"]  if "high"  in df.columns else df["High"]
             low   = df["low"]   if "low"   in df.columns else df["Low"]
 
-            ema9   = close.ewm(span=9,   adjust=False).mean()
-            ema21  = close.ewm(span=21,  adjust=False).mean()
+            ema9  = close.ewm(span=9,  adjust=False).mean()
+            ema21 = close.ewm(span=21, adjust=False).mean()
 
-            delta  = close.diff()
-            gain   = delta.where(delta > 0, 0).rolling(14).mean()
-            loss   = (-delta.where(delta < 0, 0)).rolling(14).mean()
-            rs     = gain / loss.replace(0, float("nan"))
-            rsi    = 100 - (100 / (1 + rs))
+            delta = close.diff()
+            gain  = delta.where(delta > 0, 0).rolling(14).mean()
+            loss  = (-delta.where(delta < 0, 0)).rolling(14).mean()
+            rs    = gain / loss.replace(0, float("nan"))
+            rsi   = 100 - (100 / (1 + rs))
 
             momentum = close - close.shift(10)
 
@@ -1356,30 +1356,19 @@ class TechnicalEngine(BaseEngine):
             start_idx = max(20, max_idx - lookback_bars)
 
             for i in range(max_idx, start_idx - 1, -1):
-                e9   = float(ema9.iloc[i])
-                e21  = float(ema21.iloc[i])
-                r    = float(rsi.iloc[i])
-                m    = float(momentum.iloc[i])
+                e9  = float(ema9.iloc[i])
+                e21 = float(ema21.iloc[i])
+                r   = float(rsi.iloc[i])
+                m   = float(momentum.iloc[i])
 
                 if direction == "AL":
-                    # KOŞUL 1: EMA9 > EMA21 (kısa vadede yükseliş başlamış)
-                    if not (e9 > e21):
+                    # EMA9 > EMA21: kisa vadede yükselis basladi
+                    if e9 <= e21:
                         continue
-
-                    # KOŞUL 2: RSI > 45 (ne aşırı satılmış ne olgunlaşmış - toparlanma bölgesi)
+                    # RSI > 45: ne asiri satilmis ne de olgunlasmis
                     if r < 45:
                         continue
-
-                    # KOŞUL 3: Momentum pozitif VEYA son 8 barda 0'ı yukarı kesmiş
-                    mom_ok = m > 0
-                    if not mom_ok and i > 7:
-                        for k in range(1, 9):
-                            if float(momentum.iloc[i - k]) <= 0:
-                                mom_ok = True
-                                break
-                    if not mom_ok:
-                        continue
-
+                    # Gecti - bu bar yeterli
                     return True, max_idx - i, str(df.index[i])
 
                 elif direction == "SAT":
