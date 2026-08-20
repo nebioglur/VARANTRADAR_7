@@ -3700,4 +3700,79 @@ async function runBacktest() {
         btn.disabled = false;
         alert('Sunucu hatası: ' + err.message);
     }
+}// ========== BACKTEST AUTOCOMPLETE LOGIC ==========
+const btSymbolInput = document.getElementById('bt-symbol');
+const btAcDropdown = document.getElementById('bt-ac-dropdown');
+let btAcTimeout = null;
+let btAcSelectedIndex = -1;
+let btAcItems = [];
+
+function updateBtAcSelection() {
+    btAcItems.forEach((item, index) => {
+        if (index === btAcSelectedIndex) {
+            item.classList.add('active');
+            item.scrollIntoView({ block: 'nearest' });
+        } else {
+            item.classList.remove('active');
+        }
+    });
+}
+
+if (btSymbolInput && btAcDropdown) {
+    btSymbolInput.addEventListener('input', function() {
+        clearTimeout(btAcTimeout);
+        const q = this.value.trim();
+        btAcSelectedIndex = -1;
+        if (q.length < 1) { btAcDropdown.style.display = 'none'; return; }
+        
+        btAcTimeout = setTimeout(async () => {
+            try {
+                const res = await fetch('/api/autocomplete?q=' + q);
+                const matches = await res.json();
+                if (matches.length === 0) { btAcDropdown.style.display = 'none'; return; }
+                
+                btAcDropdown.innerHTML = '';
+                btAcItems = [];
+                matches.forEach((m, index) => {
+                    let div = document.createElement('div');
+                    div.className = 'ac-item';
+                    div.innerText = m;
+                    div.dataset.index = index;
+                    div.onclick = function() {
+                        btSymbolInput.value = m;
+                        btAcDropdown.style.display = 'none';
+                    };
+                    btAcItems.push(div);
+                    btAcDropdown.appendChild(div);
+                });
+                btAcDropdown.style.display = 'block';
+            } catch(e) { btAcDropdown.style.display = 'none'; }
+        }, 200);
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#backtest-wrapper .search-container')) btAcDropdown.style.display = 'none';
+    });
+
+    btSymbolInput.addEventListener('keydown', function(event) {
+        if (btAcDropdown.style.display === 'block' && btAcItems.length > 0) {
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                btAcSelectedIndex++;
+                if (btAcSelectedIndex >= btAcItems.length) btAcSelectedIndex = 0;
+                updateBtAcSelection();
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                btAcSelectedIndex--;
+                if (btAcSelectedIndex < 0) btAcSelectedIndex = btAcItems.length - 1;
+                updateBtAcSelection();
+            } else if (event.key === 'Enter') {
+                event.preventDefault();
+                if (btAcSelectedIndex > -1 && btAcSelectedIndex < btAcItems.length) {
+                    btSymbolInput.value = btAcItems[btAcSelectedIndex].innerText;
+                }
+                btAcDropdown.style.display = 'none';
+            }
+        }
+    });
 }

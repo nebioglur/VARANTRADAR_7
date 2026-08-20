@@ -1429,9 +1429,10 @@
         
         <div class="card" style="margin-bottom:2rem;">
             <div style="display:flex; gap:15px; align-items:flex-end; flex-wrap:wrap;">
-                <div style="flex:1; min-width:200px;">
+                <div style="flex:1; min-width:200px; position:relative;" class="search-container">
                     <label style="color:var(--text-muted); font-size:0.8rem; margin-bottom:5px; display:block;">Hisse Sembolü (Örn: THYAO)</label>
-                    <input type="text" id="bt-symbol" class="search-input" value="THYAO" style="width:100%; border:1px solid rgba(255,255,255,0.1); padding:10px; border-radius:6px; background:rgba(0,0,0,0.2); color:white;" />
+                    <input type="text" id="bt-symbol" class="search-input" value="THYAO" autocomplete="off" style="width:100%; border:1px solid rgba(255,255,255,0.1); padding:10px; border-radius:6px; background:rgba(0,0,0,0.2); color:white;" />
+                    <div id="bt-ac-dropdown" class="ac-dropdown" style="top:60px;"></div>
                 </div>
                 <div style="flex:1; min-width:200px;">
                     <label style="color:var(--text-muted); font-size:0.8rem; margin-bottom:5px; display:block;">Strateji Modeli</label>
