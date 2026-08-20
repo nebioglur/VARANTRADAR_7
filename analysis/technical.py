@@ -1323,129 +1323,82 @@ class TechnicalEngine(BaseEngine):
 
     def check_custom_strict_strategy(self, df, direction: str = "AL", lookback_bars: int = 50):
         """
-        Scans the last `lookback_bars` to find the MOST RECENT bar where the strategy was fully met.
+        AL sinyali: EMA50>EMA200, EMA9>EMA21, RSI>50 (veya son 8 barda kesmiş), Momentum>0
+        SAT sinyali: EMA9<EMA21, RSI<50, Momentum<0, MACD<Signal
         Returns: (bool, int, str) -> (is_match, bars_ago, timestamp_str)
         """
-        if df.empty or len(df) < 30:
+        if df is None or df.empty or len(df) < 30:
             return False, 0, ""
-            
         try:
-            import pandas as pd
             import numpy as np
-            
-            close = df['close'] if 'close' in df.columns else df['Close']
-            high = df['high'] if 'high' in df.columns else df['High']
-            low = df['low'] if 'low' in df.columns else df['Low']
-            
-            ema9 = close.ewm(span=9, adjust=False).mean()
-            ema21 = close.ewm(span=21, adjust=False).mean()
-            
-            ema12 = close.ewm(span=12, adjust=False).mean()
-            ema26 = close.ewm(span=26, adjust=False).mean()
-            macd = ema12 - ema26
-            signal = macd.ewm(span=9, adjust=False).mean()
-            
-            delta = close.diff()
-            gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
-            loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
-            rs = gain / loss.replace(0, np.nan)
-            rsi = 100 - (100 / (1 + rs))
-            
+
+            close = df["close"] if "close" in df.columns else df["Close"]
+            high  = df["high"]  if "high"  in df.columns else df["High"]
+            low   = df["low"]   if "low"   in df.columns else df["Low"]
+
+            ema9   = close.ewm(span=9,   adjust=False).mean()
+            ema21  = close.ewm(span=21,  adjust=False).mean()
+            ema50  = close.ewm(span=50,  adjust=False).mean()
+            ema200 = close.ewm(span=200, adjust=False).mean()
+
+            delta  = close.diff()
+            gain   = delta.where(delta > 0, 0).rolling(14).mean()
+            loss   = (-delta.where(delta < 0, 0)).rolling(14).mean()
+            rs     = gain / loss.replace(0, float("nan"))
+            rsi    = 100 - (100 / (1 + rs))
+
             momentum = close - close.shift(10)
-            
-            tr1 = high - low
-            tr2 = (high - close.shift(1)).abs()
-            tr3 = (low - close.shift(1)).abs()
-            tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
-            atr = tr.rolling(14).mean()
-            
-            up = high - high.shift(1)
-            down = low.shift(1) - low
-            pos_dm = pd.Series(np.where((up > down) & (up > 0), up, 0), index=df.index)
-            neg_dm = pd.Series(np.where((down > up) & (down > 0), down, 0), index=df.index)
-            pos_di = 100 * (pos_dm.rolling(14).mean() / atr.replace(0, np.nan))
-            neg_di = 100 * (neg_dm.rolling(14).mean() / atr.replace(0, np.nan))
-            dx = 100 * (abs(pos_di - neg_di) / (pos_di + neg_di).replace(0, np.nan))
-            adx = dx.rolling(14).mean()
-            
-            # Start from the most recent bar and go backwards
-            max_idx = len(df) - 1
+
+            ema12  = close.ewm(span=12, adjust=False).mean()
+            ema26  = close.ewm(span=26, adjust=False).mean()
+            macd   = ema12 - ema26
+            signal = macd.ewm(span=9, adjust=False).mean()
+
+            max_idx   = len(df) - 1
             start_idx = max(20, max_idx - lookback_bars)
-            
+
             for i in range(max_idx, start_idx - 1, -1):
-                c_ema9, c_ema21 = float(ema9.iloc[i]), float(ema21.iloc[i])
-                c_macd, c_signal = float(macd.iloc[i]), float(signal.iloc[i])
-                c_rsi = float(rsi.iloc[i])
-                c_mom = float(momentum.iloc[i])
-                c_adx = float(adx.iloc[i])
-                
-                # Check slippage for the 3 bars ending at i
-                crossed_recently = False
-                for j in range(i, max(0, i-3) - 1, -1):
-                    p_rsi = float(rsi.iloc[j-1])
-                    curr_rsi = float(rsi.iloc[j])
-                    p_mom = float(momentum.iloc[j-1])
-                    curr_mom = float(momentum.iloc[j])
-                    
-                    
-                
+                e9   = float(ema9.iloc[i])
+                e21  = float(ema21.iloc[i])
+                e50  = float(ema50.iloc[i])
+                e200 = float(ema200.iloc[i])
+                r    = float(rsi.iloc[i])
+                m    = float(momentum.iloc[i])
+
                 if direction == "AL":
-                    ema50 = close.ewm(span=50, adjust=False).mean()
-                    ema200 = close.ewm(span=200, adjust=False).mean()
-                    
-                    e9 = ema9.iloc[i]
-                    e21 = ema21.iloc[i]
-                    e50_val = ema50.iloc[i]
-                    e200_val = ema200.iloc[i]
-                    
-                    # KOŞUL 1: Genel Trend Yukarı (EMA 50 > 200 ve Fiyat 200'ün üstünde)
-                    # Çok katı EMA 9>21>50>200 yerine, ana trendin yukarı olması ve kısa vadenin toparlanması yeterli
-                    ema_ok = (e50_val > e200_val) and (e9 > e21)
-                    
-                    if not ema_ok:
+                    # EMA dizilimi: ana trend yukari + kisa vade toparlanmis
+                    if not (e50 > e200 and e9 > e21):
                         continue
-                        
-                    # KOŞUL 2: RSI 50 Yukarı Kesen (veya yeni kesmiş olan)
-                    r = rsi.iloc[i]
-                    r_prev = rsi.iloc[i-1] if i > 0 else r
-                    rsi_cross = (r > 50) and (r_prev <= 50)
-                    # Tolerans: Son 5 barda kesişmiş olması
-                    if not rsi_cross and i > 4:
-                        rsi_cross = (r > 50) and (rsi.iloc[i-1] <= 50 or rsi.iloc[i-2] <= 50 or rsi.iloc[i-3] <= 50 or rsi.iloc[i-4] <= 50)
-                    
-                    if not rsi_cross:
+                    # RSI 50 uzerinde veya son 8 barda 50yi gectmis
+                    rsi_ok = r > 50
+                    if not rsi_ok and i > 7:
+                        for k in range(1, 9):
+                            if float(rsi.iloc[i - k]) <= 50:
+                                rsi_ok = True
+                                break
+                    if not rsi_ok:
                         continue
-                        
-                    # KOŞUL 3: Momentum 0 Yukarı Kesen
-                    m = momentum.iloc[i]
-                    m_prev = momentum.iloc[i-1] if i > 0 else m
-                    mom_cross = (m > 0) and (m_prev <= 0)
-                    if not mom_cross and i > 4:
-                        mom_cross = (m > 0) and (momentum.iloc[i-1] <= 0 or momentum.iloc[i-2] <= 0 or momentum.iloc[i-3] <= 0 or momentum.iloc[i-4] <= 0)
-                        
-                    if not mom_cross:
+                    # Momentum pozitif veya son 8 barda 0i gectmis
+                    mom_ok = m > 0
+                    if not mom_ok and i > 7:
+                        for k in range(1, 9):
+                            if float(momentum.iloc[i - k]) <= 0:
+                                mom_ok = True
+                                break
+                    if not mom_ok:
                         continue
-                        
-                    condition_met = True
-                if direction == "SAT":
-                        if p_rsi >= 50 and curr_rsi < 50: crossed_recently = True
-                        if p_mom >= 0 and curr_mom < 0: crossed_recently = True
-                
-                if direction == "AL":
-                    if c_adx > 25 and c_mom > 0 and c_rsi > 50 and c_macd > c_signal and c_ema9 > c_ema21 and crossed_recently:
-                        bars_ago = max_idx - i
-                        timestamp_str = str(df.index[i])
-                        return True, bars_ago, timestamp_str
+                    return True, max_idx - i, str(df.index[i])
+
                 elif direction == "SAT":
-                    if c_adx > 25 and c_mom < 0 and c_rsi < 50 and c_macd < c_signal and c_ema9 < c_ema21 and crossed_recently:
-                        bars_ago = max_idx - i
-                        timestamp_str = str(df.index[i])
-                        return True, bars_ago, timestamp_str
-                        
+                    if e9 < e21 and r < 50 and m < 0:
+                        if float(macd.iloc[i]) < float(signal.iloc[i]):
+                            return True, max_idx - i, str(df.index[i])
+
             return False, 0, ""
-        except Exception as e:
+        except Exception:
             return False, 0, ""
-                
+
+
     def check_ema_stop_loss(self, df, interval="1h"):
         """Checks for EMA 9 crossing below EMA 21 to trigger a stop loss"""
         if df.empty or len(df) < 30:
