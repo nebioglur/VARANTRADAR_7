@@ -1388,6 +1388,7 @@ class TechnicalEngine(BaseEngine):
                     curr_mom = float(momentum.iloc[j])
                     
                     
+                
                 if direction == "AL":
                     ema50 = close.ewm(span=50, adjust=False).mean()
                     ema200 = close.ewm(span=200, adjust=False).mean()
@@ -1397,19 +1398,20 @@ class TechnicalEngine(BaseEngine):
                     e50_val = ema50.iloc[i]
                     e200_val = ema200.iloc[i]
                     
-                    # KOŞUL 1: Kusursuz Yükseliş Trendi (EMA Dizilimi)
-                    ema_ok = (e9 > e21) and (e21 > e50_val) and (e50_val > e200_val)
+                    # KOŞUL 1: Genel Trend Yukarı (EMA 50 > 200 ve Fiyat 200'ün üstünde)
+                    # Çok katı EMA 9>21>50>200 yerine, ana trendin yukarı olması ve kısa vadenin toparlanması yeterli
+                    ema_ok = (e50_val > e200_val) and (e9 > e21)
                     
                     if not ema_ok:
                         continue
                         
-                    # KOŞUL 2: RSI 50 Yukarı Kesen (veya taze kesmiş olan)
+                    # KOŞUL 2: RSI 50 Yukarı Kesen (veya yeni kesmiş olan)
                     r = rsi.iloc[i]
                     r_prev = rsi.iloc[i-1] if i > 0 else r
                     rsi_cross = (r > 50) and (r_prev <= 50)
-                    # Tolerans: Son 3 barda kesişmiş olması
-                    if not rsi_cross and i > 2:
-                        rsi_cross = (r > 50) and (rsi.iloc[i-1] <= 50 or rsi.iloc[i-2] <= 50 or rsi.iloc[i-3] <= 50)
+                    # Tolerans: Son 5 barda kesişmiş olması
+                    if not rsi_cross and i > 4:
+                        rsi_cross = (r > 50) and (rsi.iloc[i-1] <= 50 or rsi.iloc[i-2] <= 50 or rsi.iloc[i-3] <= 50 or rsi.iloc[i-4] <= 50)
                     
                     if not rsi_cross:
                         continue
@@ -1418,13 +1420,12 @@ class TechnicalEngine(BaseEngine):
                     m = momentum.iloc[i]
                     m_prev = momentum.iloc[i-1] if i > 0 else m
                     mom_cross = (m > 0) and (m_prev <= 0)
-                    if not mom_cross and i > 2:
-                        mom_cross = (m > 0) and (momentum.iloc[i-1] <= 0 or momentum.iloc[i-2] <= 0 or momentum.iloc[i-3] <= 0)
+                    if not mom_cross and i > 4:
+                        mom_cross = (m > 0) and (momentum.iloc[i-1] <= 0 or momentum.iloc[i-2] <= 0 or momentum.iloc[i-3] <= 0 or momentum.iloc[i-4] <= 0)
                         
                     if not mom_cross:
                         continue
                         
-                    # Tüm zorlu koşullar sağlandıysa bingo!
                     condition_met = True
                 if direction == "SAT":
                         if p_rsi >= 50 and curr_rsi < 50: crossed_recently = True
