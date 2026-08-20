@@ -1,7 +1,7 @@
 import yfinance as yf
 import pandas as pd
 import concurrent.futures
-from core.config import BIST30_SYMBOLS
+
 
 class MTFScanner:
     @staticmethod
@@ -42,8 +42,8 @@ class MTFScanner:
                 return {
                     'Symbol': symbol,
                     'Score': min(100, 60 + cumulative_momentum * 10 + (vol_surge * 5)),
-                    'Trend': 'MTF ÝVME',
-                    'Momentum': f'15m Kümülatif: %{cumulative_momentum:.2f} (Hacim: {vol_surge:.1f}x)',
+                    'Trend': 'MTF IVME',
+                    'Momentum': f'15m Kumulatif: %{cumulative_momentum:.2f} (Hacim: {vol_surge:.1f}x)',
                     'Price': float(close_15m.iloc[-1]),
                     'Target': float(close_15m.iloc[-1] * 1.05)
                 }
@@ -62,4 +62,3 @@ class MTFScanner:
                     results.append(res)
         results.sort(key=lambda x: x['Score'], reverse=True)
         return results
-
