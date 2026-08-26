@@ -3106,14 +3106,16 @@ async function fetchStatsTabData() {
                 } else {
                     history.forEach(h => {
                         const tr = document.createElement('tr');
-                        const avgClose = h.avg_closing_gain_pct || 0;
-                        const avgMax = h.avg_max_gain_pct || 0;
-                        const closeColor = avgClose >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-                        const closeSign = avgClose >= 0 ? '+' : '';
+                        const closeColor = h.avg_close_gain >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+                        const closeSign = h.avg_close_gain >= 0 ? '+' : '';
                         
                         tr.innerHTML = `
                             <td><i class="fa-regular fa-calendar" style="color:var(--text-muted);"></i> ${h.date}</td>
-                            <td style="color:var(--accent-blue); font-weight:bold;">${h.total_candidates || 0}</td>`n                            <td style="color:var(--accent-green); font-weight:bold;">${h.hit_ceiling_count || 0} Tavan (%${h.hit_ceiling_pct || 0})</td>`n                            <td style="color:var(--accent-blue); font-weight:bold;">${h.hit_plus5_count || 0} Adet (%${h.hit_plus5_pct || 0})</td>
+                            <td>${h.total_signals}</td>
+                            <td style="color:var(--accent-green); font-weight:bold;">${h.hit_ceiling} Tavan (%${h.tavan_rate})</td>
+                            <td style="color:var(--accent-blue); font-weight:bold;">${h.total_candidates || h.total_signals || 0}</td>
+                            <td style="color:var(--accent-green); font-weight:bold;">${h.hit_ceiling_count || h.hit_ceiling || 0} Tavan (%${h.hit_ceiling_pct || h.tavan_rate || 0})</td>
+                            <td style="color:var(--accent-blue); font-weight:bold;">${h.hit_plus5_count || h.hit_plus5 || 0} Adet (%${h.hit_plus5_pct || h.plus5_rate || 0})</td>
                             <td style="color:var(--accent-yellow); font-weight:bold;">+%${avgMax.toFixed(2)}</td>
                             <td style="color:${closeColor}; font-weight:bold;">${closeSign}%${avgClose.toFixed(2)}</td>
                         `;

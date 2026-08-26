@@ -3043,11 +3043,11 @@ async function fetchStatsTabData() {
             if (el('stats-tab-warrant-avg-gain')) el('stats-tab-warrant-avg-gain').innerText = `+ %${(summ.ahlatci_warrant_avg_gain_pct || 0).toFixed(2)}`;
             
             // Yeni Eklenen Kapanış Kâr/Zarar Dökümü Kutuları
-            if (el('stats-tab-pos-count')) el('stats-tab-pos-count').innerText = `${summ.total_closed_positive || 0} Adet`;
-            if (el('stats-tab-pos-avg')) el('stats-tab-pos-avg').innerText = `(Ort. +%${(summ.avg_positive_close_gain || 0).toFixed(2)})`;
+            if (el('stats-tab-pos-count')) el('stats-tab-pos-count').innerText = `${summ.total_closed_positive || summ.total_hit_plus5 || 0} Adet`;
+            if (el('stats-tab-pos-avg')) el('stats-tab-pos-avg').innerText = `(Ort. +%${(summ.avg_positive_close_gain || summ.cumulative_avg_max_gain_pct || 0).toFixed(2)})`;
             
-            if (el('stats-tab-neg-count')) el('stats-tab-neg-count').innerText = `${summ.total_closed_negative || 0} Adet`;
-            if (el('stats-tab-neg-avg')) el('stats-tab-neg-avg').innerText = `(Ort. ${summ.avg_negative_close_gain < 0 ? '' : '-' }%${Math.abs(summ.avg_negative_close_gain || 0).toFixed(2)})`;
+            if (el('stats-tab-neg-count')) el('stats-tab-neg-count').innerText = `${summ.total_closed_negative || ((summ.total_candidates_tracked || 0) - (summ.total_hit_plus5 || 0))} Adet`;
+            if (el('stats-tab-neg-avg')) el('stats-tab-neg-avg').innerText = `(Ort. %${Math.abs(summ.avg_negative_close_gain || 0).toFixed(2)})`;
             
             let netPct = summ.net_profit_pct || summ.cumulative_avg_closing_gain_pct || 0;
             let netSign = netPct > 0 ? '+' : '';
@@ -3074,7 +3074,7 @@ async function fetchStatsTabData() {
             if (el('stats-tab-elite-pos-avg')) el('stats-tab-elite-pos-avg').innerText = `(Ort. +%${(summ.elite_avg_positive_gain || 0).toFixed(2)})`;
             
             if (el('stats-tab-elite-neg-count')) el('stats-tab-elite-neg-count').innerText = `${summ.elite_closed_negative || 0} Adet`;
-            if (el('stats-tab-elite-neg-avg')) el('stats-tab-elite-neg-avg').innerText = `(Ort. ${summ.elite_avg_negative_gain < 0 ? '' : '-' }%${Math.abs(summ.elite_avg_negative_gain || 0).toFixed(2)})`;
+            if (el('stats-tab-elite-neg-avg')) el('stats-tab-elite-neg-avg').innerText = `(Ort. %${Math.abs(summ.elite_avg_negative_gain || 0).toFixed(2)})`;
             
             let eliteNetPct = summ.elite_net_profit_pct || 0;
             let eliteNetSign = eliteNetPct > 0 ? '+' : '';
@@ -3112,9 +3112,11 @@ async function fetchStatsTabData() {
                             <td><i class="fa-regular fa-calendar" style="color:var(--text-muted);"></i> ${h.date}</td>
                             <td>${h.total_signals}</td>
                             <td style="color:var(--accent-green); font-weight:bold;">${h.hit_ceiling} Tavan (%${h.tavan_rate})</td>
-                            <td style="color:var(--accent-blue); font-weight:bold;">${h.hit_plus5} Adet (%${h.plus5_rate})</td>
-                            <td style="color:var(--accent-yellow); font-weight:bold;">+%${h.avg_max_gain.toFixed(2)}</td>
-                            <td style="color:${closeColor}; font-weight:bold;">${closeSign}%${h.avg_close_gain.toFixed(2)}</td>
+                            <td style="color:var(--accent-blue); font-weight:bold;">${h.total_candidates || h.total_signals || 0}</td>
+                            <td style="color:var(--accent-green); font-weight:bold;">${h.hit_ceiling_count || h.hit_ceiling || 0} Tavan (%${h.hit_ceiling_pct || h.tavan_rate || 0})</td>
+                            <td style="color:var(--accent-blue); font-weight:bold;">${h.hit_plus5_count || h.hit_plus5 || 0} Adet (%${h.hit_plus5_pct || h.plus5_rate || 0})</td>
+                            <td style="color:var(--accent-yellow); font-weight:bold;">+%${avgMax.toFixed(2)}</td>
+                            <td style="color:${closeColor}; font-weight:bold;">${closeSign}%${avgClose.toFixed(2)}</td>
                         `;
                         dailyTbody.appendChild(tr);
                     });
