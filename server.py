@@ -337,33 +337,58 @@ from analysis.technical import TechnicalEngine
 app = Flask(__name__, static_folder='ui', static_url_path='')
 CORS(app)
 
-# ============ BASIC AUTH (GÜVENLİK) ============
+# ============ SESSION AUTH (GÜVENLİK) ============
 import os
-from flask import request, Response
+from flask import request, Response, session, redirect, jsonify, render_template_string
 
-# Çevre değişkenlerinden (Render) al, yoksa varsayılanları kullan
+app.secret_key = os.environ.get('SECRET_KEY', 'varant_pro_ultra_secret_2026_xyz')
 ADMIN_USER = os.environ.get('ADMIN_USER', 'admin')
 ADMIN_PASS = os.environ.get('ADMIN_PASS', 'radar123')
 
-def check_auth(username, password):
-    return username == ADMIN_USER and password == ADMIN_PASS
-
-def authenticate():
-    return Response(
-        'VarantRadar Pro - Yetkisiz Erisim. Lutfen kullanici adi ve sifre giriniz.', 401,
-        {'WWW-Authenticate': 'Basic realm="VarantRadar Pro Login"'}
-    )
-
 @app.before_request
-def require_auth_for_all():
-    # CORS oncesi preflight isteklerine izin ver
-    if request.method == 'OPTIONS':
+def require_auth():
+    if request.method == 'OPTIONS': return
+    
+    allowed = ['/login', '/logout']
+    if request.path in allowed: return
+    
+    # Allow static assets for login page
+    if request.path.endswith('.css') or request.path.endswith('.js') or request.path.endswith('.png') or request.path.endswith('.woff2'):
         return
-        
-    auth = request.authorization
-    if not auth or not check_auth(auth.username, auth.password):
-        return authenticate()
-# ===============================================
+
+    if not session.get('logged_in'):
+        if request.path.startswith('/api/'):
+            return jsonify({"status": "error", "message": "Unauthorized"}), 401
+        return redirect('/login')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    error = None
+    if request.method == 'POST':
+        if request.form.get('username') == ADMIN_USER and request.form.get('password') == ADMIN_PASS:
+            session['logged_in'] = True
+            return redirect('/')
+        else:
+            error = "Hatalı kullanıcı adı veya şifre!"
+            
+    # Send login.html but inject error if any
+    try:
+        with open('ui/login.html', 'r', encoding='utf-8') as f:
+            html = f.read()
+            if error:
+                html = html.replace('<!-- ERROR_PLACEHOLDER -->', f'<div class="error-msg">{error}</div>')
+            return html
+    except:
+        return "login.html bulunamadi", 404
+
+@app.route('/logout')
+def logout():
+    session.pop('logged_in', None)
+    return redirect('/login')
+# =================================================
+
+
+
 
 
 
