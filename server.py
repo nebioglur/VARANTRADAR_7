@@ -861,7 +861,7 @@ def api_simulation_live_orders():
         return jsonify({
             "status": "success",
             "date": date_str,
-            "orders": sanitize_for_json(sorted(orders, key=lambda x: x[\'score\'], reverse=True))
+            "orders": sanitize_for_json(sorted(orders, key=lambda x: x["score"], reverse=True))
         })
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
