@@ -1057,6 +1057,68 @@ class TechnicalEngine(BaseEngine):
         if domino_peers and len(domino_peers) > 0:
             domino_str = f"#{', #'.join(domino_peers[:2])}"
             
+        # ==========================================
+        # 🚀 YENİ SİNYAL MOTORU VE FOMO İNDİKATÖRÜ
+        # ==========================================
+        factor_breakdown = []
+        if vol_multiplier > 1.5:
+            factor_breakdown.append({"Factor": "Hacim", "Score": 20})
+        elif vol_multiplier > 1.0:
+            factor_breakdown.append({"Factor": "Hacim", "Score": 10})
+        
+        if current_price >= current_vwap:
+            factor_breakdown.append({"Factor": "VWAP üstü", "Score": 15})
+        else:
+            factor_breakdown.append({"Factor": "VWAP altı", "Score": -15})
+            
+        if orb_breakout:
+            factor_breakdown.append({"Factor": "ORB kırılımı", "Score": 15})
+            
+        if 55 < current_rsi < 85:
+            factor_breakdown.append({"Factor": "RSI", "Score": 10})
+            
+        if float(macd.iloc[-1]) > float(macd_signal.iloc[-1]):
+            factor_breakdown.append({"Factor": "MACD", "Score": 10})
+            
+        if current_cmf > 0.08:
+            factor_breakdown.append({"Factor": "Para girişi", "Score": 10})
+            
+        if momentum_accel:
+            factor_breakdown.append({"Factor": "Momentum", "Score": 10})
+            
+        if domino_sector:
+            factor_breakdown.append({"Factor": "Sektör gücü", "Score": 5})
+            
+        if alpha_val > 10:
+            factor_breakdown.append({"Factor": "BIST Göreceli Güç", "Score": 5})
+
+        factor_total = sum(f["Score"] for f in factor_breakdown)
+        factor_total = min(100, max(0, factor_total + 20)) # Normalize base score
+        
+        signal_quality = "🔴 UZAK DUR"
+        if factor_total >= 85:
+            signal_quality = "🟢 ÇOK GÜÇLÜ AL"
+        elif factor_total >= 70:
+            signal_quality = "🟢 GÜÇLÜ AL"
+        elif factor_total >= 50:
+            signal_quality = "🟡 İZLE"
+        elif factor_total >= 35:
+            signal_quality = "🟠 ZAYIF"
+
+        # FOMO İndikatörü
+        fomo_score = min(100, max(0, (vol_multiplier * 15) + (current_rsi * 0.4) + (change_pct * 3) + (10 if orb_breakout else 0)))
+        fomo_level = "Düşük"
+        fomo_color = "gray"
+        if fomo_score > 85:
+            fomo_level = "🔥 AŞIRI (Extreme)"
+            fomo_color = "red"
+        elif fomo_score > 70:
+            fomo_level = "🚀 Yüksek"
+            fomo_color = "orange"
+        elif fomo_score > 50:
+            fomo_level = "⚡ Orta"
+            fomo_color = "yellow"
+
         
         return {
             "Symbol": symbol,
@@ -1104,6 +1166,12 @@ class TechnicalEngine(BaseEngine):
             "Short_Squeeze": short_squeeze,
             "Smart_Money": smart_money,
             "Score": score,
+            "Factor_Breakdown": factor_breakdown,
+            "Factor_Total": factor_total,
+            "Signal_Quality": signal_quality,
+            "FOMO_Score": fomo_score,
+            "FOMO_Level": fomo_level,
+            "FOMO_Color": fomo_color,
             "Report": report,
             "Position": position
         }

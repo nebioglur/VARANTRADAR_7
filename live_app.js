@@ -2073,10 +2073,31 @@ function renderAllDashboardTables() {
                 }
                 
                 // AI Skor, Teyit Skoru, Çift Tavan ve Varant Eşleşmesi
-                let scoreStr = `<div style="font-weight:700; color:${scoreColor}; font-size:1.1rem;">${scoreValue}/100</div>`;
+                // YENİ: Sinyal Motoru ve FOMO
+                let sigQ = res.Signal_Quality || `${scoreValue}/100`;
+                let sigColor = scoreColor;
+                if (res.Signal_Quality) {
+                    if (res.Signal_Quality.includes("ÇOK GÜÇLÜ AL")) sigColor = "var(--accent-green)";
+                    else if (res.Signal_Quality.includes("GÜÇLÜ AL")) sigColor = "var(--accent-green)";
+                    else if (res.Signal_Quality.includes("İZLE")) sigColor = "var(--accent-yellow)";
+                    else if (res.Signal_Quality.includes("ZAYIF")) sigColor = "var(--accent-orange)";
+                    else if (res.Signal_Quality.includes("UZAK DUR")) sigColor = "var(--accent-red)";
+                }
+                
+                let scoreStr = `<div style="font-weight:800; color:${sigColor}; font-size:1.0rem;">${sigQ}</div>`;
+                
+                if (res.Factor_Breakdown) {
+                    let breakdownHtml = res.Factor_Breakdown.map(f => `${f.Factor}: <b style="color:${f.Score > 0 ? 'var(--accent-green)' : 'var(--accent-red)'}">${f.Score > 0 ? '+' : ''}${f.Score}</b>`).join('<br>');
+                    scoreStr += `<div style="font-size:0.65rem; color:var(--text-muted); margin-top:4px; max-height:45px; overflow-y:auto; line-height:1.2; border:1px solid rgba(255,255,255,0.1); padding:3px; border-radius:4px;" title="Puanlama Detayları">${breakdownHtml}</div>`;
+                }
+                
+                if (res.FOMO_Level) {
+                    scoreStr += `<div style="font-size:0.7rem; color:${res.FOMO_Color}; font-weight:700; margin-top:4px;" title="FOMO İndikatörü: ${res.FOMO_Score.toFixed(1)}"><i class="fa-solid fa-fire-flame-curved"></i> FOMO: ${res.FOMO_Level}</div>`;
+                }
+
                 if (res.Teyit_Score) {
                     let tcColor = res.Teyit_Score >= 80 ? '#10b981' : (res.Teyit_Score >= 60 ? '#facc15' : '#ef4444');
-                    scoreStr += `<div style="font-size:0.68rem; color:${tcColor}; font-weight:700;" title="Kurumsal Para ve Mum Teyit Skoru"><i class="fa-solid fa-shield-check"></i> %${res.Teyit_Score} Teyit</div>`;
+                    scoreStr += `<div style="font-size:0.68rem; color:${tcColor}; font-weight:700; margin-top:2px;" title="Kurumsal Para ve Mum Teyit Skoru"><i class="fa-solid fa-shield-check"></i> %${res.Teyit_Score} Teyit</div>`;
                 }
                 if (res.Streak_Score) {
                     scoreStr += `<div style="font-size:0.68rem; color:#38bdf8;" title="Çift Tavan İhtimali"><i class="fa-solid fa-link"></i> %${res.Streak_Score} Seri</div>`;

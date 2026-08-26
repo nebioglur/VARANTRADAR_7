@@ -193,14 +193,12 @@ class TechnicalEngine(BaseEngine):
             close = df[close_col]
             high = df[high_col]
             low = df[low_col]
-            
-            # EMA
-            ema8 = close.ewm(span=8, adjust=False).mean()
+            # ==========================================
+            # 👑 AR-GE EKSTRALAR (Faz 3)
+            # ==========================================
+            # 1. Alpha Gücü (Göreceli BIST Ayrışması Proxy)
+            # EMA21'den sapma * hacim şiddeti * CMF
             ema21 = close.ewm(span=21, adjust=False).mean()
-            
-            # MACD
-            ema12 = close.ewm(span=12, adjust=False).mean()
-            ema26 = close.ewm(span=26, adjust=False).mean()
             macd = ema12 - ema26
             macd_signal = macd.ewm(span=9, adjust=False).mean()
             
