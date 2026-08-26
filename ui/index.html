@@ -36,7 +36,7 @@
             <button class="nav-btn" onclick="switchMainTab('radar', this)"><i class="fa-solid fa-tower-broadcast"></i> RADAR</button>
             <button class="nav-btn" onclick="switchMainTab('stats', this)"><i class="fa-solid fa-chart-pie"></i> İSTATİSTİKLER</button>
             <button class="nav-btn" onclick="switchMainTab('news', this)"><i class="fa-solid fa-newspaper"></i> HABERLER (KAP)</button>
-            <button class="nav-btn" onclick="switchMainTab('varant', this)"><i class="fa-solid fa-calculator"></i> VARANT</button>
+            <!-- <button class="nav-btn" onclick="switchMainTab('varant', this)"><i class="fa-solid fa-calculator"></i> VARANT</button> -->
             <button class="nav-btn" onclick="switchMainTab('simulation', this)"><i class="fa-solid fa-flask"></i> SİMÜLASYON</button>
             <button class="nav-btn" onclick="switchMainTab('backtest', this)" style="color:var(--accent-purple);"><i class="fa-solid fa-microscope"></i> BACKTEST</button>
             <button class="nav-btn" onclick="switchMainTab('guide', this)" style="color:var(--accent-yellow); border:1px solid rgba(234, 179, 8, 0.4);"><i class="fa-solid fa-book-open"></i> NASIL KULLANILIR?</button>
@@ -1070,7 +1070,7 @@
                     <div id="stats-tab-avg-max-gain" style="font-size:2.5rem; font-weight:800; color:var(--accent-yellow);">-</div>
                     <div id="stats-tab-avg-close-sub" style="font-size:0.8rem; color:var(--text-muted); margin-top:5px;">Kapanış: -</div>
                 </div>
-                <div class="card" style="background: linear-gradient(145deg, rgba(168,85,247,0.05) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(168,85,247,0.2); text-align:center; padding: 1.5rem;">
+                <div class="card" style="display:none; background: linear-gradient(145deg, rgba(168,85,247,0.05) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(168,85,247,0.2); text-align:center; padding: 1.5rem;">
                     <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-building-columns"></i> Ahlatcı Varant Ort. Kâr</div>
                     <div id="stats-tab-warrant-avg-gain" style="font-size:2.5rem; font-weight:800; color:var(--accent-purple);">-</div>
                     <div style="font-size:0.8rem; color:var(--accent-purple); margin-top:5px; opacity:0.8;">~6.2x Kaldıraç</div>

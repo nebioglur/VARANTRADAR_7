@@ -444,8 +444,11 @@ class TavanAuditTracker:
                     c_target = it.get("ceiling_target", m_price * 1.10)
                     p_close = c_target / 1.10 if c_target > 0 else m_price
                     
+                    import math
                     c_pct = ((c_price - m_price) / p_close) * 100
                     m_pct = ((h_price - m_price) / p_close) * 100
+                    if math.isnan(c_pct): c_pct = 0.0
+                    if math.isnan(m_pct): m_pct = 0.0
                 else:
                     c_pct = 0.0
                     m_pct = 0.0

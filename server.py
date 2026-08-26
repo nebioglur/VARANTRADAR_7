@@ -346,7 +346,7 @@ def api_chart_data():
         
     try:
         data = TechnicalEngine.get_chart_data(symbol, interval)
-        return jsonify(data)
+        return jsonify(sanitize_for_json(data))
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -850,7 +850,7 @@ def api_tavan_history():
             symbol_filter=symbol_filter,
             time_filter=time_filter
         )
-        return jsonify(res)
+        return jsonify(sanitize_for_json(res))
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
@@ -859,7 +859,7 @@ def api_winrate_stats():
     try:
         from services.win_rate_engine import WinRateEngine
         stats = WinRateEngine.get_performance_stats()
-        return jsonify({"status": "success", "stats": stats})
+        return jsonify({"status": "success", "stats": sanitize_for_json(stats)})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
@@ -869,7 +869,7 @@ def api_tavan_tracker():
         from services.tavan_tracker import TavanAuditTracker
         date_str = request.args.get('date')
         res = TavanAuditTracker.get_audit_report(date_str)
-        return jsonify(res)
+        return jsonify(sanitize_for_json(res))
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
