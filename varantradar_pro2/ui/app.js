@@ -104,19 +104,194 @@ function updateAcSelection() {
     });
 }
 
-// ========== TAB NAVIGATION LOGIC ==========
+// ========== TAB & NAVIGATION LOGIC ==========
+let lastActiveTab = 'home';
+let analysisAbortController = null;
+let logInterval = null;
+
+// ============================================================
+// 🟢 ONLİNE KULLANICI SAYACI (Heartbeat)
+// ============================================================
+let _heartbeatSid = localStorage.getItem('varant-sid') || '';
+
+async function sendHeartbeat() {
+    try {
+        const res = await fetch('/api/heartbeat', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ sid: _heartbeatSid })
+        });
+        const data = await res.json();
+        if (data.sid) {
+            _heartbeatSid = data.sid;
+            localStorage.setItem('varant-sid', data.sid);
+        }
+        const el = document.getElementById('online-count');
+        if (el && data.online !== undefined) {
+            el.textContent = data.online;
+        }
+    } catch(e) { /* sessiz hata */ }
+}
+
+// Sayfa yüklenince hemen gönder, sonra 15 saniyede bir
+sendHeartbeat();
+setInterval(sendHeartbeat, 15000);
+
+// ============================================================
+// 🌗 TEMA TOGGLE (Koyu / Açık)
+// ============================================================
+function toggleTheme() {
+    const body = document.body;
+    const icon = document.getElementById('theme-icon');
+    const label = document.getElementById('theme-label');
+    const isLight = body.classList.toggle('light-mode');
+
+    if (isLight) {
+        if (icon) { icon.className = 'fa-solid fa-moon'; }
+        if (label) label.textContent = 'Koyu Tema';
+        localStorage.setItem('varant-theme', 'light');
+    } else {
+        if (icon) { icon.className = 'fa-solid fa-sun'; }
+        if (label) label.textContent = 'Açık Tema';
+        localStorage.setItem('varant-theme', 'dark');
+    }
+}
+
+// Sayfa yüklenince tema tercihini geri yükle
+(function initTheme() {
+    const saved = localStorage.getItem('varant-theme');
+    if (saved === 'light') {
+        document.body.classList.add('light-mode');
+        const icon = document.getElementById('theme-icon');
+        const label = document.getElementById('theme-label');
+        if (icon) icon.className = 'fa-solid fa-moon';
+        if (label) label.textContent = 'Koyu Tema';
+    }
+})();
+
+// ============================================================
+// 🏆 GİRİŞ SAYFASI: Başarı Karnesi → Gerçek API Verisi
+// ============================================================
+async function fetchHomeWinrateStats() {
+    try {
+        const res = await fetch('/api/tavan_history?start_date=2026-08-04');
+        const data = await res.json();
+        const s = (data.status === 'success' && data.summary) ? data.summary : null;
+
+        const el = (id) => document.getElementById(id);
+
+        if (s && s.total_days_tracked > 0) {
+            // 3 Ana KPI
+            const fields = [
+                ['stat-winrate', `%${s.tavan_success_pct}`],
+                ['stat-winrate-sub', `${s.total_hit_ceiling}/${s.total_candidates_tracked} Tavan`],
+                ['stat-avgprofit', `%${s.plus5_success_pct}`],
+                ['stat-avgprofit-sub', `${s.total_hit_plus5}/${s.total_candidates_tracked} Hisse`],
+                ['stat-pfactor', `+%${s.cumulative_avg_max_gain_pct}`],
+                ['stat-pfactor-sub', `Ort. Zirve Getirisi`],
+                ['stat-days-val', `${s.total_days_tracked} Gün / ${s.total_candidates_tracked} Öneri`],
+                ['stat-warrant-val', `+%${s.ahlatci_warrant_avg_gain_pct}`],
+                ['stat-close-val', `+%${s.cumulative_avg_closing_gain_pct}`]
+            ];
+            
+            fields.forEach(([id, val]) => {
+                if (el(id)) el(id).textContent = val;
+                if (el(id + '-stats')) el(id + '-stats').textContent = val;
+            });
+        } else {
+            // Veri yok — 04 Ağustos'tan önce
+            const emptyFields = [
+                ['stat-winrate', '-'],
+                ['stat-winrate-sub', 'Veri bekleniyor'],
+                ['stat-avgprofit', '-'],
+                ['stat-avgprofit-sub', 'Veri bekleniyor'],
+                ['stat-pfactor', '-'],
+                ['stat-pfactor-sub', 'Veri bekleniyor'],
+                ['stat-days-val', '04 Ağu 2026 sabahından itibaren'],
+                ['stat-warrant-val', 'Bekleniyor'],
+                ['stat-close-val', 'Bekleniyor']
+            ];
+            
+            emptyFields.forEach(([id, val]) => {
+                if (el(id)) el(id).textContent = val;
+                if (el(id + '-stats')) el(id + '-stats').textContent = val;
+            });
+        }
+    } catch (e) {
+        console.warn('[WinrateStats] Veri alinamadi:', e.message);
+    }
+}
+
+
 function switchMainTab(tabName, btnElement) {
+    if (tabName !== 'dashboard') {
+        lastActiveTab = tabName;
+    }
+    const loadingEl = document.getElementById('loading');
+    if (loadingEl && tabName !== 'dashboard') loadingEl.style.display = 'none';
+
     document.getElementById('home-wrapper').style.display = tabName === 'home' ? 'block' : 'none';
     document.getElementById('dashboard-wrapper').style.display = tabName === 'dashboard' ? 'block' : 'none';
     document.getElementById('radar-wrapper').style.display = tabName === 'radar' ? 'block' : 'none';
     document.getElementById('news-wrapper').style.display = tabName === 'news' ? 'block' : 'none';
     
-    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-    if(btnElement) btnElement.classList.add('active');
+    const statsWrapper = document.getElementById('stats-wrapper');
+    if (statsWrapper) statsWrapper.style.display = tabName === 'stats' ? 'block' : 'none';
     
-    if (tabName === 'news') {
-        fetchGlobalNews();
+    const varantWrapper = document.getElementById('varant-wrapper');
+    if (varantWrapper) varantWrapper.style.display = tabName === 'varant' ? 'block' : 'none';
+    
+    const simWrapper = document.getElementById('simulation-wrapper');
+    if (simWrapper) simWrapper.style.display = tabName === 'simulation' ? 'block' : 'none';
+    
+    const guideWrapper = document.getElementById('guide-wrapper');
+    if (guideWrapper) guideWrapper.style.display = tabName === 'guide' ? 'block' : 'none';
+    
+    const btWrapper = document.getElementById('backtest-wrapper');
+    if (btWrapper) btWrapper.style.display = tabName === 'backtest' ? 'block' : 'none';
+    
+    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+    if (btnElement) btnElement.classList.add('active');
+    
+    // Alt navigasyon barı sadece dashboard/radar/stats/sim varken kullanışlı
+    const bottomBar = document.querySelector('.bottom-mobile-bar');
+    if (bottomBar) {
+        bottomBar.style.display = (tabName === 'dashboard' || tabName === 'radar' || tabName === 'stats' || tabName === 'simulation' || tabName === 'varant') ? 'flex' : 'none';
     }
+
+    if (tabName === 'radar') {
+        startRadar('all');
+    }
+    if (tabName === 'stats') {
+        fetchStatsTabData();
+    }
+    if (tabName === 'varant') {
+        fetchVarantDashboardData();
+    }
+    if (tabName === 'simulation') {
+        fetchSimulationData();
+    }
+}
+
+function cancelLoadingAndGoBack() {
+    if (analysisAbortController) {
+        try { analysisAbortController.abort(); } catch(e){}
+    }
+    if (logInterval) {
+        clearInterval(logInterval);
+    }
+    const loadingEl = document.getElementById('loading');
+    if (loadingEl) loadingEl.style.display = 'none';
+    
+    let targetTab = lastActiveTab || 'home';
+    let navBtns = document.querySelectorAll('.nav-btn');
+    let targetBtn = navBtns[0]; // GİRİŞ
+    if (targetTab === 'radar' && navBtns.length > 1) {
+        targetBtn = navBtns[1];
+    } else if (targetTab === 'news' && navBtns.length > 2) {
+        targetBtn = navBtns[2];
+    }
+    switchMainTab(targetTab, targetBtn);
 }
 
 function switchSubTab(tabName, btnElement) {
@@ -135,11 +310,34 @@ function switchSubTab(tabName, btnElement) {
 }
 
 function switchRadarTab(tabName, btnElement) {
-    document.querySelectorAll('#radar-wrapper .tab-pane').forEach(pane => pane.classList.remove('active'));
-    document.getElementById('rtab-' + tabName).classList.add('active');
+    document.querySelectorAll('#radar-wrapper .tab-pane').forEach(pane => {
+        pane.classList.remove('active');
+        pane.style.display = 'none';
+    });
+    const targetPane = document.getElementById('rtab-' + tabName);
+    if (targetPane) {
+        targetPane.classList.add('active');
+        targetPane.style.display = 'block';
+    }
     
     document.querySelectorAll('#radar-wrapper .s-tab').forEach(btn => btn.classList.remove('active'));
-    if(btnElement) btnElement.classList.add('active');
+    if (btnElement) btnElement.classList.add('active');
+
+    // Otomatik Yükleme & Tarama: Sekme açıldığında boş kalmaması için otomatik çalıştır
+    if (tabName === 'opportunities1h') {
+        const opp1hTbody = document.getElementById('opp1h-tbody');
+        if (globalDashboardData && globalDashboardData['opportunities_1h'] && globalDashboardData['opportunities_1h'].length > 0) {
+            renderAllDashboardTables();
+        }
+    } else {
+        const tbodyEl = document.getElementById(tabName + '-tbody');
+        const resultsEl = document.getElementById(tabName + '-results');
+        const loadingEl = document.getElementById(tabName + '-loading');
+        // Henüz sonuç yoksa ve şu an taranmıyorsa otomatik başlat
+        if (tbodyEl && (!tbodyEl.children.length || resultsEl?.style.display === 'none') && loadingEl?.style.display !== 'block') {
+            startRadar(tabName);
+        }
+    }
 }
 
 let currentHomeOppsTab = 'bist30';
@@ -176,13 +374,20 @@ async function scanHomeOpportunities() {
             
             // Get top 3
             const top3 = data.results.slice(0, 3);
-            const classes = ["bull", "base", "bear"];
-            const labels = ["GÜÇLÜ AL (POTANSİYEL)", "AL (BİRİKTİR)", "İZLE (NÖTR)"];
-            
             top3.forEach((item, index) => {
                 let scoreValue = item.Score !== undefined ? item.Score : (item.Confidence_Score !== undefined ? item.Confidence_Score : 0);
-                let c = classes[index] || "base";
-                let l = labels[index] || "İZLE";
+                let c = "bull";
+                let l = "GÜÇLÜ AL";
+                if (scoreValue >= 75) {
+                    c = "bull";
+                    l = "GÜÇLÜ AL (LİDER)";
+                } else if (scoreValue >= 60) {
+                    c = "base";
+                    l = "KADEMELİ AL (DESTEK)";
+                } else {
+                    c = "bear";
+                    l = "İZLE / BEKLE";
+                }
                 
                 contentBox.innerHTML += `
                 <div class="scenario-box ${c}" style="cursor:pointer;" onclick="document.getElementById('symbol-input').value='${item.Symbol}'; analyzeSymbol();">
@@ -331,6 +536,11 @@ async function analyzeSymbol() {
     let symbol = symbolInput.value.trim();
     if (!symbol) return;
 
+    if (analysisAbortController) {
+        try { analysisAbortController.abort(); } catch(e){}
+    }
+    analysisAbortController = new AbortController();
+
     // Switch to dashboard view
     switchMainTab('dashboard', document.querySelectorAll('.nav-btn')[1]);
     document.getElementById('dashboard-wrapper').style.display = 'none';
@@ -342,26 +552,40 @@ async function analyzeSymbol() {
     simulateTerminalLogs(symbol);
 
     try {
-        const response = await fetch('/api/analyze?symbol=' + symbol);
+        const response = await fetch('/api/analyze?symbol=' + encodeURIComponent(symbol), {
+            signal: analysisAbortController.signal
+        });
         const data = await response.json();
 
         // Let the logs finish reading
         setTimeout(() => {
-            document.getElementById('loading').style.display = 'none';
+            const loadingEl = document.getElementById('loading');
+            if (!loadingEl || loadingEl.style.display === 'none') {
+                // Analysis was cancelled by user
+                return;
+            }
+            loadingEl.style.display = 'none';
             if (response.status !== 200 || data.status === "error") {
                 alert("⛔ UPLINK ERROR\n\n" + (data.message || data.error));
+                cancelLoadingAndGoBack();
                 return;
             }
             bindDataToDashboard(data.report);
-        }, 800);
+        }, 600);
         
     } catch (error) {
+        if (error.name === 'AbortError') {
+            console.log('Analiz kullanıcı tarafından iptal edildi.');
+            return;
+        }
         document.getElementById('loading').style.display = 'none';
         alert("CRITICAL ERROR: Connection lost.\n" + error);
+        cancelLoadingAndGoBack();
     }
 }
 
 function simulateTerminalLogs(symbol) {
+    if (logInterval) clearInterval(logInterval);
     const termLogs = document.getElementById('term-logs');
     termLogs.innerHTML = "";
     const fakeLogs = [
@@ -377,7 +601,7 @@ function simulateTerminalLogs(symbol) {
         "> RAPOR BAŞARIYLA OLUŞTURULDU VE BÜYÜK BEYİN TARAFINDAN ONAYLANDI."
     ];
     let logIdx = 0;
-    const interval = setInterval(() => {
+    logInterval = setInterval(() => {
         if (logIdx < fakeLogs.length) {
             let p = document.createElement('div');
             p.className = 'term-line';
@@ -386,7 +610,7 @@ function simulateTerminalLogs(symbol) {
             termLogs.scrollTop = termLogs.scrollHeight;
             logIdx++;
         } else {
-            clearInterval(interval);
+            clearInterval(logInterval);
         }
     }, 100);
 }
@@ -930,6 +1154,69 @@ function bindDataToDashboard(report) {
     let risk = parseFloat(safeGet(report, "Section_5_Risk", 0));
     drawScoreChart(conf, risk);
 
+    // 0. CONVICTION & ACTION PLAYBOOK (BAŞ YATIRIM YÖNETİCİSİ İKNA RAPORU)
+    const playbook = safeGet(report, "Section_0_Conviction_Playbook", null);
+    const convWrapper = document.getElementById('conviction-wrapper');
+    if (convWrapper) {
+        if (playbook) {
+            convWrapper.style.display = 'block';
+            convWrapper.style.borderColor = playbook.Verdict_Color || 'var(--accent-green)';
+            setElText('conviction-title', playbook.Verdict_Title || 'CIO KURUMSAL KARAR RAPORU');
+            setElText('conviction-rr-val', playbook.Risk_Reward_Ratio || '1 : 2.5');
+            
+            const actionBadge = document.getElementById('conviction-action-badge');
+            if (actionBadge) {
+                actionBadge.textContent = playbook.Verdict_Badge || 'GÜÇLÜ AL';
+                actionBadge.style.background = playbook.Verdict_Color || 'var(--accent-green)';
+                actionBadge.style.color = '#000';
+            }
+            
+            const pitchEl = document.getElementById('conviction-pitch');
+            if (pitchEl) {
+                pitchEl.innerHTML = playbook.Executive_Pitch || '';
+                pitchEl.style.borderLeftColor = playbook.Verdict_Color || 'var(--accent-green)';
+            }
+            
+            const proofsUl = document.getElementById('conviction-proofs');
+            if (proofsUl) {
+                proofsUl.innerHTML = '';
+                (playbook.Top_3_Proofs || []).forEach(p => {
+                    proofsUl.innerHTML += `<li style="background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 6px; border-left: 3px solid var(--accent-yellow);">${p}</li>`;
+                });
+            }
+            
+            const stepsUl = document.getElementById('conviction-steps');
+            if (stepsUl) {
+                stepsUl.innerHTML = '';
+                (playbook.Tactical_Steps || []).forEach(s => {
+                    stepsUl.innerHTML += `<li style="background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 6px; border-left: 3px solid var(--accent-green);">${s}</li>`;
+                });
+            }
+            
+            const warrantText = document.getElementById('conviction-warrant-text');
+            if (warrantText) {
+                warrantText.innerHTML = playbook.Warrant_Tactics || '⚡ Varant bilgisi hesaplanamadı.';
+            }
+        } else {
+            let fallbackConf = parseFloat(safeGet(report, "Section_4_Confidence", 50));
+            let fallbackBadge = fallbackConf >= 70 ? "GÜÇLÜ AL" : (fallbackConf >= 50 ? "KADEMELİ AL" : "İZLE / BEKLE");
+            let fallbackColor = fallbackConf >= 70 ? "var(--accent-green)" : (fallbackConf >= 50 ? "var(--accent-blue)" : "var(--accent-yellow)");
+            setElText('conviction-title', `🚨 ${sym} İÇİN YAPAY ZEKA VE CIO KARAR RAPORU`);
+            setElText('conviction-rr-val', "1 : 3.0");
+            const actionBadge = document.getElementById('conviction-action-badge');
+            if (actionBadge) {
+                actionBadge.textContent = fallbackBadge;
+                actionBadge.style.background = fallbackColor;
+                actionBadge.style.color = '#000';
+            }
+            const pitchEl = document.getElementById('conviction-pitch');
+            if (pitchEl) {
+                pitchEl.innerHTML = safeGet(report, "Section_1_Executive", "Analiz verisi inceleniyor.");
+                pitchEl.style.borderLeftColor = fallbackColor;
+            }
+        }
+    }
+
     setElText('pos-amt', safeGet(report, "Section_9_Position.Amount"));
     setElText('pos-scale', safeGet(report, "Section_9_Position.Scaling"));
     setElText('pos-e1', safeGet(report, "Section_9_Position.Entry_1"));
@@ -1286,6 +1573,14 @@ function bindDataToDashboard(report) {
     
     // 6. RAW JSON TAB
     setElText('raw-json-output', JSON.stringify(report, null, 2));
+
+    // 7. ALTIN VARANT DETAYLI SİMÜLASYONUNU YÜKLE
+    try {
+        let spotPrice = safeGet(report, "Section_01_Ident.Price", 100);
+        loadDetailedVarantSim(currentSymbol, spotPrice);
+    } catch(e) {
+        console.error("Detaylı varant simülasyonu başlatılamadı:", e);
+    }
 }
 
 // ========== CHART.JS INTEGRATION ==========
@@ -1334,43 +1629,72 @@ async function startRadar(type) {
     else if (type === 'fx') endpoint = '/api/scan_fx';
     else if (type === 'commodity') endpoint = '/api/scan_commodity';
     else if (type === 'crypto') endpoint = '/api/scan_crypto';
+    else if (type === 'mtf') endpoint = '/api/scan_mtf';
     
     const loadingEl = document.getElementById(type + '-loading');
     const resultsEl = document.getElementById(type + '-results');
     const tbodyEl = document.getElementById(type + '-tbody');
 
-    loadingEl.style.display = 'block';
-    resultsEl.style.display = 'none';
-    tbodyEl.innerHTML = '';
+    if (loadingEl) loadingEl.style.display = 'block';
+    if (resultsEl && (!tbodyEl || !tbodyEl.children.length)) resultsEl.style.display = 'none';
 
     try {
         const response = await fetch(endpoint);
         const data = await response.json();
 
-        loadingEl.style.display = 'none';
-        resultsEl.style.display = 'table';
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (resultsEl) resultsEl.style.display = 'table';
+        if (tbodyEl) tbodyEl.innerHTML = '';
 
         if (!data.results || data.results.length === 0) {
-            tbodyEl.innerHTML = `<tr><td colspan='4' style='text-align:center; color: var(--text-muted); padding:2rem;'>0 results found. Market regime might be too risky.</td></tr>`;
+            if (tbodyEl) tbodyEl.innerHTML = `<tr><td colspan='4' style='text-align:center; color: var(--text-muted); padding:2rem;'><i class="fa-solid fa-circle-exclamation text-yellow" style="font-size:1.5rem; display:block; margin-bottom:8px;"></i>Bu kategoride henüz güçlü sinyal oluşmadı. Sistem piyasayı izlemeye devam ediyor.</td></tr>`;
             return;
         }
 
         data.results.forEach(res => {
             let tr = document.createElement('tr');
             let scoreValue = res.Score !== undefined ? res.Score : (res.Confidence_Score !== undefined ? res.Confidence_Score : 0);
-            let scoreColor = scoreValue >= 70 ? 'var(--accent-green)' : (scoreValue >= 50 ? 'var(--accent-yellow)' : 'var(--accent-red)');
+            let scoreColor = scoreValue >= 75 ? 'var(--accent-green)' : (scoreValue >= 60 ? 'var(--accent-blue)' : (scoreValue >= 45 ? 'var(--accent-yellow)' : 'var(--accent-red)'));
+            
+            let priceStr = res.Price ? `₺${parseFloat(res.Price).toFixed(2)}` : '';
+            if (res.Change_Pct !== undefined) {
+                let cp = parseFloat(res.Change_Pct);
+                let cpColor = cp > 0 ? 'var(--accent-green)' : (cp < 0 ? 'var(--accent-red)' : 'var(--text-muted)');
+                let cpSign = cp > 0 ? '+' : '';
+                priceStr += ` <span style="font-size:0.75rem; color:${cpColor}; font-weight:700;">(${cpSign}%${cp.toFixed(2)})</span>`;
+            }
+
+            let trendVal = res.Trend || 'BULLISH';
+            let trendIcon = (trendVal === 'BULLISH' || trendVal === 'YUKSEK') ? 'fa-arrow-trend-up' : ((trendVal === 'BEARISH' || trendVal === 'DUSUK') ? 'fa-arrow-trend-down' : 'fa-minus');
+            let trendColor = (trendVal === 'BULLISH' || trendVal === 'YUKSEK') ? 'var(--accent-green)' : ((trendVal === 'BEARISH' || trendVal === 'DUSUK') ? 'var(--accent-red)' : 'var(--text-muted)');
+
+            let actionText = res.Action || (scoreValue >= 65 ? "GÜÇLÜ AL" : (scoreValue >= 50 ? "AL" : "İZLE"));
+            let actionBg = scoreValue >= 65 ? 'rgba(16,185,129,0.15)' : (scoreValue >= 50 ? 'rgba(56,189,248,0.15)' : 'rgba(234,179,8,0.15)');
+            let actionColor = scoreValue >= 65 ? 'var(--accent-green)' : (scoreValue >= 50 ? 'var(--accent-blue)' : 'var(--accent-yellow)');
+
             tr.innerHTML = `
-                <td style="color:var(--text-main);font-weight:700;">${res.Symbol}</td>
-                <td style="color:${scoreColor};font-weight:700;">${scoreValue}</td>
-                <td>${t(res.Trend)}</td>
-                <td style="color:var(--accent-blue)">${t(res.Action || (scoreValue >= 60 ? "AL (POTANSİYEL)" : "İZLE"))}</td>
+                <td style="color:var(--text-main); font-weight:700;">
+                    <div style="font-size:0.92rem; color:var(--text-light);">${res.Symbol}</div>
+                    ${priceStr ? `<div style="font-size:0.75rem; font-family:monospace; margin-top:2px;">${priceStr}</div>` : ''}
+                </td>
+                <td><span style="color:${scoreColor}; font-weight:800; font-size:0.9rem; background:rgba(255,255,255,0.04); border:1px solid ${scoreColor}40; padding:2px 8px; border-radius:6px;">${scoreValue} / 100</span></td>
+                <td><span style="color:${trendColor}; font-weight:700; font-size:0.85rem;"><i class="fa-solid ${trendIcon}" style="margin-right:4px;"></i> ${t(trendVal)}</span></td>
+                <td>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="background:${actionBg}; color:${actionColor}; padding:3px 8px; border-radius:4px; font-weight:700; font-size:0.75rem;">${t(actionText)}</span>
+                        <button type="button" class="btn-primary" style="padding:0.25rem 0.5rem; font-size:0.75rem; border-radius:5px; display:inline-flex; align-items:center; gap:4px; cursor:pointer;" onclick="document.getElementById('symbol-input').value='${res.Symbol}'; analyzeSymbol();" title="Detaylı AI Analizi Yap">
+                            <i class="fa-solid fa-chart-line"></i> İncele
+                        </button>
+                    </div>
+                </td>
             `;
             tbodyEl.appendChild(tr);
         });
 
     } catch (error) {
-        loadingEl.style.display = 'none';
-        alert("RADAR ERROR: " + error);
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (tbodyEl) tbodyEl.innerHTML = `<tr><td colspan='4' class="text-red text-center" style="padding:1.5rem;">Tarama sırasında bağlantı hatası: ${error.message || error}</td></tr>`;
+        if (resultsEl) resultsEl.style.display = 'table';
     }
 }
 
@@ -1391,15 +1715,40 @@ window.onload = function() {
     fetchDashboardData();
     // Her 5 saniyede bir arka plandaki scanner'in bitip bitmediğini kontrol et
     dashboardPollInterval = setInterval(fetchDashboardData, 5000);
+    
+    // KULLANICI İSTEĞİ: TABLOYA ÇİFT TIKLAYINCA TAM TABLOYU TEK GÖSTER
+    document.querySelectorAll('#radar-cards-grid .card').forEach(card => {
+        card.ondblclick = function(e) {
+            // Eğer butona veya input'a çift tıklandıysa büyütme
+            if (e.target.closest('button') || e.target.closest('input') || e.target.closest('a')) {
+                return;
+            }
+            this.classList.toggle('fullscreen-card');
+        };
+        // Kullanıcının anlaması için imleci pointer veya title ekleyebiliriz
+        card.title = "Tam ekran yapmak için çift tıklayın";
+    });
 };
 
 async function fetchDashboardData() {
     try {
-        const response = await fetch('/api/dashboard_init');
+        const response = await fetch('/api/dashboard_init?t=' + Date.now());
+        if (!response.ok) {
+            console.error("Dashboard HTTP error: ", response.status);
+            return;
+        }
         const data = await response.json();
         
-        if (data.status === 'success') {
-            setElText('total-analyzed-counter', `RADAR BUGÜNE KADAR ${data.total_analyzed} VERİYİ ANALİZ ETTİ`);
+        if (data && data.status === 'success') {
+            setElText('total-analyzed-counter', `RADAR BUGÜNE KADAR ${data.total_analyzed || 0} VERİYİ ANALİZ ETTİ`);
+            
+            // Son tarama saatini ekranda göster
+            const lastUpdated = data.last_updated || "Bilinmiyor";
+            const timeHTML = `<i class="fa-solid fa-clock"></i> Son Tarama: ${lastUpdated}`;
+            const timeEl1 = document.getElementById('last-scan-time');
+            if (timeEl1) timeEl1.innerHTML = timeHTML;
+            const timeEl2 = document.getElementById('arge-last-scan');
+            if (timeEl2) timeEl2.innerHTML = timeHTML;
             
             console.log('[DASHBOARD] API cevabı geldi. Keys:', Object.keys(data.dashboard_data || {}), 
                 'opp1h:', (data.dashboard_data?.opportunities_1h || []).length,
@@ -1415,16 +1764,16 @@ async function fetchDashboardData() {
                 if (dashboardPollInterval) {
                     clearInterval(dashboardPollInterval);
                     dashboardPollInterval = null;
-                    // Arka plandaki 15 dk'lık güncellemeleri yakalamak için 1 dakikada bir kontrol et
-                    setInterval(fetchDashboardData, 60000);
+                    // Arka plandaki periyodik güncellemeleri yakalamak için 30 saniyede bir kontrol et
+                    setInterval(fetchDashboardData, 30000);
                 }
             } else {
-                console.log('[DASHBOARD] Veri henüz boş, tarama devam ediyor...');
+                console.log('[DASHBOARD] Veri henüz boş veya tarama devam ediyor...');
                 // Hâlâ boşsa kullanıcıyı bilgilendir
-                ["tb-signals-5m", "tb-tavan-adaylari", "tb-opportunities-1h", "tb-opportunities", "tb-gainers", "tb-losers", "tb-favorites", "tb-high_volume", "tb-low_volume"].forEach(id => {
+                ["tb-signals-5m", "tb-tavan-adaylari", "tb-opportunities-1h", "tb-stay-away-1h", "tb-opportunities", "tb-gainers", "tb-losers", "tb-favorites", "tb-high_volume", "tb-low_volume"].forEach(id => {
                     const tbody = document.getElementById(id);
                     if (tbody && (tbody.innerText.includes("Taran") || tbody.innerHTML.includes("Taran"))) {
-                        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;" class="text-muted"><div class="spinner small" style="display:inline-block; margin-right:10px;"></div> Tarama devam ediyor...</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;" class="text-muted">Piyasa kapalı veya tarama devam ediyor (00:00-09:00 arası veri bulunmayabilir).</td></tr>`;
                     }
                 });
             }
@@ -1454,9 +1803,10 @@ function openGraphicTab(symbol) {
 
 function renderAllDashboardTables() {
     const cats = {
-        'signals_5m': 'tb-signals-5m',
         'tavan_adaylari': 'tb-tavan-adaylari',
+        'arge_tavan': 'tb-arge-tavan',
         'opportunities_1h': 'tb-opportunities-1h',
+        'stay_away_1h': 'tb-stay-away-1h',
         'opportunities': 'tb-opportunities',
         'gainers': 'tb-gainers',
         'losers': 'tb-losers',
@@ -1465,21 +1815,112 @@ function renderAllDashboardTables() {
         'low_volume': 'tb-low_volume'
     };
 
+    // Canlı Giriş Ekranı: Otonom Komite Liderleri ve Tavsiyelerini Güncelle
+    const homePicksContainer = document.getElementById('home-top-picks');
+    if (homePicksContainer) {
+        let bestItems = [];
+        if (globalDashboardData['tavan_adaylari'] && globalDashboardData['tavan_adaylari'].length > 0) {
+            bestItems.push(...globalDashboardData['tavan_adaylari'].slice(0, 2));
+        }
+        if (globalDashboardData['opportunities_1h'] && globalDashboardData['opportunities_1h'].length > 0) {
+            bestItems.push(...globalDashboardData['opportunities_1h'].slice(0, 2));
+        }
+        if (globalDashboardData['opportunities'] && globalDashboardData['opportunities'].length > 0) {
+            bestItems.push(...globalDashboardData['opportunities'].slice(0, 2));
+        }
+        
+        // Benzersiz sembolleri al ve ilk 3 tanesini yerleştir
+        const uniqueSymbols = [];
+        const seenSyms = new Set();
+        for (let item of bestItems) {
+            if (item && item.Symbol && !seenSyms.has(item.Symbol)) {
+                seenSyms.add(item.Symbol);
+                uniqueSymbols.push(item);
+            }
+        }
+        
+        if (uniqueSymbols.length > 0) {
+            const top3 = uniqueSymbols.slice(0, 3);
+            const colors = ["var(--accent-green)", "var(--accent-blue)", "var(--accent-purple)"];
+            homePicksContainer.innerHTML = "";
+            top3.forEach((item, idx) => {
+                let sVal = item.Score !== undefined ? item.Score : (item.Score_5 ? item.Score_5 * 20 : 85);
+                let col = colors[idx] || "var(--accent-green)";
+                let priceStr = item.Price ? `₺${parseFloat(item.Price).toFixed(2)}` : '';
+                homePicksContainer.innerHTML += `
+                    <button type="button" onclick="document.getElementById('symbol-input').value='${item.Symbol}'; analyzeSymbol();" style="flex:1; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:0.5rem; color:var(--text-light); cursor:pointer; font-size:0.78rem; text-align:center; transition:transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+                        <div style="font-weight:800; color:${col};">${item.Symbol} <span style="font-size:0.7rem; color:var(--text-light); font-weight:normal;">${priceStr}</span></div>
+                        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;">Komite Skoru: <b style="color:${col};">${sVal}</b></div>
+                    </button>
+                `;
+            });
+        }
+    }
+
     for (let cat in cats) {
         const tbody = document.getElementById(cats[cat]);
         if (!tbody) continue;
         
-        const items = globalDashboardData[cat] || [];
+        let items = globalDashboardData[cat] || [];
+        
+        if (cat === 'arge_tavan') {
+            items = globalDashboardData['tavan_adaylari'] || [];
+        }
+
         if (items.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;" class="text-muted">Bu kategoride sonuç bulunamadı.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;" class="text-muted">Bu kategoride sonuç bulunamadı.</td></tr>`;
             continue;
+        }
+
+        // EMA 50 & 200 filtresini her zaman uygula
+        items = items.filter(res => {
+            let price = res.Price || res.Daily_Close;
+            let ema50 = res.Daily_EMA50;
+            let ema200 = res.Daily_EMA200;
+            
+            if (ema50 === undefined && res.Indicators) ema50 = res.Indicators.EMA_50;
+            if (ema200 === undefined && res.Indicators) ema200 = res.Indicators.EMA_200;
+            
+            if (price && ema50 && ema200) {
+                return price > ema50 && price > ema200;
+            }
+            return true;
+        });
+        
+        if (items.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;" class="text-muted">Filtreye uygun hisse bulunamadı (EMA 50 & 200 Üzeri).</td></tr>`;
+            continue;
+        }
+
+        // "Squaze (yukarı ok) + Güçlü Giriş + Pozitif Alpha" kontrolü için yardımcı fonksiyon
+        const checkSuperGreen = (res) => {
+            let alphaStrVal = res.Alpha_Str || "";
+            let sqzStrVal = res.Short_Squeeze || "";
+            let smStrVal = res.Smart_Money || "";
+            return (alphaStrVal.includes("Pozitif") && 
+                (smStrVal.includes("Giriş") || smStrVal.includes("Akümülasyon")) &&
+                (sqzStrVal.includes("Yükseliyor") || sqzStrVal.includes("Patlatma")));
+        };
+
+        // Eğer bu Tavan Adayları veya AR-GE tablosu ise, Super Green olanları en başa al
+        if (cat === 'tavan_adaylari' || cat === 'arge_tavan') {
+            let superGreenItems = [];
+            let regularItems = [];
+            items.forEach(item => {
+                if (checkSuperGreen(item)) {
+                    superGreenItems.push(item);
+                } else {
+                    regularItems.push(item);
+                }
+            });
+            items = superGreenItems.concat(regularItems);
         }
 
         tbody.innerHTML = '';
         // 10'a kadar hisse göster
         const displayItems = items.slice(0, 10);
         let timeStr = new Date().toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'});
-        const headerTimeSpan = document.getElementById('time-' + (cat === 'opportunities_1h' ? 'opportunities-1h' : cat));
+        const headerTimeSpan = document.getElementById('time-' + (cat === 'opportunities_1h' ? 'opportunities-1h' : (cat === 'stay_away_1h' ? 'stay-away-1h' : cat)));
         if (headerTimeSpan) {
             headerTimeSpan.innerText = "(Güncelleme: " + timeStr + ")";
         }
@@ -1487,7 +1928,14 @@ function renderAllDashboardTables() {
         displayItems.forEach(res => {
             let tr = document.createElement('tr');
             
+            let isSuperGreen = checkSuperGreen(res);
+            tr.className = isSuperGreen ? "super-green-row card-fade-in" : "card-fade-in";
+            
             let symStr = res.Symbol;
+            if (isSuperGreen) {
+                symStr += ` <i class="fa-solid fa-rocket" style="color:var(--accent-green); text-shadow: 0 0 8px var(--accent-green);" title="Süper Kesişim: Squeeze⬆️ + Para Girişi + Pozitif Alpha"></i>`;
+            }
+            
             // Eger bu hisse icin 5m RSI sinyali varsa blink ikonu ekle
             if (globalDashboardData['signals_5m'] && (cat === 'tavan_adaylari' || cat === 'opportunities_1h')) {
                 let sigObj = globalDashboardData['signals_5m'].find(s => s.Symbol === res.Symbol);
@@ -1511,32 +1959,186 @@ function renderAllDashboardTables() {
 
             let statusStr = "";
             let scoreContent = "";
-            if (cat === 'signals_5m') {
-                let rsiVal = res.RSI !== undefined ? res.RSI : 0;
-                let sig = res.Signal; // "AL" veya "SAT"
-                let sigColor = sig === "AL" ? "var(--accent-green)" : "var(--accent-red)";
-                let sigIcon = sig === "AL" ? "fa-arrow-trend-up" : "fa-arrow-trend-down";
-                let rsiColor = sig === "AL" ? "var(--accent-blue)" : "var(--accent-yellow)";
+            if (cat === 'arge_tavan') {
+                // 1. Aday Hisse & Fiyat
                 
-                scoreContent = `<span style="color:${rsiColor};font-weight:700;">${rsiVal}</span>`;
-                statusStr = `<span style="background:rgba(${sig==='AL'?'16,185,129':'239,68,68'}, 0.2); color:${sigColor}; padding:3px 8px; border-radius:4px; font-weight:700; font-size:0.75rem;"><i class="fa-solid ${sigIcon}"></i> ${sig} </span> <span style="font-size:0.7rem; color:var(--text-muted); margin-left:5px;">${res.Time || ''}</span>`;
+                // 2. Alpha (BIST Ayrışma)
+                let alphaStr = res.Alpha_Str || "Hesaplanıyor";
+                let alphaColor = alphaStr.includes("Pozitif") ? "var(--accent-green)" : (alphaStr.includes("Negatif") ? "var(--accent-red)" : "var(--accent-yellow)");
+                let alphaIcon = alphaStr.includes("Pozitif") ? "fa-arrow-trend-up" : (alphaStr.includes("Negatif") ? "fa-arrow-trend-down" : "fa-minus");
+                let alphaEl = `<span style="color:${alphaColor}; font-weight:800; font-size:0.8rem;"><i class="fa-solid ${alphaIcon}"></i> ${alphaStr}</span>`;
+                
+                // 3. Squeeze (Şort)
+                let sqzStr = res.Short_Squeeze || "Hesaplanıyor";
+                let sqzColor = sqzStr.includes("Patlatma") ? "var(--accent-red)" : (sqzStr.includes("Yükseliyor") ? "var(--accent-yellow)" : "var(--text-muted)");
+                let sqzIcon = sqzStr.includes("Patlatma") ? "fa-fire fa-beat" : (sqzStr.includes("Yükseliyor") ? "fa-arrow-up" : "fa-minus");
+                let sqzEl = `<span style="color:${sqzColor}; font-weight:800; font-size:0.8rem;"><i class="fa-solid ${sqzIcon}"></i> ${sqzStr}</span>`;
+
+                // 4. Akıllı Para (CMF)
+                let smStr = res.Smart_Money || "Hesaplanıyor";
+                let smColor = smStr.includes("Giriş") || smStr.includes("Akümülasyon") ? "var(--accent-green)" : (smStr.includes("Çıkış") || smStr.includes("Dağıtım") ? "var(--accent-red)" : "var(--accent-yellow)");
+                let smEl = `<span style="color:${smColor}; font-weight:800; font-size:0.8rem;">${smStr}</span>`;
+                
+                // 5. Domino Etkisi
+                let domStr = res.Domino_Str || "Yok";
+                let domColor = domStr !== "Yok" ? "var(--accent-blue)" : "var(--text-muted)";
+                let domIcon = domStr !== "Yok" ? "fa-chess-knight" : "fa-ban";
+                let domEl = `<span style="color:${domColor}; font-weight:700; font-size:0.75rem;"><i class="fa-solid ${domIcon}"></i> ${domStr}</span>`;
+
+                // 6. Patlama Olasılığı (P-Score)
+                let pScore = res.Score !== undefined ? res.Score : 0;
+                let pScoreColor = pScore >= 80 ? 'var(--accent-green)' : (pScore >= 50 ? 'var(--accent-yellow)' : 'var(--accent-red)');
+                let pScoreStr = `
+                    <div style="width:100%; max-width:80px; background:rgba(255,255,255,0.1); border-radius:4px; overflow:hidden; margin-bottom:4px;">
+                        <div style="height:6px; background:${pScoreColor}; width:${pScore}%"></div>
+                    </div>
+                    <span style="color:${pScoreColor}; font-weight:800; font-size:0.85rem;">%${pScore}</span>
+                `;
+                
+                tr.innerHTML = `
+                    <td style="color:var(--accent-purple);font-weight:700; font-size:1rem;">${symStr} <span style="font-size:0.7rem; color:var(--text-muted);">${priceStr}</span></td>
+                    <td>${alphaEl}</td>
+                    <td>${sqzEl}</td>
+                    <td>${smEl}</td>
+                    <td>${domEl}</td>
+                    <td>${pScoreStr}</td>
+                    <td>
+                        <button class="btn btn-sm" onclick="openGraphicTab('${res.Symbol}')" title="Detaylı Analiz"><i class="fa-solid fa-chart-line"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+                return; // Skip the rest of the loop for this row
             } else if (cat === 'tavan_adaylari') {
                 let scoreValue = res.Score !== undefined ? res.Score : 0;
                 let scoreColor = scoreValue >= 85 ? 'var(--accent-green)' : (scoreValue >= 75 ? 'var(--accent-yellow)' : 'var(--text-muted)');
-                scoreContent = `<span style="color:${scoreColor};font-weight:700;">${scoreValue} / 100</span>`;
-                if (scoreValue >= 85) scoreContent += ` <i class="fa-solid fa-bell text-yellow" title="Yüksek Tavan Olasılığı"></i>`;
                 
-                statusStr = `<span style="font-size:0.75rem; color:var(--text-muted); line-height:1.4; display:block; margin-bottom:5px;">${res.Report || '-'}</span>`;
+                // Evre Rozeti (Phase Badge) & V-Dönüş
+                let phaseBadge = res.Phase_Badge || 'TAVAN';
+                let phaseColor = res.Phase_Color || 'green';
+                let phaseBg = phaseColor === 'red' ? 'rgba(239, 68, 68, 0.2)' : (phaseColor === 'yellow' ? 'rgba(234, 179, 8, 0.2)' : 'rgba(16, 185, 129, 0.2)');
+                let phaseTxtColor = phaseColor === 'red' ? 'var(--accent-red)' : (phaseColor === 'yellow' ? 'var(--accent-yellow)' : 'var(--accent-green)');
+                let phaseIcon = phaseColor === 'red' ? 'fa-lock' : (phaseColor === 'yellow' ? 'fa-bolt' : 'fa-seedling');
+                let phaseTooltip = phaseBadge.includes("KİLİTLEME") ? "Tavana kilitlenme aşaması. Alım riski yüksek." : (phaseBadge.includes("İVMELENME") ? "Hacimle birlikte sert yukarı momentum başladı." : "Trendin başlangıcı. Yüksek kazanç potansiyeli.");
+                let evreStr = `<span title="${phaseTooltip}" style="background:${phaseBg}; color:${phaseTxtColor}; padding:3px 7px; border-radius:4px; font-weight:700; font-size:0.72rem; white-space:nowrap; cursor:help;"><i class="fa-solid ${phaseIcon}"></i> ${phaseBadge}</span>`;
+                
+                // 🛡️ Anti-Trap Shield (Tuzak Önleme Rozeti) & Teyit Skoru
+                if (res.Anti_Trap_Badge) {
+                    let atColor = res.Anti_Trap_Color || '#10b981';
+                    let atBg = atColor === '#10b981' ? 'rgba(16, 185, 129, 0.15)' : (atColor === '#ef4444' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(234, 179, 8, 0.15)');
+                    evreStr += `<div style="margin-top:3px;"><span title="Tuzak Kalkanı: Kurumsal para girişi ve mum formasyonu ile alım onayı." style="background:${atBg}; color:${atColor}; border:1px solid ${atColor}; padding:2px 5px; border-radius:3px; font-size:0.68rem; font-weight:700; white-space:nowrap; cursor:help;">${res.Anti_Trap_Badge}</span></div>`;
+                }
+
+                if (res.ORB_Breakout) {
+                    evreStr += `<div style="margin-top:2px;"><span title="Açılış Aralığı Kırılımı (ORB): Hisse günün ilk saatlerindeki tepe noktasını hacimli şekilde yukarı kırdı." style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; border:1px solid #38bdf8; padding:1px 4px; border-radius:3px; font-size:0.66rem; font-weight:700; cursor:help;"><i class="fa-solid fa-bullseye"></i> ORB Açılış Kırılımı</span></div>`;
+                }
+
+                if (res.V_Reversal) {
+                    evreStr += `<div style="margin-top:3px;"><span title="V-Dönüş: Gün içi dip seviyesinden çok hızlı ve güçlü bir şekilde toparlanıp ivme kazandı." style="background:rgba(168, 85, 247, 0.2); color:#c084fc; padding:2px 5px; border-radius:3px; font-size:0.68rem; font-weight:700; cursor:help;"><i class="fa-solid fa-bolt-lightning"></i> V-Dönüş +%${(res.V_Power||0).toFixed(1)}</span></div>`;
+                }
+                
+                // Tavan Fiyatı, Kalan % ve ETA
+                let tavanPVal = res.Ceiling_Price || (res.Position && res.Position.TP2 ? res.Position.TP2 : null);
+                let curPVal = res.Price || (res.Position && res.Position.Entry ? res.Position.Entry : null);
+                let distPct = "-";
+                if (res.Distance_To_Ceiling_Pct !== undefined && !isNaN(parseFloat(res.Distance_To_Ceiling_Pct))) {
+                    distPct = parseFloat(res.Distance_To_Ceiling_Pct).toFixed(1);
+                } else if (tavanPVal && curPVal && curPVal > 0) {
+                    distPct = (((tavanPVal - curPVal) / curPVal) * 100).toFixed(1);
+                }
+                let tavanP = tavanPVal ? "₺" + parseFloat(tavanPVal).toFixed(2) : "-";
+                let etaVal = res.ETA || (res.Position ? res.Position.Projection : "-");
+                let tavanStr = `<div style="font-size:0.88rem; font-weight:700; color:var(--accent-green); font-family:monospace;">${tavanP}</div>
+                                <div style="font-size:0.75rem; color:var(--text-muted);">Kalan: <b style="color:var(--accent-blue);">+${distPct}%</b></div>
+                                <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;" title="Tahmini Tavan Saati"><i class="fa-regular fa-clock"></i> ${etaVal}</div>`;
+                
+                // Hacim Katlama & Mum Gücü & VWAP & Domino
+                let volM = res.Vol_Multiplier !== undefined && !isNaN(parseFloat(res.Vol_Multiplier)) ? parseFloat(res.Vol_Multiplier).toFixed(1) : "1.0";
+                let volColor = volM >= 2.5 ? 'var(--accent-green)' : (volM >= 1.5 ? 'var(--accent-yellow)' : 'var(--text-muted)');
+                let hacimStr = `<span style="color:${volColor}; font-weight:700; font-size:0.75rem;"><i class="fa-solid fa-fire"></i> ${volM}x Hacim</span>`;
+                
+                if (res.VWAP) {
+                    hacimStr += `<div style="font-size:0.68rem; color:var(--text-muted); margin-top:2px;" title="Hacim Ağırlıklı Ortalama Fiyat">⚖️ VWAP: ₺${parseFloat(res.VWAP).toFixed(2)}</div>`;
+                }
+
+                if (res.Breakdown_Risk) {
+                    hacimStr += `<br><span style="background:rgba(239, 68, 68, 0.25); color:var(--accent-red); padding:1px 5px; border-radius:3px; font-size:0.68rem; font-weight:800;"><i class="fa-solid fa-triangle-exclamation"></i> ÇÖZÜLME RİSKİ</span>`;
+                } else if (res.Trap_Risk) {
+                    hacimStr += `<br><span style="background:rgba(239, 68, 68, 0.2); color:var(--accent-red); padding:1px 5px; border-radius:3px; font-size:0.68rem; font-weight:700;"><i class="fa-solid fa-triangle-exclamation"></i> Tuzak Riski</span>`;
+                } else if (res.Candle_Strength && res.Candle_Strength.includes('Marubozu')) {
+                    hacimStr += `<br><span style="background:rgba(16, 185, 129, 0.2); color:var(--accent-green); padding:1px 5px; border-radius:3px; font-size:0.68rem; font-weight:700;"><i class="fa-solid fa-dumbbell"></i> Boğa Gücü</span>`;
+                }
+                
+                if (res.Domino_Sector && res.Domino_Peers && res.Domino_Peers.length > 0) {
+                    let pStr = res.Domino_Peers.slice(0, 2).map(p => '#' + p).join(' ');
+                    hacimStr += `<div style="font-size:0.68rem; color:#94a3b8; margin-top:2px;" title="Sektörel Domino Kardeş Hisseleri"><i class="fa-solid fa-chess-knight"></i> ${res.Domino_Sector}: ${pStr}</div>`;
+                }
+                
+                // YENİ: Sinyal Motoru ve FOMO
+                let sigQ = res.Signal_Quality || `${scoreValue}/100`;
+                let sigColor = scoreColor;
+                if (res.Signal_Quality) {
+                    if (res.Signal_Quality.includes("ÇOK GÜÇLÜ AL")) sigColor = "var(--accent-green)";
+                    else if (res.Signal_Quality.includes("GÜÇLÜ AL")) sigColor = "var(--accent-green)";
+                    else if (res.Signal_Quality.includes("İZLE")) sigColor = "var(--accent-yellow)";
+                    else if (res.Signal_Quality.includes("ZAYIF")) sigColor = "var(--accent-orange)";
+                    else if (res.Signal_Quality.includes("UZAK DUR")) sigColor = "var(--accent-red)";
+                }
+                
+                let scoreStr = `<div style="font-weight:800; color:${sigColor}; font-size:1.0rem;">${sigQ}</div>`;
+                
+                if (res.FOMO_Level) {
+                    scoreStr += `<div style="font-size:0.7rem; color:${res.FOMO_Color}; font-weight:700; margin-top:4px;" title="FOMO İndikatörü: ${res.FOMO_Score.toFixed(1)}"><i class="fa-solid fa-fire-flame-curved"></i> FOMO: ${res.FOMO_Level}</div>`;
+                }
+
+                if (res.Teyit_Score) {
+                    let tcColor = res.Teyit_Score >= 80 ? '#10b981' : (res.Teyit_Score >= 60 ? '#facc15' : '#ef4444');
+                    scoreStr += `<div style="font-size:0.68rem; color:${tcColor}; font-weight:700; margin-top:2px;" title="Kurumsal Para ve Mum Teyit Skoru"><i class="fa-solid fa-shield-check"></i> %${res.Teyit_Score} Teyit</div>`;
+                }
+                
+                if (res.Factor_Breakdown) {
+                    let breakdownHtml = res.Factor_Breakdown.map(f => `${f.Factor}: <b style="color:${f.Score > 0 ? 'var(--accent-green)' : 'var(--accent-red)'}">${f.Score > 0 ? '+' : ''}${f.Score}</b>`).join('<br>');
+                    scoreStr += `<div style="font-size:0.65rem; color:var(--text-muted); margin-top:4px; max-height:45px; overflow-y:auto; line-height:1.2; border:1px solid rgba(255,255,255,0.1); padding:3px; border-radius:4px;" title="Puanlama Detayları">${breakdownHtml}</div>`;
+                }
+                
+                if (res.Streak_Score) {
+                    scoreStr += `<div style="font-size:0.68rem; color:#38bdf8;" title="Çift Tavan İhtimali"><i class="fa-solid fa-link"></i> %${res.Streak_Score} Seri</div>`;
+                }
+                
+                // YENİ: İndikatör Güçlendirmesi (RSI & MACD)
+                if (res.Indicators && res.Indicators.RSI) {
+                    let rsiVal = res.Indicators.RSI;
+                    let rsiColor = rsiVal >= 70 ? 'var(--accent-red)' : (rsiVal <= 40 ? 'var(--accent-green)' : 'var(--text-muted)');
+                    let macdIcon = res.Indicators.MACD_Positive ? '<i class="fa-solid fa-arrow-trend-up" style="color:var(--accent-green)"></i>' : '<i class="fa-solid fa-arrow-trend-down" style="color:var(--accent-red)"></i>';
+                    scoreStr += `<div style="font-size:0.7rem; color:${rsiColor}; margin-top:4px; display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,0.05); padding:2px 5px; border-radius:4px; border:1px solid rgba(255,255,255,0.1);" title="Anlık RSI ve MACD Trendi"><span>RSI:${rsiVal}</span> ${macdIcon}</div>`;
+                }
+
+                if (res.Warrant_Match) {
+                    scoreStr += `<div style="margin-top:2px;"><span style="background:rgba(234, 179, 8, 0.2); color:#facc15; padding:1px 4px; border-radius:3px; font-size:0.68rem; font-weight:700;" title="${res.Warrant_Match.Desc}"><i class="fa-solid fa-crosshairs"></i> Varant: ${res.Warrant_Match.Leverage} (+%${res.Warrant_Match.Potential_Gain_Pct})</span></div>`;
+                }
+                
                 if (res.Position) {
-                    statusStr += `
-                        <div style="font-size:0.72rem; display:flex; gap:5px; flex-wrap:wrap; margin-top:3px;">
-                            <span style="background:rgba(239, 68, 68, 0.15); color:var(--accent-red); padding:2px 5px; border-radius:4px; font-weight:600;"><i class="fa-solid fa-shield-halved"></i> Stop: ₺${res.Position.SL}</span>
-                            <span style="background:rgba(16, 185, 129, 0.15); color:var(--accent-green); padding:2px 5px; border-radius:4px; font-weight:600;"><i class="fa-solid fa-bullseye"></i> TP1: ₺${res.Position.TP1}</span>
-                            <span style="background:rgba(16, 185, 129, 0.15); color:var(--accent-green); padding:2px 5px; border-radius:4px; font-weight:600;"><i class="fa-solid fa-rocket"></i> Tavan: ₺${res.Position.TP2}</span>
-                            <span style="background:rgba(59, 130, 246, 0.15); color:var(--accent-blue); padding:2px 5px; border-radius:4px; font-weight:600;"><i class="fa-regular fa-clock"></i> ${res.Position.Projection}</span>
+                    scoreStr += `
+                        <div style="font-size:0.7rem; display:flex; gap:4px; flex-wrap:wrap; margin-top:2px;">
+                            <span style="background:rgba(239, 68, 68, 0.15); color:var(--accent-red); padding:1px 4px; border-radius:3px; font-weight:600;" title="İz Süren Stop"><i class="fa-solid fa-shield-halved"></i> ₺${res.Position.SL}</span>
                         </div>
                     `;
                 }
+                
+                tr.innerHTML = `
+                    <td style="color:var(--text-main);font-weight:700;">${symStr}</td>
+                    <td style="font-family:monospace; font-weight:600;">${priceStr}</td>
+                    <td>${evreStr}</td>
+                    <td>${tavanStr}</td>
+                    <td>${hacimStr}</td>
+                    <td>${scoreStr}</td>
+                    <td>
+                        <button type="button" class="btn-primary" style="padding:0.3rem 0.6rem; font-size:0.75rem; border-radius:6px; border:none; color:white; display:flex; align-items:center; gap:4px; cursor:pointer; background:linear-gradient(135deg, #ef4444, #b91c1c); box-shadow:0 2px 6px rgba(239,68,68,0.3);" onclick="document.getElementById('symbol-input').value='${res.Symbol}'; analyzeSymbol();" title="Tavan Hedefi, Stop Seviyeleri ve Altın Varantları İncele">
+                            <i class="fa-solid fa-rocket"></i> İncele
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+                return;
             } else if (cat === 'opportunities_1h') {
                 let s5 = res.Score_5 !== undefined ? res.Score_5 : 0;
                 let sColor = s5 === 5 ? 'var(--accent-green)' : (s5 >= 4 ? 'var(--accent-blue)' : 'var(--accent-yellow)');
@@ -1551,6 +2153,20 @@ function renderAllDashboardTables() {
                 
                 let barsAgoMain = res.Crossover_Bars_Ago !== undefined ? res.Crossover_Bars_Ago : '?';
                 statusStr = `<span style="font-size:0.75rem; color:var(--text-muted);">🔀 ${barsAgoMain}s önce | ADX:${res.ADX_Val} RSI:${res.RSI_Val}</span>`;
+            } else if (cat === 'stay_away_1h') {
+                let s5 = res.Score_5 !== undefined ? res.Score_5 : 0;
+                let sColor = s5 === 5 ? 'var(--accent-red)' : (s5 >= 4 ? '#f87171' : 'var(--accent-yellow)');
+                scoreContent = `<span style="color:${sColor};font-weight:700;">${s5} / 5</span>`;
+                
+                if (res.Daily_Change_Pct !== undefined) {
+                    let d_pct = parseFloat(res.Daily_Change_Pct);
+                    let d_c = d_pct > 0 ? "var(--accent-green)" : (d_pct < 0 ? "var(--accent-red)" : "var(--text-muted)");
+                    let d_sign = d_pct > 0 ? "+" : "";
+                    priceStr += `<br><span style="color:${d_c}; font-size:0.75rem;">(${d_sign}%${Math.abs(d_pct).toFixed(2)})</span>`;
+                }
+                
+                let barsAgoMain = res.Crossover_Bars_Ago !== undefined ? res.Crossover_Bars_Ago : '?';
+                statusStr = `<span style="font-size:0.75rem; color:var(--text-muted);">📉 ${barsAgoMain}s önce | ADX:${res.ADX_Val} RSI:${res.RSI_Val}</span>`;
             } else {
                 let scoreValue = res.Score !== undefined ? res.Score : 0;
                 let scoreColor = scoreValue >= 70 ? 'var(--accent-green)' : (scoreValue >= 50 ? 'var(--accent-yellow)' : 'var(--accent-red)');
@@ -1575,11 +2191,13 @@ function renderAllDashboardTables() {
                 <td style="font-family:monospace; font-weight:600;">${priceStr}</td>
                 <td>${scoreContent}</td>
                 <td>${statusStr}</td>
-                <td>
-                    <a href="/?symbol=${res.Symbol}&tab=graphic" target="_blank" class="btn btn-primary" style="padding:0.25rem 0.5rem; font-size:0.75rem; text-decoration:none; color:white; display:inline-block;" onclick="event.preventDefault(); document.getElementById('symbol-input').value='${res.Symbol}'; analyzeSymbol();">İncele</a>
-                </td>
-            `;
-            tbody.appendChild(tr);
+                    <td>
+                        <button type="button" class="btn-primary" style="padding:0.3rem 0.6rem; font-size:0.75rem; border-radius:6px; border:none; color:white; display:flex; align-items:center; gap:4px; cursor:pointer; background:linear-gradient(135deg, #3b82f6, #1d4ed8); box-shadow:0 2px 6px rgba(59,130,246,0.3);" onclick="document.getElementById('symbol-input').value='${res.Symbol}'; analyzeSymbol();" title="Detaylı AI Analizi, Varant Getiri Matrisi ve Grafiği Aç">
+                            <i class="fa-solid fa-chart-line"></i> İncele
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
         });
     }
     
@@ -1784,3 +2402,1465 @@ function updateSvrChart(mode) {
     });
 }
 
+// ========================================================
+// 📱 MOBİL KART NAVİGASYONU (GERİ / İLERİ & KAYDIRMA)
+// ========================================================
+let currentCardIndex = 0;
+const totalCards = 6;
+
+function jumpToCard(cardIdx) {
+    if (cardIdx < 0) cardIdx = 0;
+    if (cardIdx >= totalCards) cardIdx = totalCards - 1;
+    currentCardIndex = cardIdx;
+    
+    // Slider Butonlarını Güncelle
+    const indicators = document.querySelectorAll('#slider-indicators .indicator-dot');
+    indicators.forEach((dot, idx) => {
+        if (idx === cardIdx) {
+            dot.classList.add('active');
+            try { dot.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); } catch(e){}
+        } else {
+            dot.classList.remove('active');
+        }
+    });
+
+    // Alt Mobil Bar Butonlarını Güncelle
+    const bms = ['bm-tavan', 'bm-1h', 'bm-5m'];
+    bms.forEach((id, idx) => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (idx === cardIdx) el.classList.add('active');
+            else el.classList.remove('active');
+        }
+    });
+
+    // Hedef Karta Yumuşak Kaydır
+    const targetCard = document.getElementById(`radar-card-${cardIdx}`);
+    if (targetCard) {
+        targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        targetCard.style.transition = 'box-shadow 0.4s ease, border-color 0.4s ease';
+        const origBorder = targetCard.style.borderColor;
+        targetCard.style.borderColor = '#38bdf8';
+        targetCard.style.boxShadow = '0 0 25px rgba(56, 189, 248, 0.45)';
+        setTimeout(() => {
+            targetCard.style.borderColor = origBorder;
+            targetCard.style.boxShadow = '';
+        }, 1400);
+    }
+}
+
+function navigateCard(direction) {
+    let nextIdx = currentCardIndex + direction;
+    if (nextIdx < 0) nextIdx = totalCards - 1;
+    if (nextIdx >= totalCards) nextIdx = 0;
+    jumpToCard(nextIdx);
+}
+
+// ==========================================
+// 🚀 ALTIN VARANT SİMÜLATÖRÜ & GREEKS JS ENGINE
+// ==========================================
+
+async function runVarantSimulation() {
+    const symSelect = document.getElementById('sim-symbol-select');
+    const symbol = symSelect ? symSelect.value : 'THYAO';
+    const issuerSelect = document.getElementById('sim-issuer-select');
+    const issuer = issuerSelect ? issuerSelect.value : 'ALL';
+    const resBox = document.getElementById('sim-result-box');
+    if (!resBox) return;
+
+    resBox.innerHTML = `<div style="text-align:center; padding:1rem; color:var(--text-muted);"><div class="spinner small" style="display:inline-block; margin-right:8px;"></div> ${issuer !== 'ALL' ? issuer + ' ' : ''}Varantları ve Black-Scholes kâr hesabı yapılıyor...</div>`;
+
+    try {
+        const response = await fetch(`/api/varant_simulator?symbol=${symbol}&issuer=${encodeURIComponent(issuer)}&t=${Date.now()}`);
+        const data = await response.json();
+        
+        if (data.status === 'success' && data.warrants && data.warrants.length > 0) {
+            let html = `<div style="display:flex; flex-direction:column; gap:0.6rem;">`;
+            data.warrants.forEach(w => {
+                let badgeColor = w.type === 'CALL' ? 'var(--accent-green)' : 'var(--accent-red)';
+                let badgeBg = w.type === 'CALL' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)';
+                let riskColor = w.risk_badge.includes('DÜŞÜK') ? 'var(--accent-green)' : 'var(--accent-yellow)';
+                
+                html += `
+                <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:8px; padding:0.6rem; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span style="font-weight:800; color:var(--text-light); font-size:0.95rem;">${w.code}</span>
+                            <span style="background:${badgeBg}; color:${badgeColor}; font-size:0.7rem; font-weight:bold; padding:2px 6px; border-radius:4px;">${w.type}</span>
+                            <span style="font-size:0.72rem; color:var(--accent-yellow); font-weight:600;">🏛️ ${w.issuer}</span>
+                            <span style="font-size:0.72rem; color:var(--text-muted);">Vade: ${w.maturity_days}G</span>
+                        </div>
+                        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">
+                            Giriş: <b>${w.current_warrant_price}</b> | Hedef: <b style="color:var(--accent-green);">${w.target_warrant_price}</b> | Kaldıraç: <b>${w.gearing}</b> | Δ: <b>${w.delta}</b>
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:1.05rem; font-weight:800; color:var(--accent-green);">${w.warrant_gain_pct}</div>
+                        <div style="font-size:0.7rem; color:${riskColor};">${w.risk_badge}</div>
+                    </div>
+                </div>
+                `;
+            });
+            html += `</div>`;
+            resBox.innerHTML = html;
+        } else {
+            resBox.innerHTML = `<div style="text-align:center; padding:1rem; color:var(--text-muted);">Bu hisse ve seçilen kurum (${issuer}) için aktif varant bulunamadı.</div>`;
+        }
+    } catch (e) {
+        resBox.innerHTML = `<div style="text-align:center; padding:1rem; color:var(--accent-red);">Simülasyon yüklenirken hata: ${e.message}</div>`;
+    }
+}
+
+async function fetchWinRateScorecard() {
+    try {
+        const res = await fetch(`/api/winrate_stats?t=${Date.now()}`);
+        const data = await res.json();
+        if (data.status === 'success' && data.stats) {
+            const s = data.stats.summary;
+            setElText('stat-winrate', `%${s.win_rate_pct}`);
+            setElText('stat-avgprofit', `+%${s.avg_profit_pct}`);
+            setElText('stat-pfactor', s.profit_factor);
+
+            setElText('dt-stat-total', s.total_signals_30d);
+            setElText('dt-stat-win', `%${s.win_rate_pct}`);
+            setElText('dt-stat-duration', s.avg_time_to_target_hours);
+
+            // Populate history table in Detailed Analysis
+            const tbody = document.getElementById('dt-winrate-history-tbody');
+            if (tbody && data.stats.recent_completed_signals) {
+                tbody.innerHTML = '';
+                data.stats.recent_completed_signals.forEach(item => {
+                    let tr = document.createElement('tr');
+                    let statusColor = item.pnl_pct.includes('+') ? 'var(--accent-green)' : 'var(--accent-red)';
+                    let warrantColor = item.warrant_gain.includes('+') ? 'var(--accent-green)' : 'var(--accent-red)';
+                    
+                    tr.innerHTML = `
+                        <td style="font-weight:bold; color:var(--text-light);">${item.symbol}</td>
+                        <td style="color:var(--text-muted); font-size:0.8rem;">${item.date}</td>
+                        <td><span class="badge" style="background:rgba(255,255,255,0.05); font-size:0.75rem;">${item.signal_type}</span></td>
+                        <td>${item.entry_price}</td>
+                        <td style="color:var(--accent-blue);">${item.target_price}</td>
+                        <td style="font-weight:bold;">${item.exit_price}</td>
+                        <td style="color:${statusColor}; font-weight:bold;">${item.pnl_pct}</td>
+                        <td style="color:${warrantColor}; font-weight:800;">${item.warrant_gain}</td>
+                        <td style="color:var(--text-muted); font-size:0.8rem;">${item.duration}</td>
+                        <td><span style="color:${statusColor}; font-size:0.75rem; font-weight:bold;">${item.status}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+    } catch (e) {
+        console.error("Winrate Scorecard yükleme hatası:", e);
+    }
+}
+
+async function loadDetailedVarantSim(symbol, spotPrice) {
+    const spotEl = document.getElementById('dt-sim-spot');
+    const targetInput = document.getElementById('dt-sim-target-input');
+    const issuerSelect = document.getElementById('dt-sim-issuer-select');
+    const issuer = issuerSelect ? issuerSelect.value : 'ALL';
+    const tbody = document.getElementById('dt-varantsim-tbody');
+    
+    if (spotEl) spotEl.innerText = `₺${parseFloat(spotPrice || 100).toFixed(2)}`;
+    let defaultTarget = roundTo(parseFloat(spotPrice || 100) * 1.099, 2);
+    if (targetInput) targetInput.value = defaultTarget;
+
+    if (!tbody) return;
+    tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;"><div class="spinner small" style="display:inline-block; margin-right:8px;"></div> ${issuer !== 'ALL' ? issuer + ' ' : ''}Varantları ve Greeks matrisi hesaplanıyor...</td></tr>`;
+
+    try {
+        const cleanSym = symbol.replace('.IS', '').toUpperCase();
+        const response = await fetch(`/api/varant_simulator?symbol=${cleanSym}&price=${spotPrice}&target=${defaultTarget}&issuer=${encodeURIComponent(issuer)}&t=${Date.now()}`);
+        const data = await response.json();
+
+        if (data.status === 'success' && data.warrants && data.warrants.length > 0) {
+            tbody.innerHTML = '';
+            data.warrants.forEach(w => {
+                let tr = document.createElement('tr');
+                let badgeColor = w.type === 'CALL' ? 'var(--accent-green)' : 'var(--accent-red)';
+                let riskColor = w.risk_badge.includes('DÜŞÜK') ? 'var(--accent-green)' : 'var(--accent-yellow)';
+                
+                tr.innerHTML = `
+                    <td style="font-weight:800; color:var(--text-light); font-size:0.95rem;">${w.code}</td>
+                    <td><span style="color:${badgeColor}; font-weight:bold;">${w.type}</span> <span style="font-size:0.75rem; color:var(--accent-yellow); font-weight:600;">(🏛️ ${w.issuer})</span></td>
+                    <td style="font-weight:bold;">${w.current_warrant_price}</td>
+                    <td style="color:var(--accent-green); font-weight:bold;">${w.target_warrant_price}</td>
+                    <td style="color:var(--accent-blue);">${w.spot_gain_pct}</td>
+                    <td style="color:var(--accent-green); font-weight:800; font-size:0.95rem;">${w.warrant_gain_pct}</td>
+                    <td><span style="color:var(--accent-purple); font-weight:bold;">Δ ${w.delta}</span> <span style="font-size:0.75rem; color:var(--text-muted);">(${w.gearing})</span></td>
+                    <td style="color:var(--accent-red); font-size:0.8rem;">${w.theta}</td>
+                    <td style="color:var(--accent-yellow); font-size:0.8rem;">${w.weekend_decay}</td>
+                    <td><span style="color:${riskColor}; font-size:0.75rem; font-weight:bold;">${w.risk_badge}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } else {
+            tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;">Bu hisse ve seçilen kurum (${issuer}) için aktif ihraç edilmiş varant bulunmamaktadır.</td></tr>`;
+        }
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="10" class="text-red text-center" style="padding:2rem;">Hesaplama hatası: ${e.message}</td></tr>`;
+    }
+}
+
+async function recalculateDetailVarantSim() {
+    const sym = window.currentAnalyzedSymbol || document.getElementById('tk-sym')?.innerText || 'THYAO';
+    const spot = parseFloat(document.getElementById('tk-price')?.innerText?.replace('₺','').replace(',','') || 100);
+    const targetInput = document.getElementById('dt-sim-target-input');
+    const targetVal = parseFloat(targetInput?.value || spot * 1.099);
+    const issuerSelect = document.getElementById('dt-sim-issuer-select');
+    const issuer = issuerSelect ? issuerSelect.value : 'ALL';
+    
+    const tbody = document.getElementById('dt-varantsim-tbody');
+    if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;"><div class="spinner small" style="display:inline-block; margin-right:8px;"></div> Yeniden hesaplanıyor (${issuer})...</td></tr>`;
+
+    try {
+        const cleanSym = sym.replace('.IS', '').toUpperCase();
+        const response = await fetch(`/api/varant_simulator?symbol=${cleanSym}&price=${spot}&target=${targetVal}&issuer=${encodeURIComponent(issuer)}&t=${Date.now()}`);
+        const data = await response.json();
+
+        if (data.status === 'success' && data.warrants && data.warrants.length > 0) {
+            tbody.innerHTML = '';
+            data.warrants.forEach(w => {
+                let tr = document.createElement('tr');
+                let badgeColor = w.type === 'CALL' ? 'var(--accent-green)' : 'var(--accent-red)';
+                let riskColor = w.risk_badge.includes('DÜŞÜK') ? 'var(--accent-green)' : 'var(--accent-yellow)';
+                
+                tr.innerHTML = `
+                    <td style="font-weight:800; color:var(--text-light); font-size:0.95rem;">${w.code}</td>
+                    <td><span style="color:${badgeColor}; font-weight:bold;">${w.type}</span> <span style="font-size:0.75rem; color:var(--accent-yellow); font-weight:600;">(🏛️ ${w.issuer})</span></td>
+                    <td style="font-weight:bold;">${w.current_warrant_price}</td>
+                    <td style="color:var(--accent-green); font-weight:bold;">${w.target_warrant_price}</td>
+                    <td style="color:var(--accent-blue);">${w.spot_gain_pct}</td>
+                    <td style="color:var(--accent-green); font-weight:800; font-size:0.95rem;">${w.warrant_gain_pct}</td>
+                    <td><span style="color:var(--accent-purple); font-weight:bold;">Δ ${w.delta}</span> <span style="font-size:0.75rem; color:var(--text-muted);">(${w.gearing})</span></td>
+                    <td style="color:var(--accent-red); font-size:0.8rem;">${w.theta}</td>
+                    <td style="color:var(--accent-yellow); font-size:0.8rem;">${w.weekend_decay}</td>
+                    <td><span style="color:${riskColor}; font-size:0.75rem; font-weight:bold;">${w.risk_badge}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } else {
+            tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;">Bu hisse ve seçilen kurum (${issuer}) için aktif ihraç edilmiş varant bulunmamaktadır.</td></tr>`;
+        }
+    } catch (e) {
+        console.error("Varant Sim Recalculate Error:", e);
+    }
+}
+
+// Sayfa yüklendiğinde simülatörü ve sinyal karnesini otomatik yükle
+window.addEventListener('DOMContentLoaded', () => {
+    fetchWinRateScorecard();
+    runVarantSimulation();
+    fetchHomeWinrateStats();
+    fetchStatsTabData();
+});
+
+// 📸 ANALİZ RAPORUNU JPG / GÖRSEL OLARAK İNDİRME FONKSİYONU
+async function exportAnalysisAsJPG() {
+    const sym = window.currentAnalyzedSymbol || document.getElementById('tk-sym')?.innerText || 'ANALIZ';
+    const targetElement = document.getElementById('dashboard-wrapper');
+    const btn = document.getElementById('btn-export-jpg');
+    
+    if (!targetElement) return;
+    
+    if (typeof html2canvas === 'undefined') {
+        alert('Görsel kütüphanesi yüklenemedi. Lütfen sayfayı yenileyiniz.');
+        return;
+    }
+    
+    const originalBtnText = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Hazırlanıyor...';
+        btn.disabled = true;
+    }
+    
+    try {
+        const canvas = await html2canvas(targetElement, {
+            backgroundColor: '#0b0f19',
+            scale: 2, // Yüksek çözünürlüklü Retina/HD çıktı
+            useCORS: true,
+            logging: false,
+            windowWidth: targetElement.scrollWidth,
+            windowHeight: targetElement.scrollHeight
+        });
+        
+        // JPG / PNG İndirici Linki
+        const imageURL = canvas.toDataURL('image/jpeg', 0.95);
+        const downloadLink = document.createElement('a');
+        const nowStr = new Date().toISOString().slice(0,10);
+        downloadLink.download = `VarantRadar_${sym}_Analiz_${nowStr}.jpg`;
+        downloadLink.href = imageURL;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+    } catch (err) {
+        console.error("JPG Export Error:", err);
+        alert("Görsel oluşturulurken bir hata oluştu: " + err.message);
+    } finally {
+        if (btn) {
+            btn.innerHTML = originalBtnText;
+            btn.disabled = false;
+        }
+    }
+}
+
+// 📱 MOBİL & MASAÜSTÜ KATEGORİ FİLTRELEME FONKSİYONU (PILL TABS)
+function filterRadarGrid(targetCardId, btnElement) {
+    const allCards = document.querySelectorAll('#radar-cards-grid > .card');
+    const allPillBtns = document.querySelectorAll('#radar-pill-tabs .pill-btn');
+    
+    // Update pill active states
+    allPillBtns.forEach(b => {
+        b.classList.remove('active');
+        b.style.background = 'rgba(30,41,59,0.8)';
+        b.style.color = 'var(--text-muted)';
+        b.style.borderColor = 'rgba(255,255,255,0.1)';
+    });
+    
+    if (btnElement) {
+        btnElement.classList.add('active');
+        btnElement.style.background = 'linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(37, 99, 235, 0.3) 100%)';
+        btnElement.style.color = '#38bdf8';
+        btnElement.style.borderColor = '#38bdf8';
+    }
+    
+    if (targetCardId === 'all') {
+        allCards.forEach(c => {
+            c.style.display = 'block';
+            c.classList.add('card-fade-in');
+        });
+    } else {
+        allCards.forEach(c => {
+            if (c.id === targetCardId) {
+                c.style.display = 'block';
+                c.classList.add('card-fade-in');
+                // Mobilde yumusak kaydirma
+                if (window.innerWidth <= 850) {
+                    c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            } else {
+                c.style.display = 'none';
+            }
+        });
+    }
+}
+
+// 📱 MOBİL ALT BAR BUTONLARI İLE PİLL TABS EŞLEŞTİRME
+function jumpToCard(cardIdx) {
+    const pillButtons = document.querySelectorAll('#radar-pill-tabs .pill-btn');
+    const bottomNavBtns = document.querySelectorAll('.bottom-mobile-bar .bm-btn');
+    
+    bottomNavBtns.forEach(b => b.classList.remove('active'));
+    
+    if (cardIdx === 0 && document.getElementById('bm-tavan')) {
+        document.getElementById('bm-tavan').classList.add('active');
+        if (pillButtons[1]) filterRadarGrid('radar-card-0', pillButtons[1]);
+    } else if (cardIdx === 1 && document.getElementById('bm-1h')) {
+        document.getElementById('bm-1h').classList.add('active');
+        if (pillButtons[2]) filterRadarGrid('radar-card-1', pillButtons[2]);
+    } else if (cardIdx === 2 && document.getElementById('bm-5m')) {
+        document.getElementById('bm-5m').classList.add('active');
+        if (pillButtons[3]) filterRadarGrid('radar-card-2', pillButtons[3]);
+    }
+}
+
+let currentActiveCardIdx = 0;
+function navigateCard(direction) {
+    navigateSwipe(direction); // Reuse the new contextual swipe logic
+}
+
+// 📱 MOBİL SWIPE KALDIRILDI — Tablolar serbest yatay kaydırılabilir
+
+// ================================================================
+// 📊 10:15 SABAH TAVAN LİSTESİ & 18:10 SEANS KAPANIŞ KARNESİ JS
+// ================================================================
+
+function openTavanAuditModal(skipFetch = false) {
+    const modal = document.getElementById('tavan-audit-modal');
+    if (modal) {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        if (!skipFetch) {
+            fetchTavanAuditData();
+        }
+    }
+}
+
+function closeTavanAuditModal() {
+    const modal = document.getElementById('tavan-audit-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
+
+// ESC tuşuna basınca veya modal dışına tıklayınca kapatma
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeTavanAuditModal();
+});
+window.addEventListener('click', (e) => {
+    const modal = document.getElementById('tavan-audit-modal');
+    if (e.target === modal) closeTavanAuditModal();
+});
+
+async function fetchTavanAuditData(dateStr = '') {
+    const tbody = document.getElementById('tavan-audit-tbody');
+    const dateSelect = document.getElementById('tavan-audit-date-select');
+    
+    if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;"><div class="spinner small" style="display:inline-block; margin-right:8px;"></div> 10:15 Sabah Adayları & 18:10 Kapanış Denetimi yükleniyor...</td></tr>`;
+    }
+
+    try {
+        const url = dateStr ? `/api/tavan_tracker?date=${encodeURIComponent(dateStr)}` : '/api/tavan_tracker';
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.status === 'success' && data.audit) {
+            const audit = data.audit;
+            const summary = audit.summary || {};
+            const items = audit.items || [];
+            const overall = data.overall_stats || {};
+
+            // 1. Tarih Seçiciyi Doldur
+            if (dateSelect && data.available_dates) {
+                dateSelect.innerHTML = '';
+                data.available_dates.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d;
+                    opt.innerText = (d === new Date().toISOString().slice(0, 10)) ? `📅 Bugün (${d})` : `📅 ${d}`;
+                    if (d === data.selected_date) opt.selected = true;
+                    dateSelect.appendChild(opt);
+                });
+            }
+
+            // 2. Durum Rozeti
+            const isCompleted = audit.status === 'COMPLETED';
+            const badgeEl = document.getElementById('tavan-audit-status-badge');
+            if (badgeEl) {
+                badgeEl.style.background = isCompleted ? 'rgba(16,185,129,0.2)' : 'rgba(56,189,248,0.2)';
+                badgeEl.style.color = isCompleted ? '#10b981' : '#38bdf8';
+                badgeEl.style.borderColor = isCompleted ? 'rgba(16,185,129,0.4)' : 'rgba(56,189,248,0.4)';
+                badgeEl.innerHTML = isCompleted ? '<i class="fa-solid fa-check-double"></i> 18:10 KAPANIŞ DENETİMİ TAMAMLANDI' : '<i class="fa-solid fa-circle-notch fa-spin"></i> SEANS SÜRÜYOR (CANLI TAKİP)';
+            }
+
+            const evalTimeEl = document.getElementById('tavan-audit-eval-time');
+            if (evalTimeEl) {
+                evalTimeEl.innerText = `Kayıt: ${audit.snapshot_time || '10:15'} | Denetim: ${audit.evaluation_time || '18:10'}`;
+            }
+
+            // 3. Kümülatif Başarı Barı
+            const cumBanner = document.getElementById('tavan-audit-cum-banner');
+            if (cumBanner && overall) {
+                cumBanner.innerHTML = `🎯 <b>30 Günlük Kümülatif:</b> 10:15 Tavan Adaylarının <span style="color:#10b981; font-weight:800;">%${overall.cumulative_tavan_success_pct}'i Tavana</span>, <span style="color:#facc15; font-weight:800;">%${overall.cumulative_plus5_success_pct}'i +%5 Üzeri Kazanca</span> ulaştı. (Ort. Max: +%${overall.cumulative_avg_max_gain_pct})`;
+            }
+
+            // 4. KPI Kartları
+            const totalCnt = summary.total_candidates || items.length || 0;
+            const tavanCnt = summary.hit_ceiling_count || 0;
+            const tavanPct = summary.hit_ceiling_pct || 0;
+            const plus5Cnt = summary.hit_plus5_count || 0;
+            const plus5Pct = summary.hit_plus5_pct || 0;
+            const avgMax = summary.avg_max_gain_pct || 0.0;
+            const avgClose = summary.avg_closing_gain_pct || 0.0;
+            const avgWarrant = (avgMax * 6.2).toFixed(1);
+
+            setElText('aud-total-cnt', `${totalCnt} Hisse`);
+            setElText('aud-tavan-cnt', `${tavanCnt} / ${totalCnt} (%${tavanPct})`);
+            setElText('aud-plus5-cnt', `${plus5Cnt} / ${totalCnt} (%${plus5Pct})`);
+            setElText('aud-avg-max', `+%${avgMax}`);
+            setElText('aud-avg-close', `+%${avgClose}`);
+            setElText('aud-warrant-avg', `+%${avgWarrant}`);
+
+            // 5. Tablo Satırları
+            if (tbody) {
+                if (items.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;">Bu tarihe ait 10:15 tavan adayı kaydı bulunmamaktadır.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                items.forEach(it => {
+                    const tr = document.createElement('tr');
+                    const isTavan = it.hit_ceiling;
+                    const isPlus5 = it.hit_plus5;
+                    
+                    let badgeBg = 'rgba(255,255,255,0.05)';
+                    let badgeColor = 'var(--text-muted)';
+                    if (isTavan) {
+                        badgeBg = 'rgba(16,185,129,0.2)';
+                        badgeColor = '#10b981';
+                    } else if (isPlus5) {
+                        badgeBg = 'rgba(56,189,248,0.2)';
+                        badgeColor = '#38bdf8';
+                    } else if (it.max_gain_pct > 0) {
+                        badgeBg = 'rgba(234,179,8,0.2)';
+                        badgeColor = '#facc15';
+                    } else {
+                        badgeBg = 'rgba(239,68,68,0.2)';
+                        badgeColor = '#ef4444';
+                    }
+                    
+                    if (it.stop_loss_triggered) {
+                        badgeBg = 'rgba(239,68,68,0.4)';
+                        badgeColor = '#ef4444';
+                    }
+
+                    const closeGainSign = it.closing_gain_pct >= 0 ? '+' : '';
+                    const maxGainSign = it.max_gain_pct >= 0 ? '+' : '';
+                    const closeGainCol = it.closing_gain_pct >= 5 ? '#38bdf8' : (it.closing_gain_pct >= 0 ? '#10b981' : '#ef4444');
+                    const maxGainCol = it.max_gain_pct >= 9 ? '#10b981' : (it.max_gain_pct >= 5 ? '#38bdf8' : '#facc15');
+
+                    tr.innerHTML = `
+                        <td>
+                            <div style="font-weight:800; color:var(--text-light); font-size:0.95rem;">${it.symbol}</div>
+                            <div style="font-size:0.7rem; color:var(--accent-yellow); font-weight:600;">${it.morning_phase || 'GİRİŞ'} (Puan: ${it.morning_score})</div>
+                        </td>
+                        <td style="font-weight:bold; color:#fff;">₺${parseFloat(it.morning_price).toFixed(2)}</td>
+                        <td style="color:var(--accent-red); font-weight:bold;">₺${parseFloat(it.ceiling_target).toFixed(2)} <span style="font-size:0.72rem; color:var(--text-muted);">(${it.distance_to_ceiling_1015})</span></td>
+                        <td style="color:#facc15; font-weight:800;">₺${parseFloat(it.daily_high).toFixed(2)}</td>
+                        <td style="font-weight:bold; color:var(--text-light);">₺${parseFloat(it.closing_price).toFixed(2)}</td>
+                        <td style="color:${closeGainCol}; font-weight:bold;">${closeGainSign}%${parseFloat(it.closing_gain_pct).toFixed(2)}</td>
+                        <td style="color:${maxGainCol}; font-weight:800; font-size:0.95rem;">${maxGainSign}%${parseFloat(it.max_gain_pct).toFixed(2)}</td>
+                        <td>
+                            <span style="background:${badgeBg}; color:${badgeColor}; border:1px solid ${badgeColor}; padding:3px 8px; border-radius:6px; font-weight:700; font-size:0.75rem; white-space:nowrap; ${it.stop_loss_triggered ? 'animation: pulse 1.5s infinite;' : ''}">
+                                ${it.result_badge}
+                            </span>
+                        </td>
+                        <td>
+                            <div style="font-weight:800; color:#c084fc; font-size:0.85rem;">🏛️ ${it.ahlatci_warrant}</div>
+                            <div style="font-size:0.72rem; color:#10b981; font-weight:700;">${it.warrant_gain_pct} <span style="color:var(--text-muted); font-size:0.68rem;">(${it.warrant_leverage})</span></div>
+                        </td>
+                        <td>
+                            <button onclick="closeTavanAuditModal(); analyzeSymbol('${it.symbol}')" class="btn-primary" style="padding:3px 8px; font-size:0.75rem;" title="Hisse Analizini Aç">İncele</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        } else {
+            if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="text-red text-center" style="padding:2rem;">Denetim verisi alınamadı.</td></tr>`;
+        }
+    } catch (e) {
+        if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="text-red text-center" style="padding:2rem;">Bağlantı hatası: ${e.message}</td></tr>`;
+    }
+// ==========================================
+// 🏆 UZUN VADELİ TAVAN & +%5 KÂR ARŞİVİ KONTROLCÜSÜ (05 AĞUSTOS 2026'DAN İTİBAREN)
+// ==========================================
+}
+
+function openLongTermHistoryModal() {
+    // Redirect to the new stats tab layout
+    const statsBtn = document.querySelector('.nav-btn[onclick*="stats"]');
+    if (statsBtn) {
+        switchMainTab('stats', statsBtn);
+    }
+}
+
+function closeLongTermHistoryModal() {
+    // No-op, old modal is removed.
+}
+
+function applyLongTermFilter() {
+    const startDate = document.getElementById('hist-start-date')?.value || '2026-08-04';
+    const endDate = document.getElementById('hist-end-date')?.value || '';
+    const symbol = document.getElementById('hist-symbol-search')?.value || '';
+    const time = document.getElementById('hist-time-filter')?.value || '';
+    fetchLongTermHistoryData(startDate, endDate, symbol, time);
+}
+
+function openTavanAuditForDate(dateStr) {
+    try {
+        console.log("Opening Tavan Audit Modal for date:", dateStr);
+        const modal = document.getElementById('tavan-audit-modal');
+        if (modal) {
+            modal.style.display = 'block';
+            modal.style.zIndex = '9999999'; // Ensure it's on top
+            document.body.style.overflow = 'hidden';
+            
+            // Show loading immediately
+            const tbody = document.getElementById('tavan-audit-tbody');
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> ${dateStr} verileri yükleniyor...</td></tr>`;
+            }
+            
+            const select = document.getElementById('tavan-audit-date-select');
+            if (select) {
+                // Ensure the option exists before setting
+                let optionExists = Array.from(select.options).some(opt => opt.value === dateStr);
+                if (!optionExists) {
+                    const opt = document.createElement('option');
+                    opt.value = dateStr;
+                    opt.textContent = dateStr;
+                    select.appendChild(opt);
+                }
+                select.value = dateStr;
+            }
+            fetchTavanAuditData(dateStr);
+        } else {
+            console.error("tavan-audit-modal element not found in DOM!");
+            alert("Sistem Hatası: Denetim penceresi bulunamadı.");
+        }
+    } catch(e) {
+        console.error("Error opening audit modal:", e);
+        alert("Hata: " + e.message);
+    }
+}
+
+// ============================================================
+// 📊 İSTATİSTİKLER SEKMESİ - ANA FONKSİYONLARI
+// ============================================================
+
+async function fetchStatsTabData() {
+    const dailyTbody = document.getElementById('stats-history-tbody');
+    
+    if (dailyTbody) {
+        dailyTbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Performans arşivi yükleniyor...</td></tr>`;
+    }
+
+    try {
+        const res = await fetch(`/api/tavan_history?t=` + Date.now());
+        const data = await res.json();
+
+        if (data.status === 'success' || data.summary) {
+            const summ = data.summary || {};
+            const history = data.history || [];
+            
+            // Popüle Et: KPI Kartları
+            const el = (id) => document.getElementById(id);
+            if (el('stats-tab-total-days')) el('stats-tab-total-days').innerText = summ.total_days_tracked || 0;
+            if (el('stats-tab-total-candidates-sub')) el('stats-tab-total-candidates-sub').innerText = `Toplam ${summ.total_candidates_tracked || 0} Öneri`;
+            
+            if (el('stats-tab-tavan-rate')) el('stats-tab-tavan-rate').innerText = `%${summ.tavan_success_pct || 0}`;
+            if (el('stats-tab-tavan-cnt-sub')) el('stats-tab-tavan-cnt-sub').innerText = `${summ.total_hit_ceiling || 0} Tavan`;
+            
+            if (el('stats-tab-plus5-rate')) el('stats-tab-plus5-rate').innerText = `%${summ.plus5_success_pct || 0}`;
+            if (el('stats-tab-plus5-cnt-sub')) el('stats-tab-plus5-cnt-sub').innerText = `${summ.total_hit_plus5 || 0} Hisse`;
+            
+            if (el('stats-tab-avg-max-gain')) el('stats-tab-avg-max-gain').innerText = `+ %${(summ.cumulative_avg_max_gain_pct || 0).toFixed(2)}`;
+            if (el('stats-tab-avg-close-sub')) el('stats-tab-avg-close-sub').innerText = `Kapanış: %${(summ.cumulative_avg_closing_gain_pct || 0).toFixed(2)}`;
+            
+            if (el('stats-tab-warrant-avg-gain')) el('stats-tab-warrant-avg-gain').innerText = `+ %${(summ.ahlatci_warrant_avg_gain_pct || 0).toFixed(2)}`;
+            
+            // Yeni Eklenen Kapanış Kâr/Zarar Dökümü Kutuları
+            if (el('stats-tab-pos-count')) el('stats-tab-pos-count').innerText = `${summ.total_closed_positive || 0} Adet`;
+            if (el('stats-tab-pos-avg')) el('stats-tab-pos-avg').innerText = `(Ort. +%${(summ.avg_positive_close_gain || 0).toFixed(2)})`;
+            
+            if (el('stats-tab-neg-count')) el('stats-tab-neg-count').innerText = `${summ.total_closed_negative || 0} Adet`;
+            if (el('stats-tab-neg-avg')) el('stats-tab-neg-avg').innerText = `(Ort. ${summ.avg_negative_close_gain < 0 ? '' : '-' }%${Math.abs(summ.avg_negative_close_gain || 0).toFixed(2)})`;
+            
+            let netPct = summ.net_profit_pct || 0;
+            let netSign = netPct > 0 ? '+' : '';
+            if (el('stats-tab-net-pct')) el('stats-tab-net-pct').innerText = `${netSign}%${netPct.toFixed(2)}`;
+            let netCard = el('stats-tab-net-card');
+            if (netCard) {
+                if (netPct > 0) {
+                    netCard.style.background = 'linear-gradient(145deg, rgba(16,185,129,0.05) 0%, rgba(15,23,42,1) 100%)';
+                    netCard.style.border = '1px solid rgba(16,185,129,0.2)';
+                    el('stats-tab-net-pct').style.color = 'var(--accent-green)';
+                } else if (netPct < 0) {
+                    netCard.style.background = 'linear-gradient(145deg, rgba(239,68,68,0.05) 0%, rgba(15,23,42,1) 100%)';
+                    netCard.style.border = '1px solid rgba(239,68,68,0.2)';
+                    el('stats-tab-net-pct').style.color = 'var(--accent-red)';
+                } else {
+                    netCard.style.background = 'linear-gradient(145deg, rgba(59,130,246,0.05) 0%, rgba(15,23,42,1) 100%)';
+                    netCard.style.border = '1px solid rgba(59,130,246,0.2)';
+                    el('stats-tab-net-pct').style.color = 'var(--text-muted)';
+                }
+            }
+            
+            // Elite (Score 100) Kapanış Kâr/Zarar Dökümü Kutuları
+            if (el('stats-tab-elite-pos-count')) el('stats-tab-elite-pos-count').innerText = `${summ.elite_closed_positive || 0} Adet`;
+            if (el('stats-tab-elite-pos-avg')) el('stats-tab-elite-pos-avg').innerText = `(Ort. +%${(summ.elite_avg_positive_gain || 0).toFixed(2)})`;
+            
+            if (el('stats-tab-elite-neg-count')) el('stats-tab-elite-neg-count').innerText = `${summ.elite_closed_negative || 0} Adet`;
+            if (el('stats-tab-elite-neg-avg')) el('stats-tab-elite-neg-avg').innerText = `(Ort. ${summ.elite_avg_negative_gain < 0 ? '' : '-' }%${Math.abs(summ.elite_avg_negative_gain || 0).toFixed(2)})`;
+            
+            let eliteNetPct = summ.elite_net_profit_pct || 0;
+            let eliteNetSign = eliteNetPct > 0 ? '+' : '';
+            if (el('stats-tab-elite-net-pct')) el('stats-tab-elite-net-pct').innerText = `${eliteNetSign}%${eliteNetPct.toFixed(2)}`;
+            
+            let eliteNetCard = el('stats-tab-elite-net-card');
+            if (eliteNetCard) {
+                if (eliteNetPct > 0) {
+                    eliteNetCard.style.background = 'linear-gradient(145deg, rgba(16,185,129,0.05) 0%, rgba(15,23,42,1) 100%)';
+                    eliteNetCard.style.border = '1px solid rgba(16,185,129,0.5)';
+                    el('stats-tab-elite-net-pct').style.color = 'var(--accent-green)';
+                } else if (eliteNetPct < 0) {
+                    eliteNetCard.style.background = 'linear-gradient(145deg, rgba(239,68,68,0.05) 0%, rgba(15,23,42,1) 100%)';
+                    eliteNetCard.style.border = '1px solid rgba(239,68,68,0.5)';
+                    el('stats-tab-elite-net-pct').style.color = 'var(--accent-red)';
+                } else {
+                    eliteNetCard.style.background = 'linear-gradient(145deg, rgba(234,179,8,0.05) 0%, rgba(15,23,42,1) 100%)';
+                    eliteNetCard.style.border = '1px solid rgba(234,179,8,0.5)';
+                    el('stats-tab-elite-net-pct').style.color = 'var(--accent-yellow)';
+                }
+            }
+            
+            // Popüle Et: Daily History Tablosu
+            if (dailyTbody) {
+                dailyTbody.innerHTML = '';
+                if (history.length === 0) {
+                    dailyTbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;">Henüz kaydedilmiş seans bulunmuyor.</td></tr>`;
+                } else {
+                    history.forEach(h => {
+                        const tr = document.createElement('tr');
+                        const closeColor = h.avg_close_gain >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+                        const closeSign = h.avg_close_gain >= 0 ? '+' : '';
+                        
+                        tr.innerHTML = `
+                            <td><i class="fa-regular fa-calendar" style="color:var(--text-muted);"></i> ${h.date}</td>
+                            <td>${h.total_signals}</td>
+                            <td style="color:var(--accent-green); font-weight:bold;">${h.hit_ceiling} Tavan (%${h.tavan_rate})</td>
+                            <td style="color:var(--accent-blue); font-weight:bold;">${h.hit_plus5} Adet (%${h.plus5_rate})</td>
+                            <td style="color:var(--accent-yellow); font-weight:bold;">+%${h.avg_max_gain.toFixed(2)}</td>
+                            <td style="color:${closeColor}; font-weight:bold;">${closeSign}%${h.avg_close_gain.toFixed(2)}</td>
+                        `;
+                        dailyTbody.appendChild(tr);
+                    });
+                }
+            }
+        } else {
+            if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="6" class="text-red text-center" style="padding:2rem;">Veri alınamadı: ${data.message || 'Bilinmeyen hata'}</td></tr>`;
+        }
+    } catch (e) {
+        if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="6" class="text-red text-center" style="padding:2rem;">Baglanti hatasi: ${e.message}</td></tr>`;
+    }
+}
+
+// ============================================================
+// 🔧 ORTAK RENDER YARDIMCILARI (Hem Modal hem Sekme İçin)
+// ============================================================
+
+function renderHistoryKpis(summ, prefix) {
+    if (!summ) return;
+    const el = (id) => document.getElementById(prefix + id);
+    const maxP = summ.cumulative_avg_max_gain_pct || 0;
+    const clsP = summ.cumulative_avg_closing_gain_pct || 0;
+    const wrnP = summ.ahlatci_warrant_avg_gain_pct || 0;
+
+    if (el('total-days')) el('total-days').innerText = `${summ.total_days_tracked || 0} Seans`;
+    if (el('total-candidates-sub')) el('total-candidates-sub').innerText = `Toplam ${summ.total_candidates_tracked || 0} Oneri`;
+    if (el('tavan-rate')) el('tavan-rate').innerText = `%${summ.tavan_success_pct || 0}`;
+    if (el('tavan-cnt-sub')) el('tavan-cnt-sub').innerText = `${summ.total_hit_ceiling || 0} / ${summ.total_candidates_tracked || 0} Tavan`;
+    if (el('plus5-rate')) el('plus5-rate').innerText = `%${summ.plus5_success_pct || 0}`;
+    if (el('plus5-cnt-sub')) el('plus5-cnt-sub').innerText = `${summ.total_hit_plus5 || 0} / ${summ.total_candidates_tracked || 0} Kazandirdi`;
+    if (el('avg-max-gain')) el('avg-max-gain').innerText = `${maxP > 0 ? '+' : ''}%${maxP.toFixed(2)}`;
+    if (el('avg-close-sub')) el('avg-close-sub').innerText = `Kapanis Ort: ${clsP > 0 ? '+' : ''}%${clsP.toFixed(2)}`;
+    if (el('warrant-avg-gain')) el('warrant-avg-gain').innerText = `${wrnP > 0 ? '+' : ''}%${wrnP.toFixed(2)}`;
+}
+
+function renderHourlyCards(hourlyList, container) {
+    if (!container) return;
+    if (!hourlyList || hourlyList.length === 0) {
+        container.innerHTML = `<div style="color:var(--text-muted); font-size:0.85rem; padding:1rem;">Saatlik veri bulunamadi.</div>`;
+        return;
+    }
+
+    // Saatlere göre sırala
+    const sortOrder = { '10:15': 1, '11:30': 2, '14:00': 3, '16:00': 4 };
+    hourlyList.sort((a, b) => (sortOrder[a.time] || 9) - (sortOrder[b.time] || 9));
+
+    const colorMap = {
+        '10:15': { bg: 'rgba(251, 146, 60, 0.1)', border: 'rgba(251, 146, 60, 0.4)', text: '#fb923c', icon: 'fa-sun' },
+        '11:30': { bg: 'rgba(250, 204, 21, 0.1)', border: 'rgba(250, 204, 21, 0.35)', text: '#facc15', icon: 'fa-cloud-sun' },
+        '14:00': { bg: 'rgba(56, 189, 248, 0.1)', border: 'rgba(56, 189, 248, 0.35)', text: '#38bdf8', icon: 'fa-circle-half-stroke' },
+        '16:00': { bg: 'rgba(168, 85, 247, 0.1)', border: 'rgba(168, 85, 247, 0.35)', text: '#c084fc', icon: 'fa-moon' },
+    };
+
+    container.innerHTML = hourlyList.map(h => {
+        const c = colorMap[h.time] || { bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.15)', text: '#94a3b8', icon: 'fa-clock' };
+        const tavanColor = h.tavan_pct >= 75 ? '#10b981' : (h.tavan_pct >= 50 ? '#facc15' : '#ef4444');
+        const plus5Color = h.plus5_pct >= 80 ? '#38bdf8' : (h.plus5_pct >= 60 ? '#10b981' : '#facc15');
+        const bestTime = hourlyList.reduce((a, b) => (a.tavan_pct > b.tavan_pct ? a : b), hourlyList[0]);
+        const isBest = h.time === bestTime.time;
+
+        return `
+            <div style="background:${c.bg}; border:1px solid ${c.border}; border-radius:10px; padding:1rem; position:relative; ${isBest ? 'box-shadow: 0 0 18px ' + c.border + ';' : ''}">
+                ${isBest ? `<div style="position:absolute; top:-10px; right:10px; background:${c.text}; color:#000; font-size:0.65rem; font-weight:800; padding:2px 8px; border-radius:4px;">EN BASARILI</div>` : ''}
+                <div style="font-size:1.1rem; font-weight:800; color:${c.text}; display:flex; align-items:center; gap:8px; margin-bottom:0.7rem;">
+                    <i class="fa-solid ${c.icon}"></i> ${h.label || h.time}
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                    <div style="background:rgba(255,255,255,0.04); border-radius:6px; padding:0.5rem; text-align:center;">
+                        <div style="font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; font-weight:600;">Tavan Kilidi</div>
+                        <div style="font-size:1.3rem; font-weight:800; color:${tavanColor};">%${h.tavan_pct}</div>
+                        <div style="font-size:0.65rem; color:var(--text-muted);">${h.tavan_hits}/${h.candidates} hisse</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.04); border-radius:6px; padding:0.5rem; text-align:center;">
+                        <div style="font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; font-weight:600;">+%5 Kar</div>
+                        <div style="font-size:1.3rem; font-weight:800; color:${plus5Color};">%${h.plus5_pct}</div>
+                        <div style="font-size:0.65rem; color:var(--text-muted);">${h.plus5_hits}/${h.candidates} hisse</div>
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-top:0.6rem; font-size:0.78rem;">
+                    <div style="color:var(--text-muted);">Ort. Zirve: <span style="color:#facc15; font-weight:800;">+%${h.avg_max_gain_pct}</span></div>
+                    <div style="color:var(--text-muted);">Varant: <span style="color:#c084fc; font-weight:800;">+%${h.warrant_gain_pct}</span></div>
+                </div>
+                <div style="margin-top:0.5rem; font-size:0.7rem; color:var(--text-muted); text-align:right;">${h.candidates} oneri tarama yapildi</div>
+            </div>`;
+    }).join('');
+}
+
+
+function renderHallOfFame(hofList, tbody) {
+    if (!tbody) return;
+    if (!hofList || hofList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-muted text-center" style="padding:2rem;">Kayit bulunamadi.</td></tr>`;
+        return;
+    }
+    tbody.innerHTML = '';
+    hofList.forEach((h, idx) => {
+        const tr = document.createElement('tr');
+        const rankIcon = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `#${idx + 1}`));
+        tr.innerHTML = `
+            <td><div style="font-weight:800; color:#fff; font-size:0.88rem;">${rankIcon}</div></td>
+            <td><div style="font-weight:800; color:#fff; font-size:0.88rem;">${h.symbol}</div></td>
+            <td style="color:var(--text-muted); font-weight:bold; text-align:center;">${h.appearances} Gun</td>
+            <td>
+                <span style="color:#10b981; font-weight:800; font-size:0.85rem;">%${h.tavan_success_pct}</span>
+                <div style="font-size:0.68rem; color:var(--text-muted);">${h.tavan_hits} Kez Tavan</div>
+            </td>
+            <td>
+                <span style="color:#38bdf8; font-weight:800; font-size:0.85rem;">%${h.plus5_success_pct}</span>
+                <div style="font-size:0.68rem; color:var(--text-muted);">${h.plus5_hits} Kez +%5</div>
+            </td>
+            <td style="color:#facc15; font-weight:800;">+ %${h.avg_max_gain_pct}</td>
+            <td><div style="font-weight:800; color:#c084fc; font-size:0.82rem;">${h.ahlatci_warrant || '-'}</div></td>`;
+        tbody.appendChild(tr);
+    });
+}
+
+// ============================================================
+// 📱 MOBİL GRAFİK YARDIMCILARI
+// ============================================================
+
+// Yatay Döndürme İpucu
+let rotateHintDismissed = localStorage.getItem('rotate-hint-dismissed') === 'true';
+
+function showRotateHint() {
+    if (rotateHintDismissed || window.innerWidth > 850) return;
+    const overlay = document.getElementById('rotateHintOverlay');
+    if (overlay && window.matchMedia('(orientation: portrait)').matches) {
+        overlay.classList.add('active');
+    }
+}
+function dismissRotateHint() {
+    rotateHintDismissed = true;
+    localStorage.setItem('rotate-hint-dismissed', 'true');
+    const overlay = document.getElementById('rotateHintOverlay');
+    if (overlay) overlay.classList.remove('active');
+}
+
+// Yataya geçince ipucunu otomatik kapat
+window.matchMedia('(orientation: landscape)').addEventListener('change', e => {
+    if (e.matches) {
+        const overlay = document.getElementById('rotateHintOverlay');
+        if (overlay) overlay.classList.remove('active');
+    }
+});
+
+// Tam Ekran Grafik Modu
+function openChartFullscreen(canvasId, title) {
+    const originalCanvas = document.getElementById(canvasId);
+    if (!originalCanvas) return;
+
+    const overlay = document.getElementById('chartFullscreenOverlay');
+    const titleEl = document.getElementById('chart-fs-title');
+    const body = document.getElementById('chart-fs-body');
+    if (!overlay || !body) return;
+
+    if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-chart-line"></i> ${title || 'Grafik'}`;
+
+    // Canvas'ı klonla
+    body.innerHTML = '';
+    const clone = originalCanvas.cloneNode(true);
+    clone.style.width = '100%';
+    clone.style.height = '100%';
+    clone.style.maxHeight = '80vh';
+    body.appendChild(clone);
+
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeChartFullscreen() {
+    const overlay = document.getElementById('chartFullscreenOverlay');
+    if (overlay) overlay.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// Dashboard yüklenince grafiklere "Büyüt" butonu ekle
+function injectChartExpandButtons() {
+    if (window.innerWidth > 850) return;
+    document.querySelectorAll('.chart-container').forEach((container, idx) => {
+        if (container.querySelector('.chart-expand-btn')) return;
+        const canvas = container.querySelector('canvas');
+        if (!canvas) return;
+
+        const canvasId = canvas.id || `chart-canvas-${idx}`;
+        if (!canvas.id) canvas.id = canvasId;
+
+        const btn = document.createElement('button');
+        btn.className = 'chart-expand-btn';
+        btn.innerHTML = '<i class="fa-solid fa-expand"></i> Büyüt';
+        btn.onclick = function() {
+            // İlk açılışta yatay döndürme ipucu göster
+            if (!rotateHintDismissed) showRotateHint();
+            openChartFullscreen(canvasId, container.closest('.card')?.querySelector('.card-title')?.textContent || 'Grafik');
+        };
+        container.style.position = 'relative';
+        container.appendChild(btn);
+    });
+}
+
+// Sayfa yüklenince ve analiz tamamlanınca çağır
+const _origSwitchMainTab = window.switchMainTab;
+if (typeof _origSwitchMainTab === 'function') {
+    // Dashboard sekmesine geçince butonları ekle
+    const origFn = switchMainTab;
+}
+
+// 500ms sonra otomatik inject (sayfa yüklenince)
+setTimeout(injectChartExpandButtons, 1500);
+
+// Analiz tamamlanınca tekrar inject et (yeni grafikler oluşabilir)
+const _chartObserver = new MutationObserver(() => {
+    setTimeout(injectChartExpandButtons, 500);
+});
+const dashWrapper = document.getElementById('dashboard-wrapper');
+if (dashWrapper) {
+    _chartObserver.observe(dashWrapper, { childList: true, subtree: true });
+}
+
+// ========== SİMÜLASYON MOTORU ==========
+let globalSimData = null;
+
+async function fetchSimulationData() {
+    const tbody = document.getElementById('sim-trade-log-tbody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> İşlem Geçmişi Yükleniyor...</td></tr>';
+    
+    try {
+        const res = await fetch(`/api/simulation/daily_pnl?t=` + Date.now());
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+            globalSimData = data;
+            fetchLiveOrders();
+            
+            // Calculate KPIs
+            const equityCurve = data.equity_curve || [];
+            const trades = data.trades || [];
+            
+            let startBakiye = 0;
+            let endBakiye = 0;
+            let totalGetiri = 0;
+            
+            if (equityCurve.length > 0) {
+                startBakiye = equityCurve[0].start_equity;
+                endBakiye = equityCurve[equityCurve.length - 1].end_equity;
+                if (startBakiye > 0) {
+                    totalGetiri = ((endBakiye - startBakiye) / startBakiye) * 100;
+                }
+            }
+            
+            const isProfit = totalGetiri >= 0;
+            const el = (id) => document.getElementById(id);
+            if (el('sim-kpi-start')) el('sim-kpi-start').innerText = startBakiye.toLocaleString('tr-TR', {minimumFractionDigits:2}) + ' ₺';
+            if (el('sim-kpi-end')) el('sim-kpi-end').innerText = endBakiye.toLocaleString('tr-TR', {minimumFractionDigits:2}) + ' ₺';
+            if (el('sim-kpi-total-pct')) {
+                el('sim-kpi-total-pct').innerText = (isProfit ? '+' : '') + totalGetiri.toFixed(2) + '%';
+                el('sim-kpi-total-pct').style.color = isProfit ? 'var(--accent-green)' : 'var(--accent-red)';
+            }
+            if (el('sim-kpi-trades')) el('sim-kpi-trades').innerText = trades.length;
+            
+            // Render Equity Curve Chart
+            renderEquityCurveChart(equityCurve);
+            
+            // Render Trades Table
+            if (tbody) {
+                tbody.innerHTML = '';
+                if (trades.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-muted text-center" style="padding:2rem;">Kayıtlı işlem bulunamadı.</td></tr>';
+                } else {
+                    trades.forEach(t => {
+                        const tr = document.createElement('tr');
+                        const isClosed = t.exit_time && t.exit_price;
+                        const pnlColor = t.pnl_pct >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+                        const pnlSign = t.pnl_pct >= 0 ? '+' : '';
+                        
+                        const exitTimeStr = isClosed ? t.exit_time : '<span style="color:var(--accent-yellow)">İşlemde</span>';
+                        const exitPriceStr = isClosed ? `₺${t.exit_price.toFixed(2)}` : '-';
+                        const pnlValStr = isClosed ? `${pnlSign}₺${(t.pnl_val || 0).toFixed(2)}` : '-';
+                        const pnlPctStr = isClosed ? `${pnlSign}${(t.pnl_pct || 0).toFixed(2)}%` : '-';
+                        const statusStr = isClosed ? (t.exit_reason || 'Kapandı') : '<span style="color:var(--accent-yellow); font-weight:bold;"><i class="fa-solid fa-spinner fa-spin"></i> AÇIK POZİSYON</span>';
+
+                        tr.innerHTML = `
+                            <td>${t.entry_time}</td>
+                            <td>${exitTimeStr}</td>
+                            <td style="font-weight:bold; color:var(--text-light);">${t.symbol}</td>
+                            <td>₺${t.entry_price.toFixed(2)}</td>
+                            <td>${exitPriceStr}</td>
+                            <td style="color:${pnlColor}; font-weight:bold;">${pnlValStr}</td>
+                            <td style="color:${pnlColor}; font-weight:bold;">${pnlPctStr}</td>
+                            <td>${statusStr}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            }
+        } else {
+            if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-red text-center" style="padding:2rem;">Simülasyon verisi alınamadı.</td></tr>';
+        }
+    } catch (e) {
+        if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-red text-center" style="padding:2rem;">Bağlantı hatası: ' + e.message + '</td></tr>';
+    }
+}
+
+let equityChartInstance = null;
+
+function renderEquityCurveChart(equityData) {
+    const ctx = document.getElementById('equityCurveChart');
+    if (!ctx) return;
+    
+    if (equityChartInstance) {
+        equityChartInstance.destroy();
+    }
+    
+    const labels = equityData.map(d => d.date_str);
+    const dataPoints = equityData.map(d => d.end_equity);
+    
+    equityChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Bakiye (₺)',
+                data: dataPoints,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 2,
+                pointRadius: 3,
+                pointBackgroundColor: '#3b82f6',
+                fill: true,
+                tension: 0.2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(context.parsed.y);
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)'
+                    },
+                    ticks: {
+                        color: '#94a3b8'
+                    }
+                },
+                y: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)'
+                    },
+                    ticks: {
+                        color: '#94a3b8',
+                        callback: function(value, index, values) {
+                            return value.toLocaleString('tr-TR');
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderDailyBreakdown(dailyList, tbody, prefix = '') {
+    if (!tbody) return;
+    const weekVal = document.getElementById('stats-tab-week-select')?.value;
+    let expectedDates = [];
+    if (weekVal) {
+        const [year, weekStr] = weekVal.split('-W');
+        const simple = new Date(year, 0, 1 + (weekStr - 1) * 7);
+        const dow = simple.getDay();
+        const ISOweekStart = simple;
+        if (dow <= 4)
+            ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
+        else
+            ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
+        for(let i = 0; i < 5; i++) {
+            const d = new Date(ISOweekStart);
+            d.setDate(d.getDate() + i);
+            expectedDates.push(d.toISOString().slice(0, 10));
+        }
+    } else {
+        expectedDates = dailyList.map(d => d.date);
+    }
+    if (expectedDates.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-muted text-center" style="padding:2rem;">Bu hafta icin kayit bulunamadi.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = '';
+    // Reverse SİLİNDİ, en yeni tarih en üstte çıksın
+    expectedDates.forEach(dateStr => {
+        const d = dailyList.find(x => x.date === dateStr);
+        if (!d) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = '<td><div style="font-weight:800; font-size:0.9rem; color:var(--text-light); display:flex; align-items:center; gap:6px;"><i class="fa-regular fa-calendar" style="color:var(--text-muted);"></i> ' + dateStr + '</div></td><td colspan="5" class="text-center" style="color:var(--text-muted); font-size:0.85rem; font-style:italic; padding:1.5rem 0;"><i class="fa-solid fa-mug-hot" style="font-size:1.2rem; color:rgba(255,255,255,0.1); margin-right:8px;"></i> TATİL / VERİ YOK</td>';
+            tbody.appendChild(tr);
+            return;
+        }
+        const tr = document.createElement('tr');
+        const total = d.total_candidates || 0;
+        const tavan = d.hit_ceiling_count || 0;
+        let tavanRate = d.hit_ceiling_pct || 0;
+        const avgMax = d.avg_max_gain_pct || 0;
+        const avgClose = d.avg_closing_gain_pct || 0;
+        const starStock = d.star_stock || 'Yok';
+        const warrantCode = d.star_warrant || 'Yok';
+        const warrantGain = d.star_warrant_gain || '+0%';
+        
+        const dailyResultColor = avgClose > 0 ? '#10b981' : (avgClose < 0 ? '#ef4444' : 'var(--text-muted)');
+        const closeSign = avgClose > 0 ? '+' : '';
+        const maxSign = avgMax > 0 ? '+' : '';
+        
+        tr.innerHTML = `
+            <td>
+                <div style="font-weight:800; font-size:0.9rem; color:var(--text-light); display:flex; align-items:center; gap:6px;">
+                    <i class="fa-regular fa-calendar-check" style="color:#10b981;"></i> ${d.date}
+                </div>
+                <div style="font-size:0.65rem; color:#10b981; font-weight:700; margin-top:3px;">
+                    <i class="fa-solid fa-check"></i> ${d.status === 'COMPLETED' ? 'Tamamlandı' : 'Canlı'}
+                </div>
+            </td>
+            <td>
+                <div style="font-size:1.1rem; font-weight:800; color:#fff;">${total}</div>
+            </td>
+            <td>
+                <div style="font-size:0.9rem; font-weight:800; color:#10b981;">%${tavanRate} Başarı</div>
+                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">${tavan}/${total} Hisse Tavana Ulaştı</div>
+            </td>
+            <td>
+                <div style="font-weight:800; font-size:0.9rem; color:${dailyResultColor};">${closeSign}${avgClose.toFixed(2)}%</div>
+                <div style="font-size:0.72rem; color:var(--accent-yellow); font-weight:600;">Zirve: ${maxSign}${avgMax.toFixed(2)}%</div>
+            </td>
+            <td>
+                <div style="font-weight:800; font-size:0.85rem; color:#38bdf8;">${starStock}</div>
+                <div style="font-size:0.72rem; color:#c084fc; font-weight:700; margin-top:2px;">${warrantCode} ${warrantGain}</div>
+            </td>
+            <td>
+                <button onclick="console.log('Detayları Ac clicked for ${d.date}'); openTavanAuditForDate('${d.date}')" class="btn-primary" style="background:rgba(239,68,68,0.25); color:#fca5a5; border:1px solid rgba(239,68,68,0.4); padding:4px 10px; font-size:0.8rem; font-weight:bold; border-radius:4px; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-folder-open"></i> Detayları Aç
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+
+async function fetchLiveOrders() {
+    const container = document.getElementById('live-orders-container');
+    if (!container) return;
+    
+    try {
+        const res = await fetch(`/api/simulation/live_orders?t=${Date.now()}`);
+        const data = await res.json();
+        
+        if (data.status === 'success' && data.orders && data.orders.length > 0) {
+            container.innerHTML = '';
+            data.orders.forEach(order => {
+                let card = document.createElement('div');
+                card.style.cssText = "background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; padding:1rem; display:flex; flex-direction:column; gap: 0.5rem;";
+                
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem; margin-bottom:0.5rem;">
+                        <strong style="color:var(--text-light); font-size:1.1rem;"><i class="fa-solid fa-crosshairs text-blue"></i> ${order.symbol}</strong>
+                        <span style="background:var(--accent-blue); color:#fff; font-size:0.75rem; padding:0.1rem 0.4rem; border-radius:4px;">Güç: ${order.score}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
+                        <span style="color:var(--text-muted);">Alış Fiyatı:</span>
+                        <strong style="color:var(--text-main);">₺${order.entry_price.toFixed(2)}</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
+                        <span style="color:var(--text-muted);">Miktar (Lot):</span>
+                        <strong style="color:var(--text-main); font-family:monospace;">${order.shares} Lot</strong>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.02); padding:0.5rem; border-radius:4px; margin-top:0.5rem;">
+                        <div style="font-size:0.8rem; color:var(--accent-yellow); margin-bottom:0.3rem;"><i class="fa-solid fa-link"></i> <strong>Zincir Emirler (OCO)</strong></div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:0.2rem;">
+                            <span style="color:var(--accent-red);">Stop-Loss (-%3):</span>
+                            <strong>₺${order.stop_price.toFixed(2)}</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:0.2rem;">
+                            <span style="color:var(--accent-green);">Kâr Al TP1 (+%5):</span>
+                            <strong>₺${order.tp1_price.toFixed(2)}</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+                            <span style="color:var(--accent-green);">Kâr Al TP2 (Tavan):</span>
+                            <strong>₺${order.tp2_price.toFixed(2)}</strong>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        } else {
+            container.innerHTML = '<div style="color:var(--text-muted);"><i class="fa-solid fa-circle-exclamation"></i> Bugün için geçerli "Çelik Emir" kriterlerine uyan sinyal bulunamadı.</div>';
+        }
+    } catch (e) {
+        container.innerHTML = '<div style="color:var(--accent-red);">Hata: ' + e.message + '</div>';
+    }
+}
+
+
+
+
+// ========== BACKTEST ENGINE ==========
+async function runBacktest() {
+    const symbol = document.getElementById('bt-symbol').value || 'THYAO';
+    const strategy = document.getElementById('bt-strategy').value;
+    const capital = document.getElementById('bt-capital').value;
+    const period = document.getElementById('bt-period').value;
+    
+    let trailingStop = 0.0;
+    const tsEl = document.getElementById('bt-trailing-stop');
+    if (tsEl) trailingStop = parseFloat(tsEl.value) || 0.0;
+    
+    let stopLoss = 0.0;
+    const slEl = document.getElementById('bt-stop-loss');
+    if (slEl) stopLoss = parseFloat(slEl.value) || 0.0;
+    
+    // Set interval based on period
+    const interval = period === '1mo' ? '1h' : '1d';
+    
+    const loading = document.getElementById('bt-loading');
+    const results = document.getElementById('bt-results');
+    const btn = document.getElementById('btn-run-backtest');
+    
+    loading.style.display = 'block';
+    results.style.display = 'none';
+    btn.disabled = true;
+    
+    try {
+        const response = await fetch(`/api/backtest/run?symbol=${symbol}&strategy=${strategy}&capital=${capital}&period=${period}&interval=${interval}&trailing_stop=${trailingStop}&stop_loss=${stopLoss}`);
+        const data = await response.json();
+        
+        loading.style.display = 'none';
+        btn.disabled = false;
+        
+        if (data.status !== 'success') {
+            alert('Backtest Hatası: ' + data.message);
+            return;
+        }
+        
+        results.style.display = 'block';
+        
+        // Fill metrics
+        const bt = data.backtest;
+        const mc = data.monte_carlo;
+        
+        const pnlPct = ((bt.final_capital - capital) / capital) * 100;
+        document.getElementById('bt-res-pnl').textContent = '%' + pnlPct.toFixed(2);
+        document.getElementById('bt-res-pnl').style.color = pnlPct >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+        
+        document.getElementById('bt-res-winrate').textContent = '%' + bt.win_rate.toFixed(1);
+        document.getElementById('bt-res-dd').textContent = '%' + bt.max_drawdown.toFixed(2);
+        document.getElementById('bt-res-var').textContent = '%' + mc.VaR_99.toFixed(2);
+        
+        // Equity Chart
+        const equityOptions = {
+            series: [{ name: 'Portföy (TL)', data: bt.equity_curve }],
+            chart: { type: 'area', height: 400, toolbar: { show: false }, background: 'transparent' },
+            colors: ['#8b5cf6'],
+            fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05, stops: [0, 100] } },
+            dataLabels: { enabled: false },
+            stroke: { curve: 'smooth', width: 2 },
+            xaxis: { type: 'category', categories: bt.dates, labels: { style: { colors: '#94a3b8' } } },
+            yaxis: { labels: { style: { colors: '#94a3b8' }, formatter: (val) => val.toFixed(0) + ' TL' } },
+            theme: { mode: 'dark' }
+        };
+        
+        if(window.equityChart) window.equityChart.destroy();
+        window.equityChart = new ApexCharts(document.querySelector('#bt-equity-chart'), equityOptions);
+        window.equityChart.render();
+        
+        // Monte Carlo Histogram (Simplified as Line Chart for 10 random paths)
+        const mcPaths = mc.simulated_paths.slice(0, 10);
+        const mcSeries = mcPaths.map((path, idx) => ({ name: 'Senaryo ' + (idx+1), data: path }));
+        
+        const mcOptions = {
+            series: mcSeries,
+            chart: { type: 'line', height: 300, toolbar: { show: false }, background: 'transparent', animations: { enabled: false } },
+            stroke: { curve: 'straight', width: 1 },
+            dataLabels: { enabled: false },
+            xaxis: { labels: { show: false } },
+            yaxis: { labels: { style: { colors: '#94a3b8' } } },
+            legend: { show: false },
+            theme: { mode: 'dark' }
+        };
+        
+        if(window.mcChart) window.mcChart.destroy();
+        window.mcChart = new ApexCharts(document.querySelector('#bt-mc-chart'), mcOptions);
+        window.mcChart.render();
+        
+    } catch (err) {
+        console.error(err);
+        loading.style.display = 'none';
+        btn.disabled = false;
+        alert('Sunucu hatası: ' + err.message);
+    }
+}// ========== BACKTEST AUTOCOMPLETE LOGIC ==========
+const btSymbolInput = document.getElementById('bt-symbol');
+const btAcDropdown = document.getElementById('bt-ac-dropdown');
+let btAcTimeout = null;
+let btAcSelectedIndex = -1;
+let btAcItems = [];
+
+function updateBtAcSelection() {
+    btAcItems.forEach((item, index) => {
+        if (index === btAcSelectedIndex) {
+            item.classList.add('active');
+            item.scrollIntoView({ block: 'nearest' });
+        } else {
+            item.classList.remove('active');
+        }
+    });
+}
+
+if (btSymbolInput && btAcDropdown) {
+    btSymbolInput.addEventListener('input', function() {
+        clearTimeout(btAcTimeout);
+        const q = this.value.trim();
+        btAcSelectedIndex = -1;
+        if (q.length < 1) { btAcDropdown.style.display = 'none'; return; }
+        
+        btAcTimeout = setTimeout(async () => {
+            try {
+                const res = await fetch('/api/autocomplete?q=' + q);
+                const matches = await res.json();
+                if (matches.length === 0) { btAcDropdown.style.display = 'none'; return; }
+                
+                btAcDropdown.innerHTML = '';
+                btAcItems = [];
+                matches.forEach((m, index) => {
+                    let div = document.createElement('div');
+                    div.className = 'ac-item';
+                    div.innerText = m;
+                    div.dataset.index = index;
+                    div.onclick = function() {
+                        btSymbolInput.value = m;
+                        btAcDropdown.style.display = 'none';
+                    };
+                    btAcItems.push(div);
+                    btAcDropdown.appendChild(div);
+                });
+                btAcDropdown.style.display = 'block';
+            } catch(e) { btAcDropdown.style.display = 'none'; }
+        }, 200);
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#backtest-wrapper .search-container')) btAcDropdown.style.display = 'none';
+    });
+
+    btSymbolInput.addEventListener('keydown', function(event) {
+        if (btAcDropdown.style.display === 'block' && btAcItems.length > 0) {
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                btAcSelectedIndex++;
+                if (btAcSelectedIndex >= btAcItems.length) btAcSelectedIndex = 0;
+                updateBtAcSelection();
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                btAcSelectedIndex--;
+                if (btAcSelectedIndex < 0) btAcSelectedIndex = btAcItems.length - 1;
+                updateBtAcSelection();
+            } else if (event.key === 'Enter') {
+                event.preventDefault();
+                if (btAcSelectedIndex > -1 && btAcSelectedIndex < btAcItems.length) {
+                    btSymbolInput.value = btAcItems[btAcSelectedIndex].innerText;
+                }
+                btAcDropdown.style.display = 'none';
+            }
+        }
+    });
+}
+
+
+// --- MTF SCANNER LOGIC ---
+async function loadMTFRadar() {
+    const tbody = document.getElementById('mtf-table-body');
+    const countBadge = document.getElementById('mtf-count');
+    const loading = document.getElementById('mtf-loading');
+    
+    // Show only MTF card
+    document.querySelectorAll('#radar-cards-grid > .card').forEach(c => c.style.display = 'none');
+    document.getElementById('mtf-card').style.display = 'flex';
+    
+    tbody.innerHTML = '';
+    loading.style.display = 'block';
+    
+    try {
+        const response = await fetch('/api/scan_mtf');
+        const data = await response.json();
+        
+        loading.style.display = 'none';
+        
+        if (data.status === 'success') {
+            countBadge.innerText = data.count + ' HİSSE';
+            if (data.count === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">Şu an MTF kriterlerine uyan hisse bulunamadı.</td></tr>';
+                return;
+            }
+            
+            data.results.forEach(res => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong style="color:var(--text-light);">${res.Symbol}</strong></td>
+                    <td>
+                        <div class="progress-bar"><div class="fill" style="width: ${res.Score}%; background: linear-gradient(90deg, #0284c7, #38bdf8);"></div></div>
+                        <div style="font-size:0.75rem; text-align:right; margin-top:2px; color:var(--text-muted);">${res.Score.toFixed(1)} / 100</div>
+                    </td>
+                    <td>
+                        <div style="font-weight:bold; color:var(--text-light);">${res.Price.toFixed(2)}</div>
+                        <div style="font-size:0.75rem; color:#10b981;">Hedef: ${res.Target.toFixed(2)}</div>
+                    </td>
+                    <td>
+                        <span class="status-badge status-positive" style="background:rgba(14,165,233,0.1); color:#38bdf8; border:1px solid rgba(56,189,248,0.3);">${res.Momentum}</span>
+                    </td>
+                    <td>
+                        <button class="btn-primary" onclick="analyzeSymbol('${res.Symbol}')" style="padding:5px 10px; font-size:0.8rem; background:rgba(30,41,59,0.8); border:1px solid rgba(255,255,255,0.1);"><i class="fa-solid fa-microscope"></i> Analiz</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } else {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--accent-red);">Hata: ' + data.message + '</td></tr>';
+        }
+    } catch (e) {
+        loading.style.display = 'none';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--accent-red);">Bağlantı hatası: ' + e.message + '</td></tr>';
+    }
+}
+// --- END MTF SCANNER LOGIC ---

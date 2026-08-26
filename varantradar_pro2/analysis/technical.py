@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import math
+from datetime import datetime, timedelta
 from typing import Dict, Any, Union
 from core.interfaces import BaseEngine
 
@@ -193,12 +194,14 @@ class TechnicalEngine(BaseEngine):
             close = df[close_col]
             high = df[high_col]
             low = df[low_col]
-            # ==========================================
-            # 👑 AR-GE EKSTRALAR (Faz 3)
-            # ==========================================
-            # 1. Alpha Gücü (Göreceli BIST Ayrışması Proxy)
-            # EMA21'den sapma * hacim şiddeti * CMF
+            
+            # EMA
+            ema8 = close.ewm(span=8, adjust=False).mean()
             ema21 = close.ewm(span=21, adjust=False).mean()
+            
+            # MACD
+            ema12 = close.ewm(span=12, adjust=False).mean()
+            ema26 = close.ewm(span=26, adjust=False).mean()
             macd = ema12 - ema26
             macd_signal = macd.ewm(span=9, adjust=False).mean()
             
@@ -377,6 +380,7 @@ class TechnicalEngine(BaseEngine):
         low = df['Low']
         
         df['EMA8'] = close.ewm(span=8, adjust=False).mean()
+        df['EMA9'] = close.ewm(span=9, adjust=False).mean()
         df['EMA21'] = close.ewm(span=21, adjust=False).mean()
         
         ema12 = close.ewm(span=12, adjust=False).mean()
@@ -532,7 +536,8 @@ class TechnicalEngine(BaseEngine):
                 "low": round(row['Low'], 2),
                 "close": round(row['Close'], 2),
                 "volume": float(row['Volume']) if 'Volume' in row else 0,
-                "ema8": round(row['EMA8'], 2) if pd.notna(row['EMA8']) else None,
+                "ema8": round(row['EMA8'], 2) if 'EMA8' in row and pd.notna(row.get('EMA8')) else None,
+                "ema9": round(row['EMA9'], 2) if 'EMA9' in row and pd.notna(row['EMA9']) else None,
                 "ema21": round(row['EMA21'], 2) if pd.notna(row['EMA21']) else None,
                 "macd": round(row['MACD'], 2) if pd.notna(row['MACD']) else None,
                 "macd_signal": round(row['MACD_Signal'], 2) if pd.notna(row['MACD_Signal']) else None,
@@ -566,7 +571,7 @@ class TechnicalEngine(BaseEngine):
 
     def analyze_tavan_adaylari(self, symbol: str, data: Any = None, daily_stats: Dict = None) -> Dict[str, Any]:
         """
-        AI Tavan Olasılığı Skoru (Gizli Tavan Adayı)
+        AI Tavan Olasılığı Skoru (Gizli Tavan Adayı - Gelişmiş Pro Modül)
         1 saatlik veri kullanılarak 1-3 saat önceden yüksek tavan potansiyeli olan hisseleri tespit eder.
         Skor 100 üzerinden hesaplanır.
         """
@@ -577,21 +582,26 @@ class TechnicalEngine(BaseEngine):
         
         # Standardize columns
         close_col = 'close' if 'close' in df.columns else 'Close'
+        open_col = 'open' if 'open' in df.columns else 'Open'
         high_col = 'high' if 'high' in df.columns else 'High'
         low_col = 'low' if 'low' in df.columns else 'Low'
         vol_col = 'volume' if 'volume' in df.columns else 'Volume'
         
-        if vol_col not in df.columns:
+        if vol_col not in df.columns or close_col not in df.columns:
             return None
             
         import numpy as np
         
         close = df[close_col]
+        open_s = df[open_col] if open_col in df.columns else close
         high = df[high_col]
         low = df[low_col]
         volume = df[vol_col]
         
         current_price = float(close.iloc[-1])
+        current_open = float(open_s.iloc[-1])
+        current_high = float(high.iloc[-1])
+        current_low = float(low.iloc[-1])
         current_vol = float(volume.iloc[-1])
         
         score = 0
@@ -599,19 +609,85 @@ class TechnicalEngine(BaseEngine):
         
         try:
             # ==========================================
-            # 1. Hacim Patlaması (25 Puan)
-            # Son 1 saat hacmi > Son 20 saat ortalamasının 2 katı
+            # 0. Günlük Değişim, Önceki Kapanış ve Kesin BIST Tavanı
+            # ==========================================
+            prev_close = current_price
+            if daily_stats and symbol in daily_stats:
+                d_stat = daily_stats[symbol]
+                if isinstance(d_stat, dict) and 'Previous_Close' in d_stat and d_stat['Previous_Close']:
+                    prev_close = float(d_stat['Previous_Close'])
+            
+            if prev_close == current_price and hasattr(df.index, 'date'):
+                past_dates = df[df.index.date < df.index.date[-1]]
+                if not past_dates.empty:
+                    prev_close = float(past_dates[close_col].iloc[-1])
+            
+            # Günlük % Değişim
+            change_pct = ((current_price - prev_close) / prev_close) * 100 if prev_close > 0 else 0.0
+            
+            # KULLANICI ŞİKAYETİ: "PROGRAM ZATEN TAVAN OLMUŞ HİSSLERİ VERMİŞ"
+            # KULLANICI ŞART KOŞTU: %6.5 ve üzeri yükselmiş olan hisseleri listeye alma (Kar marjı en az %3.5 olmalı)
+            if change_pct >= 6.5:
+                return None
+            
+            # Borsa İstanbul Tavanı (%10 teorik)
+            tavan_price = round(prev_close * 1.10, 2)
+                
+            # Tavana Kalan Mesafe (%)
+            distance_to_ceiling_pct = ((tavan_price - current_price) / current_price) * 100 if current_price > 0 else 0.0
+            distance_to_ceiling_pct = max(0.0, round(distance_to_ceiling_pct, 2))
+
+            # ==========================================
+            # 1. Hacim Patlaması & Çarpanı (25 Puan)
             # ==========================================
             avg_vol_20 = float(volume.iloc[-21:-1].mean()) if len(volume) > 20 else float(volume.iloc[:-1].mean())
+            vol_multiplier = round(current_vol / avg_vol_20, 1) if avg_vol_20 > 0 else 1.0
+            
             if avg_vol_20 > 0:
-                if current_vol > avg_vol_20 * 2:
+                if current_vol > avg_vol_20 * 2.5:
                     score += 25
-                    details.append(f"Hacim patlaması ({current_vol/avg_vol_20:.1f}x).")
+                    details.append(f"🔥 Agresif Hacim Patlaması ({vol_multiplier}x).")
                 elif current_vol > avg_vol_20 * 1.5:
                     score += 15
-                    
+                    details.append(f"Yüksek Hacim Girişi ({vol_multiplier}x).")
+
             # ==========================================
-            # 2. OBV (Yeni Zirve) (20 Puan)
+            # 2. 🛡️ TUZAK ÖNLEYİCİ KALKAN (Anti-Trap Shield) & Mum Gücü
+            # ==========================================
+            candle_range = current_high - current_low
+            candle_body = abs(current_price - current_open)
+            upper_wick = current_high - max(current_price, current_open)
+            
+            trap_risk = False
+            candle_strength = "Normal"
+            
+            if candle_range > 0:
+                upper_wick_ratio = upper_wick / candle_range
+                body_ratio = candle_body / candle_range
+                
+                if upper_wick_ratio > 0.35:
+                    trap_risk = True
+                    score -= 20
+                    candle_strength = "Satış Baskılı (Üst Fitil Tuzağı)"
+                    details.append("⚠️ Dikkat: Uzun üst fitil (Satış Baskısı / Boğa Tuzağı Riski).")
+                elif upper_wick_ratio <= 0.18 and body_ratio >= 0.65:
+                    score += 15
+                    candle_strength = "Güçlü Boğa (Marubozu)"
+                    details.append("💪 Güçlü Boğa Mumu (Alıcılar Hakim).")
+
+            # ==========================================
+            # 3. 🎯 ORB (Opening Range Breakout - Açılış Zirvesi Kırılımı)
+            # ==========================================
+            orb_breakout = False
+            if len(high) >= 6:
+                morning_range_high = float(high.iloc[-6:-1].max())
+                if current_price >= morning_range_high and vol_multiplier >= 1.4:
+                    orb_breakout = True
+                    score += 15
+                    details.append("🎯 ORB Kırılımı: Sabah açılış bandı tepe seviyesi hacimle yukarı kırıldı!")
+
+            # ==========================================
+            # 4. OBV (Yeni Zirve & Para Girişi) (15 Puan)
             # ==========================================
             delta_price = close.diff()
             direction = np.where(delta_price > 0, 1, np.where(delta_price < 0, -1, 0))
@@ -620,11 +696,11 @@ class TechnicalEngine(BaseEngine):
             max_obv_20 = float(obv.iloc[-21:-1].max()) if len(obv) > 20 else float(obv.iloc[:-1].max())
             
             if current_obv >= max_obv_20:
-                score += 20
-                details.append("OBV yeni zirve yaptı.")
+                score += 15
+                details.append("OBV yeni zirvede (Kurumsal Para Girişi).")
                 
             # ==========================================
-            # 3. VWAP Üzeri (15 Puan)
+            # 5. ⚖️ KESİN VWAP ŞARTI (Mal Dağıtımı / Tuzak Filtresi)
             # ==========================================
             typical_price = (high + low + close) / 3
             if hasattr(df.index, 'date'):
@@ -633,22 +709,26 @@ class TechnicalEngine(BaseEngine):
                 vwap = (typical_price * volume).cumsum() / volume.cumsum()
                 
             current_vwap = float(vwap.iloc[-1])
-            if current_price > current_vwap:
+            if current_price >= current_vwap:
                 score += 15
-                details.append("VWAP üzerinde.")
+                details.append("VWAP üzerinde (Kurumsal Alım Güvenli Bölge).")
+            else:
+                trap_risk = True
+                score -= 25
+                details.append("🛑 UYARI: Fiyat VWAP altında (Mal Dağıtım Tuzağı Riski!).")
                 
             # ==========================================
-            # 4. EMA50 > EMA200 (Günlük Trend) (10 Puan)
+            # 6. EMA50 > EMA200 (Günlük Trend) (10 Puan)
             # ==========================================
             if daily_stats:
                 e50 = daily_stats.get("Daily_EMA50", float('inf'))
                 e200 = daily_stats.get("Daily_EMA200", float('inf'))
                 if current_price > e50 and e50 > e200:
                     score += 10
-                    details.append("EMA50 > EMA200.")
+                    details.append("EMA50 > EMA200 (Pozitif Trend).")
                     
             # ==========================================
-            # 5. Direnç Kırılımı (10 Puan)
+            # 7. Direnç Kırılımı (10 Puan)
             # ==========================================
             highest_close_20 = float(close.iloc[-21:-1].max()) if len(close) > 20 else float(close.iloc[:-1].max())
             if current_price > highest_close_20:
@@ -656,7 +736,7 @@ class TechnicalEngine(BaseEngine):
                 details.append("Direnç hacimli kırıldı.")
                 
             # ==========================================
-            # 6. MFI (5 Puan)
+            # 8. MFI & CMF (Para Girişi & Akışı Teyidi)
             # ==========================================
             raw_money_flow = typical_price * volume
             dir_mf = np.where(typical_price > typical_price.shift(1), 1, np.where(typical_price < typical_price.shift(1), -1, 0))
@@ -669,14 +749,16 @@ class TechnicalEngine(BaseEngine):
             if current_mfi > 60:
                 score += 5
                 
-            # ==========================================
-            # 7. CMF (5 Puan)
-            # ==========================================
             mfv = ((close - low) - (high - close)) / (high - low).replace(0, np.nan) * volume
             cmf = mfv.rolling(20).sum() / volume.rolling(20).sum()
             current_cmf = float(cmf.iloc[-1])
-            if current_cmf > 0.1:
-                score += 5
+            if current_cmf > 0.08:
+                score += 8
+                details.append("CMF Pozitif (Net Para Girişi Teyitli).")
+            elif current_cmf < -0.05:
+                trap_risk = True
+                score -= 15
+                details.append("⚠️ CMF Negatif (Yükselişte Para Çıkışı / Dağıtım Riski).")
                 
             # ==========================================
             # 8. RSI & MACD (10 Puan Toplam)
@@ -697,74 +779,148 @@ class TechnicalEngine(BaseEngine):
             if float(macd.iloc[-1]) > float(macd_signal.iloc[-1]):
                 score += 5
                 
-            # ==========================================
-            # 9. Bollinger Squeeze vb. Ek Filtreler (Metin için)
-            # ==========================================
-            ma20 = close.rolling(20).mean()
-            std20 = close.rolling(20).std()
-            bandwidth = ((ma20 + (std20 * 2)) - (ma20 - (std20 * 2))) / ma20
-            bw_ma = bandwidth.rolling(20).mean()
-            if float(bandwidth.iloc[-1]) < float(bw_ma.iloc[-1]):
-                details.append("BB daralma evresinde.")
-                
             # ATR Volatilite Patlaması
             tr1 = high - low
             tr2 = (high - close.shift(1)).abs()
             tr3 = (low - close.shift(1)).abs()
             tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
             atr = tr.rolling(14).mean()
-            
             current_tr = float(tr.iloc[-1])
             prev_atr = float(atr.iloc[-2]) if len(atr) > 1 else 0
             
             if prev_atr > 0 and current_tr > prev_atr * 1.5:
                 score += 5
-                details.append("ATR volatilite patlaması.")
+                details.append("ATR volatilite artışı.")
                 
             # ==========================================
-            # 10. Pozisyon Algoritması (Kar Al, Zarar Kes, Projeksiyon)
+            # 9. Tavan Evresi (Phase Sınıflandırması)
             # ==========================================
-            # SL Hesaplama
-            sl_vwap = current_vwap * 0.995 # VWAP altı %0.5 tolerans
+            if change_pct >= 8.0 or distance_to_ceiling_pct <= 1.8:
+                phase_name = "Kilitleme Baskısı (Phase 3)"
+                phase_badge = "KİLİTLEME"
+                phase_color = "red"
+            elif change_pct >= 4.5:
+                phase_name = "İvmelenme (Phase 2)"
+                phase_badge = "İVMELENME"
+                phase_color = "yellow"
+            else:
+                phase_name = "Erken Kopuş (Phase 1)"
+                phase_badge = "ERKEN KOPUŞ"
+                phase_color = "green"
+
+            # ==========================================
+            # 10. ⚡ V-Dönüş / Dipten Tavan Koşusu Tespiti
+            # ==========================================
+            recent_lows = df[low_col].iloc[-8:] if len(df) >= 8 else df[low_col]
+            session_min_low = float(recent_lows.min())
+            dip_pct = ((session_min_low - prev_close) / prev_close) * 100 if prev_close > 0 else 0
+            v_reversal = False
+            v_power = 0.0
+            if dip_pct <= -1.0 and change_pct >= 3.5:
+                v_reversal = True
+                v_power = round(change_pct - dip_pct, 1)
+                score += 8
+                details.append(f"⚡ V-Dönüş: Dip seviyeden (%{dip_pct:.1f}) +%{v_power:.1f} güçlü sıçrama!")
+
+            # ==========================================
+            # 11. ⏱️ Tahmini Tavan Kilitleme Saati (ETA)
+            # ==========================================
+            last_c = float(close.iloc[-1])
+            prev_c = float(close.iloc[-2]) if len(close) > 1 else last_c * 0.99
+            hourly_speed = max(0.4, ((last_c - prev_c) / prev_c) * 100)
+            hours_needed = distance_to_ceiling_pct / hourly_speed
+            now = datetime.now()
+            eta_time = now + timedelta(hours=min(4.0, max(0.5, hours_needed)))
+            if eta_time.hour >= 18:
+                eta_str = "Seans Kapanışı (17:45-18:00)"
+            else:
+                eta_end = eta_time + timedelta(minutes=25)
+                eta_str = f"{eta_time.strftime('%H:%M')} - {eta_end.strftime('%H:%M')}"
+
+            # ==========================================
+            # 12. 🚨 Tavan Çözülme / Satış Baskısı Koruması
+            # ==========================================
+            breakdown_risk = False
+            breakdown_warning = None
+            if distance_to_ceiling_pct <= 2.2 or change_pct >= 7.8:
+                if trap_risk or (current_rsi > 78 and len(rsi) > 1 and float(rsi.iloc[-1]) < float(rsi.iloc[-2])):
+                    breakdown_risk = True
+                    breakdown_warning = "Tavanda Satış Baskısı / Çözülme Riski! Kâr Al veya Stopu Sıkılaştır."
+                    details.append(f"🚨 {breakdown_warning}")
+
+            # ==========================================
+            # 13. ♟️ Domino Etkisi & Sektörel Kardeş Hisseler
+            # ==========================================
+            clean_sym = symbol.replace(".IS", "")
+            domino_sector = None
+            domino_peers = []
+            try:
+                from config.bist_symbols import DOMINO_CLUSTERS, WARRANT_UNDERLYING_MAP
+                for sec_name, sec_syms in DOMINO_CLUSTERS.items():
+                    if symbol in sec_syms or f"{clean_sym}.IS" in sec_syms:
+                        domino_sector = sec_name
+                        domino_peers = [s.replace(".IS", "") for s in sec_syms if s.replace(".IS", "") != clean_sym]
+                        break
+            except Exception:
+                WARRANT_UNDERLYING_MAP = {}
+
+            if domino_sector and domino_peers:
+                peer_sample = ", ".join(domino_peers[:3])
+                details.append(f"♟️ Domino Grubu ({domino_sector}): Peşinden gelebilecek kardeş hisseler: #{peer_sample}")
+
+            # ==========================================
+            # 14. 🎯 Varant Kaldıraç Eşleştirmesi
+            # ==========================================
+            warrant_match = None
+            try:
+                warrant_info = WARRANT_UNDERLYING_MAP.get(clean_sym)
+                if warrant_info:
+                    warrant_lev = warrant_info.get("leverage", 6.0)
+                    expected_warrant_gain = round(distance_to_ceiling_pct * warrant_lev, 1)
+                    warrant_match = {
+                        "Prefix": warrant_info.get("prefix"),
+                        "Name": warrant_info.get("name"),
+                        "Leverage": f"{warrant_lev}x",
+                        "Potential_Gain_Pct": expected_warrant_gain,
+                        "Desc": f"Spot +%{distance_to_ceiling_pct:.1f} tavana ulaşırsa varant potansiyeli: +%{expected_warrant_gain:.0f}"
+                    }
+            except Exception:
+                warrant_match = None
+
+            # ==========================================
+            # 15. 🔗 Tavan Zinciri & Seri Potansiyeli (Çift Tavan Skoru)
+            # ==========================================
+            streak_score = min(96, max(45, int(score * 0.92 + (10 if vol_multiplier >= 2.0 else 0) + (5 if v_reversal else 0))))
+            streak_potential = f"%{streak_score} (Çift Tavan İhtimali)"
+                
+            # ==========================================
+            # 16. Pozisyon Algoritması (Dinamik İz Süren Stop & Hedefler)
+            # ==========================================
+            sl_vwap = current_vwap * 0.992 # VWAP altı %0.8 tolerans
             sl_fixed = current_price * 0.975 # %2.5 sabit stop
             sl = max(sl_vwap, sl_fixed)
             if sl >= current_price:
-                sl = current_price * 0.98 # Güvenlik
+                sl = current_price * 0.98
             
-            # TP Hesaplama
-            tp1 = highest_close_20 * 1.01 # Direncin %1 üstü
+            tp1 = round(highest_close_20 * 1.015, 2)
             if tp1 <= current_price:
-                tp1 = current_price * 1.03 # Eğer zaten kırmışsa min %3
+                tp1 = round(current_price * 1.03, 2)
                 
-            # Tavan Hedefi (TP2)
-            prev_close = current_price
-            if hasattr(df.index, 'date'):
-                past_dates = df[df.index.date < df.index.date[-1]]
-                if not past_dates.empty:
-                    prev_close = float(past_dates['close'].iloc[-1])
-            
-            tp2 = prev_close * 1.098 # BIST Tavanı (yaklaşık %9.8)
-            if tp2 <= tp1: # Tavan fiyatı tp1'den bile düşükse/yakınsa
-                 tp2 = current_price * 1.095
-                 
-            # Süre Projeksiyonu
-            if avg_vol_20 > 0:
-                vol_ratio = current_vol / avg_vol_20
-                if vol_ratio > 3:
-                    proj = "1-2 Saat (Hızlı Kopuş)"
-                elif vol_ratio > 1.5:
-                    proj = "2-4 Saat (İstikrarlı Trend)"
-                else:
-                    proj = "4-8 Saat (Yavaş İvme)"
-            else:
-                proj = "Belirsiz"
+            tp2 = round(tavan_price, 2)
+            if tp2 <= tp1:
+                tp2 = round(current_price * 1.095, 2)
+                
+            risk_unit = max(0.01, current_price - sl)
+            reward_unit = max(0.01, tp2 - current_price)
+            rr_ratio = round(reward_unit / risk_unit, 2)
                 
             position = {
                 "Entry": round(current_price, 2),
                 "SL": round(sl, 2),
                 "TP1": round(tp1, 2),
                 "TP2": round(tp2, 2),
-                "Projection": proj
+                "RR": rr_ratio,
+                "Projection": eta_str
             }
                 
         except Exception as e:
@@ -774,12 +930,248 @@ class TechnicalEngine(BaseEngine):
         if score < 50:
             return None
             
-        report = " ".join(details) + f" AI Puanı: {score}/100."
+        score = min(100, max(0, score))
+        report = " ".join(details)
+
+        # 🛡️ Anti-Trap Shield & Teyit Skoru Hesaplama
+        if not trap_risk and current_price >= current_vwap and vol_multiplier >= 1.4:
+            anti_trap_badge = "🛡️ TEYİTLİ TAVAN"
+            anti_trap_color = "#10b981"
+            teyit_score = min(99, max(75, int(score * 0.95 + (8 if orb_breakout else 0) + (5 if current_cmf > 0.08 else 0))))
+        elif trap_risk or current_price < current_vwap:
+            anti_trap_badge = "⚠️ TUZAK / FİTİL RİSKİ"
+            anti_trap_color = "#ef4444"
+            teyit_score = max(25, int(score * 0.55))
+        else:
+            anti_trap_badge = "🟡 GÖZLEM / NÖTR"
+            anti_trap_color = "#facc15"
+            teyit_score = max(50, int(score * 0.75))
+            
+        # ==========================================
+        # 🧪 AR-GE: SAF MADDE (ZENGİNLEŞTİRİLMİŞ ARITMA)
+        # ==========================================
+        # 1. Bollinger Daralması (Fiyat Sıkışması)
+        roll_mean = close.rolling(20).mean()
+        roll_std = close.rolling(20).std(ddof=0)
+        upper_band = roll_mean + (roll_std * 2)
+        lower_band = roll_mean - (roll_std * 2)
+        
+        current_upper = float(upper_band.iloc[-1])
+        current_lower = float(lower_band.iloc[-1])
+        current_mid = float(roll_mean.iloc[-1])
+        
+        squeeze_pct = ((current_upper - current_lower) / current_mid) * 100 if current_mid > 0 else 0
+        
+        # 2. Patlama Olasılığı (P-Score)
+        rsi_weight = 0
+        if 55 < current_rsi < 75: rsi_weight = 35
+        elif current_rsi >= 75: rsi_weight = 15  # Aşırı alım
+        elif current_rsi > 40: rsi_weight = 10
+        
+        # Squeeze Pct ne kadar düşükse, bantlar o kadar dardır (Patlama ihtimali yüksek)
+        # Squeeze 2.0% (Dar) -> 40 Puan | Squeeze 10.0% (Geniş) -> 0 Puan
+        sqz_weight = max(0, 40 - (squeeze_pct * 4)) 
+        
+        # Hacim çarpanı 3x ise 25 puan, 1x ise 8 puan
+        vol_weight = min(25, vol_multiplier * 8)
+        
+        p_score = int(rsi_weight + sqz_weight + vol_weight)
+        p_score = min(99, max(1, p_score))
+        
+        # 3. Kurumsal Ayak İzi (Tahtacı Akümülasyon/Dağıtım)
+        candle_range_hf = current_high - current_low
+        if candle_range_hf > 0:
+            close_position = (current_price - current_low) / candle_range_hf
+            if close_position > 0.7 and vol_multiplier >= 1.2:
+                footprint = "Toplama (Akümülasyon)"
+                footprint_color = "green"
+            elif close_position < 0.35 and vol_multiplier >= 1.2:
+                footprint = "Dağıtım (Tuzak)"
+                footprint_color = "red"
+            else:
+                footprint = "Nötr (Bekleme)"
+                footprint_color = "yellow"
+        else:
+            footprint = "Nötr (Bekleme)"
+            footprint_color = "yellow"
+            
+        # 4. Kısa Vade İvme (Momentum Hızlanması)
+        momentum_accel = False
+        if len(close) >= 3:
+            change_1 = float(close.iloc[-1]) - float(close.iloc[-2])
+            change_2 = float(close.iloc[-2]) - float(close.iloc[-3])
+            if change_1 > change_2 and change_1 > 0 and change_2 > 0:
+                momentum_accel = True
+        
+        # ==========================================
+        # 👑 AR-GE EKSTRALAR (Faz 3)
+        # ==========================================
+        # 1. Alpha Gücü (Göreceli BIST Ayrışması Proxy)
+        # EMA21'den sapma * hacim şiddeti * CMF
+        ema21 = close.ewm(span=21, adjust=False).mean()
+        c_ema21 = float(ema21.iloc[-1])
+        alpha_val = ((current_price - c_ema21) / c_ema21) * 100 * vol_multiplier
+        if alpha_val > 15:
+            alpha_str = f"Pozitif (+%{round(alpha_val,1)})"
+        elif alpha_val < 0:
+            alpha_str = f"Negatif (%{round(alpha_val,1)})"
+        else:
+            alpha_str = f"Nötr (+%{round(alpha_val,1)})"
+
+        # 2. Şort Sıkıştırması (Squeeze Riski)
+        # ADX Hesaplama
+        up = high.diff()
+        down = low.shift(1) - low
+        plus_dm = pd.Series(np.where((up > down) & (up > 0), up, 0.0), index=df.index)
+        minus_dm = pd.Series(np.where((down > up) & (down > 0), down, 0.0), index=df.index)
+        tr1 = high - low
+        tr2 = (high - close.shift(1)).abs()
+        tr3 = (low - close.shift(1)).abs()
+        tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+        atr = tr.ewm(alpha=1/14, adjust=False).mean()
+        plus_di = 100 * (plus_dm.ewm(alpha=1/14, adjust=False).mean() / atr)
+        minus_di = 100 * (minus_dm.ewm(alpha=1/14, adjust=False).mean() / atr)
+        dx = 100 * (plus_di - minus_di).abs() / (plus_di + minus_di).replace(0, np.nan)
+        adx = dx.ewm(alpha=1/14, adjust=False).mean()
+        current_adx = float(adx.iloc[-1])
+        
+        short_squeeze = "Yok"
+        if current_adx > 30 and current_rsi > 70 and squeeze_pct < 4.0:
+            short_squeeze = "🔥 Patlatma Yakın"
+        elif current_adx > 25 and current_rsi > 65:
+            short_squeeze = "Yükseliyor"
+            
+        # 3. Akıllı Para (Smart Money CMF)
+        smart_money = "Nötr Para"
+        if current_cmf > 0.15:
+            smart_money = "🟢 Güçlü Giriş"
+        elif current_cmf > 0.05:
+            smart_money = "🟢 Akümülasyon"
+        elif current_cmf < -0.1:
+            smart_money = "🔴 Sert Çıkış"
+        elif current_cmf < 0:
+            smart_money = "🔴 Dağıtım"
+            
+        # 4. Domino Etkisi
+        domino_str = "Yok"
+        if domino_peers and len(domino_peers) > 0:
+            domino_str = f"#{', #'.join(domino_peers[:2])}"
+            
+        # ==========================================
+        # 🚀 YENİ SİNYAL MOTORU VE FOMO İNDİKATÖRÜ
+        # ==========================================
+        factor_breakdown = []
+        if vol_multiplier > 1.5:
+            factor_breakdown.append({"Factor": "Hacim", "Score": 20})
+        elif vol_multiplier > 1.0:
+            factor_breakdown.append({"Factor": "Hacim", "Score": 10})
+        
+        if current_price >= current_vwap:
+            factor_breakdown.append({"Factor": "VWAP üstü", "Score": 15})
+        else:
+            factor_breakdown.append({"Factor": "VWAP altı", "Score": -15})
+            
+        if orb_breakout:
+            factor_breakdown.append({"Factor": "ORB kırılımı", "Score": 15})
+            
+        if 55 < current_rsi < 85:
+            factor_breakdown.append({"Factor": "RSI", "Score": 10})
+            
+        if float(macd.iloc[-1]) > float(macd_signal.iloc[-1]):
+            factor_breakdown.append({"Factor": "MACD", "Score": 10})
+            
+        if current_cmf > 0.08:
+            factor_breakdown.append({"Factor": "Para girişi", "Score": 10})
+            
+        if momentum_accel:
+            factor_breakdown.append({"Factor": "Momentum", "Score": 10})
+            
+        if domino_sector:
+            factor_breakdown.append({"Factor": "Sektör gücü", "Score": 5})
+            
+        if alpha_val > 10:
+            factor_breakdown.append({"Factor": "BIST Göreceli Güç", "Score": 5})
+
+        factor_total = sum(f["Score"] for f in factor_breakdown)
+        factor_total = min(100, max(0, factor_total + 20)) # Normalize base score
+        
+        signal_quality = "🔴 UZAK DUR"
+        if factor_total >= 85:
+            signal_quality = "🟢 ÇOK GÜÇLÜ AL"
+        elif factor_total >= 70:
+            signal_quality = "🟢 GÜÇLÜ AL"
+        elif factor_total >= 50:
+            signal_quality = "🟡 İZLE"
+        elif factor_total >= 35:
+            signal_quality = "🟠 ZAYIF"
+
+        # FOMO İndikatörü
+        fomo_score = min(100, max(0, (vol_multiplier * 15) + (current_rsi * 0.4) + (change_pct * 3) + (10 if orb_breakout else 0)))
+        fomo_level = "Düşük"
+        fomo_color = "gray"
+        if fomo_score > 85:
+            fomo_level = "🔥 AŞIRI (Extreme)"
+            fomo_color = "red"
+        elif fomo_score > 70:
+            fomo_level = "🚀 Yüksek"
+            fomo_color = "orange"
+        elif fomo_score > 50:
+            fomo_level = "⚡ Orta"
+            fomo_color = "yellow"
+
         
         return {
             "Symbol": symbol,
             "Price": round(current_price, 2),
+            "Daily_Change_Pct": round(change_pct, 2),
+            "Ceiling_Price": round(tavan_price, 2),
+            "Distance_To_Ceiling_Pct": round(distance_to_ceiling_pct, 2),
+            "Phase": phase_name,
+            "Phase_Badge": phase_badge,
+            "Phase_Color": phase_color,
+            "Vol_Multiplier": vol_multiplier,
+            "Candle_Strength": candle_strength,
+            "Trap_Risk": trap_risk,
+            "Anti_Trap_Badge": anti_trap_badge,
+            "Anti_Trap_Color": anti_trap_color,
+            "Teyit_Score": teyit_score,
+            "ORB_Breakout": orb_breakout,
+            "VWAP": round(current_vwap, 2),
+            "V_Reversal": v_reversal,
+            "V_Power": round(v_power, 1),
+            "ETA": eta_str,
+            "Breakdown_Risk": breakdown_risk,
+            "Breakdown_Warning": breakdown_warning,
+            "Indicators": {
+                "RSI": round(current_rsi, 1) if 'current_rsi' in locals() else None,
+                "ADX": round(current_adx, 1) if 'current_adx' in locals() else None,
+                "EMA_50": round(float(ema50.iloc[-1]), 2) if 'ema50' in locals() else None,
+                "EMA_200": round(float(ema200.iloc[-1]), 2) if 'ema200' in locals() else None,
+                "MACD_Positive": bool(current_macd > current_signal) if 'current_macd' in locals() else None
+            },
+            "Details": details,
+            "Domino_Sector": domino_sector,
+            "Domino_Peers": domino_peers,
+            "Domino_Str": domino_str,
+            "Warrant_Match": warrant_match,
+            "Streak_Score": streak_score,
+            "Streak_Potential": streak_potential,
+            "Squeeze_Pct": round(squeeze_pct, 2),
+            "P_Score": p_score,
+            "Footprint": footprint,
+            "Footprint_Color": footprint_color,
+            "Momentum_Accel": momentum_accel,
+            "Alpha_Str": alpha_str,
+            "Alpha_Val": round(alpha_val, 2),
+            "Short_Squeeze": short_squeeze,
+            "Smart_Money": smart_money,
             "Score": score,
+            "Factor_Breakdown": factor_breakdown,
+            "Factor_Total": factor_total,
+            "Signal_Quality": signal_quality,
+            "FOMO_Score": fomo_score,
+            "FOMO_Level": fomo_level,
+            "FOMO_Color": fomo_color,
             "Report": report,
             "Position": position
         }
@@ -848,91 +1240,247 @@ class TechnicalEngine(BaseEngine):
             
         return None
 
-    def check_custom_strict_strategy(self, df, direction: str = "AL", lookback_bars: int = 50):
+
+    def analyze_1h_stay_away(self, symbol: str, data: Any = None) -> Dict[str, Any]:
         """
-        Scans the last `lookback_bars` to find the MOST RECENT bar where the strategy was fully met.
-        Returns: (bool, int, str) -> (is_match, bars_ago, timestamp_str)
+        1 Saatlik (1h) veriler üzerinde UZAK DUR (Stay Away / Negatif Momentum) analizi yapar.
+        analyze_1h_opportunities metodunun tam tersidir.
         """
-        if df.empty or len(df) < 30:
-            return False, 0, ""
+        import math
+        import pandas as pd
+        import numpy as np
+        
+        if data is None or not isinstance(data, pd.DataFrame) or data.empty or len(data) < 20:
+            return None
             
+        df = data.copy()
+        close_col = 'close' if 'close' in df.columns else 'Close'
+        high_col = 'high' if 'high' in df.columns else 'High'
+        low_col = 'low' if 'low' in df.columns else 'Low'
+        
         try:
-            import pandas as pd
-            import numpy as np
+            close = df[close_col]
+            high = df[high_col]
+            low = df[low_col]
             
-            close = df['close'] if 'close' in df.columns else df['Close']
-            high = df['high'] if 'high' in df.columns else df['High']
-            low = df['low'] if 'low' in df.columns else df['Low']
-            
-            ema9 = close.ewm(span=9, adjust=False).mean()
+            # EMA
+            ema8 = close.ewm(span=8, adjust=False).mean()
             ema21 = close.ewm(span=21, adjust=False).mean()
             
+            # MACD
             ema12 = close.ewm(span=12, adjust=False).mean()
             ema26 = close.ewm(span=26, adjust=False).mean()
             macd = ema12 - ema26
-            signal = macd.ewm(span=9, adjust=False).mean()
+            macd_signal = macd.ewm(span=9, adjust=False).mean()
             
+            # RSI
             delta = close.diff()
             gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
             loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
             rs = gain / loss.replace(0, np.nan)
             rsi = 100 - (100 / (1 + rs))
             
-            momentum = close - close.shift(10)
+            # ADX
+            up = high.diff()
+            down = low.shift(1) - low
+            plus_dm = pd.Series(np.where((up > down) & (up > 0), up, 0.0), index=df.index)
+            minus_dm = pd.Series(np.where((down > up) & (down > 0), down, 0.0), index=df.index)
             
             tr1 = high - low
             tr2 = (high - close.shift(1)).abs()
             tr3 = (low - close.shift(1)).abs()
             tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
-            atr = tr.rolling(14).mean()
             
-            up = high - high.shift(1)
-            down = low.shift(1) - low
-            pos_dm = pd.Series(np.where((up > down) & (up > 0), up, 0), index=df.index)
-            neg_dm = pd.Series(np.where((down > up) & (down > 0), down, 0), index=df.index)
-            pos_di = 100 * (pos_dm.rolling(14).mean() / atr.replace(0, np.nan))
-            neg_di = 100 * (neg_dm.rolling(14).mean() / atr.replace(0, np.nan))
-            dx = 100 * (abs(pos_di - neg_di) / (pos_di + neg_di).replace(0, np.nan))
-            adx = dx.rolling(14).mean()
+            atr = tr.ewm(alpha=1/14, adjust=False).mean()
+            plus_di = 100 * (plus_dm.ewm(alpha=1/14, adjust=False).mean() / atr)
+            minus_di = 100 * (minus_dm.ewm(alpha=1/14, adjust=False).mean() / atr)
+            dx = 100 * (plus_di - minus_di).abs() / (plus_di + minus_di).replace(0, np.nan)
+            adx = dx.ewm(alpha=1/14, adjust=False).mean()
             
-            # Start from the most recent bar and go backwards
-            max_idx = len(df) - 1
-            start_idx = max(20, max_idx - lookback_bars)
+            # Momentum
+            momentum = close - close.shift(10)
             
-            for i in range(max_idx, start_idx - 1, -1):
-                c_ema9, c_ema21 = float(ema9.iloc[i]), float(ema21.iloc[i])
-                c_macd, c_signal = float(macd.iloc[i]), float(signal.iloc[i])
-                c_rsi = float(rsi.iloc[i])
-                c_mom = float(momentum.iloc[i])
-                c_adx = float(adx.iloc[i])
+            c_ema8 = float(ema8.iloc[-1])
+            c_ema21 = float(ema21.iloc[-1])
+            c_macd = float(macd.iloc[-1])
+            c_macd_sig = float(macd_signal.iloc[-1])
+            c_rsi = float(rsi.iloc[-1])
+            c_adx = float(adx.iloc[-1])
+            c_plus_di = float(plus_di.iloc[-1])
+            c_minus_di = float(minus_di.iloc[-1])
+            c_mom = float(momentum.iloc[-1])
+            
+            # Negatif Koşullar (Ayı Piyasası)
+            cond_ema = c_ema8 < c_ema21
+            cond_macd = c_macd < c_macd_sig
+            cond_rsi = c_rsi < 50
+            cond_adx = c_adx > 20 and c_minus_di > c_plus_di
+            cond_mom = c_mom < 0
+            
+            score_out_of_5 = sum([cond_ema, cond_macd, cond_rsi, cond_adx, cond_mom])
+            
+            current_price = float(close.iloc[-1])
+            
+            # Son 20 bar içinde aşağı yönlü kesişim olmuş mu?
+            ema_diff = ema8 - ema21
+            crossover_found = False
+            crossover_bars_ago = -1
+            lookback = min(21, len(ema_diff))
+            
+            for i in range(1, lookback):
+                idx_now = len(ema_diff) - i
+                idx_prev = idx_now - 1
+                if idx_prev >= 0:
+                    val_now = float(ema_diff.iloc[idx_now])
+                    val_prev = float(ema_diff.iloc[idx_prev])
+                    # Önceki barda EMA8 >= EMA21, bu barda EMA8 < EMA21 (Aşağı kesişim)
+                    if val_now < 0 and val_prev >= 0:
+                        crossover_found = True
+                        crossover_bars_ago = i
+                        break
+            
+            if not crossover_found:
+                return None
                 
-                # Check slippage for the 3 bars ending at i
-                crossed_recently = False
-                for j in range(i, max(0, i-3) - 1, -1):
-                    p_rsi = float(rsi.iloc[j-1])
-                    curr_rsi = float(rsi.iloc[j])
-                    p_mom = float(momentum.iloc[j-1])
-                    curr_mom = float(momentum.iloc[j])
-                    
-                    if direction == "AL":
-                        if p_rsi <= 50 and curr_rsi > 50: crossed_recently = True
-                        if p_mom <= 0 and curr_mom > 0: crossed_recently = True
-                    elif direction == "SAT":
-                        if p_rsi >= 50 and curr_rsi < 50: crossed_recently = True
-                        if p_mom >= 0 and curr_mom < 0: crossed_recently = True
+            gap = c_ema21 - c_ema8 # Arayı açmış mı (negatif yönde)
+            gap_pct = 0.0
+            if current_price > 0 and not math.isnan(current_price) and not math.isnan(gap):
+                gap_pct = (gap / current_price) * 100
                 
-                if direction == "AL":
-                    if c_adx > 25 and c_mom > 0 and c_rsi > 50 and c_macd > c_signal and c_ema9 > c_ema21 and crossed_recently:
-                        bars_ago = max_idx - i
-                        timestamp_str = str(df.index[i])
-                        return True, bars_ago, timestamp_str
-                elif direction == "SAT":
-                    if c_adx > 25 and c_mom < 0 and c_rsi < 50 and c_macd < c_signal and c_ema9 < c_ema21 and crossed_recently:
-                        bars_ago = max_idx - i
-                        timestamp_str = str(df.index[i])
-                        return True, bars_ago, timestamp_str
-                        
+            if math.isnan(gap_pct): gap_pct = 0.0
+            
+            # Düşüş yönlü kesişim belirgin olmalı
+            if gap_pct < 0.2:
+                return None
+                
+            daily_change_pct = 0.0
+            if not df.empty and hasattr(df.index, 'date'):
+                try:
+                    current_date = df.index[-1].date()
+                    prev_days = df[df.index.date < current_date]
+                    if not prev_days.empty:
+                        prev_close = float(prev_days[close_col].iloc[-1])
+                        if prev_close > 0 and not math.isnan(prev_close) and not math.isnan(current_price):
+                            daily_change_pct = ((current_price - prev_close) / prev_close) * 100
+                except Exception:
+                    pass
+
+            if math.isnan(daily_change_pct): daily_change_pct = 0.0
+            if math.isnan(current_price): current_price = 0.0
+            if math.isnan(c_rsi): c_rsi = 0.0
+            if math.isnan(c_adx): c_adx = 0.0
+            
+            return {
+                "Symbol": symbol,
+                "Score_5": int(score_out_of_5),
+                "EMA_Gap_Pct": round(gap_pct, 2),
+                "Daily_Change_Pct": round(daily_change_pct, 2),
+                "Crossover_Bars_Ago": crossover_bars_ago,
+                "Price": round(current_price, 2),
+                "EMA_Match": bool(cond_ema),
+                "MACD_Match": bool(cond_macd),
+                "RSI_Match": bool(cond_rsi),
+                "ADX_Match": bool(cond_adx),
+                "MOM_Match": bool(cond_mom),
+                "RSI_Val": round(c_rsi, 1),
+                "ADX_Val": round(c_adx, 1)
+            }
+            
+        except Exception as e:
+            return None
+
+    def check_custom_strict_strategy(self, df, direction: str = "AL", lookback_bars: int = 50):
+        """
+        AL sinyali: EMA9 >= EMA21*0.998 (yakin veya yukari) + RSI>45
+        SAT sinyali: EMA9<EMA21 + RSI<50 + Momentum<0 + MACD<Signal
+        Returns: (bool, int, str) -> (is_match, bars_ago, timestamp_str)
+        """
+        if df is None or df.empty or len(df) < 30:
             return False, 0, ""
-                
+        try:
+            import numpy as np
+
+            close = df["close"] if "close" in df.columns else df["Close"]
+            high  = df["high"]  if "high"  in df.columns else df["High"]
+            low   = df["low"]   if "low"   in df.columns else df["Low"]
+
+            ema9  = close.ewm(span=9,  adjust=False).mean()
+            ema21 = close.ewm(span=21, adjust=False).mean()
+
+            delta = close.diff()
+            gain  = delta.where(delta > 0, 0).rolling(14).mean()
+            loss  = (-delta.where(delta < 0, 0)).rolling(14).mean()
+            rs    = gain / loss.replace(0, float("nan"))
+            rsi   = 100 - (100 / (1 + rs))
+
+            momentum = close - close.shift(10)
+
+            ema12  = close.ewm(span=12, adjust=False).mean()
+            ema26  = close.ewm(span=26, adjust=False).mean()
+            macd   = ema12 - ema26
+            signal = macd.ewm(span=9, adjust=False).mean()
+
+            max_idx   = len(df) - 1
+            start_idx = max(20, max_idx - lookback_bars)
+
+            for i in range(max_idx, start_idx - 1, -1):
+                e9  = float(ema9.iloc[i])
+                e21 = float(ema21.iloc[i])
+                r   = float(rsi.iloc[i])
+                m   = float(momentum.iloc[i])
+
+                if direction == "AL":
+                    # EMA9 >= EMA21*0.998: kucuk toleransla yükselis veya yükselis esiginde
+                    # (0.2% tolerans: 301.51 vs 301.65 gibi cok yakin durumlar dahil)
+                    if e9 < e21 * 0.998:
+                        continue
+                    # RSI > 45: toparlanma bolgesi
+                    if r < 45:
+                        continue
+                    return True, max_idx - i, str(df.index[i])
+
+                elif direction == "SAT":
+                    if e9 < e21 and r < 50 and m < 0:
+                        if float(macd.iloc[i]) < float(signal.iloc[i]):
+                            return True, max_idx - i, str(df.index[i])
+
+            return False, 0, ""
+        except Exception:
+            return False, 0, ""
+
+
+    def check_ema_stop_loss(self, df, interval="1h"):
+        """Checks for EMA 9 crossing below EMA 21 to trigger a stop loss"""
+        if df.empty or len(df) < 30:
+            return False, ""
+        try:
+            import pandas as pd
+            import numpy as np
+            
+            close_col = 'close' if 'close' in df.columns else 'Close'
+            vol_col = 'volume' if 'volume' in df.columns else 'Volume'
+            
+            close = df[close_col]
+            vol = df[vol_col]
+            
+            ema9 = close.ewm(span=9, adjust=False).mean()
+            ema21 = close.ewm(span=21, adjust=False).mean()
+            
+            c_ema9, c_ema21 = float(ema9.iloc[-1]), float(ema21.iloc[-1])
+            p_ema9, p_ema21 = float(ema9.iloc[-2]), float(ema21.iloc[-2])
+            
+            crossed_down = (p_ema9 >= p_ema21) and (c_ema9 < c_ema21)
+            
+            if interval == "1h":
+                if crossed_down or (c_ema9 < c_ema21):
+                    return True, "1H EMA 9 Altında"
+            elif interval == "15m":
+                vol_sma = vol.rolling(20).mean()
+                c_vol, avg_vol = float(vol.iloc[-1]), float(vol_sma.iloc[-1])
+                if crossed_down and c_vol > avg_vol * 1.5:
+                    return True, "15M Hacimli Kesişim"
+            return False, ""
+        except Exception:
+            return False, ""
         except Exception as e:
             return False, 0, ""
