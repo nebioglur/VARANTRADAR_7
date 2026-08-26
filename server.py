@@ -337,6 +337,36 @@ from analysis.technical import TechnicalEngine
 app = Flask(__name__, static_folder='ui', static_url_path='')
 CORS(app)
 
+# ============ BASIC AUTH (GÜVENLİK) ============
+import os
+from flask import request, Response
+
+# Çevre değişkenlerinden (Render) al, yoksa varsayılanları kullan
+ADMIN_USER = os.environ.get('ADMIN_USER', 'admin')
+ADMIN_PASS = os.environ.get('ADMIN_PASS', 'radar123')
+
+def check_auth(username, password):
+    return username == ADMIN_USER and password == ADMIN_PASS
+
+def authenticate():
+    return Response(
+        'VarantRadar Pro - Yetkisiz Erisim. Lutfen kullanici adi ve sifre giriniz.', 401,
+        {'WWW-Authenticate': 'Basic realm="VarantRadar Pro Login"'}
+    )
+
+@app.before_request
+def require_auth_for_all():
+    # CORS oncesi preflight isteklerine izin ver
+    if request.method == 'OPTIONS':
+        return
+        
+    auth = request.authorization
+    if not auth or not check_auth(auth.username, auth.password):
+        return authenticate()
+# ===============================================
+
+
+
 @app.route('/api/chart_data', methods=['GET'])
 def api_chart_data():
     symbol = request.args.get('symbol', '')
