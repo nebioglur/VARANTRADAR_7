@@ -2676,7 +2676,7 @@ async function exportAnalysisAsJPG() {
     
     try {
         const canvas = await html2canvas(targetElement, {
-            backgroundColor: '#0b0f19',
+            backgroundColor: '#131314',
             scale: 2, // Yüksek çözünürlüklü Retina/HD çıktı
             useCORS: true,
             logging: false,

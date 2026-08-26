@@ -1,9 +1,9 @@
 /* Font removed - using system fonts */
 
 :root {
-    --bg-base: #0B1120;
-    --bg-card: rgba(30, 41, 59, 0.6);
-    --bg-card-hover: rgba(51, 65, 85, 0.8);
+    --bg-base: #131314;
+    --bg-card: rgba(30, 30, 30, 0.6);
+    --bg-card-hover: rgba(50, 50, 50, 0.8);
     --border-color: rgba(255, 255, 255, 0.1);
     --text-main: #F8FAFC;
     --text-muted: #94A3B8;

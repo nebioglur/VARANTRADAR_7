@@ -386,6 +386,17 @@ class TavanAuditTracker:
         total_plus5 = 0
         all_max_gains = []
         all_closing_gains = []
+        
+        # Ekstra istatistikler (elite, positive, negative vb.)
+        total_closed_positive = 0
+        total_closed_negative = 0
+        total_positive_gain = 0.0
+        total_negative_gain = 0.0
+        
+        elite_closed_positive = 0
+        elite_closed_negative = 0
+        elite_total_positive_gain = 0.0
+        elite_total_negative_gain = 0.0
 
         # Saat dilimi istatistik kütüphanesi (10:15, 11:30, 14:00, 16:00)
         hourly_stats = {
@@ -441,6 +452,20 @@ class TavanAuditTracker:
                     
                 sum_close_pct += c_pct
                 sum_max_pct += m_pct
+                
+                score = it.get("morning_score", 0)
+                if c_pct > 0:
+                    total_closed_positive += 1
+                    total_positive_gain += c_pct
+                    if score >= 99.9:
+                        elite_closed_positive += 1
+                        elite_total_positive_gain += c_pct
+                elif c_pct < 0:
+                    total_closed_negative += 1
+                    total_negative_gain += c_pct
+                    if score >= 99.9:
+                        elite_closed_negative += 1
+                        elite_total_negative_gain += c_pct
                 
                 if it.get("hit_ceiling"): d_tavan += 1
                 if it.get("hit_plus5"): d_plus5 += 1
@@ -567,7 +592,17 @@ class TavanAuditTracker:
                 "plus5_success_pct": round((total_plus5 / total_candidates) * 100, 1) if total_candidates > 0 else 0.0,
                 "cumulative_avg_max_gain_pct": overall_avg_max,
                 "cumulative_avg_closing_gain_pct": overall_avg_close,
-                "ahlatci_warrant_avg_gain_pct": warrant_cumulative_avg
+                "ahlatci_warrant_avg_gain_pct": warrant_cumulative_avg,
+                "total_closed_positive": total_closed_positive,
+                "total_closed_negative": total_closed_negative,
+                "avg_positive_close_gain": round(total_positive_gain / total_closed_positive, 2) if total_closed_positive > 0 else 0.0,
+                "avg_negative_close_gain": round(total_negative_gain / total_closed_negative, 2) if total_closed_negative > 0 else 0.0,
+                "net_profit_pct": round((total_positive_gain + total_negative_gain) / total_candidates, 2) if total_candidates > 0 else 0.0,
+                "elite_closed_positive": elite_closed_positive,
+                "elite_closed_negative": elite_closed_negative,
+                "elite_avg_positive_gain": round(elite_total_positive_gain / elite_closed_positive, 2) if elite_closed_positive > 0 else 0.0,
+                "elite_avg_negative_gain": round(elite_total_negative_gain / elite_closed_negative, 2) if elite_closed_negative > 0 else 0.0,
+                "elite_net_profit_pct": round((elite_total_positive_gain + elite_total_negative_gain) / (elite_closed_positive + elite_closed_negative), 2) if (elite_closed_positive + elite_closed_negative) > 0 else 0.0
             },
             "hourly_summary": hourly_summary,
             "daily_breakdown": daily_breakdown,
