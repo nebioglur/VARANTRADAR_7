@@ -444,8 +444,8 @@ def api_backtest_run():
             "status": "success",
             "symbol": symbol,
             "strategy": strategy,
-            "backtest": bt_results,
-            "monte_carlo": mc_results
+            "backtest": sanitize_for_json(bt_results),
+        "monte_carlo": sanitize_for_json(mc_results)
         })
     except Exception as e:
         import traceback
@@ -831,7 +831,7 @@ def api_simulation_live_orders():
         return jsonify({
             "status": "success",
             "date": date_str,
-            "orders": sorted(orders, key=lambda x: x['score'], reverse=True)
+            "orders": sanitize_for_json(sorted(orders, key=lambda x: x[\'score\'], reverse=True))
         })
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -897,8 +897,8 @@ def api_simulation_daily_pnl():
             
             return jsonify({
                 "status": "success",
-                "equity_curve": equity_curve,
-                "trades": trades
+                "equity_curve": sanitize_for_json(equity_curve),
+        "trades": sanitize_for_json(trades)
             })
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
