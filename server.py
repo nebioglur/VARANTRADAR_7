@@ -614,15 +614,9 @@ def api_dashboard_init():
     """Ön yüz ilk açıldığında gösterilecek Fırsatları ve Sayaçları döner."""
     clean_cache = sanitize_for_json(GLOBAL_DASHBOARD_CACHE)
     
-    total = 0
-    if clean_cache and isinstance(clean_cache, dict):
-        seen = set()
-        for cat_name, cat_items in clean_cache.items():
-            if isinstance(cat_items, list):
-                for item in cat_items:
-                    if isinstance(item, dict) and 'Symbol' in item:
-                        seen.add(item['Symbol'])
-        total = len(seen)
+    total = len(BIST_SYMBOLS) if 'BIST_SYMBOLS' in globals() else 550
+    # Add a bit of dynamic feeling or just return the static max
+    total = len(BIST_SYMBOLS)
     
     last_updated = "Bilinmiyor"
     import os
