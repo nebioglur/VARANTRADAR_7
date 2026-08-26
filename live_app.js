@@ -3024,7 +3024,7 @@ async function fetchStatsTabData() {
 
         if (data.status === 'success' || data.summary) {
             const summ = data.summary || {};
-            const history = data.history || [];
+            const history = data.daily_breakdown || data.history || [];
             
             // Popüle Et: KPI Kartları
             const el = (id) => document.getElementById(id);
@@ -3049,7 +3049,7 @@ async function fetchStatsTabData() {
             if (el('stats-tab-neg-count')) el('stats-tab-neg-count').innerText = `${summ.total_closed_negative || 0} Adet`;
             if (el('stats-tab-neg-avg')) el('stats-tab-neg-avg').innerText = `(Ort. ${summ.avg_negative_close_gain < 0 ? '' : '-' }%${Math.abs(summ.avg_negative_close_gain || 0).toFixed(2)})`;
             
-            let netPct = summ.net_profit_pct || 0;
+            let netPct = summ.net_profit_pct || summ.cumulative_avg_closing_gain_pct || 0;
             let netSign = netPct > 0 ? '+' : '';
             if (el('stats-tab-net-pct')) el('stats-tab-net-pct').innerText = `${netSign}%${netPct.toFixed(2)}`;
             let netCard = el('stats-tab-net-card');

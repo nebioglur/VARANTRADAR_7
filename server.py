@@ -839,11 +839,17 @@ def api_simulation_live_orders():
 @app.route('/api/tavan_history', methods=['GET'])
 def api_tavan_history():
     try:
-        from services.statistics_engine import StatisticsEngine
-        start_date = request.args.get('start_date')
+        from services.tavan_tracker import TavanAuditTracker
+        start_date = request.args.get('start_date', '2026-08-04')
         end_date = request.args.get('end_date')
         symbol_filter = request.args.get('symbol_filter')
-        res = StatisticsEngine.get_all_time_kpis(start_date=start_date, end_date=end_date, symbol_filter=symbol_filter)
+        time_filter = request.args.get('time_filter')
+        res = TavanAuditTracker.get_long_term_history(
+            start_date=start_date,
+            end_date=end_date,
+            symbol_filter=symbol_filter,
+            time_filter=time_filter
+        )
         return jsonify(res)
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
@@ -863,7 +869,7 @@ def api_tavan_tracker():
         from services.tavan_tracker import TavanAuditTracker
         date_str = request.args.get('date')
         res = TavanAuditTracker.get_audit_report(date_str)
-        return jsonify({"status": "success", "audit": res})
+        return jsonify(res)
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
