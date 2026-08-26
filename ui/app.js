@@ -3106,10 +3106,11 @@ async function fetchStatsTabData() {
                 } else {
                     history.forEach(h => {
                         const tr = document.createElement('tr');
-                        const closeColor = h.avg_close_gain >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-                        const closeSign = h.avg_close_gain >= 0 ? '+' : '';
-                        
-                        tr.innerHTML = `
+                        const avgMax = h.avg_max_gain_pct || 0;
+                    const avgClose = h.avg_closing_gain_pct || 0;
+                    const closeColor = avgClose >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+                        const closeSign = avgClose >= 0 ? '+' : '';
+                    tr.innerHTML = `
                             <td><i class="fa-regular fa-calendar" style="color:var(--text-muted);"></i> ${h.date}</td>
                             <td>${h.total_signals}</td>
                             <td style="color:var(--accent-green); font-weight:bold;">${h.hit_ceiling} Tavan (%${h.tavan_rate})</td>
