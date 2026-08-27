@@ -15,7 +15,8 @@ class MarketDataManager:
         conn = get_connection()
         cursor = conn.cursor()
         for cand in candidates:
-            sym = cand.get('symbol', '')
+            # Hem eski (symbol) hem yeni (Symbol) alan adlarını destekle
+            sym = cand.get('Symbol', '') or cand.get('symbol', '')
             if not sym:
                 continue
             
@@ -23,10 +24,10 @@ class MarketDataManager:
             if not sym.endswith('.IS'):
                 sym += '.IS'
                 
-            score = float(cand.get('Score', 0))
-            morning_price = float(cand.get('morning_price', 0))
-            ceiling_target = float(cand.get('ceiling_target', 0))
-            morning_phase = cand.get('morning_phase', '')
+            score = float(cand.get('Score', 0) or cand.get('Teyit_Score', 0) or 0)
+            morning_price = float(cand.get('Price', 0) or cand.get('morning_price', 0) or 0)
+            ceiling_target = float(cand.get('Ceiling_Price', 0) or cand.get('ceiling_target', 0) or 0)
+            morning_phase = cand.get('Phase', '') or cand.get('morning_phase', '')
             metadata = json.dumps(cand, ensure_ascii=False)
             
             try:
@@ -149,7 +150,8 @@ class MarketDataManager:
             from datetime import datetime, timedelta
             dt = datetime.strptime(date_str, '%Y-%m-%d')
             next_dt = dt + timedelta(days=1)
-            dl_df = yf.download(symbol, start=date_str, end=next_dt.strftime('%Y-%m-%d'), interval='1d', progress=False)
+            # 5 dakikalık veri indir (simülasyon bar-bar ilerler)
+            dl_df = yf.download(symbol, start=date_str, end=next_dt.strftime('%Y-%m-%d'), interval='5m', progress=False)
             if not dl_df.empty:
                 dl_df.columns = [c[0] if isinstance(c, tuple) else c for c in dl_df.columns]
                 return dl_df

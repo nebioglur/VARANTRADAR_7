@@ -843,8 +843,8 @@ def api_simulation_live_orders():
         
         valid_signals = []
         for s in signals:
-            score = float(s.get('score', 0))
-            phase = str(s.get('morning_phase', ''))
+            score = float(s.get('score', 0) or 0)
+            phase = str(s.get('morning_phase', '') or '')
             if score >= 80 and "YATAY" not in phase and "NEGATİF" not in phase and "UZAK DUR" not in phase:
                 valid_signals.append(s)
                 
