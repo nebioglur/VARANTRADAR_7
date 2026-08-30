@@ -624,6 +624,35 @@ def api_dashboard_init():
     if os.path.exists("dashboard_cache.json"):
         mtime = os.path.getmtime("dashboard_cache.json")
         last_updated = datetime.fromtimestamp(mtime).strftime("%H:%M")
+
+    # --- TRADER COCKPIT DATA FETCH ---
+    xu_change = 0.0
+    try:
+        import yfinance as yf
+        xu = yf.download("XU100.IS", period="5d", interval="1d", progress=False)
+        close_col = 'Close' if 'Close' in xu.columns else 'close'
+        if not xu.empty and len(xu) >= 2:
+            xu_close = float(xu[close_col].iloc[-1])
+            xu_prev = float(xu[close_col].iloc[-2])
+            xu_change = round(((xu_close - xu_prev) / xu_prev) * 100, 2)
+    except:
+        pass
+
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    total_pnl = 0.0
+    open_pos = 0
+    try:
+        from services.trade_database import get_connection
+        with get_connection() as conn:
+            c = conn.cursor()
+            c.execute("SELECT pnl_val FROM trades WHERE date_str = ?", (today_str,))
+            for r in c.fetchall():
+                if r[0]: total_pnl += float(r[0])
+            c.execute("SELECT COUNT(*) FROM trades WHERE date_str = ? AND status='OPEN'", (today_str,))
+            row = c.fetchone()
+            if row: open_pos = row[0]
+    except:
+        pass
         
     return jsonify({
         "status": "success",

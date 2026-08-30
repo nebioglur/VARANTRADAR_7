@@ -92,6 +92,30 @@
                     <span style="font-size: 0.85rem; color: var(--text-muted);" id="last-scan-time"><i class="fa-solid fa-clock"></i> Son Tarama: Bekleniyor...</span>
                 </div>
             </div>
+
+            <!-- TRADER COCKPIT -->
+            <div id="trader-cockpit" style="grid-column: 1 / -1; display:flex; justify-content:space-between; align-items:center; background:var(--bg-card); border:1px solid var(--border-color); border-radius:12px; padding:1.5rem; margin-bottom:1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+               <div style="flex: 1; margin-right: 1.5rem;">
+                  <h3 style="margin:0; font-size:1.2rem; color:var(--text-light);"><i class="fa-solid fa-plane"></i> Kurumsal Trader Kokpiti</h3>
+                  <div id="ai-summary" style="margin-top:0.5rem; padding:0.8rem; background:rgba(59,130,246,0.1); border-left:4px solid var(--accent-blue); border-radius:4px; font-size:0.95rem; line-height: 1.4;">
+                     Veriler Yükleniyor...
+                  </div>
+               </div>
+               <div style="display:flex; gap:2rem;">
+                  <div style="text-align:center;">
+                     <div style="font-size:0.8rem; color:var(--text-muted);">BIST100 (XU100)</div>
+                     <div id="xu100-val" style="font-size:1.4rem; font-weight:700;">--</div>
+                  </div>
+                  <div style="text-align:center;">
+                     <div style="font-size:0.8rem; color:var(--text-muted);">Şalter Durumu</div>
+                     <div id="shield-status" style="font-size:1.4rem; font-weight:700;">--</div>
+                  </div>
+                  <div style="text-align:center;">
+                     <div style="font-size:0.8rem; color:var(--text-muted);">Günlük Net Kâr (PNL)</div>
+                     <div id="daily-pnl" style="font-size:1.4rem; font-weight:700;">-- ₺</div>
+                  </div>
+               </div>
+            </div>
             
             <!-- 📱 MOBİL VE HIZLI GEÇİŞ KONTROLLERİ (GERİ / İLERİ TUŞLARI) -->
             <div class="mobile-slider-controls" style="grid-column: 1 / -1;">

@@ -1771,6 +1771,50 @@ async function fetchDashboardData() {
             const timeEl2 = document.getElementById('arge-last-scan');
             if (timeEl2) timeEl2.innerHTML = timeHTML;
             
+            // --- TRADER COCKPIT UPDATE ---
+            if (data.xu100_change !== undefined) {
+                const xuEl = document.getElementById('xu100-val');
+                if (xuEl) {
+                    const color = data.xu100_change >= 0 ? 'var(--accent-green)' : '#ef4444';
+                    const icon = data.xu100_change >= 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
+                    xuEl.innerHTML = `<span style="color:${color};"><i class="fa-solid ${icon}"></i> %${data.xu100_change}</span>`;
+                }
+                
+                const shieldEl = document.getElementById('shield-status');
+                if (shieldEl) {
+                    if (data.xu100_change <= -1.5) {
+                        shieldEl.innerHTML = `<span style="color:#ef4444;"><i class="fa-solid fa-shield-halved"></i> KAPALI (Risk)</span>`;
+                    } else {
+                        shieldEl.innerHTML = `<span style="color:var(--accent-green);"><i class="fa-solid fa-shield-check"></i> AÇIK (Güvenli)</span>`;
+                    }
+                }
+                
+                const pnlEl = document.getElementById('daily-pnl');
+                if (pnlEl) {
+                    const pnlVal = data.daily_pnl || 0;
+                    const openPos = data.open_positions || 0;
+                    const pnlColor = pnlVal > 0 ? 'var(--accent-green)' : (pnlVal < 0 ? '#ef4444' : 'var(--text-main)');
+                    pnlEl.innerHTML = `<span style="color:${pnlColor};">${pnlVal.toLocaleString('tr-TR')} ₺</span> <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted); display:block;">(${openPos} İşlem Açık)</span>`;
+                }
+                
+                const aiEl = document.getElementById('ai-summary');
+                if (aiEl) {
+                    let aiComment = "BIST100'de stabil görünüm devam ediyor. Seçici alımlar ve MTF ivme fırsatları değerlendirilebilir.";
+                    if (data.xu100_change <= -1.5) {
+                        aiComment = "⚠️ Endekste sert satış baskısı var. Robot alım motorları (Şalter) uyku moduna alındı. Nakitte kalın.";
+                        aiEl.style.borderLeftColor = "#ef4444";
+                        aiEl.style.backgroundColor = "rgba(239, 68, 68, 0.1)";
+                    } else if (data.xu100_change > 1.5) {
+                        aiComment = "🚀 Endeks çok güçlü. Tavan adaylarında hedefler daha esnek tutulabilir. Boğa piyasası aktif.";
+                        aiEl.style.borderLeftColor = "var(--accent-green)";
+                        aiEl.style.backgroundColor = "rgba(16, 185, 129, 0.1)";
+                    } else if (data.daily_pnl > 0 && data.xu100_change > 0) {
+                        aiComment = `Endeks pozitif ayrışıyor. Bugün simülasyonda ${data.daily_pnl.toLocaleString('tr-TR')} ₺ kilitlendi. Güçlü adaylar takipte.`;
+                    }
+                    aiEl.innerHTML = `<strong>🤖 AI Analizi:</strong> ${aiComment}`;
+                }
+            }
+            
             console.log('[DASHBOARD] API cevabı geldi. Keys:', Object.keys(data.dashboard_data || {}), 
                 'opp1h:', (data.dashboard_data?.opportunities_1h || []).length,
                 'opp:', (data.dashboard_data?.opportunities || []).length);
