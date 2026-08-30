@@ -6,6 +6,12 @@ from services.market_data import MarketDataManager
 import pytz
 from config.bist_symbols import YILDIZ_SYMBOLS
 
+# OTOMATİK KARA LİSTE CEZA PUANI TABLOSU (Günlük Stop-Loss sayacı)
+PENALTY_BLACKLIST_STRIKES = {}
+
+# SÜREKLİ KARA LİSTE (Sığ ve Manipülatif Hisseler)
+HARDCODED_BLACKLIST = {'TETMT.IS', 'ISBTR.IS', 'ISKUR.IS', 'KENT.IS', 'QNBFL.IS', 'QNBDI.IS', 'GARFA.IS', 'UFUK.IS', 'UZERB.IS'}
+
 SECTOR_MAP = {
     'AKBNK.IS': 'BANKA', 'GARAN.IS': 'BANKA', 'YKBNK.IS': 'BANKA', 'ISCTR.IS': 'BANKA', 'VAKBN.IS': 'BANKA', 'HALKB.IS': 'BANKA',
     'THYAO.IS': 'HAVACILIK', 'PGSUS.IS': 'HAVACILIK', 'TAVHL.IS': 'HAVACILIK',
@@ -284,15 +290,17 @@ class SimulationEngine:
                     
                     if "STOP" in reason:
                         stopped_out_symbols.add(sym)
+                        PENALTY_BLACKLIST_STRIKES[sym] = PENALTY_BLACKLIST_STRIKES.get(sym, 0) + 1
                         
                     current_cash += sell_volume - commission
                     
             # 2. YENİ ALIMLARI KONTROL ET
             open_symbols = {t['symbol'] for t in active_trades if t['status'] == 'OPEN'}
             
-            # GÜNLÜK HEDEF (PNL LOCK) ŞALTERİ
+            # GÜNLÜK HEDEF (PNL LOCK) VE DRAWDOWN ŞALTERİ
             current_realized_pnl = sum(t.get('pnl_val', 0) for t in completed_trades)
             daily_target_reached = current_realized_pnl >= 2000.0 # 2000 TL net kâra ulaşınca dur (Paydos)
+            daily_drawdown_reached = current_realized_pnl <= -1500.0 # -1500 TL zararda intikam işlemini engelle
             
             to_remove = []
             for s in pending_signals:
@@ -302,13 +310,20 @@ class SimulationEngine:
                 
                 if dt_current >= dt_ps:
                     to_remove.append(s)
+                    
+                    # 1. TEMEL KONTROLLER VE ŞALTERLER
                     if s['symbol'] in open_symbols:
                         continue
                         
-                    if daily_target_reached:
-                        continue # Hedef tamamlandı, yeni işlem açma!
+                    if daily_target_reached or daily_drawdown_reached:
+                        continue # Hedef veya Drawdown limitine ulaşıldı, yeni işlem açma!
                         
-                    # KORELASYON KALKANI (SEKTÖR LİMİTİ) - Sektör Dağılımını Kontrol Et
+                    # 2. KARA LİSTE (BLACKLIST) VE CEZA KONTROLÜ
+                    new_sym = s['symbol']
+                    if new_sym in HARDCODED_BLACKLIST or PENALTY_BLACKLIST_STRIKES.get(new_sym, 0) >= 2:
+                        continue # Bu hisse yasaklı veya son zamanlarda çok fazla stoplattı!
+                        
+                    # 3. KORELASYON KALKANI (SEKTÖR LİMİTİ)
                     active_sectors = set()
                     for t in active_trades:
                         if t['status'] == 'OPEN':
@@ -316,7 +331,6 @@ class SimulationEngine:
                             if sec != 'DIGER':
                                 active_sectors.add(sec)
                     
-                    new_sym = s['symbol']
                     new_sec = SECTOR_MAP.get(new_sym, 'DIGER')
                     if new_sec != 'DIGER' and new_sec in active_sectors:
                         continue # Sektör limiti dolu, bu işlemi atla! (Korelasyon Kalkanı)
@@ -347,8 +361,17 @@ class SimulationEngine:
                                 ceiling = raw_entry * 1.10  # Fallback: +%10 hedef
                             prev_close = ceiling / 1.10
                             
+                            # 4. AÇILIŞ GAP (BOŞLUK) TUZAĞI FİLTRESİ
+                            current_hour = dt_current.hour
+                            current_minute = dt_current.minute
+                            is_morning_trap_zone = (current_hour == 9 and current_minute >= 55) or (current_hour == 10 and current_minute <= 30)
+                            if is_morning_trap_zone:
+                                gap_pct = ((raw_entry - prev_close) / prev_close) * 100
+                                if gap_pct > 3.0:
+                                    continue # %3'ten büyük GAP'li açılış tuzağı, fiyat oturana kadar alım yapma!
+                            
                             if raw_entry >= prev_close * 1.095:
-                                continue
+                                continue # Tavana çok yakın, riskli
                                 
                             entry_price = raw_entry * 1.0015
                             
