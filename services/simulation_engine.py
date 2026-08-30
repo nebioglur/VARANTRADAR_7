@@ -3,6 +3,21 @@ from datetime import datetime, time, timedelta
 import json
 from services.trade_database import get_connection
 from services.market_data import MarketDataManager
+import pytz
+from config.bist_symbols import YILDIZ_SYMBOLS
+
+SECTOR_MAP = {
+    'AKBNK.IS': 'BANKA', 'GARAN.IS': 'BANKA', 'YKBNK.IS': 'BANKA', 'ISCTR.IS': 'BANKA', 'VAKBN.IS': 'BANKA', 'HALKB.IS': 'BANKA',
+    'THYAO.IS': 'HAVACILIK', 'PGSUS.IS': 'HAVACILIK', 'TAVHL.IS': 'HAVACILIK',
+    'FROTO.IS': 'OTOMOTIV', 'TOASO.IS': 'OTOMOTIV', 'DOAS.IS': 'OTOMOTIV', 'KARSN.IS': 'OTOMOTIV', 'ASUZU.IS': 'OTOMOTIV',
+    'TCELL.IS': 'TELEKOM', 'TTKOM.IS': 'TELEKOM',
+    'KCHOL.IS': 'HOLDING', 'SAHOL.IS': 'HOLDING', 'SISE.IS': 'HOLDING', 'DOHOL.IS': 'HOLDING', 'ALARK.IS': 'HOLDING',
+    'TUPRS.IS': 'PETROKIMYA', 'PETKM.IS': 'PETROKIMYA', 'SASA.IS': 'KIMYA', 'HEKTS.IS': 'KIMYA',
+    'EREGL.IS': 'DEMIR', 'KRDMD.IS': 'DEMIR',
+    'BIMAS.IS': 'PERAKENDE', 'MGROS.IS': 'PERAKENDE', 'SOKM.IS': 'PERAKENDE',
+    'ASELS.IS': 'SAVUNMA', 'MIATK.IS': 'TEKNOLOJI', 'ARDYZ.IS': 'TEKNOLOJI',
+    'ASTOR.IS': 'ENERJI', 'ENJSA.IS': 'ENERJI', 'CWENE.IS': 'ENERJI', 'EUPWR.IS': 'ENERJI', 'ALFAS.IS': 'ENERJI'
+}
 
 class SimulationEngine:
     """
@@ -205,8 +220,14 @@ class SimulationEngine:
                     trade['stop_price'] = max(trade['stop_price'], entry * 1.01) # %4'ü gördüyse %1'i kilitle (Maliyetin üstü)
                     stop_price = trade['stop_price']
                 
+                # CUMA KAPANIŞ (HAFTA SONU) RİSK KALKANI - 17:45'te Tahtayı Boşalt
+                from datetime import time as dt_time
+                is_friday = current_time.weekday() == 4
+                if is_friday and current_time.time() >= dt_time(17, 45):
+                    sell_price = close * 0.9985 # Slipaj
+                    reason = f"⚠️ CUMA KAPANIŞ KALKANI (Hafta Sonu Nakde Geçildi)"
                 # En kötü senaryo: Önce Stop Loss patlar varsayımı
-                if low <= stop_price:
+                elif low <= stop_price:
                     sell_price = stop_price * 0.9985 # Slipaj
                     if stop_price > entry:
                         reason = f"🛡️ İZLEYEN STOP (Kâr Kilitlendi)"
@@ -287,6 +308,19 @@ class SimulationEngine:
                     if daily_target_reached:
                         continue # Hedef tamamlandı, yeni işlem açma!
                         
+                    # KORELASYON KALKANI (SEKTÖR LİMİTİ) - Sektör Dağılımını Kontrol Et
+                    active_sectors = set()
+                    for t in active_trades:
+                        if t['status'] == 'OPEN':
+                            sec = SECTOR_MAP.get(t['symbol'], 'DIGER')
+                            if sec != 'DIGER':
+                                active_sectors.add(sec)
+                    
+                    new_sym = s['symbol']
+                    new_sec = SECTOR_MAP.get(new_sym, 'DIGER')
+                    if new_sec != 'DIGER' and new_sec in active_sectors:
+                        continue # Sektör limiti dolu, bu işlemi atla! (Korelasyon Kalkanı)
+                    
                     # "Squaze (yukarı ok) + Güçlü Giriş + Pozitif Alpha" Kontrolü
                     alpha_str = str(s.get("Alpha_Str", ""))
                     sqz_str = str(s.get("Short_Squeeze", ""))
