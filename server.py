@@ -128,33 +128,28 @@ def background_scanner():
             return
         today_str = datetime.now().strftime("%Y-%m-%d")
         
-        # 1. Tavan Adayları Bildirimleri (Aynı gün sadece 1 kez gönder)
+        # 1. Tavan Adayları Bildirimleri (Aynı gün sadece 1 kez gönder, sadece SCORE >= 90 ise)
         for tavan in results.get("tavan_adaylari", []):
             sym = tavan.get("Symbol")
-            if sym and sent_tavan.get(sym) != today_str:
-                notif.send_tavan_alert(sym, tavan.get("Score", 0), tavan.get("Report", ""), tavan.get("Position"), extra=tavan)
+            score = tavan.get("Score", 0)
+            if sym and score >= 90 and sent_tavan.get(sym) != today_str:
+                notif.send_tavan_alert(sym, score, tavan.get("Report", ""), tavan.get("Position"), extra=tavan)
                 sent_tavan[sym] = today_str
                 time.sleep(0.5) # Telegram API rate limit önlemi
                 
-        # 2. 1 Saatlik Güçlü Fırsatlar Bildirimleri (Score 4 veya 5 olanlar, günde 1 kez)
+        # 2. 1 Saatlik Güçlü Fırsatlar Bildirimleri (Sadece TAM PUAN Score == 5 olanlar)
         for opp in results.get("opportunities_1h", []):
             sym = opp.get("Symbol")
             score_5 = opp.get("Score_5", 0)
-            if sym and score_5 >= 4 and sent_1h.get(sym) != today_str:
+            if sym and score_5 == 5 and sent_1h.get(sym) != today_str:
                 notif.send_1h_opportunity_alert(opp)
                 sent_1h[sym] = today_str
                 time.sleep(0.5)
                 
-        # 3. 5m RSI Sinyalleri Bildirimleri (Aynı gün, aynı sinyali sadece 1 kez gönder)
-        for rsi in results.get("signals_5m", []):
-            sym = rsi.get("Symbol")
-            sig = rsi.get("Signal")
-            sig_key = f"{today_str}_{sig}"
-            if sym and sent_5m.get(sym) != sig_key:
-                notif.send_5m_rsi_alert(sym, sig, rsi.get("RSI", 0), rsi.get("Price", 0))
-                sent_5m[sym] = sig_key
-                time.sleep(0.5)
-    
+        # 3. 5m RSI Sinyalleri Bildirimleri ÇOK FAZLA GÜRÜLTÜ (SPAM) YAPTIĞI İÇİN KAPATILDI.
+        # (Sadece ekranda / dashboard'da gösterilecek, Telegram'ı yormayacak)
+        pass
+
     # Hızlı Başlangıç (Fast Start): Eğer cache boşsa kullanıcıyı bekletmemek için sadece BIST 50'yi anında tara
     if not GLOBAL_DASHBOARD_CACHE:
         try:
