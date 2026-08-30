@@ -1833,7 +1833,7 @@ if (breadthEl && data.dashboard_data && data.dashboard_data.market_breadth_pct !
                     } else if (data.daily_pnl > 0 && data.xu100_change > 0) {
                         aiComment = `Endeks pozitif ayrÄ±ÅŸÄ±yor. BugÃ¼n simÃ¼lasyonda ${data.daily_pnl.toLocaleString('tr-TR')} â‚º kilitlendi. GÃ¼Ã§lÃ¼ adaylar takipte.`;
                     }
-                    aiEl.innerHTML = `<strong>ğŸ¤– AI Analizi:</strong> ${aiComment}`;
+                    aiEl.innerHTML = `<strong>🟤 AI Analizi:</strong> ${aiComment}`;
                 }
             }
             
@@ -3861,7 +3861,6 @@ function openXRayModal(symbol) {
     
     if(!modal || !globalDashboardData) return;
     
-    // Find stock data in any category
     let stockData = null;
     for (let cat in globalDashboardData) {
         if (Array.isArray(globalDashboardData[cat])) {
@@ -3870,45 +3869,44 @@ function openXRayModal(symbol) {
         }
     }
     
-    title.innerHTML = <i class="fa-solid fa-microscope"></i> AI X-Ray:  + symbol;
+    title.innerHTML = `<i class="fa-solid fa-microscope"></i> AI X-Ray: ${symbol}`;
     
     if (stockData) {
         const score = stockData.Score || stockData.Score_5 * 20 || '--';
         const price = stockData.Price || stockData.Daily_Close || '--';
         const vol = stockData.Volume_Surge || stockData.Vol_Surge || '--';
         const rsi = stockData.Indicators ? stockData.Indicators.RSI_14 : '--';
-        const macd = stockData.Indicators ? (stockData.Indicators.MACD > 0 ? 'Pozitif' : 'Negatif') : '--';
         const reason = stockData.Report || stockData.Reason || 'Sistem tarafından yakalandı.';
         
         let rsiColor = rsi < 30 ? 'var(--accent-green)' : (rsi > 70 ? '#ef4444' : 'var(--text-light)');
         
-        body.innerHTML = 
+        body.innerHTML = `
             <div class="xray-grid">
                 <div class="xray-box">
                     <h4>Anlık Fiyat</h4>
-                    <div class="val">? + (typeof price==='number' ? price.toFixed(2) : price) + </div>
+                    <div class="val">›${typeof price==='number' ? price.toFixed(2) : price}</div>
                 </div>
                 <div class="xray-box">
                     <h4>AI Skoru</h4>
-                    <div class="val" style="color:var(--accent-blue)"> + score + </div>
+                    <div class="val" style="color:var(--accent-blue)">${score}</div>
                 </div>
                 <div class="xray-box">
                     <h4>RSI (14)</h4>
-                    <div class="val" style="color:+rsiColor+"> + (typeof rsi==='number' ? rsi.toFixed(1) : rsi) + </div>
+                    <div class="val" style="color:${rsiColor}">${typeof rsi==='number' ? rsi.toFixed(1) : rsi}</div>
                 </div>
                 <div class="xray-box">
                     <h4>Hacim İvmesi</h4>
-                    <div class="val" style="color:var(--accent-yellow)"> + (typeof vol==='number' ? vol.toFixed(1) : vol) + x</div>
+                    <div class="val" style="color:var(--accent-yellow)">${typeof vol==='number' ? vol.toFixed(1) : vol}x</div>
                 </div>
                 <div class="xray-box full-width" style="text-align:left; font-size:0.9rem;">
-                    <h4>?? Komite Raporu</h4>
-                    <div style="color:var(--text-muted); margin-top:5px; line-height:1.4;"> + reason + </div>
+                    <h4>🏳 Komite Raporu</h4>
+                    <div style="color:var(--text-muted); margin-top:5px; line-height:1.4;">${reason}</div>
                 </div>
             </div>
-            <button class="btn-primary" style="width:100%; margin-top:15px;" onclick="document.getElementById('symbol-input').value='+symbol+'; analyzeSymbol(); closeXRayModal(event);">Detaylı Grafiğe Git</button>
-        ;
+            <button class="btn-primary" style="width:100%; margin-top:15px;" onclick="document.getElementById('symbol-input').value='${symbol}'; analyzeSymbol(); closeXRayModal(event);">Detaylı Grafiğe Git</button>
+        `;
     } else {
-        body.innerHTML = <div style="text-align:center; color:var(--text-muted);">Veri bulunamadı.</div>;
+        body.innerHTML = `<div style="text-align:center; color:var(--text-muted);">Veri bulunamadı.</div>`;
     }
     
     modal.style.display = 'flex';
