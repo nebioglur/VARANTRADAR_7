@@ -247,6 +247,10 @@ class UniversalScanner:
         
         symbols_to_process = [symbols[0]] if len(symbols) == 1 else symbols
         
+        # PİYASA RÖNTGENCİSİ (Market Breadth)
+        bullish_stocks_count = 0
+        total_processed_stocks = 0
+        
         for sym in symbols_to_process:
             if len(symbols) == 1:
                 df_raw = data.copy()
@@ -267,6 +271,17 @@ class UniversalScanner:
                 
             df['close'] = df['close'].ffill()
             df = df[required_cols]
+            
+            # --- PİYASA RÖNTGENCİSİ HESAPLAMASI ---
+            if len(df) > 21:
+                total_processed_stocks += 1
+                try:
+                    current_close = float(df['close'].iloc[-1])
+                    ema21 = float(df['close'].ewm(span=21, adjust=False).mean().iloc[-1])
+                    if current_close > ema21:
+                        bullish_stocks_count += 1
+                except:
+                    pass
             
             # --- 🐋 BALİNA (WHALE) AKÜMÜLASYON DEDEKTÖRÜ ---
             try:
@@ -348,11 +363,15 @@ class UniversalScanner:
         
         stay_away_1h = sorted(stay_away_1h, key=lambda x: (x.get("Crossover_Bars_Ago", 999), x.get("EMA_Gap_Pct", 0)))
         
+        # Piyasa Röntgencisi Sonucu (Market Breadth)
+        market_breadth_pct = (bullish_stocks_count / total_processed_stocks * 100) if total_processed_stocks > 0 else 50.0
+        
         return {
             "opportunities_1h": opportunities,
             "stay_away_1h": stay_away_1h,
             "tavan_adaylari": tavan_adaylari,
-            "whale_alerts": whale_alerts
+            "whale_alerts": whale_alerts,
+            "market_breadth_pct": round(market_breadth_pct, 1)
         }
 
     def _trigger_batch_vip_signals(self, vips: list):

@@ -1812,6 +1812,14 @@ async function fetchDashboardData() {
                 }
                 
                 const aiEl = document.getElementById('ai-summary');
+                    const breadthEl = document.getElementById('breadth-val');
+                    if (breadthEl && data.dashboard_data && data.dashboard_data.market_breadth_pct !== undefined) {
+                        let bPct = data.dashboard_data.market_breadth_pct;
+                        breadthEl.innerText = "%" + bPct;
+                        if (bPct < 35) { breadthEl.style.color = "#ef4444"; breadthEl.innerText += " (Zay�f)"; }
+                        else if (bPct > 65) { breadthEl.style.color = "var(--accent-green)"; breadthEl.innerText += " (G��l�)"; }
+                        else { breadthEl.style.color = "var(--text-light)"; }
+                    }
                 if (aiEl) {
                     let aiComment = "BIST100'de stabil görünüm devam ediyor. Seçici alımlar ve MTF ivme fırsatları değerlendirilebilir.";
                     if (data.xu100_change <= -1.5) {
@@ -3911,6 +3919,8 @@ function closeXRayModal(e) {
     const modal = document.getElementById('xray-modal');
     if (modal) modal.style.display = 'none';
 }
+
+
 
 
 

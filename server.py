@@ -168,6 +168,7 @@ def background_scanner():
                 GLOBAL_DASHBOARD_CACHE["tavan_adaylari"] = sanitize_for_json(fast_1h_res.get("tavan_adaylari", []))
                 GLOBAL_DASHBOARD_CACHE["stay_away_1h"] = sanitize_for_json(fast_1h_res.get("stay_away_1h", []))
                 GLOBAL_DASHBOARD_CACHE["whale_alerts"] = sanitize_for_json(fast_1h_res.get("whale_alerts", []))
+                GLOBAL_DASHBOARD_CACHE["market_breadth_pct"] = fast_1h_res.get("market_breadth_pct", 50.0)
                 save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
             except Exception as e_1h:
                 print(f"[BACKGROUND] Hızlı Başlangıç 1h hatası: {e_1h}")
@@ -219,6 +220,7 @@ def background_scanner():
                         GLOBAL_DASHBOARD_CACHE["tavan_adaylari"] = sanitize_for_json(tavan_candidates)
                         GLOBAL_DASHBOARD_CACHE["stay_away_1h"] = sanitize_for_json(res_1h.get("stay_away_1h", []))
                         GLOBAL_DASHBOARD_CACHE["whale_alerts"] = sanitize_for_json(res_1h.get("whale_alerts", []))
+                        GLOBAL_DASHBOARD_CACHE["market_breadth_pct"] = res_1h.get("market_breadth_pct", 50.0)
                         save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
                         
                         # Belirli Saatlerdeki Tavan Listesi Bellek Kaydı & 18:10 Kapanış Denetimi
@@ -1092,4 +1094,6 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=port
     )
+
+
 
