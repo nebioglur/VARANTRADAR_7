@@ -1842,7 +1842,7 @@ async function fetchDashboardData() {
                 'opp:', (data.dashboard_data?.opportunities || []).length);
             
             // Eğer veri doluysa tabloları doldur
-            if (data.dashboard_data && Object.keys(data.dashboard_data).length > 0) {
+            if (data.dashboard_data) {
                 globalDashboardData = data.dashboard_data;
                 
                 // Render all categories
@@ -3919,6 +3919,8 @@ function closeXRayModal(e) {
     const modal = document.getElementById('xray-modal');
     if (modal) modal.style.display = 'none';
 }
+
+
 
 
 

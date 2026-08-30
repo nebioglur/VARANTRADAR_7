@@ -657,7 +657,10 @@ def api_dashboard_init():
         "status": "success",
         "total_analyzed": total,
         "dashboard_data": clean_cache or {},
-        "last_updated": last_updated
+        "last_updated": last_updated,
+        "xu100_change": xu_change,
+        "daily_pnl": total_pnl,
+        "open_pos": open_pos
     })
 
 @app.route('/api/pool_info', methods=['GET'])
