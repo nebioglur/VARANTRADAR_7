@@ -33,7 +33,7 @@ class TavanAuditTracker:
 
     @classmethod
     def load_all_audits(cls) -> Dict[str, Any]:
-        """Kalıcı denetim veritabanını yükler. Boşsa 04 Ağustos 2026 başlangıç arşivini oluşturur ve kaydeder."""
+        """Kalıcı denetim veritabanını yükler. Boşsa boş sözlük döndürür (eski demo verileri yüklemez)."""
         cls._ensure_dir()
         if os.path.exists(AUDIT_FILE_PATH):
             try:
@@ -44,10 +44,8 @@ class TavanAuditTracker:
             except Exception as e:
                 print(f"[TavanAuditTracker] Yukleme hatasi: {e}")
         
-        # Henüz seans kaydı yoksa 04 Ağustos 2026 başlangıç verilerini yükle ve kaydet
-        initial = cls._generate_initial_historical_data()
-        cls.save_all_audits(initial)
-        return initial
+        # Dosya yoksa veya hatalıysa boş başla
+        return {}
 
     @classmethod
     def save_all_audits(cls, data: Dict[str, Any]):
