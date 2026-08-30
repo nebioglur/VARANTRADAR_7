@@ -719,6 +719,20 @@ class TechnicalEngine(BaseEngine):
                 details.append("OBV yeni zirvede (Kurumsal Para Girişi).")
                 
             # ==========================================
+            # 4.5. 📈 RÖLATİF GÜÇ (RELATIVE STRENGTH) - Piyasadan Ayrışma
+            # ==========================================
+            market_c = getattr(self, "market_change", 0.0)
+            if change_pct > market_c + 2.0:
+                score += 20
+                details.append(f"⭐ Rölatif Güç: Piyasadan (+%2) pozitif ayrışıyor (Kurumsal İlgi).")
+            elif change_pct > market_c + 1.0:
+                score += 10
+                details.append(f"Rölatif Güç: Piyasadan daha güçlü.")
+            elif change_pct < market_c:
+                score -= 15
+                details.append("Zayıf Halka: Piyasanın gerisinde kalıyor.")
+                
+            # ==========================================
             # 5. ⚖️ KESİN VWAP ŞARTI (Mal Dağıtımı / Tuzak Filtresi)
             # ==========================================
             typical_price = (high + low + close) / 3

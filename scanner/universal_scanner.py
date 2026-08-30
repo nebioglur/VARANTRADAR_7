@@ -199,6 +199,8 @@ class UniversalScanner:
                     xu100_prev = float(xu[close_col].iloc[-2])
                     xu100_change = ((xu100_close - xu100_prev) / xu100_prev) * 100
                     
+                    self.tech_engine.market_change = xu100_change # Rölatif Güç analizi için kaydet
+                    
                     if xu100_change <= -1.5:
                         print(f"[MARKET SHIELD] XU100 Çöktü ({xu100_change:.2f}%). Robot alım motorları uyku modunda!")
                         return {
@@ -212,6 +214,7 @@ class UniversalScanner:
                             "stay_away_1h": []
                         }
         except Exception as e:
+            self.tech_engine.market_change = 0.0
             print(f"[MARKET SHIELD] XU100 kontrol hatası: {e}")
 
         if daily_stats:

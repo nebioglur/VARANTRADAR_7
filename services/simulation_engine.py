@@ -310,6 +310,27 @@ class SimulationEngine:
                                 continue
                                 
                             entry_price = raw_entry * 1.0015
+                            
+                            # 📊 DİNAMİK HEDEF / STOP (Karaktere Göre Volatilite - ATR)
+                            past_data = df.loc[:current_time]
+                            recent_bars = past_data.tail(12) # Son 1 saat (5dk x 12)
+                            avg_candle_size = 0.5
+                            if not recent_bars.empty:
+                                avg_candle_size = ((recent_bars['High'] - recent_bars['Low']) / recent_bars['Low']).mean() * 100
+                            
+                            if avg_candle_size < 0.35: 
+                                # Çok Ağır Tahta (Büyük bankalar, holdingler) - Hedef Daraltılır
+                                dyn_tp1 = 1.025 # +%2.5 Kâr Al
+                                dyn_stop = 0.98 # -%2 Stop
+                            elif avg_candle_size > 0.8: 
+                                # Çok Volatil / Sığ Tahta (Yan tahtalar) - Hedef Genişletilir (Silkelenmemek için)
+                                dyn_tp1 = 1.06 # +%6 Kâr Al
+                                dyn_stop = 0.95 # -%5 Stop
+                            else: 
+                                # Normal Tahta
+                                dyn_tp1 = 1.04 # +%4 Kâr Al
+                                dyn_stop = 0.96 # -%4 Stop
+                                
                             shares = int(allocation // entry_price)
                             if shares > 0:
                                 current_cash -= (shares * entry_price) * 1.0004 
@@ -318,13 +339,14 @@ class SimulationEngine:
                                     'entry_time': str(current_time),
                                     'entry_price': entry_price,
                                     'ceiling_target': ceiling,
-                                    'stop_price': entry_price * 0.95, # Optimize: -%5 Zarar Kes (Silkeleme payı)
-                                    'tp1_price': entry_price * 1.04,  # Optimize: +%4 Kâr Al (Yarısı - Risk free geçiş)
-                                    'tp2_price': ceiling,             # Tavan Kâr Al
+                                    'stop_price': entry_price * dyn_stop,
+                                    'tp1_price': entry_price * dyn_tp1,
+                                    'tp2_price': ceiling,
                                     'shares': shares,
                                     'status': 'OPEN',
                                     'scaled_out': False,
-                                    'is_reentry': False
+                                    'is_reentry': False,
+                                    'character': 'HIZLI' if avg_candle_size > 0.8 else ('AĞIR' if avg_candle_size < 0.35 else 'NORMAL')
                                 })
             for s in to_remove:
                 if s in pending_signals:
@@ -369,6 +391,19 @@ class SimulationEngine:
                                 if p_ema8 <= p_ema21 and c_ema8 > c_ema21:
                                     raw_entry = float(close_series.iloc[-1])
                                     entry_price = raw_entry * 1.0015
+                                    
+                                    recent_bars = sub_df.tail(12)
+                                    avg_candle_size = 0.5
+                                    if not recent_bars.empty:
+                                        avg_candle_size = ((recent_bars['High'] - recent_bars['Low']) / recent_bars['Low']).mean() * 100
+                                        
+                                    if avg_candle_size < 0.35: 
+                                        dyn_tp1, dyn_stop = 1.025, 0.98
+                                    elif avg_candle_size > 0.8: 
+                                        dyn_tp1, dyn_stop = 1.06, 0.95
+                                    else: 
+                                        dyn_tp1, dyn_stop = 1.04, 0.96
+                                        
                                     shares = int(allocation // entry_price)
                                     if shares > 0:
                                         current_cash -= (shares * entry_price) * 1.0004
@@ -377,13 +412,14 @@ class SimulationEngine:
                                             'entry_time': str(current_time),
                                             'entry_price': entry_price,
                                             'ceiling_target': entry_price * 1.10, 
-                                            'stop_price': entry_price * 0.95,
-                                            'tp1_price': entry_price * 1.04,
+                                            'stop_price': entry_price * dyn_stop,
+                                            'tp1_price': entry_price * dyn_tp1,
                                             'tp2_price': entry_price * 1.10,
                                             'shares': shares,
                                             'status': 'OPEN',
                                             'scaled_out': False,
-                                            'is_reentry': True
+                                            'is_reentry': True,
+                                            'character': 'HIZLI' if avg_candle_size > 0.8 else ('AĞIR' if avg_candle_size < 0.35 else 'NORMAL')
                                         })
                                         stopped_out_symbols.remove(sym)
 

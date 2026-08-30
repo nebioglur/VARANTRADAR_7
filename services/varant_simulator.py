@@ -165,6 +165,12 @@ class VarantSimulator:
             maturity = w.get("maturity_days", 45)
             wtype = w.get("type", "CALL")
             
+            # 🛡️ VARANT VADE KALKANI (THETA SHIELD)
+            # Vadesine 20 günden az kalmış varantlar zaman değeri (Time Decay) yüzünden aşırı risklidir.
+            # Sistem bu varantları "Çöp Varant" olarak sınıflandırır ve kesinlikle önermez!
+            if maturity < 20:
+                continue
+            
             # Canlı Black-Scholes Greeks hesaplaması (statik değil!)
             greeks = cls.calculate_greeks(
                 spot_price=current_price,
