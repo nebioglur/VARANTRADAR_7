@@ -3837,7 +3837,7 @@ function showToast(message, icon = "fa-bell") {
     if (!container) return;
     const toast = document.createElement('div');
     toast.className = 'toast';
-    toast.innerHTML = <i class="fa-solid  + icon + "></i> <span> + message + </span>;
+    toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
     container.appendChild(toast);
     setTimeout(() => {
         if(container.contains(toast)) { container.removeChild(toast); }
