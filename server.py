@@ -899,7 +899,9 @@ def api_tavan_history():
             symbol_filter=symbol_filter,
             time_filter=time_filter
         )
-        return jsonify(sanitize_for_json(res))
+        response = jsonify(sanitize_for_json(res))
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        return response
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
@@ -908,7 +910,9 @@ def api_winrate_stats():
     try:
         from services.win_rate_engine import WinRateEngine
         stats = WinRateEngine.get_performance_stats()
-        return jsonify({"status": "success", "stats": sanitize_for_json(stats)})
+        response = jsonify({"status": "success", "stats": sanitize_for_json(stats)})
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        return response
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
@@ -925,30 +929,52 @@ def api_tavan_tracker():
 @app.route('/api/simulation/daily_pnl', methods=['GET'])
 def api_simulation_daily_pnl():
     try:
-        from services.trade_database import get_connection
-        conn = get_connection()
-        
-        # Get all trades
         import sqlite3
-        from contextlib import closing
-        with get_connection() as conn:
-            conn.row_factory = sqlite3.Row
-            c = conn.cursor()
-            # Fetch daily equity log
-            c.execute("SELECT * FROM equity_log ORDER BY date_str ASC")
-            equity_rows = c.fetchall()
-            equity_curve = [dict(row) for row in equity_rows]
-            
-            # Fetch closed trades
-            c.execute("SELECT * FROM trades ORDER BY entry_time DESC LIMIT 100")
-            trade_rows = c.fetchall()
-            trades = [dict(row) for row in trade_rows]
-            
-            return jsonify({
-                "status": "success",
-                "equity_curve": sanitize_for_json(equity_curve),
-        "trades": sanitize_for_json(trades)
-            })
+        from services.trade_database import get_connection
+        
+        conn = get_connection()
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        
+        # Eğer hiç simülasyon verisi yoksa, mevcut sinyallerden otomatik üret
+        c.execute("SELECT COUNT(*) as cnt FROM equity_log")
+        count_row = c.fetchone()
+        eq_count = count_row['cnt'] if count_row else 0
+        
+        if eq_count == 0:
+            try:
+                from services.simulation_engine import SimulationEngine
+                c.execute("SELECT DISTINCT date_str FROM signals ORDER BY date_str")
+                dates = [r['date_str'] for r in c.fetchall()]
+                if dates:
+                    sim = SimulationEngine()
+                    for d in dates:
+                        try:
+                            sim.run_daily_simulation(d)
+                        except Exception as e_d:
+                            print(f"[API] Auto-sim {d} hatası: {e_d}")
+                    print(f"[API] Otomatik simülasyon {len(dates)} gün için tamamlandı.")
+            except Exception as e_sim:
+                print(f"[API] Auto-simulation error: {e_sim}")
+        
+        # Güncel veriyi döndür
+        c.execute("SELECT * FROM equity_log ORDER BY date_str ASC")
+        equity_rows = c.fetchall()
+        equity_curve = [dict(row) for row in equity_rows]
+        
+        c.execute("SELECT * FROM trades ORDER BY entry_time DESC LIMIT 100")
+        trade_rows = c.fetchall()
+        trades = [dict(row) for row in trade_rows]
+        
+        conn.close()
+        
+        response = jsonify({
+            "status": "success",
+            "equity_curve": sanitize_for_json(equity_curve),
+            "trades": sanitize_for_json(trades)
+        })
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        return response
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 

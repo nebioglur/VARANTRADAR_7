@@ -6,6 +6,11 @@ let chartInstance = null;
 let svrChartInstance = null;
 let currentProjections = null;
 
+// Auto-refresh interval state for stats and simulation tabs
+let statsRefreshInterval = null;
+let simRefreshInterval = null;
+let homeStatsRefreshInterval = null;
+
 // Chart State
 window.globalCharts = [];
 window.globalSeries = {};
@@ -264,12 +269,26 @@ function switchMainTab(tabName, btnElement) {
     }
     if (tabName === 'stats') {
         fetchStatsTabData();
+        // İstatistik sekmesi açıkken 60 saniyede bir otomatik güncelle
+        if (statsRefreshInterval) clearInterval(statsRefreshInterval);
+        statsRefreshInterval = setInterval(fetchStatsTabData, 60000);
+    } else {
+        if (statsRefreshInterval) { clearInterval(statsRefreshInterval); statsRefreshInterval = null; }
     }
     if (tabName === 'varant') {
-        fetchVarantDashboardData();
+        // Varant sekmesini yükle (mevcut analiz varsa)
+        if (typeof loadDetailedVarantSim === 'function' && window.currentAnalyzedSymbol) {
+            const spotPrice = parseFloat(document.getElementById('tk-price')?.innerText?.replace('₺','').replace(',','') || 100);
+            loadDetailedVarantSim(window.currentAnalyzedSymbol, spotPrice);
+        }
     }
     if (tabName === 'simulation') {
         fetchSimulationData();
+        // Simülasyon sekmesi açıkken 60 saniyede bir otomatik güncelle
+        if (simRefreshInterval) clearInterval(simRefreshInterval);
+        simRefreshInterval = setInterval(fetchSimulationData, 60000);
+    } else {
+        if (simRefreshInterval) { clearInterval(simRefreshInterval); simRefreshInterval = null; }
     }
 }
 
@@ -1629,7 +1648,6 @@ async function startRadar(type) {
     else if (type === 'fx') endpoint = '/api/scan_fx';
     else if (type === 'commodity') endpoint = '/api/scan_commodity';
     else if (type === 'crypto') endpoint = '/api/scan_crypto';
-    else if (type === 'mtf') endpoint = '/api/scan_mtf';
     
     const loadingEl = document.getElementById(type + '-loading');
     const resultsEl = document.getElementById(type + '-results');
@@ -2084,6 +2102,7 @@ function renderAllDashboardTables() {
                     hacimStr += `<div style="font-size:0.68rem; color:#94a3b8; margin-top:2px;" title="Sektörel Domino Kardeş Hisseleri"><i class="fa-solid fa-chess-knight"></i> ${res.Domino_Sector}: ${pStr}</div>`;
                 }
                 
+                // AI Skor, Teyit Skoru, Çift Tavan ve Varant Eşleşmesi
                 // YENİ: Sinyal Motoru ve FOMO
                 let sigQ = res.Signal_Quality || `${scoreValue}/100`;
                 let sigColor = scoreColor;
@@ -2097,6 +2116,11 @@ function renderAllDashboardTables() {
                 
                 let scoreStr = `<div style="font-weight:800; color:${sigColor}; font-size:1.0rem;">${sigQ}</div>`;
                 
+                if (res.Factor_Breakdown) {
+                    let breakdownHtml = res.Factor_Breakdown.map(f => `${f.Factor}: <b style="color:${f.Score > 0 ? 'var(--accent-green)' : 'var(--accent-red)'}">${f.Score > 0 ? '+' : ''}${f.Score}</b>`).join('<br>');
+                    scoreStr += `<div style="font-size:0.65rem; color:var(--text-muted); margin-top:4px; max-height:45px; overflow-y:auto; line-height:1.2; border:1px solid rgba(255,255,255,0.1); padding:3px; border-radius:4px;" title="Puanlama Detayları">${breakdownHtml}</div>`;
+                }
+                
                 if (res.FOMO_Level) {
                     scoreStr += `<div style="font-size:0.7rem; color:${res.FOMO_Color}; font-weight:700; margin-top:4px;" title="FOMO İndikatörü: ${res.FOMO_Score.toFixed(1)}"><i class="fa-solid fa-fire-flame-curved"></i> FOMO: ${res.FOMO_Level}</div>`;
                 }
@@ -2105,12 +2129,6 @@ function renderAllDashboardTables() {
                     let tcColor = res.Teyit_Score >= 80 ? '#10b981' : (res.Teyit_Score >= 60 ? '#facc15' : '#ef4444');
                     scoreStr += `<div style="font-size:0.68rem; color:${tcColor}; font-weight:700; margin-top:2px;" title="Kurumsal Para ve Mum Teyit Skoru"><i class="fa-solid fa-shield-check"></i> %${res.Teyit_Score} Teyit</div>`;
                 }
-                
-                if (res.Factor_Breakdown) {
-                    let breakdownHtml = res.Factor_Breakdown.map(f => `${f.Factor}: <b style="color:${f.Score > 0 ? 'var(--accent-green)' : 'var(--accent-red)'}">${f.Score > 0 ? '+' : ''}${f.Score}</b>`).join('<br>');
-                    scoreStr += `<div style="font-size:0.65rem; color:var(--text-muted); margin-top:4px; max-height:45px; overflow-y:auto; line-height:1.2; border:1px solid rgba(255,255,255,0.1); padding:3px; border-radius:4px;" title="Puanlama Detayları">${breakdownHtml}</div>`;
-                }
-                
                 if (res.Streak_Score) {
                     scoreStr += `<div style="font-size:0.68rem; color:#38bdf8;" title="Çift Tavan İhtimali"><i class="fa-solid fa-link"></i> %${res.Streak_Score} Seri</div>`;
                 }
@@ -2661,10 +2679,13 @@ async function recalculateDetailVarantSim() {
 
 // Sayfa yüklendiğinde simülatörü ve sinyal karnesini otomatik yükle
 window.addEventListener('DOMContentLoaded', () => {
-    fetchWinRateScorecard();
+    // NOT: fetchWinRateScorecard kaldırıldı - fetchHomeWinrateStats ile aynı DOM elementlerini eziyordu
     runVarantSimulation();
     fetchHomeWinrateStats();
     fetchStatsTabData();
+    
+    // Ana sayfa istatistiklerini 60 saniyede bir otomatik güncelle
+    homeStatsRefreshInterval = setInterval(fetchHomeWinrateStats, 60000);
 });
 
 // 📸 ANALİZ RAPORUNU JPG / GÖRSEL OLARAK İNDİRME FONKSİYONU
@@ -3655,14 +3676,6 @@ async function runBacktest() {
     const capital = document.getElementById('bt-capital').value;
     const period = document.getElementById('bt-period').value;
     
-    let trailingStop = 0.0;
-    const tsEl = document.getElementById('bt-trailing-stop');
-    if (tsEl) trailingStop = parseFloat(tsEl.value) || 0.0;
-    
-    let stopLoss = 0.0;
-    const slEl = document.getElementById('bt-stop-loss');
-    if (slEl) stopLoss = parseFloat(slEl.value) || 0.0;
-    
     // Set interval based on period
     const interval = period === '1mo' ? '1h' : '1d';
     
@@ -3675,7 +3688,7 @@ async function runBacktest() {
     btn.disabled = true;
     
     try {
-        const response = await fetch(`/api/backtest/run?symbol=${symbol}&strategy=${strategy}&capital=${capital}&period=${period}&interval=${interval}&trailing_stop=${trailingStop}&stop_loss=${stopLoss}`);
+        const response = await fetch(`/api/backtest/run?symbol=${symbol}&strategy=${strategy}&capital=${capital}&period=${period}&interval=${interval}`);
         const data = await response.json();
         
         loading.style.display = 'none';
@@ -3742,137 +3755,4 @@ async function runBacktest() {
         btn.disabled = false;
         alert('Sunucu hatası: ' + err.message);
     }
-}// ========== BACKTEST AUTOCOMPLETE LOGIC ==========
-const btSymbolInput = document.getElementById('bt-symbol');
-const btAcDropdown = document.getElementById('bt-ac-dropdown');
-let btAcTimeout = null;
-let btAcSelectedIndex = -1;
-let btAcItems = [];
-
-function updateBtAcSelection() {
-    btAcItems.forEach((item, index) => {
-        if (index === btAcSelectedIndex) {
-            item.classList.add('active');
-            item.scrollIntoView({ block: 'nearest' });
-        } else {
-            item.classList.remove('active');
-        }
-    });
 }
-
-if (btSymbolInput && btAcDropdown) {
-    btSymbolInput.addEventListener('input', function() {
-        clearTimeout(btAcTimeout);
-        const q = this.value.trim();
-        btAcSelectedIndex = -1;
-        if (q.length < 1) { btAcDropdown.style.display = 'none'; return; }
-        
-        btAcTimeout = setTimeout(async () => {
-            try {
-                const res = await fetch('/api/autocomplete?q=' + q);
-                const matches = await res.json();
-                if (matches.length === 0) { btAcDropdown.style.display = 'none'; return; }
-                
-                btAcDropdown.innerHTML = '';
-                btAcItems = [];
-                matches.forEach((m, index) => {
-                    let div = document.createElement('div');
-                    div.className = 'ac-item';
-                    div.innerText = m;
-                    div.dataset.index = index;
-                    div.onclick = function() {
-                        btSymbolInput.value = m;
-                        btAcDropdown.style.display = 'none';
-                    };
-                    btAcItems.push(div);
-                    btAcDropdown.appendChild(div);
-                });
-                btAcDropdown.style.display = 'block';
-            } catch(e) { btAcDropdown.style.display = 'none'; }
-        }, 200);
-    });
-
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('#backtest-wrapper .search-container')) btAcDropdown.style.display = 'none';
-    });
-
-    btSymbolInput.addEventListener('keydown', function(event) {
-        if (btAcDropdown.style.display === 'block' && btAcItems.length > 0) {
-            if (event.key === 'ArrowDown') {
-                event.preventDefault();
-                btAcSelectedIndex++;
-                if (btAcSelectedIndex >= btAcItems.length) btAcSelectedIndex = 0;
-                updateBtAcSelection();
-            } else if (event.key === 'ArrowUp') {
-                event.preventDefault();
-                btAcSelectedIndex--;
-                if (btAcSelectedIndex < 0) btAcSelectedIndex = btAcItems.length - 1;
-                updateBtAcSelection();
-            } else if (event.key === 'Enter') {
-                event.preventDefault();
-                if (btAcSelectedIndex > -1 && btAcSelectedIndex < btAcItems.length) {
-                    btSymbolInput.value = btAcItems[btAcSelectedIndex].innerText;
-                }
-                btAcDropdown.style.display = 'none';
-            }
-        }
-    });
-}
-
-
-// --- MTF SCANNER LOGIC ---
-async function loadMTFRadar() {
-    const tbody = document.getElementById('mtf-table-body');
-    const countBadge = document.getElementById('mtf-count');
-    const loading = document.getElementById('mtf-loading');
-    
-    // Show only MTF card
-    document.querySelectorAll('#radar-cards-grid > .card').forEach(c => c.style.display = 'none');
-    document.getElementById('mtf-card').style.display = 'flex';
-    
-    tbody.innerHTML = '';
-    loading.style.display = 'block';
-    
-    try {
-        const response = await fetch('/api/scan_mtf');
-        const data = await response.json();
-        
-        loading.style.display = 'none';
-        
-        if (data.status === 'success') {
-            countBadge.innerText = data.count + ' HİSSE';
-            if (data.count === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">Şu an MTF kriterlerine uyan hisse bulunamadı.</td></tr>';
-                return;
-            }
-            
-            data.results.forEach(res => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><strong style="color:var(--text-light);">${res.Symbol}</strong></td>
-                    <td>
-                        <div class="progress-bar"><div class="fill" style="width: ${res.Score}%; background: linear-gradient(90deg, #0284c7, #38bdf8);"></div></div>
-                        <div style="font-size:0.75rem; text-align:right; margin-top:2px; color:var(--text-muted);">${res.Score.toFixed(1)} / 100</div>
-                    </td>
-                    <td>
-                        <div style="font-weight:bold; color:var(--text-light);">${res.Price.toFixed(2)}</div>
-                        <div style="font-size:0.75rem; color:#10b981;">Hedef: ${res.Target.toFixed(2)}</div>
-                    </td>
-                    <td>
-                        <span class="status-badge status-positive" style="background:rgba(14,165,233,0.1); color:#38bdf8; border:1px solid rgba(56,189,248,0.3);">${res.Momentum}</span>
-                    </td>
-                    <td>
-                        <button class="btn-primary" onclick="analyzeSymbol('${res.Symbol}')" style="padding:5px 10px; font-size:0.8rem; background:rgba(30,41,59,0.8); border:1px solid rgba(255,255,255,0.1);"><i class="fa-solid fa-microscope"></i> Analiz</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        } else {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--accent-red);">Hata: ' + data.message + '</td></tr>';
-        }
-    } catch (e) {
-        loading.style.display = 'none';
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--accent-red);">Bağlantı hatası: ' + e.message + '</td></tr>';
-    }
-}
-// --- END MTF SCANNER LOGIC ---

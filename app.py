@@ -1425,3 +1425,30 @@ with tab_portfolio:
                     col3.metric("Duyarlılık", f"{s_sent['Score']}/100", delta=s_sent['Status'])
                     col4.metric("Smart Money", f"{s_sm['Score']}/100", delta=s_sm['Status'])
                     col5.metric("Makro Rejim", s_macro['Status'])
+with tab_stats:
+    st.markdown("### 📊 Win Rate & Historical Statistics")
+    try:
+        from services.tavan_tracker import TavanAuditTracker
+        from services.win_rate_engine import WinRateEngine
+        
+        stats = WinRateEngine.get_performance_stats()
+        
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Win Rate", f"%{stats.get('tavan_radar_win_rate', 0)}")
+        col2.metric("+%5 Hit Rate", f"%{stats.get('plus5_hit_rate', 0)}")
+        col3.metric("Profit Factor", str(stats.get('profit_factor', 0)))
+        col4.metric("Avg Warrant Gain", f"%{stats.get('avg_ahlatci_warrant_gain', 0)}")
+        
+        st.markdown("#### 📅 Daily Historical Breakdown")
+        history = TavanAuditTracker.get_long_term_history()
+        breakdown = history.get('daily_breakdown', [])
+        
+        if breakdown:
+            import pandas as pd
+            df = pd.DataFrame(breakdown)
+            st.dataframe(df, use_container_width=True)
+        else:
+            st.info("No historical tracking data found.")
+            
+    except Exception as e:
+        st.error(f"Error loading statistics: {str(e)}")

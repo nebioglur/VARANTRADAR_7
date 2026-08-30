@@ -6,6 +6,11 @@ let chartInstance = null;
 let svrChartInstance = null;
 let currentProjections = null;
 
+// Auto-refresh interval state for stats and simulation tabs
+let statsRefreshInterval = null;
+let simRefreshInterval = null;
+let homeStatsRefreshInterval = null;
+
 // Chart State
 window.globalCharts = [];
 window.globalSeries = {};
@@ -264,12 +269,26 @@ function switchMainTab(tabName, btnElement) {
     }
     if (tabName === 'stats') {
         fetchStatsTabData();
+        // İstatistik sekmesi açıkken 60 saniyede bir otomatik güncelle
+        if (statsRefreshInterval) clearInterval(statsRefreshInterval);
+        statsRefreshInterval = setInterval(fetchStatsTabData, 60000);
+    } else {
+        if (statsRefreshInterval) { clearInterval(statsRefreshInterval); statsRefreshInterval = null; }
     }
     if (tabName === 'varant') {
-        fetchVarantDashboardData();
+        // Varant sekmesini yükle (mevcut analiz varsa)
+        if (typeof loadDetailedVarantSim === 'function' && window.currentAnalyzedSymbol) {
+            const spotPrice = parseFloat(document.getElementById('tk-price')?.innerText?.replace('₺','').replace(',','') || 100);
+            loadDetailedVarantSim(window.currentAnalyzedSymbol, spotPrice);
+        }
     }
     if (tabName === 'simulation') {
         fetchSimulationData();
+        // Simülasyon sekmesi açıkken 60 saniyede bir otomatik güncelle
+        if (simRefreshInterval) clearInterval(simRefreshInterval);
+        simRefreshInterval = setInterval(fetchSimulationData, 60000);
+    } else {
+        if (simRefreshInterval) { clearInterval(simRefreshInterval); simRefreshInterval = null; }
     }
 }
 
@@ -2660,10 +2679,13 @@ async function recalculateDetailVarantSim() {
 
 // Sayfa yüklendiğinde simülatörü ve sinyal karnesini otomatik yükle
 window.addEventListener('DOMContentLoaded', () => {
-    fetchWinRateScorecard();
+    // NOT: fetchWinRateScorecard kaldırıldı - fetchHomeWinrateStats ile aynı DOM elementlerini eziyordu
     runVarantSimulation();
     fetchHomeWinrateStats();
     fetchStatsTabData();
+    
+    // Ana sayfa istatistiklerini 60 saniyede bir otomatik güncelle
+    homeStatsRefreshInterval = setInterval(fetchHomeWinrateStats, 60000);
 });
 
 // 📸 ANALİZ RAPORUNU JPG / GÖRSEL OLARAK İNDİRME FONKSİYONU

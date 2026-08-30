@@ -11,11 +11,13 @@ class MarketDataManager:
     def record_signals(date_str: str, candidates: list):
         """
         10:00 - 10:15 arasında bulunan Tavan Adaylarını (Sinyalleri) veritabanına yazar.
+        Hem büyük harf (Symbol, Price, ...) hem küçük harf (symbol, morning_price, ...) anahtarları destekler.
         """
         conn = get_connection()
         cursor = conn.cursor()
         for cand in candidates:
-            sym = cand.get('symbol', '')
+            # Büyük/küçük harf uyumluluğu: tavan_candidates 'Symbol' kullanır
+            sym = cand.get('symbol', '') or cand.get('Symbol', '')
             if not sym:
                 continue
             
@@ -23,10 +25,10 @@ class MarketDataManager:
             if not sym.endswith('.IS'):
                 sym += '.IS'
                 
-            score = float(cand.get('Score', 0))
-            morning_price = float(cand.get('morning_price', 0))
-            ceiling_target = float(cand.get('ceiling_target', 0))
-            morning_phase = cand.get('morning_phase', '')
+            score = float(cand.get('Score', cand.get('score', cand.get('morning_score', 0))))
+            morning_price = float(cand.get('morning_price', 0) or cand.get('Price', 0))
+            ceiling_target = float(cand.get('ceiling_target', 0) or cand.get('Ceiling_Price', 0))
+            morning_phase = cand.get('morning_phase', '') or cand.get('Phase_Badge', '')
             metadata = json.dumps(cand, ensure_ascii=False)
             
             try:
@@ -45,6 +47,7 @@ class MarketDataManager:
                 
         conn.commit()
         conn.close()
+
 
     @staticmethod
     def fetch_and_store_intraday(date_str: str):

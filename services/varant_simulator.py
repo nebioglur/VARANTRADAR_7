@@ -146,7 +146,8 @@ class VarantSimulator:
 
     @classmethod
     def get_warrants_for_symbol(cls, symbol: str, current_price: float, target_price: float = None, issuer: str = "ALL") -> List[Dict[str, Any]]:
-        """Dayanak hisse için uygun varantları ve hedef fiyattaki kâr simülasyonunu döndürür."""
+        """Dayanak hisse için uygun varantları ve hedef fiyattaki kâr simülasyonunu döndürür.
+        Canlı Black-Scholes hesaplaması ile Greeks güncellenir."""
         clean_sym = symbol.replace(".IS", "").upper()
         warrants = BIST_WARRANT_DATABASE.get(clean_sym, [])
         
@@ -160,27 +161,41 @@ class VarantSimulator:
         results = []
         for w in warrants:
             issue_p = w.get("issue_price", 1.0)
-            delta = w.get("delta", 0.55)
-            gearing = w.get("gearing", 6.0)
+            strike = w.get("strike", current_price)
+            maturity = w.get("maturity_days", 45)
+            wtype = w.get("type", "CALL")
+            
+            # Canlı Black-Scholes Greeks hesaplaması (statik değil!)
+            greeks = cls.calculate_greeks(
+                spot_price=current_price,
+                strike_price=strike,
+                days_to_maturity=maturity,
+                warrant_type=wtype
+            )
+            
+            delta = greeks.get("delta", w.get("delta", 0.55))
+            gearing = greeks.get("gearing", w.get("gearing", 6.0))
+            theta_daily = greeks.get("theta", w.get("theta", -0.015))
+            theo_price = greeks.get("theoretical_price", issue_p)
             
             # Hedef fiyattaki tahmini varant fiyatı: Delta * (Hedef - Mevcut) + Mevcut Varant Fiyatı
             spot_diff = target_price - current_price
             warrant_delta_gain = spot_diff * abs(delta)
-            target_warrant_price = round(max(0.01, issue_p + warrant_delta_gain), 2)
+            target_warrant_price = round(max(0.01, theo_price + warrant_delta_gain), 2)
             
-            warrant_gain_pct = round(((target_warrant_price - issue_p) / issue_p) * 100, 1) if issue_p > 0 else 0
+            warrant_gain_pct = round(((target_warrant_price - theo_price) / theo_price) * 100, 1) if theo_price > 0 else 0
             spot_gain_pct = round(((target_price - current_price) / current_price) * 100, 1) if current_price > 0 else 0
             
             # Break-even (Başabaş) Fiyatı
-            break_even = round(w.get("strike", current_price) + (issue_p / abs(delta if delta != 0 else 0.5)), 2)
+            break_even = round(strike + (theo_price / abs(delta if delta != 0 else 0.5)), 2)
             
             # Hafta sonu zaman erimesi kaybı (2 günlük Theta)
-            weekend_theta_loss = round(abs(w.get("theta", -0.015)) * 2, 3)
-            weekend_loss_pct = round((weekend_theta_loss / issue_p) * 100, 1) if issue_p > 0 else 0
+            weekend_theta_loss = round(abs(theta_daily) * 2, 3)
+            weekend_loss_pct = round((weekend_theta_loss / theo_price) * 100, 1) if theo_price > 0 else 0
 
             # Güvenlik & Risk Değerlendirmesi
             risk_badge = "DÜŞÜK RİSK"
-            if w.get("maturity_days", 45) < 15:
+            if maturity < 15:
                 risk_badge = "YÜKSEK VADE RİSKİ (Çöp Olma Riski)"
             elif w.get("spread", 0.01) > 0.02:
                 risk_badge = "MAKAS RİSKİ (İhraççı Makası Geniş)"
@@ -189,17 +204,17 @@ class VarantSimulator:
 
             results.append({
                 "code": w.get("code"),
-                "type": w.get("type"),
+                "type": wtype,
                 "issuer": w.get("issuer"),
-                "strike": w.get("strike"),
-                "maturity_days": w.get("maturity_days"),
-                "current_warrant_price": f"₺{issue_p:.2f}",
+                "strike": strike,
+                "maturity_days": maturity,
+                "current_warrant_price": f"₺{theo_price:.2f}",
                 "target_warrant_price": f"₺{target_warrant_price:.2f}",
                 "warrant_gain_pct": f"+%{warrant_gain_pct}",
                 "spot_gain_pct": f"+%{spot_gain_pct}",
                 "gearing": f"{gearing}x",
-                "delta": delta,
-                "theta": f"{w.get('theta')} TL/gün",
+                "delta": round(delta, 2),
+                "theta": f"{round(theta_daily, 4)} TL/gün",
                 "weekend_decay": f"-{weekend_theta_loss} TL (%{weekend_loss_pct})",
                 "break_even": f"₺{break_even}",
                 "spread": f"₺{w.get('spread', 0.01):.2f}",
