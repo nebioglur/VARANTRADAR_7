@@ -1959,7 +1959,7 @@ function renderAllDashboardTables() {
             continue;
         }
 
-        // EMA 50 & 200 filtresini her zaman uygula
+        /* // EMA 50 & 200 filtresini her zaman uygula
         items = items.filter(res => {
             let price = res.Price || res.Daily_Close;
             let ema50 = res.Daily_EMA50;
@@ -1972,7 +1972,7 @@ function renderAllDashboardTables() {
                 return price > ema50 && price > ema200;
             }
             return true;
-        });
+        }); */
         
         if (items.length === 0) {
             tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;" class="text-muted">Filtreye uygun hisse bulunamadı (EMA 50 & 200 Üzeri).</td></tr>`;
@@ -3855,63 +3855,7 @@ function playPing() {
 
 // X-Ray Modal
 function openXRayModal(symbol) {
-    const modal = document.getElementById('xray-modal');
-    const body = document.getElementById('xray-body');
-    const title = document.getElementById('xray-title');
-    
-    if(!modal || !globalDashboardData) return;
-    
-    // Find stock data in any category
-    let stockData = null;
-    for (let cat in globalDashboardData) {
-        if (Array.isArray(globalDashboardData[cat])) {
-            stockData = globalDashboardData[cat].find(s => s.Symbol === symbol);
-            if (stockData) break;
-        }
-    }
-    
-    title.innerHTML = `<i class="fa-solid fa-microscope"></i> AI X-Ray: ` + symbol;
-    
-    if (stockData) {
-        const score = stockData.Score || stockData.Score_5 * 20 || '--';
-        const price = stockData.Price || stockData.Daily_Close || '--';
-        const vol = stockData.Volume_Surge || stockData.Vol_Surge || '--';
-        const rsi = stockData.Indicators ? stockData.Indicators.RSI_14 : '--';
-        const macd = stockData.Indicators ? (stockData.Indicators.MACD > 0 ? 'Pozitif' : 'Negatif') : '--';
-        const reason = stockData.Report || stockData.Reason || 'Sistem tarafından yakalandı.';
-        
-        let rsiColor = rsi < 30 ? 'var(--accent-green)' : (rsi > 70 ? '#ef4444' : 'var(--text-light)');
-        
-        body.innerHTML = `
-            <div class="xray-grid">
-                <div class="xray-box">
-                    <h4>Anlık Fiyat</h4>
-                    <div class="val">? + (typeof price==='number' ? price.toFixed(2) : price) + </div>
-                </div>
-                <div class="xray-box">
-                    <h4>AI Skoru</h4>
-                    <div class="val" style="color:var(--accent-blue)"> + score + </div>
-                </div>
-                <div class="xray-box">
-                    <h4>RSI (14)</h4>
-                    <div class="val" style="color:` + rsiColor + `">` + (typeof rsi==="number" ? rsi.toFixed(1) : rsi) + `</div>
-                </div>
-                <div class="xray-box">
-                    <h4>Hacim İvmesi</h4>
-                    <div class="val" style="color:var(--accent-yellow)">` + (typeof vol==="number" ? vol.toFixed(1) : vol) + `x</div>
-                </div>
-                <div class="xray-box full-width" style="text-align:left; font-size:0.9rem;">
-                    <h4>?? Komite Raporu</h4>
-                    <div style="color:var(--text-muted); margin-top:5px; line-height:1.4;"> + reason + </div>
-                </div>
-            </div>
-            <button class="btn-primary" style="width:100%; margin-top:15px;" onclick="document.getElementById('symbol-input').value='+symbol+'; analyzeSymbol(); closeXRayModal(event);">Detaylı Grafiğe Git</button>
-        ;
-    } else {
-        body.innerHTML = <div style="text-align:center; color:var(--text-muted);">Veri bulunamadı.</div>;
-    }
-    
-    modal.style.display = 'flex';
+    console.log("Disabled");
 }
 
 function closeXRayModal(e) {
