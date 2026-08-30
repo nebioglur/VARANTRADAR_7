@@ -269,6 +269,10 @@ class SimulationEngine:
             # 2. YENİ ALIMLARI KONTROL ET
             open_symbols = {t['symbol'] for t in active_trades if t['status'] == 'OPEN'}
             
+            # GÜNLÜK HEDEF (PNL LOCK) ŞALTERİ
+            current_realized_pnl = sum(t.get('pnl_val', 0) for t in completed_trades)
+            daily_target_reached = current_realized_pnl >= 2000.0 # 2000 TL net kâra ulaşınca dur (Paydos)
+            
             to_remove = []
             for s in pending_signals:
                 dt_ps = pd.to_datetime(f"{date_str} {s['time_str']}")
@@ -279,6 +283,9 @@ class SimulationEngine:
                     to_remove.append(s)
                     if s['symbol'] in open_symbols:
                         continue
+                        
+                    if daily_target_reached:
+                        continue # Hedef tamamlandı, yeni işlem açma!
                         
                     # "Squaze (yukarı ok) + Güçlü Giriş + Pozitif Alpha" Kontrolü
                     alpha_str = str(s.get("Alpha_Str", ""))
@@ -353,9 +360,9 @@ class SimulationEngine:
                     pending_signals.remove(s)
                     
             # 3. YENİDEN GİRİŞ (Trend Dönerse, Sadece Stop olanlar için)
-            # Re-entry de sabit zincir emirle olur
-            # Not: Re-entry manuel işlemlerde zor olabilir, ama sistemi 'çelik' kılanlardan biri bu
-            # Kestik attık ama trend dönerse alarm çalar!
+            if daily_target_reached:
+                stopped_out_symbols.clear() # Hedef tamamlandıysa re-entry yapma
+                
             for sym in list(stopped_out_symbols):
                 if sym not in open_symbols:
                     sig = next((x for x in selected if x['symbol'] == sym), None)

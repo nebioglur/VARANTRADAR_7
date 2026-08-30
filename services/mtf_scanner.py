@@ -126,6 +126,19 @@ class MTFScanner:
                 cur_vol = float(vol15.iloc[-1])
                 vol_surge = (cur_vol / avg_vol) if avg_vol > 0 else 0
 
+                # 🛑 ÖĞLE ARASI TESTERE (LUNCH TRAP) FİLTRESİ
+                from datetime import datetime
+                import pytz
+                import datetime as dt
+                try:
+                    tz = pytz.timezone('Europe/Istanbul')
+                    now_time = datetime.now(tz).time()
+                    is_lunch_trap = dt.time(12, 30) <= now_time <= dt.time(14, 0)
+                    if is_lunch_trap and vol_surge < 3.0:
+                        continue # Öğle arası hacim 3 katına çıkmamışsa kesinlikle sahte kırılımdır, ele!
+                except Exception:
+                    pass
+
                 # Sadece yukari ivmeli hisseler
                 if cum_ret <= 0:
                     continue
