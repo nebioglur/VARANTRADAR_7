@@ -346,10 +346,21 @@ class SimulationEngine:
                         ("Yükseliyor" in sqz_str or "Patlatma" in sqz_str)
                     )
                     
-                    if is_super_green:
-                        allocation = min(current_cash, self.daily_budget) # Tam sermaye (Maksimum Giriş)
+                    # --- KELLY KRİTERİ İLE DİNAMİK KASA YÖNETİMİ (Smart Allocation) ---
+                    # İşlemin AI puanına ve Super Green durumuna göre risk ayarı
+                    ai_score = s.get("Score", 0)
+                    
+                    if is_super_green or ai_score >= 95:
+                        # Kusursuz Fırsat (VIP): Kasanın maksimum oranını (örneğin %100 veya 1.5x) kullan
+                        dynamic_ideal_alloc = self.daily_budget
+                    elif ai_score >= 85:
+                        # Güçlü Fırsat: Standart bütçe
+                        dynamic_ideal_alloc = ideal_allocation
                     else:
-                        allocation = min(current_cash, ideal_allocation)
+                        # Zayıf / Standart Fırsat: Defansif (Bütçeyi Yarıya Düşür)
+                        dynamic_ideal_alloc = ideal_allocation * 0.5
+                        
+                    allocation = min(current_cash, dynamic_ideal_alloc)
                         
                     if allocation >= 1000:
                         sym = s['symbol']
