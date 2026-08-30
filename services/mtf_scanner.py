@@ -111,12 +111,21 @@ class MTFScanner:
                 )
                 score = min(100, 50 + cum_ret * 8 + vol_surge * 3 + (ind_1h["rsi"] - 45) * 0.5 if ind_1h else 50 + cum_ret * 8)
 
+                if score >= 85 and vol_surge > 1.5:
+                    trend_badge = "🔥 GÜÇLÜ AL"
+                elif score >= 70:
+                    trend_badge = "✅ HIZLI AL"
+                elif score >= 60:
+                    trend_badge = "⚠️ POTANSİYEL"
+                else:
+                    trend_badge = "⏳ İZLE"
+
                 results.append({
                     "Symbol":   sym,
                     "Score":    round(score, 1),
                     "Price":    round(float(close15.iloc[-1]), 2),
                     "Target":   round(float(close15.iloc[-1]) * 1.05, 2),
-                    "Trend":    "MTF IVME",
+                    "Trend":    trend_badge,
                     "Momentum": f"15m Kumulatif: %{cum_ret:.2f} | Hacim: {vol_surge:.1f}x",
                 })
             except Exception:
