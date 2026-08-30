@@ -551,7 +551,10 @@ async function fetchTickerNews(symbol) {
 }
 
 // ========== ANALYZE AND DATA BINDING ==========
-async function analyzeSymbol() {
+async function analyzeSymbol(overrideSymbol) {
+    if (typeof overrideSymbol === 'string') {
+        symbolInput.value = overrideSymbol;
+    }
     let symbol = symbolInput.value.trim();
     if (!symbol) return;
 

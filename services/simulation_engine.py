@@ -99,8 +99,8 @@ class SimulationEngine:
         valid_signals = []
         import json
         for s in signals:
-            score = float(s['score'])
-            phase = str(s['morning_phase'])
+            score = float(s.get('score', 0) or 0)
+            phase = str(s.get('morning_phase', '') or '')
             
             # KULLANICI İSTEĞİ: SİMULASYONDA EMA 50 EMA 200 ÜSTÜ FILTRESİNE UYAN HİSSELERİ ELE AL
             metadata_str = s.get('metadata')
@@ -288,7 +288,9 @@ class SimulationEngine:
                         df = dfs.get(sym)
                         if df is not None and current_time in df.index:
                             raw_entry = float(df.loc[current_time, 'Close'])
-                            ceiling = float(s['ceiling_target'])
+                            ceiling = float(s.get('ceiling_target', 0) or 0)
+                            if ceiling <= 0:
+                                ceiling = raw_entry * 1.10  # Fallback: +%10 hedef
                             prev_close = ceiling / 1.10
                             
                             if raw_entry >= prev_close * 1.095:
