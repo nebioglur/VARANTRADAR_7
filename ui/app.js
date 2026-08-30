@@ -1775,7 +1775,7 @@ async function fetchDashboardData() {
                 });
                 if (newSymbolsCount > 0) playPing();
             }
-            setElText('total-analyzed-counter', `RADAR BUGÃœNE KADAR ${data.total_analyzed || 0} VERÄ°YÄ° ANALÄ°Z ETTÄ°`);
+            setElText('total-analyzed-counter', `RADAR BUGÜNE KADAR ${data.total_analyzed || 0} VERİYİ ANALİZ ETTİ`);
             
             // Son tarama saatini ekranda gÃ¶ster
             const lastUpdated = data.last_updated || "Bilinmiyor";
@@ -1799,7 +1799,7 @@ async function fetchDashboardData() {
                     if (data.xu100_change <= -1.5) {
                         shieldEl.innerHTML = `<span style="color:#ef4444;"><i class="fa-solid fa-shield-halved"></i> KAPALI (Risk)</span>`;
                     } else {
-                        shieldEl.innerHTML = `<span style="color:var(--accent-green);"><i class="fa-solid fa-shield-check"></i> AÃ‡IK (GÃ¼venli)</span>`;
+                        shieldEl.innerHTML = `<span style="color:var(--accent-green);"><i class="fa-solid fa-shield-check"></i> AÇIK (Güvenli)</span>`;
                     }
                 }
                 
@@ -1808,7 +1808,7 @@ async function fetchDashboardData() {
                     const pnlVal = data.daily_pnl || 0;
                     const openPos = data.open_positions || 0;
                     const pnlColor = pnlVal > 0 ? 'var(--accent-green)' : (pnlVal < 0 ? '#ef4444' : 'var(--text-main)');
-                    pnlEl.innerHTML = `<span style="color:${pnlColor};">${pnlVal.toLocaleString('tr-TR')} â‚º</span> <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted); display:block;">(${openPos} Ä°ÅŸlem AÃ§Ä±k)</span>`;
+                    pnlEl.innerHTML = `<span style="color:${pnlColor};">${pnlVal.toLocaleString('tr-TR')} â‚º</span> <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted); display:block;">(${openPos} İşlem Açık)</span>`;
                 }
                 
                 const aiEl = document.getElementById('ai-summary');
@@ -1821,7 +1821,7 @@ if (breadthEl && data.dashboard_data && data.dashboard_data.market_breadth_pct !
     else { breadthEl.style.color = "var(--text-light)"; }
 }
                 if (aiEl) {
-                    let aiComment = "BIST100'de stabil gÃ¶rÃ¼nÃ¼m devam ediyor. SeÃ§ici alÄ±mlar ve MTF ivme fÄ±rsatlarÄ± deÄŸerlendirilebilir.";
+                    let aiComment = "BIST100'de stabil görünüm devam ediyor. Seçici alımlar ve MTF ivme fırsatları değerlendirilebilir.";
                     if (data.xu100_change <= -1.5) {
                         aiComment = "âš ï¸� Endekste sert satÄ±ÅŸ baskÄ±sÄ± var. Robot alÄ±m motorlarÄ± (Å�alter) uyku moduna alÄ±ndÄ±. Nakitte kalÄ±n.";
                         aiEl.style.borderLeftColor = "#ef4444";
@@ -1860,7 +1860,7 @@ if (breadthEl && data.dashboard_data && data.dashboard_data.market_breadth_pct !
                 ["tb-signals-5m", "tb-tavan-adaylari", "tb-opportunities-1h", "tb-stay-away-1h", "tb-opportunities", "tb-gainers", "tb-losers", "tb-favorites", "tb-high_volume", "tb-low_volume"].forEach(id => {
                     const tbody = document.getElementById(id);
                     if (tbody && (tbody.innerText.includes("Taran") || tbody.innerHTML.includes("Taran"))) {
-                        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;" class="text-muted">Piyasa kapalÄ± veya tarama devam ediyor (00:00-09:00 arasÄ± veri bulunmayabilir).</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;" class="text-muted">Piyasa kapalı veya tarama devam ediyor (00:00-09:00 arası veri bulunmayabilir).</td></tr>`;
                     }
                 });
             }
@@ -1955,7 +1955,7 @@ function renderAllDashboardTables() {
         }
 
         if (items.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;" class="text-muted">Bu kategoride sonuÃ§ bulunamadÄ±.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;" class="text-muted">Bu kategoride sonuç bulunamadı.</td></tr>`;
             continue;
         }
 
@@ -2306,7 +2306,7 @@ function renderAllDashboardTables() {
     if (opp1hTbody) {
         const opp1hItems = globalDashboardData['opportunities_1h'] || [];
         if (opp1hItems.length === 0) {
-            opp1hTbody.innerHTML = `<tr><td colspan="5" style="text-align: center;" class="text-muted">Bu kategoride sonuÃ§ bulunamadÄ±.</td></tr>`;
+            opp1hTbody.innerHTML = `<tr><td colspan="5" style="text-align: center;" class="text-muted">Bu kategoride sonuç bulunamadı.</td></tr>`;
         } else {
             opp1hTbody.innerHTML = '';
             opp1hItems.forEach(res => {

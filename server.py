@@ -547,8 +547,12 @@ def index():
 @app.route("/<path:filename>")
 def static_files(filename):
     response = make_response(send_from_directory("ui", filename))
-    if filename.endswith(".js") or filename.endswith(".css"):
+    if filename.endswith(".js"):
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Content-Type"] = "application/javascript; charset=utf-8"
+    elif filename.endswith(".css"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Content-Type"] = "text/css; charset=utf-8"
     return response
 
 @app.route('/api/analyze', methods=['GET'])
