@@ -1796,10 +1796,13 @@ async function fetchDashboardData() {
                 
                 const shieldEl = document.getElementById('shield-status');
                 if (shieldEl) {
-                    if (data.xu100_change <= -1.5) {
-                        shieldEl.innerHTML = `<span style="color:#ef4444;"><i class="fa-solid fa-shield-halved"></i> KAPALI (Risk)</span>`;
+                    const chg = data.xu100_change || 0;
+                    if (chg <= -1.0) {
+                        shieldEl.innerHTML = `<span style="color:#ef4444; font-size:1.1rem;"><i class="fa-solid fa-triangle-exclamation"></i> Ayı (%100 Nakit)</span>`;
+                    } else if (chg <= 0.0) {
+                        shieldEl.innerHTML = `<span style="color:var(--accent-yellow); font-size:1.1rem;"><i class="fa-solid fa-scale-balanced"></i> Dalgalı (%60 Nakit)</span>`;
                     } else {
-                        shieldEl.innerHTML = `<span style="color:var(--accent-green);"><i class="fa-solid fa-shield-check"></i> AÇIK (Güvenli)</span>`;
+                        shieldEl.innerHTML = `<span style="color:var(--accent-green); font-size:1.1rem;"><i class="fa-solid fa-arrow-trend-up"></i> Boğa (%30 Nakit)</span>`;
                     }
                 }
                 
@@ -3855,9 +3858,75 @@ function playPing() {
 
 // X-Ray Modal
 function openXRayModal(symbol) {
-    console.log("Disabled");
+    const modal = document.getElementById('xray-modal');
+    const body = document.getElementById('xray-body');
+    const title = document.getElementById('xray-title');
+    
+    if(!modal || !globalDashboardData) return;
+    
+    // Find stock data in any category
+    let stockData = null;
+    for (let cat in globalDashboardData) {
+        if (Array.isArray(globalDashboardData[cat])) {
+            stockData = globalDashboardData[cat].find(s => s.Symbol === symbol);
+            if (stockData) break;
+        }
+    }
+    
+    title.innerHTML = `<i class="fa-solid fa-microscope"></i> AI Röntken: ` + symbol;
+    
+    if (stockData) {
+        const score = stockData.Score || stockData.Score_5 * 20 || '--';
+        const price = stockData.Price || stockData.Daily_Close || '--';
+        const vol = stockData.Volume_Surge || stockData.Vol_Surge || '--';
+        const rsi = stockData.Indicators ? stockData.Indicators.RSI_14 : '--';
+        const reason = stockData.Report || stockData.Reason || 'Sistem tarafından yakalandı.';
+        
+        const riskLevel = stockData.Risk_Level || 'Bilinmiyor';
+        let riskColor = 'var(--text-muted)';
+        if (riskLevel === 'Düşük Risk') riskColor = 'var(--accent-green)';
+        if (riskLevel === 'Orta Risk') riskColor = 'var(--accent-yellow)';
+        if (riskLevel === 'Yüksek Risk') riskColor = 'var(--accent-red)';
+        
+        const target = stockData.Target ? stockData.Target.toFixed(2) : '--';
+        const stopLoss = stockData.Stop_Loss ? stockData.Stop_Loss.toFixed(2) : '--';
+        
+        body.innerHTML = `
+            <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
+                <div style="flex:1; min-width:120px; padding:12px; background:var(--bg-secondary); border-radius:8px; border:1px solid rgba(255,255,255,0.05); text-align:center;">
+                    <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:5px;">GİRİŞ FİYATI</div>
+                    <div style="font-size:1.4rem; font-weight:700; color:#fff;">₺${typeof price==='number' ? price.toFixed(2) : price}</div>
+                </div>
+                <div style="flex:1; min-width:120px; padding:12px; background:rgba(16, 185, 129, 0.1); border-radius:8px; border:1px solid var(--accent-green); text-align:center;">
+                    <div style="font-size:0.75rem; color:var(--accent-green); margin-bottom:5px;">HEDEF FİYAT</div>
+                    <div style="font-size:1.4rem; font-weight:700; color:var(--accent-green);">₺${target}</div>
+                </div>
+                <div style="flex:1; min-width:120px; padding:12px; background:rgba(239, 68, 68, 0.1); border-radius:8px; border:1px solid var(--accent-red); text-align:center;">
+                    <div style="font-size:0.75rem; color:var(--accent-red); margin-bottom:5px;">ZARAR KES (STOP)</div>
+                    <div style="font-size:1.4rem; font-weight:700; color:var(--accent-red);">₺${stopLoss}</div>
+                </div>
+            </div>
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; padding:10px; background:var(--bg-secondary); border-radius:8px;">
+                <div style="font-size:0.9rem;">Risk Profili:</div>
+                <div style="font-weight:bold; color:${riskColor};"><i class="fa-solid fa-shield-halved"></i> ${riskLevel}</div>
+            </div>
+            
+            <div style="margin-top:20px; padding:15px; background:var(--bg-secondary); border-radius:12px;">
+                <h4 style="margin-bottom:10px; color:var(--accent-blue);"><i class="fa-solid fa-brain"></i> Yapay Zeka Karar Özeti</h4>
+                <p style="font-size:0.95rem; line-height:1.6; color:var(--text-main);">${reason}</p>
+            </div>
+            
+            <button class="btn-primary" style="width:100%; margin-top:20px; padding:12px; font-weight:bold; border-radius:8px;" onclick="document.getElementById('symbol-input').value='${symbol}'; analyzeSymbol(); closeXRayModal(event);">
+                <i class="fa-solid fa-chart-line"></i> Detaylı Grafiğe Git
+            </button>
+        `;
+    } else {
+        body.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:30px;">Hisse verisi bulunamadı.</div>`;
+    }
+    
+    modal.style.display = 'flex';
 }
-
 function closeXRayModal(e) {
     if(e) e.preventDefault();
     const modal = document.getElementById('xray-modal');

@@ -179,7 +179,40 @@ class UniversalScanner:
         tech_result["Money_Volume"] = money_volume
         tech_result["Price"] = round(close_today, 2)
         tech_result["High"] = round(float(df['high'].iloc[-1]), 2)
-        tech_result["Low"] = round(float(df['low'].iloc[-1]), 2)
+                tech_result["Low"] = round(float(df['low'].iloc[-1]), 2)
+        
+        # --- DOĞRU YATIRIM (SMART INVESTMENT) METRICS ---
+        try:
+            # Calculate 14-day ATR (Average True Range)
+            high_low = df['high'] - df['low']
+            high_close = (df['high'] - df['close'].shift()).abs()
+            low_close = (df['low'] - df['close'].shift()).abs()
+            tr = high_low.combine(high_close, max).combine(low_close, max)
+            atr14 = tr.rolling(window=14).mean().iloc[-1]
+            
+            if atr14 and close_today > 0:
+                # Risk Seviyesi (Volatility based)
+                volatility_pct = (atr14 / close_today) * 100
+                if volatility_pct < 2.5:
+                    tech_result["Risk_Level"] = "Düşük Risk"
+                elif volatility_pct < 5.0:
+                    tech_result["Risk_Level"] = "Orta Risk"
+                else:
+                    tech_result["Risk_Level"] = "Yüksek Risk"
+                    
+                # Hedef ve Stop (Oyun Planı)
+                # Kural: Hedef 2.5x ATR yukarı, Stop 1.5x ATR aşağı
+                tech_result["Target"] = round(close_today + (atr14 * 2.5), 2)
+                tech_result["Stop_Loss"] = round(close_today - (atr14 * 1.5), 2)
+            else:
+                tech_result["Risk_Level"] = "Bilinmiyor"
+                tech_result["Target"] = 0.0
+                tech_result["Stop_Loss"] = 0.0
+        except Exception:
+            tech_result["Risk_Level"] = "Bilinmiyor"
+            tech_result["Target"] = 0.0
+            tech_result["Stop_Loss"] = 0.0
+
         
         return tech_result
 
