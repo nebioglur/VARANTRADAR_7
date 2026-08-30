@@ -129,7 +129,7 @@ class SimulationEngine:
                 except (ValueError, TypeError):
                     pass  # Dönüşüm hatası olursa filtreyi atla
                     
-            if score >= 80 and "YATAY" not in phase and "NEGATİF" not in phase and "UZAK DUR" not in phase:
+            if score >= 75 and "YATAY" not in phase and "NEGATİF" not in phase and "UZAK DUR" not in phase:
                 valid_signals.append(s)
                 
         selected = valid_signals
@@ -137,9 +137,8 @@ class SimulationEngine:
             return
             
         current_cash = self.daily_budget
-        # Çelik Sistem: İşlem başına max zarar 100 TL. Stop = %3. 
-        # İdeal Sermaye = 100 / 0.03 = 3333 TL.
-        ideal_allocation = 3333.0 
+        # Optimize Edilmiş Sistem: İşlem başına portföyün %50'sini kullan (5000 TL)
+        ideal_allocation = 5000.0 
         
         active_trades = []
         completed_trades = []
@@ -305,9 +304,9 @@ class SimulationEngine:
                                     'entry_time': str(current_time),
                                     'entry_price': entry_price,
                                     'ceiling_target': ceiling,
-                                    'stop_price': entry_price * 0.97, # Çelik Kural: -%3 Zarar Kes
-                                    'tp1_price': entry_price * 1.05,  # Çelik Kural: +%5 Kâr Al (Yarısı)
-                                    'tp2_price': ceiling,             # Çelik Kural: Tavan Kâr Al
+                                    'stop_price': entry_price * 0.95, # Optimize: -%5 Zarar Kes (Silkeleme payı)
+                                    'tp1_price': entry_price * 1.04,  # Optimize: +%4 Kâr Al (Yarısı - Risk free geçiş)
+                                    'tp2_price': ceiling,             # Tavan Kâr Al
                                     'shares': shares,
                                     'status': 'OPEN',
                                     'scaled_out': False,
@@ -364,8 +363,8 @@ class SimulationEngine:
                                             'entry_time': str(current_time),
                                             'entry_price': entry_price,
                                             'ceiling_target': entry_price * 1.10, 
-                                            'stop_price': entry_price * 0.97,
-                                            'tp1_price': entry_price * 1.05,
+                                            'stop_price': entry_price * 0.95,
+                                            'tp1_price': entry_price * 1.04,
                                             'tp2_price': entry_price * 1.10,
                                             'shares': shares,
                                             'status': 'OPEN',
