@@ -1737,6 +1737,25 @@
 
 
 
+    <!-- 🟢 TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- 🔊 AUDIO PING -->
+    <audio id="ping-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+
+    <!-- 🩻 X-RAY MINI MODAL -->
+    <div id="xray-modal" class="modal-overlay" style="display:none;" onclick="closeXRayModal(event)">
+        <div class="modal-content xray-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 id="xray-title"><i class="fa-solid fa-microscope"></i> AI X-Ray Analizi</h3>
+                <button class="btn-close" onclick="closeXRayModal(event)"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" id="xray-body">
+                Yükleniyor...
+            </div>
+        </div>
+    </div>
+
     <script src="app.js?v=20260820_mtf_v1"></script>
 </body>
 </html>

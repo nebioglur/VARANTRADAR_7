@@ -1761,6 +1761,20 @@ async function fetchDashboardData() {
         const data = await response.json();
         
         if (data && data.status === 'success') {
+            // --- AUDIO & TOAST ALERT LOGIC ---
+            if (window.previousTavanSymbols === undefined) window.previousTavanSymbols = new Set();
+            if (data.dashboard_data && data.dashboard_data.tavan_adaylari) {
+                let newSymbolsCount = 0;
+                data.dashboard_data.tavan_adaylari.forEach(item => {
+                    if (!window.previousTavanSymbols.has(item.Symbol) && item.Score >= 90) {
+                        window.previousTavanSymbols.add(item.Symbol);
+                        if(newSymbolsCount < 3) showToast("?? " + item.Symbol + " Tavan Adaylarýna Girdi (" + item.Score + " Puan)");
+                        newSymbolsCount++;
+                    }
+                    window.previousTavanSymbols.add(item.Symbol);
+                });
+                if (newSymbolsCount > 0) playPing();
+            }
             setElText('total-analyzed-counter', `RADAR BUGÃœNE KADAR ${data.total_analyzed || 0} VERÄ°YÄ° ANALÄ°Z ETTÄ°`);
             
             // Son tarama saatini ekranda gÃ¶ster
@@ -1995,6 +2009,8 @@ function renderAllDashboardTables() {
             
             let isSuperGreen = checkSuperGreen(res);
             tr.className = isSuperGreen ? "super-green-row card-fade-in" : "card-fade-in";
+            tr.style.cursor = 'pointer';
+            tr.setAttribute('onclick', "openXRayModal('${res.Symbol}')");
             
             let symStr = res.Symbol;
             if (isSuperGreen) {
@@ -3803,3 +3819,97 @@ async function runBacktest() {
         alert('Sunucu hatasÄ±: ' + err.message);
     }
 }
+/* -------------------------------------
+   ELITE UI UPGRADES (JS LOGIC)
+   ------------------------------------- */
+
+// Toast Pop-up
+function showToast(message, icon = "fa-bell") {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = <i class="fa-solid  + icon + "></i> <span> + message + </span>;
+    container.appendChild(toast);
+    setTimeout(() => {
+        if(container.contains(toast)) { container.removeChild(toast); }
+    }, 4000);
+}
+
+// Audio Ping Sound
+function playPing() {
+    const audio = document.getElementById('ping-sound');
+    if (audio) {
+        audio.volume = 0.6;
+        audio.play().catch(e => console.log('Autoplay prevented:', e));
+    }
+}
+
+// X-Ray Modal
+function openXRayModal(symbol) {
+    const modal = document.getElementById('xray-modal');
+    const body = document.getElementById('xray-body');
+    const title = document.getElementById('xray-title');
+    
+    if(!modal || !globalDashboardData) return;
+    
+    // Find stock data in any category
+    let stockData = null;
+    for (let cat in globalDashboardData) {
+        if (Array.isArray(globalDashboardData[cat])) {
+            stockData = globalDashboardData[cat].find(s => s.Symbol === symbol);
+            if (stockData) break;
+        }
+    }
+    
+    title.innerHTML = <i class="fa-solid fa-microscope"></i> AI X-Ray:  + symbol;
+    
+    if (stockData) {
+        const score = stockData.Score || stockData.Score_5 * 20 || '--';
+        const price = stockData.Price || stockData.Daily_Close || '--';
+        const vol = stockData.Volume_Surge || stockData.Vol_Surge || '--';
+        const rsi = stockData.Indicators ? stockData.Indicators.RSI_14 : '--';
+        const macd = stockData.Indicators ? (stockData.Indicators.MACD > 0 ? 'Pozitif' : 'Negatif') : '--';
+        const reason = stockData.Report || stockData.Reason || 'Sistem tarafýndan yakalandý.';
+        
+        let rsiColor = rsi < 30 ? 'var(--accent-green)' : (rsi > 70 ? '#ef4444' : 'var(--text-light)');
+        
+        body.innerHTML = 
+            <div class="xray-grid">
+                <div class="xray-box">
+                    <h4>Anlýk Fiyat</h4>
+                    <div class="val">? + (typeof price==='number' ? price.toFixed(2) : price) + </div>
+                </div>
+                <div class="xray-box">
+                    <h4>AI Skoru</h4>
+                    <div class="val" style="color:var(--accent-blue)"> + score + </div>
+                </div>
+                <div class="xray-box">
+                    <h4>RSI (14)</h4>
+                    <div class="val" style="color:+rsiColor+"> + (typeof rsi==='number' ? rsi.toFixed(1) : rsi) + </div>
+                </div>
+                <div class="xray-box">
+                    <h4>Hacim Ývmesi</h4>
+                    <div class="val" style="color:var(--accent-yellow)"> + (typeof vol==='number' ? vol.toFixed(1) : vol) + x</div>
+                </div>
+                <div class="xray-box full-width" style="text-align:left; font-size:0.9rem;">
+                    <h4>?? Komite Raporu</h4>
+                    <div style="color:var(--text-muted); margin-top:5px; line-height:1.4;"> + reason + </div>
+                </div>
+            </div>
+            <button class="btn-primary" style="width:100%; margin-top:15px;" onclick="document.getElementById('symbol-input').value='+symbol+'; analyzeSymbol(); closeXRayModal(event);">Detaylý Grafiðe Git</button>
+        ;
+    } else {
+        body.innerHTML = <div style="text-align:center; color:var(--text-muted);">Veri bulunamadý.</div>;
+    }
+    
+    modal.style.display = 'flex';
+}
+
+function closeXRayModal(e) {
+    if(e) e.preventDefault();
+    const modal = document.getElementById('xray-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+
