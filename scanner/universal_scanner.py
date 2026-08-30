@@ -243,6 +243,7 @@ class UniversalScanner:
         tavan_adaylari = []
         stay_away_1h = []
         vip_candidates = []
+        whale_alerts = []
         
         symbols_to_process = [symbols[0]] if len(symbols) == 1 else symbols
         
@@ -266,6 +267,30 @@ class UniversalScanner:
                 
             df['close'] = df['close'].ffill()
             df = df[required_cols]
+            
+            # --- 🐋 BALİNA (WHALE) AKÜMÜLASYON DEDEKTÖRÜ ---
+            try:
+                if len(df) > 20:
+                    vol_series = df['volume']
+                    current_vol = float(vol_series.iloc[-1])
+                    avg_vol = float(vol_series.rolling(20).mean().iloc[-1])
+                    if avg_vol > 1000 and current_vol > (avg_vol * 3.5): # 3.5x normal volume
+                        close_price = float(df['close'].iloc[-1])
+                        prev_close = float(df['close'].iloc[-2])
+                        price_change = ((close_price - prev_close) / prev_close) * 100
+                        if -2.0 <= price_change <= 4.0: # Fiyat henüz patlamamış
+                            whale_alerts.append({
+                                "Symbol": sym,
+                                "Current_Vol": current_vol,
+                                "Avg_Vol": avg_vol,
+                                "Spike_Multiplier": round(current_vol / avg_vol, 1),
+                                "Price": close_price,
+                                "Price_Change": round(price_change, 2),
+                                "Score": 95,
+                                "Report": f"Anormal Hacim: Ortalamanın {round(current_vol/avg_vol, 1)} katı işlem hacmi var ancak fiyat sadece %{round(price_change, 2)} değişti. Güçlü Balina akümülasyonu olabilir!"
+                            })
+            except Exception as e:
+                pass
             
             # --- STRICT CUSTOM STRATEGY FILTER (AL / YÜKSELİŞ) ---
             is_match_al, bars_ago_al, _ = self.tech_engine.check_custom_strict_strategy(df, direction="AL")
@@ -326,7 +351,8 @@ class UniversalScanner:
         return {
             "opportunities_1h": opportunities,
             "stay_away_1h": stay_away_1h,
-            "tavan_adaylari": tavan_adaylari
+            "tavan_adaylari": tavan_adaylari,
+            "whale_alerts": whale_alerts
         }
 
     def _trigger_batch_vip_signals(self, vips: list):
