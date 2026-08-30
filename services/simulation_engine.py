@@ -194,10 +194,24 @@ class SimulationEngine:
                 tp1_price = trade['tp1_price']
                 tp2_price = trade['tp2_price']
                 
+                # İZLEYEN STOP (TRAILING STOP) - Kârı Kilitleme (Sadece elde kalan lotlar için veya risk free için)
+                if close >= entry * 1.08:
+                    trade['stop_price'] = max(trade['stop_price'], entry * 1.06) # %8'i gördüyse %6'yı kilitle
+                    stop_price = trade['stop_price']
+                elif close >= entry * 1.06:
+                    trade['stop_price'] = max(trade['stop_price'], entry * 1.04) # %6'yı gördüyse %4'ü kilitle
+                    stop_price = trade['stop_price']
+                elif close >= entry * 1.04:
+                    trade['stop_price'] = max(trade['stop_price'], entry * 1.01) # %4'ü gördüyse %1'i kilitle (Maliyetin üstü)
+                    stop_price = trade['stop_price']
+                
                 # En kötü senaryo: Önce Stop Loss patlar varsayımı
                 if low <= stop_price:
                     sell_price = stop_price * 0.9985 # Slipaj
-                    reason = f"⛔ ÇELİK STOP KESİLDİ (-%3)"
+                    if stop_price > entry:
+                        reason = f"🛡️ İZLEYEN STOP (Kâr Kilitlendi)"
+                    else:
+                        reason = f"⛔ ÇELİK STOP KESİLDİ (-%5)"
                 elif high >= tp2_price:
                     sell_price = tp2_price
                     reason = f"🚀 TAVAN (TAM KÂR ALINDI)"

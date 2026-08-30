@@ -39,6 +39,30 @@ class MTFScanner:
           15m: cumulative return > 0 (son 10 mum)
         """
         pool = list(set(pool))[:max_symbols]  # cap to avoid timeout
+        
+        # ==========================================
+        # 🛑 ANA ŞALTER (MARKET SHIELD) - BIST ÇÖKÜŞ KONTROLÜ
+        # ==========================================
+        try:
+            xu = yf.download("XU100.IS", period="5d", interval="1d", progress=False)
+            if not xu.empty and len(xu) >= 2:
+                close_col = 'Close' if 'Close' in xu.columns else 'close'
+                if close_col in xu.columns:
+                    xu100_close = float(xu[close_col].iloc[-1])
+                    xu100_prev = float(xu[close_col].iloc[-2])
+                    xu100_change = ((xu100_close - xu100_prev) / xu100_prev) * 100
+                    
+                    if xu100_change <= -1.5:
+                        return [{
+                            "Symbol":   "XU100",
+                            "Score":    0,
+                            "Price":    round(xu100_close, 2),
+                            "Target":   0,
+                            "Trend":    "🛑 ŞALTER KAPALI",
+                            "Momentum": f"Piyasa %1.5'ten fazla düştü ({xu100_change:.2f}%). Alım durduruldu.",
+                        }]
+        except Exception:
+            pass
 
         # --- Step 1: Bulk 1h download ---
         try:

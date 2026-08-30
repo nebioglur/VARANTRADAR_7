@@ -187,6 +187,33 @@ class UniversalScanner:
         """
         1 Saatlik veri indirir ve teknik kesişimler ile tavan adaylarını tespit eder.
         """
+        # ==========================================
+        # 🛑 ANA ŞALTER (MARKET SHIELD) - BIST ÇÖKÜŞ KONTROLÜ
+        # ==========================================
+        try:
+            xu = yf.download("XU100.IS", period="5d", interval="1d", progress=False)
+            if not xu.empty and len(xu) >= 2:
+                close_col = 'Close' if 'Close' in xu.columns else 'close'
+                if close_col in xu.columns:
+                    xu100_close = float(xu[close_col].iloc[-1])
+                    xu100_prev = float(xu[close_col].iloc[-2])
+                    xu100_change = ((xu100_close - xu100_prev) / xu100_prev) * 100
+                    
+                    if xu100_change <= -1.5:
+                        print(f"[MARKET SHIELD] XU100 Çöktü ({xu100_change:.2f}%). Robot alım motorları uyku modunda!")
+                        return {
+                            "opportunities_1h": [], 
+                            "tavan_adaylari": [{
+                                "Symbol": "XU100", 
+                                "Score": 0, 
+                                "Report": f"🛑 PİYASA ÇÖKTÜ ({xu100_change:.2f}%). SİGORTA AKTİF, NAKİTTE KALIN.", 
+                                "Position": "ŞALTER KAPALI"
+                            }],
+                            "stay_away_1h": []
+                        }
+        except Exception as e:
+            print(f"[MARKET SHIELD] XU100 kontrol hatası: {e}")
+
         if daily_stats:
             filtered_symbols = []
             for sym in symbols:
