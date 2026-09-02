@@ -80,7 +80,6 @@ def load_dashboard_cache():
         try:
             from datetime import datetime
             import time
-            import os
             with open(CACHE_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
             
