@@ -3247,32 +3247,43 @@ function openStatsDetailModal(type, date = null) {
     let items = [];
     let titleText = '';
     
-    let allItems = global_stats_data.summary?.all_time_symbols || [];
+    let allItems = [];
+    let isDaily = (typeof current_stats_mode !== 'undefined' && current_stats_mode === 'daily');
+    let prefix = isDaily ? 'Günün' : 'Tüm Zamanların';
+
+    if (isDaily) {
+        const history = global_stats_data.daily_breakdown || global_stats_data.history || [];
+        if (history.length > 0) {
+            allItems = history[0].all_symbols || [];
+        }
+    } else {
+        allItems = global_stats_data.summary?.all_time_symbols || [];
+    }
     
     if (type === 'tavan') {
         items = allItems.filter(it => it.hit_ceiling);
-        titleText = '<i class="fa-solid fa-rocket"></i> Tüm Zamanların Tavan Hisseleri';
+        titleText = `<i class="fa-solid fa-rocket"></i> ${prefix} Tavan Hisseleri`;
     } else if (type === 'plus5') {
         items = allItems.filter(it => it.hit_plus5);
-        titleText = '<i class="fa-solid fa-chart-line"></i> Tüm Zamanların +%5 Yapan Hisseleri';
+        titleText = `<i class="fa-solid fa-chart-line"></i> ${prefix} +%5 Yapan Hisseleri`;
     } else if (type === 'positive_close') {
-        items = allItems.filter(it => it.closing_gain_pct > 0);
-        titleText = '<i class="fa-solid fa-arrow-trend-up"></i> Günü Kârda Kapatanlar';
+        items = allItems.filter(it => (it.closing_gain_pct || 0) > 0);
+        titleText = `<i class="fa-solid fa-arrow-trend-up"></i> ${isDaily ? 'Günü' : 'Tüm Zamanlarda'} Kârda Kapatanlar`;
     } else if (type === 'negative_close') {
-        items = allItems.filter(it => it.closing_gain_pct < 0);
-        titleText = '<i class="fa-solid fa-arrow-trend-down"></i> Günü Zararda Kapatanlar';
+        items = allItems.filter(it => (it.closing_gain_pct || 0) < 0);
+        titleText = `<i class="fa-solid fa-arrow-trend-down"></i> ${isDaily ? 'Günü' : 'Tüm Zamanlarda'} Zararda Kapatanlar`;
     } else if (type === 'elite_positive_close') {
-        items = allItems.filter(it => it.closing_gain_pct > 0 && (it.morning_score >= 99.9));
-        titleText = '<i class="fa-solid fa-medal text-yellow"></i> Elit Kârda Kapatanlar (100 Puan)';
+        items = allItems.filter(it => (it.closing_gain_pct || 0) > 0 && (it.morning_score >= 99.9));
+        titleText = `<i class="fa-solid fa-medal text-yellow"></i> ${isDaily ? 'Günün' : 'Tüm Zamanların'} Elit Kârda Kapatanları (100 Puan)`;
     } else if (type === 'elite_negative_close') {
-        items = allItems.filter(it => it.closing_gain_pct < 0 && (it.morning_score >= 99.9));
-        titleText = '<i class="fa-solid fa-medal text-yellow"></i> Elit Zararda Kapatanlar (100 Puan)';
+        items = allItems.filter(it => (it.closing_gain_pct || 0) < 0 && (it.morning_score >= 99.9));
+        titleText = `<i class="fa-solid fa-medal text-yellow"></i> ${isDaily ? 'Günün' : 'Tüm Zamanların'} Elit Zararda Kapatanları (100 Puan)`;
     } else if (type === 'elite_all') {
         items = allItems.filter(it => it.morning_score >= 99.9);
-        titleText = '<i class="fa-solid fa-medal text-yellow"></i> Tüm Elit Öneriler (100 Puan)';
+        titleText = `<i class="fa-solid fa-medal text-yellow"></i> ${isDaily ? 'Günün' : 'Tüm Zamanların'} Tüm Elit Önerileri (100 Puan)`;
     } else if (type === 'all') {
         items = allItems;
-        titleText = '<i class="fa-solid fa-list-ul"></i> Sistemin Tüm Önerileri';
+        titleText = `<i class="fa-solid fa-list-ul"></i> ${isDaily ? 'Günün' : 'Tüm Zamanların'} Tüm Önerileri`;
     } else if (type === 'daily_all' && date) {
         const dayData = (global_stats_data.daily_breakdown || []).find(d => d.date === date);
         items = dayData?.all_symbols || [];
