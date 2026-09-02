@@ -481,17 +481,7 @@ async function fetchGlobalNews() {
                 
                 let summary = item.summary.replace(/<[^>]+>/g, '').substring(0, 150) + "...";
                 
-                
-            // Get today's date in YYYY-MM-DD
-            const todayObj = new Date();
-            const yyyy = todayObj.getFullYear();
-            const mm = String(todayObj.getMonth() + 1).padStart(2, '0');
-            const dd = String(todayObj.getDate()).padStart(2, '0');
-            const todayStr = `${yyyy}-${mm}-${dd}`;
-            
-            const closeLabel = (item.date === todayStr) ? 'Anlık:' : 'Kapanış:';
-            
-            card.innerHTML = `
+                card.innerHTML = `
                     <div>
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
                             ${sourceBadge}
@@ -3428,6 +3418,16 @@ function openStatsDetailModal(type, date = null) {
 
             const hitStatus = item.hit_ceiling ? '<span style="background:rgba(16,185,129,0.2); color:#10b981; padding:2px 5px; border-radius:4px; font-size:0.7rem;"><i class="fa-solid fa-fire"></i> TAVAN</span>' : 
                                (item.hit_plus5 ? '<span style="background:rgba(245,158,11,0.2); color:#f59e0b; padding:2px 5px; border-radius:4px; font-size:0.7rem;">+%5</span>' : '');
+            
+            
+            // Get today's date in YYYY-MM-DD
+            const todayObj = new Date();
+            const yyyy = todayObj.getFullYear();
+            const mm = String(todayObj.getMonth() + 1).padStart(2, '0');
+            const dd = String(todayObj.getDate()).padStart(2, '0');
+            const todayStr = `${yyyy}-${mm}-${dd}`;
+            
+            const closeLabel = (item.date === todayStr) ? 'Anlık:' : 'Kapanış:';
             
             const card = document.createElement('div');
             card.className = 'history-card';
