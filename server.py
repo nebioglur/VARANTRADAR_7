@@ -92,6 +92,22 @@ def load_dashboard_cache():
             return {}
     return {}
 
+def sync_to_github():
+    try:
+        import subprocess
+        # Sadece data dizinini ve dashboard_cache'i gonder
+        git_cmd = r"C:\Users\nebioglur\mingit\cmd\git.exe"
+        if not os.path.exists(git_cmd):
+            git_cmd = "git" # sistem path'inde varsa
+        
+        subprocess.run([git_cmd, "add", "dashboard_cache.json", "data/tavan_daily_audit.json", "data/trades_db.sqlite"], check=False)
+        res = subprocess.run([git_cmd, "commit", "-m", "chore: auto-sync live data [skip ci]"], capture_output=True, text=True)
+        if "nothing to commit" not in res.stdout:
+            subprocess.run([git_cmd, "push", "origin", "main"], check=False)
+            print("[GITHUB] Veriler canli sunucu icin basariyla push edildi.")
+    except Exception as e:
+        print(f"[GITHUB ERROR] {e}")
+
 def save_dashboard_cache(data):
     try:
         clean = sanitize_for_json(data)
@@ -283,6 +299,9 @@ def background_scanner():
                             print(f"[BACKGROUND] Yeni Motor Hatası: {e_audit}")
                             import traceback
                             traceback.print_exc()
+                        
+                        # Github Cloud Data Sync (Statik sayfalar ve dış VPS'ler için)
+                        sync_to_github()
                             
                         print("[BACKGROUND] 1h ve Tavan taraması tamamlandı, saatlik tavan denetçisine kaydedildi.")
                 except Exception as e_1h:
