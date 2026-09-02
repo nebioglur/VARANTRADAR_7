@@ -110,7 +110,7 @@ let analysisAbortController = null;
 let logInterval = null;
 
 // ============================================================
-// ­şşó ONL─░NE KULLANICI SAYACI (Heartbeat)
+// 🟢 ONLİNE KULLANICI SAYACI (Heartbeat)
 // ============================================================
 let _heartbeatSid = localStorage.getItem('varant-sid') || '';
 
@@ -133,12 +133,12 @@ async function sendHeartbeat() {
     } catch(e) { /* sessiz hata */ }
 }
 
-// Sayfa y├╝klenince hemen g├Ânder, sonra 15 saniyede bir
+// Sayfa yüklenince hemen gönder, sonra 15 saniyede bir
 sendHeartbeat();
 setInterval(sendHeartbeat, 15000);
 
 // ============================================================
-// ­şîù TEMA TOGGLE (Koyu / A├ğ─▒k)
+// 🌗 TEMA TOGGLE (Koyu / Açık)
 // ============================================================
 function toggleTheme() {
     const body = document.body;
@@ -152,12 +152,12 @@ function toggleTheme() {
         localStorage.setItem('varant-theme', 'light');
     } else {
         if (icon) { icon.className = 'fa-solid fa-sun'; }
-        if (label) label.textContent = 'A├ğ─▒k Tema';
+        if (label) label.textContent = 'Açık Tema';
         localStorage.setItem('varant-theme', 'dark');
     }
 }
 
-// Sayfa y├╝klenince tema tercihini geri y├╝kle
+// Sayfa yüklenince tema tercihini geri yükle
 (function initTheme() {
     const saved = localStorage.getItem('varant-theme');
     if (saved === 'light') {
@@ -170,7 +170,7 @@ function toggleTheme() {
 })();
 
 // ============================================================
-// ­şÅå G─░R─░┼Ş SAYFASI: Ba┼şar─▒ Karnesi ÔåÆ Ger├ğek API Verisi
+// 🏆 GİRİŞ SAYFASI: Başarı Karnesi → Gerçek API Verisi
 // ============================================================
 async function fetchHomeWinrateStats() {
     try {
@@ -189,7 +189,7 @@ async function fetchHomeWinrateStats() {
                 ['stat-avgprofit-sub', `${s.total_hit_plus5}/${s.total_candidates_tracked} Hisse`],
                 ['stat-pfactor', `+%${s.cumulative_avg_max_gain_pct}`],
                 ['stat-pfactor-sub', `Ort. Zirve Getirisi`],
-                ['stat-days-val', `${s.total_days_tracked} G├╝n / ${s.total_candidates_tracked} ├ûneri`],
+                ['stat-days-val', `${s.total_days_tracked} Gün / ${s.total_candidates_tracked} Öneri`],
                 ['stat-warrant-val', `+%${s.ahlatci_warrant_avg_gain_pct}`],
                 ['stat-close-val', `+%${s.cumulative_avg_closing_gain_pct}`]
             ];
@@ -199,7 +199,7 @@ async function fetchHomeWinrateStats() {
                 if (el(id + '-stats')) el(id + '-stats').textContent = val;
             });
         } else {
-            // Veri yok ÔÇö 04 A─şustos'tan ├Ânce
+            // Veri yok — 04 Ağustos'tan önce
             const emptyFields = [
                 ['stat-winrate', '-'],
                 ['stat-winrate-sub', 'Veri bekleniyor'],
@@ -207,7 +207,7 @@ async function fetchHomeWinrateStats() {
                 ['stat-avgprofit-sub', 'Veri bekleniyor'],
                 ['stat-pfactor', '-'],
                 ['stat-pfactor-sub', 'Veri bekleniyor'],
-                ['stat-days-val', '04 A─şu 2026 sabah─▒ndan itibaren'],
+                ['stat-days-val', '04 Ağu 2026 sabahından itibaren'],
                 ['stat-warrant-val', 'Bekleniyor'],
                 ['stat-close-val', 'Bekleniyor']
             ];
@@ -253,7 +253,7 @@ function switchMainTab(tabName, btnElement) {
     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
     if (btnElement) btnElement.classList.add('active');
     
-    // Alt navigasyon bar─▒ sadece dashboard/radar/stats/sim varken kullan─▒┼şl─▒
+    // Alt navigasyon barı sadece dashboard/radar/stats/sim varken kullanışlı
     const bottomBar = document.querySelector('.bottom-mobile-bar');
     if (bottomBar) {
         bottomBar.style.display = (tabName === 'dashboard' || tabName === 'radar' || tabName === 'stats' || tabName === 'simulation' || tabName === 'varant') ? 'flex' : 'none';
@@ -285,7 +285,7 @@ function cancelLoadingAndGoBack() {
     
     let targetTab = lastActiveTab || 'home';
     let navBtns = document.querySelectorAll('.nav-btn');
-    let targetBtn = navBtns[0]; // G─░R─░┼Ş
+    let targetBtn = navBtns[0]; // GİRİŞ
     if (targetTab === 'radar' && navBtns.length > 1) {
         targetBtn = navBtns[1];
     } else if (targetTab === 'news' && navBtns.length > 2) {
@@ -323,7 +323,7 @@ function switchRadarTab(tabName, btnElement) {
     document.querySelectorAll('#radar-wrapper .s-tab').forEach(btn => btn.classList.remove('active'));
     if (btnElement) btnElement.classList.add('active');
 
-    // Otomatik Y├╝kleme & Tarama: Sekme a├ğ─▒ld─▒─ş─▒nda bo┼ş kalmamas─▒ i├ğin otomatik ├ğal─▒┼şt─▒r
+    // Otomatik Yükleme & Tarama: Sekme açıldığında boş kalmaması için otomatik çalıştır
     if (tabName === 'opportunities1h') {
         const opp1hTbody = document.getElementById('opp1h-tbody');
         if (globalDashboardData && globalDashboardData['opportunities_1h'] && globalDashboardData['opportunities_1h'].length > 0) {
@@ -333,7 +333,7 @@ function switchRadarTab(tabName, btnElement) {
         const tbodyEl = document.getElementById(tabName + '-tbody');
         const resultsEl = document.getElementById(tabName + '-results');
         const loadingEl = document.getElementById(tabName + '-loading');
-        // Hen├╝z sonu├ğ yoksa ve ┼şu an taranm─▒yorsa otomatik ba┼şlat
+        // Henüz sonuç yoksa ve şu an taranmıyorsa otomatik başlat
         if (tbodyEl && (!tbodyEl.children.length || resultsEl?.style.display === 'none') && loadingEl?.style.display !== 'block') {
             startRadar(tabName);
         }
@@ -350,15 +350,15 @@ function switchHomeOppsTab(tabName, btnElement) {
     const contentBox = document.getElementById('home-opps-content');
     contentBox.innerHTML = `
         <div style="text-align: center; padding: 2rem 0;">
-            <p style="color:var(--text-muted); margin-bottom: 1rem;">Anl─▒k taramay─▒ ba┼şlatmak i├ğin butona t─▒klay─▒n.</p>
-            <button class="btn-primary" id="btn-scan-home" onclick="scanHomeOpportunities()">F─▒rsatlar─▒ Canl─▒ Tara</button>
+            <p style="color:var(--text-muted); margin-bottom: 1rem;">Anlık taramayı başlatmak için butona tıklayın.</p>
+            <button class="btn-primary" id="btn-scan-home" onclick="scanHomeOpportunities()">Fırsatları Canlı Tara</button>
         </div>
     `;
 }
 
 async function scanHomeOpportunities() {
     const contentBox = document.getElementById('home-opps-content');
-    contentBox.innerHTML = `<div style="text-align:center; padding: 2rem 0;"><div class="spinner small"></div><p style="margin-top:1rem;color:var(--text-muted)">Yapay zeka analiz ediyor... L├╝tfen bekleyin.</p></div>`;
+    contentBox.innerHTML = `<div style="text-align:center; padding: 2rem 0;"><div class="spinner small"></div><p style="margin-top:1rem;color:var(--text-muted)">Yapay zeka analiz ediyor... Lütfen bekleyin.</p></div>`;
     
     let endpoint = '/api/scan';
     if (currentHomeOppsTab === 'bist50') endpoint = '/api/scan_bist50';
@@ -377,16 +377,16 @@ async function scanHomeOpportunities() {
             top3.forEach((item, index) => {
                 let scoreValue = item.Score !== undefined ? item.Score : (item.Confidence_Score !== undefined ? item.Confidence_Score : 0);
                 let c = "bull";
-                let l = "G├£├çL├£ AL";
+                let l = "GÜÇLÜ AL";
                 if (scoreValue >= 75) {
                     c = "bull";
-                    l = "G├£├çL├£ AL (L─░DER)";
+                    l = "GÜÇLÜ AL (LİDER)";
                 } else if (scoreValue >= 60) {
                     c = "base";
-                    l = "KADEMEL─░ AL (DESTEK)";
+                    l = "KADEMELİ AL (DESTEK)";
                 } else {
                     c = "bear";
-                    l = "─░ZLE / BEKLE";
+                    l = "İZLE / BEKLE";
                 }
                 
                 contentBox.innerHTML += `
@@ -398,10 +398,10 @@ async function scanHomeOpportunities() {
                 `;
             });
         } else {
-            contentBox.innerHTML = `<p style="color:var(--accent-red); text-align:center;">F─▒rsat bulunamad─▒ veya bir hata olu┼ştu.</p>`;
+            contentBox.innerHTML = `<p style="color:var(--accent-red); text-align:center;">Fırsat bulunamadı veya bir hata oluştu.</p>`;
         }
     } catch (e) {
-        contentBox.innerHTML = `<p style="color:var(--accent-red); text-align:center;">Ba─şlant─▒ hatas─▒: ${e.message}</p>`;
+        contentBox.innerHTML = `<p style="color:var(--accent-red); text-align:center;">Bağlantı hatası: ${e.message}</p>`;
     }
 }
 
@@ -427,10 +427,10 @@ async function fetchAKDData(symbol) {
                     <td style="font-weight:bold; color:var(--text-main);">${b.broker}</td>
                     <td style="font-family:monospace;">${b.lots.toLocaleString('tr-TR')}</td>
                     <td>%${b.percent}</td>
-                    <td style="color:var(--accent-green); font-weight:bold;">Ôé║${b.cost}</td>
+                    <td style="color:var(--accent-green); font-weight:bold;">₺${b.cost}</td>
                 </tr>`;
             });
-            bBody.innerHTML += `<tr><td style="color:var(--text-muted);">Di─şer</td><td colspan="3" style="color:var(--text-muted); text-align:right;">%${data.buy_other_pct}</td></tr>`;
+            bBody.innerHTML += `<tr><td style="color:var(--text-muted);">Diğer</td><td colspan="3" style="color:var(--text-muted); text-align:right;">%${data.buy_other_pct}</td></tr>`;
             
             // Populate Sellers
             const sBody = document.getElementById('akd-sellers-tbody');
@@ -440,17 +440,17 @@ async function fetchAKDData(symbol) {
                     <td style="font-weight:bold; color:var(--text-main);">${s.broker}</td>
                     <td style="font-family:monospace;">${s.lots.toLocaleString('tr-TR')}</td>
                     <td>%${s.percent}</td>
-                    <td style="color:var(--accent-red); font-weight:bold;">Ôé║${s.cost}</td>
+                    <td style="color:var(--accent-red); font-weight:bold;">₺${s.cost}</td>
                 </tr>`;
             });
-            sBody.innerHTML += `<tr><td style="color:var(--text-muted);">Di─şer</td><td colspan="3" style="color:var(--text-muted); text-align:right;">%${data.sell_other_pct}</td></tr>`;
+            sBody.innerHTML += `<tr><td style="color:var(--text-muted);">Diğer</td><td colspan="3" style="color:var(--text-muted); text-align:right;">%${data.sell_other_pct}</td></tr>`;
             
             // Net Difference
             const netDiffEl = document.getElementById('akd-net-diff');
             if (data.net_diff_lots > 0) {
-                netDiffEl.innerHTML = `<span style="color:var(--accent-green);">+${data.net_diff_lots.toLocaleString('tr-TR')} Lot (Para Giri┼şi)</span>`;
+                netDiffEl.innerHTML = `<span style="color:var(--accent-green);">+${data.net_diff_lots.toLocaleString('tr-TR')} Lot (Para Girişi)</span>`;
             } else if (data.net_diff_lots < 0) {
-                netDiffEl.innerHTML = `<span style="color:var(--accent-red);">${data.net_diff_lots.toLocaleString('tr-TR')} Lot (Para ├ç─▒k─▒┼ş─▒)</span>`;
+                netDiffEl.innerHTML = `<span style="color:var(--accent-red);">${data.net_diff_lots.toLocaleString('tr-TR')} Lot (Para Çıkışı)</span>`;
             } else {
                 netDiffEl.innerHTML = `<span style="color:var(--text-muted);">Dengeli</span>`;
             }
@@ -458,14 +458,14 @@ async function fetchAKDData(symbol) {
             loading.innerHTML = `<p style="color:var(--accent-red);">Hata: ${data.message}</p>`;
         }
     } catch (e) {
-        loading.innerHTML = `<p style="color:var(--accent-red);">Ba─şlant─▒ Hatas─▒: ${e.message}</p>`;
+        loading.innerHTML = `<p style="color:var(--accent-red);">Bağlantı Hatası: ${e.message}</p>`;
     }
 }
 
 // ========== NEWS ENGINE ==========
 async function fetchGlobalNews() {
     const content = document.getElementById('global-news-content');
-    content.innerHTML = `<div style="text-align:center; padding: 2rem 0; grid-column: 1 / -1;"><div class="spinner small"></div><p style="margin-top:1rem;color:var(--text-muted)">Haberler RSS kanallar─▒ndan derleniyor...</p></div>`;
+    content.innerHTML = `<div style="text-align:center; padding: 2rem 0; grid-column: 1 / -1;"><div class="spinner small"></div><p style="margin-top:1rem;color:var(--text-muted)">Haberler RSS kanallarından derleniyor...</p></div>`;
     
     try {
         const res = await fetch('/api/news/global');
@@ -495,10 +495,10 @@ async function fetchGlobalNews() {
                 content.appendChild(card);
             });
         } else {
-            content.innerHTML = `<p style="grid-column: 1/-1; color:var(--text-muted);">G├╝ncel haber bulunamad─▒.</p>`;
+            content.innerHTML = `<p style="grid-column: 1/-1; color:var(--text-muted);">Güncel haber bulunamadı.</p>`;
         }
     } catch (e) {
-        content.innerHTML = `<p style="grid-column: 1/-1; color:var(--accent-red);">Haberler y├╝klenirken hata olu┼ştu: ${e.message}</p>`;
+        content.innerHTML = `<p style="grid-column: 1/-1; color:var(--accent-red);">Haberler yüklenirken hata oluştu: ${e.message}</p>`;
     }
 }
 
@@ -524,10 +524,10 @@ async function fetchTickerNews(symbol) {
                 container.appendChild(div);
             });
         } else {
-            container.innerHTML = `<p style="color:var(--text-muted)">Bu varl─▒─şa ait ─░ngilizce kurumsal haber bulunamad─▒.</p>`;
+            container.innerHTML = `<p style="color:var(--text-muted)">Bu varlığa ait İngilizce kurumsal haber bulunamadı.</p>`;
         }
     } catch (e) {
-        container.innerHTML = `<p style="color:var(--accent-red)">Haber servisi hatas─▒: ${e.message}</p>`;
+        container.innerHTML = `<p style="color:var(--accent-red)">Haber servisi hatası: ${e.message}</p>`;
     }
 }
 
@@ -566,7 +566,7 @@ async function analyzeSymbol() {
             }
             loadingEl.style.display = 'none';
             if (response.status !== 200 || data.status === "error") {
-                alert("Ôøö UPLINK ERROR\n\n" + (data.message || data.error));
+                alert("⛔ UPLINK ERROR\n\n" + (data.message || data.error));
                 cancelLoadingAndGoBack();
                 return;
             }
@@ -575,7 +575,7 @@ async function analyzeSymbol() {
         
     } catch (error) {
         if (error.name === 'AbortError') {
-            console.log('Analiz kullan─▒c─▒ taraf─▒ndan iptal edildi.');
+            console.log('Analiz kullanıcı tarafından iptal edildi.');
             return;
         }
         document.getElementById('loading').style.display = 'none';
@@ -589,16 +589,16 @@ function simulateTerminalLogs(symbol) {
     const termLogs = document.getElementById('term-logs');
     termLogs.innerHTML = "";
     const fakeLogs = [
-        `> HEDEF K─░L─░TLEND─░: ${symbol}`,
-        "> VER─░ SA─ŞLAYICILARLA G├£VENL─░ BA─ŞLANTI KURULUYOR...",
-        "> 10 NOKTALI VER─░ DO─ŞRULAMASI (VALIDATION)... [BA┼ŞARILI]",
-        "> VER─░LER MOTORLARA (ENGINES) Y├ûNLEND─░R─░L─░YOR...",
-        "> Ôö£ÔöÇ MAKRO MOTOR: VIX & Piyasa Rejimi ├çekiliyor...",
-        "> Ôö£ÔöÇ SMART_MONEY MOTORU: Hacim Anomalileri Hesaplan─▒yor...",
-        "> Ôö£ÔöÇ TEMEL MOTOR: F/K, PD/DD, Bilan├ğo De─şerleniyor...",
-        "> ÔööÔöÇ TEKN─░K MOTOR: RSI, EMA, Trend ve Momentum ─░┼şleniyor...",
-        "> CIO_AI: KOM─░TE TOPLANDI. OYLAMA BA┼ŞLADI...",
-        "> RAPOR BA┼ŞARIYLA OLU┼ŞTURULDU VE B├£Y├£K BEY─░N TARAFINDAN ONAYLANDI."
+        `> HEDEF KİLİTLENDİ: ${symbol}`,
+        "> VERİ SAĞLAYICILARLA GÜVENLİ BAĞLANTI KURULUYOR...",
+        "> 10 NOKTALI VERİ DOĞRULAMASI (VALIDATION)... [BAŞARILI]",
+        "> VERİLER MOTORLARA (ENGINES) YÖNLENDİRİLİYOR...",
+        "> ├─ MAKRO MOTOR: VIX & Piyasa Rejimi Çekiliyor...",
+        "> ├─ SMART_MONEY MOTORU: Hacim Anomalileri Hesaplanıyor...",
+        "> ├─ TEMEL MOTOR: F/K, PD/DD, Bilanço Değerleniyor...",
+        "> └─ TEKNİK MOTOR: RSI, EMA, Trend ve Momentum İşleniyor...",
+        "> CIO_AI: KOMİTE TOPLANDI. OYLAMA BAŞLADI...",
+        "> RAPOR BAŞARIYLA OLUŞTURULDU VE BÜYÜK BEYİN TARAFINDAN ONAYLANDI."
     ];
     let logIdx = 0;
     logInterval = setInterval(() => {
@@ -624,8 +624,8 @@ function t(str) {
     if (!str) return "-";
     if (typeof str === 'string') {
         let upperStr = str.toUpperCase();
-        if (upperStr === "UNKNOWN") return "Veri Bekleniyor / N├Âtr";
-        if (upperStr === "N/A") return "Bulunamad─▒ (API)";
+        if (upperStr === "UNKNOWN") return "Veri Bekleniyor / Nötr";
+        if (upperStr === "N/A") return "Bulunamadı (API)";
     }
     return str;
 }
@@ -730,7 +730,7 @@ window.renderAdvancedChart = async function() {
     if(!window.currentChartSymbol) return;
     const tvContainer = document.getElementById('tv-chart');
     if (!tvContainer) return;
-    tvContainer.innerHTML = '<div style="color:var(--text-muted); padding:20px; text-align:center;">Veri y├╝kleniyor...</div>';
+    tvContainer.innerHTML = '<div style="color:var(--text-muted); padding:20px; text-align:center;">Veri yükleniyor...</div>';
     
     try {
         const response = await fetch(`/api/chart_data?symbol=${window.currentChartSymbol}&interval=${window.currentChartInterval}`);
@@ -880,11 +880,11 @@ window.renderAdvancedChart = async function() {
         let sAdx = c4.addLineSeries({ lineWidth: 2 });
         sAdx.setData(data.candles.map(c => {
             if (c.adx === null) return {time: c.time};
-            let color = '#93c5fd'; // 0-20 (A├ğ─▒k Mavi / Trend Yok)
-            if (c.adx >= 20 && c.adx < 25) color = '#60a5fa'; // 20-25 (Trend Ba┼şlang─▒c─▒)
-            else if (c.adx >= 25 && c.adx < 50) color = '#3b82f6'; // 25-50 (G├╝├ğl├╝ Trend)
-            else if (c.adx >= 50 && c.adx < 75) color = '#2563eb'; // 50-75 (├çok G├╝├ğl├╝)
-            else if (c.adx >= 75) color = '#1e3a8a'; // 75-100 (A┼ş─▒r─▒ G├╝├ğl├╝ / Koyu Mavi)
+            let color = '#93c5fd'; // 0-20 (Açık Mavi / Trend Yok)
+            if (c.adx >= 20 && c.adx < 25) color = '#60a5fa'; // 20-25 (Trend Başlangıcı)
+            else if (c.adx >= 25 && c.adx < 50) color = '#3b82f6'; // 25-50 (Güçlü Trend)
+            else if (c.adx >= 50 && c.adx < 75) color = '#2563eb'; // 50-75 (Çok Güçlü)
+            else if (c.adx >= 75) color = '#1e3a8a'; // 75-100 (Aşırı Güçlü / Koyu Mavi)
             return { time: c.time, value: c.adx, color: color };
         }));
         sAdx.createPriceLine({ price: 25, color: '#10B981', lineWidth: 2, lineStyle: 2, title: '25', axisLabelVisible: true });
@@ -1033,7 +1033,7 @@ window.renderAdvancedChart = async function() {
         
     } catch (err) {
         console.error(err);
-        tvContainer.innerHTML = `<div style="color:red; padding:20px; text-align:center;">Bir hata olu┼ştu: ${err.message}</div>`;
+        tvContainer.innerHTML = `<div style="color:red; padding:20px; text-align:center;">Bir hata oluştu: ${err.message}</div>`;
     }
 } // <--- Added missing brace for renderAdvancedChart
 
@@ -1154,7 +1154,7 @@ function bindDataToDashboard(report) {
     let risk = parseFloat(safeGet(report, "Section_5_Risk", 0));
     drawScoreChart(conf, risk);
 
-    // 0. CONVICTION & ACTION PLAYBOOK (BA┼Ş YATIRIM Y├ûNET─░C─░S─░ ─░KNA RAPORU)
+    // 0. CONVICTION & ACTION PLAYBOOK (BAŞ YATIRIM YÖNETİCİSİ İKNA RAPORU)
     const playbook = safeGet(report, "Section_0_Conviction_Playbook", null);
     const convWrapper = document.getElementById('conviction-wrapper');
     if (convWrapper) {
@@ -1166,7 +1166,7 @@ function bindDataToDashboard(report) {
             
             const actionBadge = document.getElementById('conviction-action-badge');
             if (actionBadge) {
-                actionBadge.textContent = playbook.Verdict_Badge || 'G├£├çL├£ AL';
+                actionBadge.textContent = playbook.Verdict_Badge || 'GÜÇLÜ AL';
                 actionBadge.style.background = playbook.Verdict_Color || 'var(--accent-green)';
                 actionBadge.style.color = '#000';
             }
@@ -1195,13 +1195,13 @@ function bindDataToDashboard(report) {
             
             const warrantText = document.getElementById('conviction-warrant-text');
             if (warrantText) {
-                warrantText.innerHTML = playbook.Warrant_Tactics || 'ÔÜí Varant bilgisi hesaplanamad─▒.';
+                warrantText.innerHTML = playbook.Warrant_Tactics || '⚡ Varant bilgisi hesaplanamadı.';
             }
         } else {
             let fallbackConf = parseFloat(safeGet(report, "Section_4_Confidence", 50));
-            let fallbackBadge = fallbackConf >= 70 ? "G├£├çL├£ AL" : (fallbackConf >= 50 ? "KADEMEL─░ AL" : "─░ZLE / BEKLE");
+            let fallbackBadge = fallbackConf >= 70 ? "GÜÇLÜ AL" : (fallbackConf >= 50 ? "KADEMELİ AL" : "İZLE / BEKLE");
             let fallbackColor = fallbackConf >= 70 ? "var(--accent-green)" : (fallbackConf >= 50 ? "var(--accent-blue)" : "var(--accent-yellow)");
-            setElText('conviction-title', `­şÜ¿ ${sym} ─░├ç─░N YAPAY ZEKA VE CIO KARAR RAPORU`);
+            setElText('conviction-title', `🚨 ${sym} İÇİN YAPAY ZEKA VE CIO KARAR RAPORU`);
             setElText('conviction-rr-val', "1 : 3.0");
             const actionBadge = document.getElementById('conviction-action-badge');
             if (actionBadge) {
@@ -1223,7 +1223,7 @@ function bindDataToDashboard(report) {
     setElText('pos-e2', safeGet(report, "Section_9_Position.Entry_2"));
     
     // Get Stop Loss value from Operations Exit Plan
-    setElText('pos-sl', "Ôé║" + safeGet(report, "Section_24_Operations.Exit.Stop_Loss_2", "-")); 
+    setElText('pos-sl', "₺" + safeGet(report, "Section_24_Operations.Exit.Stop_Loss_2", "-")); 
 
     setElText('ex-tp1', safeGet(report, "Section_10_Exit.TP1"));
     setElText('ex-tp2', safeGet(report, "Section_10_Exit.TP2"));
@@ -1231,7 +1231,7 @@ function bindDataToDashboard(report) {
 
     setElText('exec-sum', safeGet(report, "Section_1_Executive"));
 
-    setElText('ai-narrative', safeGet(report, "Section_34_AINarrative", "Analiz bulunamad─▒."));
+    setElText('ai-narrative', safeGet(report, "Section_34_AINarrative", "Analiz bulunamadı."));
     
     // Bind Historical News
     const historicalNews = safeGet(report, "Section_33_HistoricalNews", []);
@@ -1246,13 +1246,13 @@ function bindDataToDashboard(report) {
                 
                 newsContainer.innerHTML += `
                     <div style="border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:10px;">
-                        <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:5px;">${news.published} | ${news.publisher} <span style="float:right; color:${sentColor}">ÔùÅ Duygu Skoru: ${news.sentiment.toFixed(2)}</span></div>
+                        <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:5px;">${news.published} | ${news.publisher} <span style="float:right; color:${sentColor}">● Duygu Skoru: ${news.sentiment.toFixed(2)}</span></div>
                         <a href="${news.url}" target="_blank" style="color:var(--text-main); font-weight:600; text-decoration:none; font-size:0.9rem;">${news.title}</a>
                     </div>
                 `;
             });
         } else {
-            newsContainer.innerHTML = '<div class="text-muted text-center py-3">Ge├ğmi┼ş haber verisi bulunamad─▒.</div>';
+            newsContainer.innerHTML = '<div class="text-muted text-center py-3">Geçmiş haber verisi bulunamadı.</div>';
         }
     }
     // Operational Data
@@ -1277,13 +1277,13 @@ function bindDataToDashboard(report) {
                 let winRate = aiData.Win_Rate ? parseFloat(aiData.Win_Rate).toFixed(1) : "N/A";
                 let totalTrades = aiData.Total_Trades || 0;
                 
-                let prettyName = aiName.replace("_AI", " Zekas─▒");
-                if(aiName === "Technical_AI") prettyName = "Teknik Analiz Ajan─▒";
-                if(aiName === "Fundamental_AI") prettyName = "Temel Analiz (Bilan├ğo) Ajan─▒";
-                if(aiName === "Macro_AI") prettyName = "Makro (Rejim) Ajan─▒";
-                if(aiName === "SmartMoney_AI") prettyName = "Ak─▒ll─▒ Para Ajan─▒";
+                let prettyName = aiName.replace("_AI", " Zekası");
+                if(aiName === "Technical_AI") prettyName = "Teknik Analiz Ajanı";
+                if(aiName === "Fundamental_AI") prettyName = "Temel Analiz (Bilanço) Ajanı";
+                if(aiName === "Macro_AI") prettyName = "Makro (Rejim) Ajanı";
+                if(aiName === "SmartMoney_AI") prettyName = "Akıllı Para Ajanı";
                 
-                // Ba┼şar─▒ oran─▒n─▒ ba┼şl─▒─şa ekle
+                // Başarı oranını başlığa ekle
                 prettyName = `${prettyName} (%${winRate})`;
 
                 let historyHtml = "";
@@ -1291,7 +1291,7 @@ function bindDataToDashboard(report) {
                     let last = aiData.History[aiData.History.length - 1];
                     let prev = aiData.History[aiData.History.length - 2];
                     if (last > prev) {
-                        historyHtml = `<span style="color:var(--accent-green); font-size:0.7rem; margin-left:5px;"><i class="fa-solid fa-arrow-up"></i> Geli┼şiyor</span>`;
+                        historyHtml = `<span style="color:var(--accent-green); font-size:0.7rem; margin-left:5px;"><i class="fa-solid fa-arrow-up"></i> Gelişiyor</span>`;
                     } else if (last < prev) {
                         historyHtml = `<span style="color:var(--accent-red); font-size:0.7rem; margin-left:5px;"><i class="fa-solid fa-arrow-down"></i> Geriliyor</span>`;
                     } else {
@@ -1310,11 +1310,11 @@ function bindDataToDashboard(report) {
                         </div>
                         <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
                             <div>
-                                <div style="color:var(--text-muted); font-size:0.7rem;">G├£NCEL A─ŞIRLIK</div>
+                                <div style="color:var(--text-muted); font-size:0.7rem;">GÜNCEL AĞIRLIK</div>
                                 <strong style="color:var(--accent-blue);">%${weight}</strong>
                             </div>
                             <div style="text-align:right;">
-                                <div style="color:var(--text-muted); font-size:0.7rem;">BA┼ŞARI ORANI (${totalTrades} ─░┼şlem)</div>
+                                <div style="color:var(--text-muted); font-size:0.7rem;">BAŞARI ORANI (${totalTrades} İşlem)</div>
                                 <strong style="color:${winRate > 65 ? 'var(--accent-green)' : 'var(--accent-yellow)'};">%${winRate}</strong>${historyHtml}
                             </div>
                         </div>
@@ -1326,7 +1326,7 @@ function bindDataToDashboard(report) {
                 cContainer.innerHTML += cardHtml;
             }
         } else {
-            cContainer.innerHTML = `<div style="grid-column: span 2; text-align:center; color:var(--text-muted);">Yapay Zeka Komite verisi bulunamad─▒.</div>`;
+            cContainer.innerHTML = `<div style="grid-column: span 2; text-align:center; color:var(--text-muted);">Yapay Zeka Komite verisi bulunamadı.</div>`;
         }
     }
 
@@ -1350,7 +1350,7 @@ function bindDataToDashboard(report) {
     const fundamental = safeGet(report, "Section_27_Fundamental", {});
     const sentiment = safeGet(report, "Section_28_Sentiment", {});
     
-    // Fundamental (Bilan├ğo)
+    // Fundamental (Bilanço)
     setElText('fun-pe', fundamental.P_E_Ratio || "N/A");
     setElText('fun-roe', fundamental.ROE || "N/A");
     setElText('fun-debt', fundamental.Debt_to_Equity || "N/A");
@@ -1366,19 +1366,19 @@ function bindDataToDashboard(report) {
     setElText('of-pressure', orderFlow.Buyer_Pressure || "-");
     window.showLiquidityPopup = function() {
         Swal.fire({
-            title: 'Likidite Av─▒ (Stop Patlatma)',
+            title: 'Likidite Avı (Stop Patlatma)',
             icon: 'info',
             html: `
                 <div style="text-align:left; font-size:0.95rem; line-height:1.6;">
-                <b>B├╝y├╝k Oyuncular─▒n (Balinalar) Tuza─ş─▒:</b><br><br>
-                K├╝├ğ├╝k yat─▒r─▒mc─▒lar hisse al─▒rken zarar─▒ durdurmak i├ğin desteklerin hemen alt─▒na "Stop-Loss" emri koyarlar.<br><br>
-                B├╝y├╝k fonlar y├╝kl├╝ mal toplamak istediklerinde, fiyat─▒ bilerek bu desteklerin alt─▒na iterek k├╝├ğ├╝k yat─▒r─▒mc─▒n─▒n stoplar─▒n─▒ <b>patlat─▒r</b> ve panik sat─▒┼ş─▒ ba┼şlat─▒r.<br><br>
-                Ortaya ├ğ─▒kan bu ucuz hisse havuzunu en dipten toplayan b├╝y├╝k oyuncu, ard─▒ndan fiyat─▒ h─▒zla yukar─▒ ├ğeker (V D├Ân├╝┼ş├╝).<br><br>
-                <span style="color:var(--accent-green); font-weight:bold;">Sistem Neden Uyard─▒?</span><br>
-                Grafikte a┼şa─ş─▒ y├Ânl├╝ sert bir i─şne ve pe┼şinden gelen y├╝ksek hacimli toparlanma tespit edildi. D├╝┼ş├╝┼ş sahteydi. B├╝y├╝k para giri┼şi var, <b>g├╝├ğl├╝ bir AL sinyali</b> olabilir.
+                <b>Büyük Oyuncuların (Balinalar) Tuzağı:</b><br><br>
+                Küçük yatırımcılar hisse alırken zararı durdurmak için desteklerin hemen altına "Stop-Loss" emri koyarlar.<br><br>
+                Büyük fonlar yüklü mal toplamak istediklerinde, fiyatı bilerek bu desteklerin altına iterek küçük yatırımcının stoplarını <b>patlatır</b> ve panik satışı başlatır.<br><br>
+                Ortaya çıkan bu ucuz hisse havuzunu en dipten toplayan büyük oyuncu, ardından fiyatı hızla yukarı çeker (V Dönüşü).<br><br>
+                <span style="color:var(--accent-green); font-weight:bold;">Sistem Neden Uyardı?</span><br>
+                Grafikte aşağı yönlü sert bir iğne ve peşinden gelen yüksek hacimli toparlanma tespit edildi. Düşüş sahteydi. Büyük para girişi var, <b>güçlü bir AL sinyali</b> olabilir.
                 </div>
             `,
-            confirmButtonText: 'Anlad─▒m',
+            confirmButtonText: 'Anladım',
             background: 'var(--bg-base)',
             color: 'var(--text-main)',
             customClass: { popup: 'glass-panel', confirmButton: 'btn-primary' }
@@ -1386,7 +1386,7 @@ function bindDataToDashboard(report) {
     };
 
     let sweepText = orderFlow.Liquidity_Sweeps || "-";
-    if (sweepText.includes("L─░K─░D─░TE") || sweepText.includes("Likidite") || sweepText.includes("STOP")) {
+    if (sweepText.includes("LİKİDİTE") || sweepText.includes("Likidite") || sweepText.includes("STOP")) {
         document.getElementById('of-sweep').innerHTML = `<span style="color:var(--accent-yellow); font-weight:bold; cursor:pointer; border-bottom:1px dashed var(--accent-yellow);" onclick="showLiquidityPopup()">${sweepText} <i class="fa-solid fa-circle-info"></i></span>`;
     } else {
         setElText('of-sweep', sweepText);
@@ -1401,13 +1401,13 @@ function bindDataToDashboard(report) {
     const reliability = safeGet(report, "Section_18_Reliability", {});
     const options = safeGet(report, "Section_29_Options", {});
 
-    setElText('bt-cases', reliability.Analogues ? reliability.Analogues + " G├╝n" : "-");
+    setElText('bt-cases', reliability.Analogues ? reliability.Analogues + " Gün" : "-");
     setElText('bt-hitrate', reliability.Hit_Rate || "-");
     setElText('mc-risk', reliability.Monte_Carlo_Risk || "-");
     
     // Average_Days_to_Target might be in Reliability if we put it there, wait, did I put it there?
     // Let's check executive.py later, but for now we'll safely try to get it.
-    setElText('bt-days', reliability.Average_Days_to_Target ? reliability.Average_Days_to_Target + " G├╝n" : "-");
+    setElText('bt-days', reliability.Average_Days_to_Target ? reliability.Average_Days_to_Target + " Gün" : "-");
 
     setElText('op-iv', options.Implied_Volatility || "-");
     setElText('op-theta', options.Theta_Risk || "-");
@@ -1424,7 +1424,7 @@ function bindDataToDashboard(report) {
     setElText('pos-avg', entry.Average_Cost || "-");
     const dashAtrEl = document.getElementById('dash-atr');
     if (dashAtrEl) {
-        dashAtrEl.textContent = ops.Dynamic_ATR ? "Ôé║" + ops.Dynamic_ATR : "-";
+        dashAtrEl.textContent = ops.Dynamic_ATR ? "₺" + ops.Dynamic_ATR : "-";
     }
     
     // Bind SVR Projections
@@ -1466,13 +1466,13 @@ function bindDataToDashboard(report) {
             const tr = document.createElement('tr');
             
             let color = "var(--text-main)";
-            if(data.SuperTrend === "Y├£KSEL─░┼Ş") color = "var(--accent-green)";
-            if(data.SuperTrend === "D├£┼Ş├£┼Ş") color = "var(--accent-red)";
+            if(data.SuperTrend === "YÜKSELİŞ") color = "var(--accent-green)";
+            if(data.SuperTrend === "DÜŞÜŞ") color = "var(--accent-red)";
             
             let periodName = period;
-            if (period === 'Weekly') periodName = "Haftal─▒k";
-            if (period === 'Monthly') periodName = "Ayl─▒k";
-            if (period === 'Month_6') periodName = "6 Ayl─▒k";
+            if (period === 'Weekly') periodName = "Haftalık";
+            if (period === 'Monthly') periodName = "Aylık";
+            if (period === 'Month_6') periodName = "6 Aylık";
             
             tr.innerHTML = `
                 <td style="font-weight:bold;">${periodName}</td>
@@ -1485,7 +1485,7 @@ function bindDataToDashboard(report) {
             mtfBody.appendChild(tr);
         }
     } else {
-         mtfBody.innerHTML = "<tr><td colspan='6' class='text-muted' style='text-align:center;'>MTF Verisi Bulunamad─▒</td></tr>";
+         mtfBody.innerHTML = "<tr><td colspan='6' class='text-muted' style='text-align:center;'>MTF Verisi Bulunamadı</td></tr>";
     }
 
     // Technical Indicators (Live)
@@ -1518,7 +1518,7 @@ function bindDataToDashboard(report) {
     // Ratios
     let sector = t(safeGet(report, "Section_22_FundamentalRatios.Sector", "-"));
     let industry = t(safeGet(report, "Section_22_FundamentalRatios.Industry", "-"));
-    setElText('fa-sector', (sector !== "-" && industry !== "-") ? `${sector} / ${industry}` : "Bulunamad─▒ (API)");
+    setElText('fa-sector', (sector !== "-" && industry !== "-") ? `${sector} / ${industry}` : "Bulunamadı (API)");
     
     setElText('fa-pe', t(safeGet(report, "Section_22_FundamentalRatios.P_E_Ratio", "-")));
     setElText('fa-pb', t(safeGet(report, "Section_22_FundamentalRatios.P_B_Ratio", "-")));
@@ -1574,12 +1574,12 @@ function bindDataToDashboard(report) {
     // 6. RAW JSON TAB
     setElText('raw-json-output', JSON.stringify(report, null, 2));
 
-    // 7. ALTIN VARANT DETAYLI S─░M├£LASYONUNU Y├£KLE
+    // 7. ALTIN VARANT DETAYLI SİMÜLASYONUNU YÜKLE
     try {
         let spotPrice = safeGet(report, "Section_01_Ident.Price", 100);
         loadDetailedVarantSim(currentSymbol, spotPrice);
     } catch(e) {
-        console.error("Detayl─▒ varant sim├╝lasyonu ba┼şlat─▒lamad─▒:", e);
+        console.error("Detaylı varant simülasyonu başlatılamadı:", e);
     }
 }
 
@@ -1595,7 +1595,7 @@ function drawScoreChart(confidence, risk) {
     chartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: ['G├╝ven Skoru', 'Risk Profili', 'Kalan'],
+            labels: ['Güven Skoru', 'Risk Profili', 'Kalan'],
             datasets: [{
                 data: [confidence, risk, 100 - (confidence + risk)/2],
                 backgroundColor: [
@@ -1647,7 +1647,7 @@ async function startRadar(type) {
         if (tbodyEl) tbodyEl.innerHTML = '';
 
         if (!data.results || data.results.length === 0) {
-            if (tbodyEl) tbodyEl.innerHTML = `<tr><td colspan='4' style='text-align:center; color: var(--text-muted); padding:2rem;'><i class="fa-solid fa-circle-exclamation text-yellow" style="font-size:1.5rem; display:block; margin-bottom:8px;"></i>Bu kategoride hen├╝z g├╝├ğl├╝ sinyal olu┼şmad─▒. Sistem piyasay─▒ izlemeye devam ediyor.</td></tr>`;
+            if (tbodyEl) tbodyEl.innerHTML = `<tr><td colspan='4' style='text-align:center; color: var(--text-muted); padding:2rem;'><i class="fa-solid fa-circle-exclamation text-yellow" style="font-size:1.5rem; display:block; margin-bottom:8px;"></i>Bu kategoride henüz güçlü sinyal oluşmadı. Sistem piyasayı izlemeye devam ediyor.</td></tr>`;
             return;
         }
 
@@ -1656,7 +1656,7 @@ async function startRadar(type) {
             let scoreValue = res.Score !== undefined ? res.Score : (res.Confidence_Score !== undefined ? res.Confidence_Score : 0);
             let scoreColor = scoreValue >= 75 ? 'var(--accent-green)' : (scoreValue >= 60 ? 'var(--accent-blue)' : (scoreValue >= 45 ? 'var(--accent-yellow)' : 'var(--accent-red)'));
             
-            let priceStr = res.Price ? `Ôé║${parseFloat(res.Price).toFixed(2)}` : '';
+            let priceStr = res.Price ? `₺${parseFloat(res.Price).toFixed(2)}` : '';
             if (res.Change_Pct !== undefined) {
                 let cp = parseFloat(res.Change_Pct);
                 let cpColor = cp > 0 ? 'var(--accent-green)' : (cp < 0 ? 'var(--accent-red)' : 'var(--text-muted)');
@@ -1668,7 +1668,7 @@ async function startRadar(type) {
             let trendIcon = (trendVal === 'BULLISH' || trendVal === 'YUKSEK') ? 'fa-arrow-trend-up' : ((trendVal === 'BEARISH' || trendVal === 'DUSUK') ? 'fa-arrow-trend-down' : 'fa-minus');
             let trendColor = (trendVal === 'BULLISH' || trendVal === 'YUKSEK') ? 'var(--accent-green)' : ((trendVal === 'BEARISH' || trendVal === 'DUSUK') ? 'var(--accent-red)' : 'var(--text-muted)');
 
-            let actionText = res.Action || (scoreValue >= 65 ? "G├£├çL├£ AL" : (scoreValue >= 50 ? "AL" : "─░ZLE"));
+            let actionText = res.Action || (scoreValue >= 65 ? "GÜÇLÜ AL" : (scoreValue >= 50 ? "AL" : "İZLE"));
             let actionBg = scoreValue >= 65 ? 'rgba(16,185,129,0.15)' : (scoreValue >= 50 ? 'rgba(56,189,248,0.15)' : 'rgba(234,179,8,0.15)');
             let actionColor = scoreValue >= 65 ? 'var(--accent-green)' : (scoreValue >= 50 ? 'var(--accent-blue)' : 'var(--accent-yellow)');
 
@@ -1682,8 +1682,8 @@ async function startRadar(type) {
                 <td>
                     <div style="display:flex; align-items:center; gap:8px;">
                         <span style="background:${actionBg}; color:${actionColor}; padding:3px 8px; border-radius:4px; font-weight:700; font-size:0.75rem;">${t(actionText)}</span>
-                        <button type="button" class="btn-primary" style="padding:0.25rem 0.5rem; font-size:0.75rem; border-radius:5px; display:inline-flex; align-items:center; gap:4px; cursor:pointer;" onclick="document.getElementById('symbol-input').value='${res.Symbol}'; analyzeSymbol();" title="Detayl─▒ AI Analizi Yap">
-                            <i class="fa-solid fa-chart-line"></i> ─░ncele
+                        <button type="button" class="btn-primary" style="padding:0.25rem 0.5rem; font-size:0.75rem; border-radius:5px; display:inline-flex; align-items:center; gap:4px; cursor:pointer;" onclick="document.getElementById('symbol-input').value='${res.Symbol}'; analyzeSymbol();" title="Detaylı AI Analizi Yap">
+                            <i class="fa-solid fa-chart-line"></i> İncele
                         </button>
                     </div>
                 </td>
@@ -1693,7 +1693,7 @@ async function startRadar(type) {
 
     } catch (error) {
         if (loadingEl) loadingEl.style.display = 'none';
-        if (tbodyEl) tbodyEl.innerHTML = `<tr><td colspan='4' class="text-red text-center" style="padding:1.5rem;">Tarama s─▒ras─▒nda ba─şlant─▒ hatas─▒: ${error.message || error}</td></tr>`;
+        if (tbodyEl) tbodyEl.innerHTML = `<tr><td colspan='4' class="text-red text-center" style="padding:1.5rem;">Tarama sırasında bağlantı hatası: ${error.message || error}</td></tr>`;
         if (resultsEl) resultsEl.style.display = 'table';
     }
 }
@@ -1713,20 +1713,20 @@ window.onload = function() {
     }
     
     fetchDashboardData();
-    // Her 5 saniyede bir arka plandaki scanner'in bitip bitmedi─şini kontrol et
+    // Her 5 saniyede bir arka plandaki scanner'in bitip bitmediğini kontrol et
     dashboardPollInterval = setInterval(fetchDashboardData, 5000);
     
-    // KULLANICI ─░STE─Ş─░: TABLOYA ├ç─░FT TIKLAYINCA TAM TABLOYU TEK G├ûSTER
+    // KULLANICI İSTEĞİ: TABLOYA ÇİFT TIKLAYINCA TAM TABLOYU TEK GÖSTER
     document.querySelectorAll('#radar-cards-grid .card').forEach(card => {
         card.ondblclick = function(e) {
-            // E─şer butona veya input'a ├ğift t─▒kland─▒ysa b├╝y├╝tme
+            // Eğer butona veya input'a çift tıklandıysa büyütme
             if (e.target.closest('button') || e.target.closest('input') || e.target.closest('a')) {
                 return;
             }
             this.classList.toggle('fullscreen-card');
         };
-        // Kullan─▒c─▒n─▒n anlamas─▒ i├ğin imleci pointer veya title ekleyebiliriz
-        card.title = "Tam ekran yapmak i├ğin ├ğift t─▒klay─▒n";
+        // Kullanıcının anlaması için imleci pointer veya title ekleyebiliriz
+        card.title = "Tam ekran yapmak için çift tıklayın";
     });
 };
 
@@ -1740,9 +1740,9 @@ async function fetchDashboardData() {
         const data = await response.json();
         
         if (data && data.status === 'success') {
-            setElText('total-analyzed-counter', `RADAR BUG├£NE KADAR ${data.total_analyzed || 0} VER─░Y─░ ANAL─░Z ETT─░`);
+            setElText('total-analyzed-counter', `RADAR BUGÜNE KADAR ${data.total_analyzed || 0} VERİYİ ANALİZ ETTİ`);
             
-            // Son tarama saatini ekranda g├Âster
+            // Son tarama saatini ekranda göster
             const lastUpdated = data.last_updated || "Bilinmiyor";
             const timeHTML = `<i class="fa-solid fa-clock"></i> Son Tarama: ${lastUpdated}`;
             const timeEl1 = document.getElementById('last-scan-time');
@@ -1750,11 +1750,11 @@ async function fetchDashboardData() {
             const timeEl2 = document.getElementById('arge-last-scan');
             if (timeEl2) timeEl2.innerHTML = timeHTML;
             
-            console.log('[DASHBOARD] API cevab─▒ geldi. Keys:', Object.keys(data.dashboard_data || {}), 
+            console.log('[DASHBOARD] API cevabı geldi. Keys:', Object.keys(data.dashboard_data || {}), 
                 'opp1h:', (data.dashboard_data?.opportunities_1h || []).length,
                 'opp:', (data.dashboard_data?.opportunities || []).length);
             
-            // E─şer veri doluysa tablolar─▒ doldur
+            // Eğer veri doluysa tabloları doldur
             if (data.dashboard_data && Object.keys(data.dashboard_data).length > 0) {
                 globalDashboardData = data.dashboard_data;
                 
@@ -1764,16 +1764,16 @@ async function fetchDashboardData() {
                 if (dashboardPollInterval) {
                     clearInterval(dashboardPollInterval);
                     dashboardPollInterval = null;
-                    // Arka plandaki periyodik g├╝ncellemeleri yakalamak i├ğin 30 saniyede bir kontrol et
+                    // Arka plandaki periyodik güncellemeleri yakalamak için 30 saniyede bir kontrol et
                     setInterval(fetchDashboardData, 30000);
                 }
             } else {
-                console.log('[DASHBOARD] Veri hen├╝z bo┼ş veya tarama devam ediyor...');
-                // H├ól├ó bo┼şsa kullan─▒c─▒y─▒ bilgilendir
+                console.log('[DASHBOARD] Veri henüz boş veya tarama devam ediyor...');
+                // Hâlâ boşsa kullanıcıyı bilgilendir
                 ["tb-signals-5m", "tb-tavan-adaylari", "tb-opportunities-1h", "tb-stay-away-1h", "tb-opportunities", "tb-gainers", "tb-losers", "tb-favorites", "tb-high_volume", "tb-low_volume"].forEach(id => {
                     const tbody = document.getElementById(id);
                     if (tbody && (tbody.innerText.includes("Taran") || tbody.innerHTML.includes("Taran"))) {
-                        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;" class="text-muted">Piyasa kapal─▒ veya tarama devam ediyor (00:00-09:00 aras─▒ veri bulunmayabilir).</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;" class="text-muted">Piyasa kapalı veya tarama devam ediyor (00:00-09:00 arası veri bulunmayabilir).</td></tr>`;
                     }
                 });
             }
@@ -1815,7 +1815,7 @@ function renderAllDashboardTables() {
         'low_volume': 'tb-low_volume'
     };
 
-    // Canl─▒ Giri┼ş Ekran─▒: Otonom Komite Liderleri ve Tavsiyelerini G├╝ncelle
+    // Canlı Giriş Ekranı: Otonom Komite Liderleri ve Tavsiyelerini Güncelle
     const homePicksContainer = document.getElementById('home-top-picks');
     if (homePicksContainer) {
         let bestItems = [];
@@ -1829,7 +1829,7 @@ function renderAllDashboardTables() {
             bestItems.push(...globalDashboardData['opportunities'].slice(0, 2));
         }
         
-        // Benzersiz sembolleri al ve ilk 3 tanesini yerle┼ştir
+        // Benzersiz sembolleri al ve ilk 3 tanesini yerleştir
         const uniqueSymbols = [];
         const seenSyms = new Set();
         for (let item of bestItems) {
@@ -1846,7 +1846,7 @@ function renderAllDashboardTables() {
             top3.forEach((item, idx) => {
                 let sVal = item.Score !== undefined ? item.Score : (item.Score_5 ? item.Score_5 * 20 : 85);
                 let col = colors[idx] || "var(--accent-green)";
-                let priceStr = item.Price ? `Ôé║${parseFloat(item.Price).toFixed(2)}` : '';
+                let priceStr = item.Price ? `₺${parseFloat(item.Price).toFixed(2)}` : '';
                 homePicksContainer.innerHTML += `
                     <button type="button" onclick="document.getElementById('symbol-input').value='${item.Symbol}'; analyzeSymbol();" style="flex:1; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:0.5rem; color:var(--text-light); cursor:pointer; font-size:0.78rem; text-align:center; transition:transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
                         <div style="font-weight:800; color:${col};">${item.Symbol} <span style="font-size:0.7rem; color:var(--text-light); font-weight:normal;">${priceStr}</span></div>
@@ -1868,7 +1868,7 @@ function renderAllDashboardTables() {
         }
 
         if (items.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;" class="text-muted">Bu kategoride sonu├ğ bulunamad─▒.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;" class="text-muted">Bu kategoride sonuç bulunamadı.</td></tr>`;
             continue;
         }
 
@@ -1888,21 +1888,21 @@ function renderAllDashboardTables() {
         });
         
         if (items.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;" class="text-muted">Filtreye uygun hisse bulunamad─▒ (EMA 50 & 200 ├£zeri).</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;" class="text-muted">Filtreye uygun hisse bulunamadı (EMA 50 & 200 Üzeri).</td></tr>`;
             continue;
         }
 
-        // "Squaze (yukar─▒ ok) + G├╝├ğl├╝ Giri┼ş + Pozitif Alpha" kontrol├╝ i├ğin yard─▒mc─▒ fonksiyon
+        // "Squaze (yukarı ok) + Güçlü Giriş + Pozitif Alpha" kontrolü için yardımcı fonksiyon
         const checkSuperGreen = (res) => {
             let alphaStrVal = res.Alpha_Str || "";
             let sqzStrVal = res.Short_Squeeze || "";
             let smStrVal = res.Smart_Money || "";
             return (alphaStrVal.includes("Pozitif") && 
-                (smStrVal.includes("Giri┼ş") || smStrVal.includes("Ak├╝m├╝lasyon")) &&
-                (sqzStrVal.includes("Y├╝kseliyor") || sqzStrVal.includes("Patlatma")));
+                (smStrVal.includes("Giriş") || smStrVal.includes("Akümülasyon")) &&
+                (sqzStrVal.includes("Yükseliyor") || sqzStrVal.includes("Patlatma")));
         };
 
-        // E─şer bu Tavan Adaylar─▒ veya AR-GE tablosu ise, Super Green olanlar─▒ en ba┼şa al
+        // Eğer bu Tavan Adayları veya AR-GE tablosu ise, Super Green olanları en başa al
         if (cat === 'tavan_adaylari' || cat === 'arge_tavan') {
             let superGreenItems = [];
             let regularItems = [];
@@ -1917,12 +1917,12 @@ function renderAllDashboardTables() {
         }
 
         tbody.innerHTML = '';
-        // 10'a kadar hisse g├Âster
+        // 10'a kadar hisse göster
         const displayItems = items.slice(0, 10);
         let timeStr = new Date().toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'});
         const headerTimeSpan = document.getElementById('time-' + (cat === 'opportunities_1h' ? 'opportunities-1h' : (cat === 'stay_away_1h' ? 'stay-away-1h' : cat)));
         if (headerTimeSpan) {
-            headerTimeSpan.innerText = "(G├╝ncelleme: " + timeStr + ")";
+            headerTimeSpan.innerText = "(Güncelleme: " + timeStr + ")";
         }
 
         displayItems.forEach(res => {
@@ -1933,7 +1933,7 @@ function renderAllDashboardTables() {
             
             let symStr = res.Symbol;
             if (isSuperGreen) {
-                symStr += ` <i class="fa-solid fa-rocket" style="color:var(--accent-green); text-shadow: 0 0 8px var(--accent-green);" title="S├╝per Kesi┼şim: SqueezeÔ¼å´©Å + Para Giri┼şi + Pozitif Alpha"></i>`;
+                symStr += ` <i class="fa-solid fa-rocket" style="color:var(--accent-green); text-shadow: 0 0 8px var(--accent-green);" title="Süper Kesişim: Squeeze⬆️ + Para Girişi + Pozitif Alpha"></i>`;
             }
             
             // Eger bu hisse icin 5m RSI sinyali varsa blink ikonu ekle
@@ -1954,12 +1954,12 @@ function renderAllDashboardTables() {
                         mtfMatch = globalDashboardData['mtf_results'].some(m => m.Symbol === res.Symbol);
                     }
                     if (mtfMatch && (cat === 'tavan_adaylari' || cat === 'opportunities_1h')) {
-                        symStr += ` <span style="background: linear-gradient(90deg, #fbbf24, #d97706); color: black; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; margin-left: 5px; box-shadow: 0 0 10px rgba(251,191,36,0.6); animation: pulse 2s infinite;" title="Alt─▒n F─▒rsat: Hem Tavan/1S Radar─▒ hem de MTF ─░vme (1S/15D) Radar─▒ e┼şle┼şti!"><i class="fa-solid fa-crown"></i> ALTIN</span>`;
+                        symStr += ` <span style="background: linear-gradient(90deg, #fbbf24, #d97706); color: black; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; margin-left: 5px; box-shadow: 0 0 10px rgba(251,191,36,0.6); animation: pulse 2s infinite;" title="Altın Fırsat: Hem Tavan/1S Radarı hem de MTF İvme (1S/15D) Radarı eşleşti!"><i class="fa-solid fa-crown"></i> ALTIN</span>`;
                         tr.style.borderLeft = "3px solid #fbbf24";
                         tr.style.backgroundColor = "rgba(251,191,36,0.05)";
                     }
             
-            let priceStr = res.Price ? "Ôé║" + parseFloat(res.Price).toFixed(2) : "-";
+            let priceStr = res.Price ? "₺" + parseFloat(res.Price).toFixed(2) : "-";
             
             if (res.Change_Pct !== undefined && cat !== 'gainers' && cat !== 'losers' && cat !== 'opportunities_1h') {
                 let p_pct = parseFloat(res.Change_Pct);
@@ -1973,21 +1973,21 @@ function renderAllDashboardTables() {
             if (cat === 'arge_tavan') {
                 // 1. Aday Hisse & Fiyat
                 
-                // 2. Alpha (BIST Ayr─▒┼şma)
-                let alphaStr = res.Alpha_Str || "Hesaplan─▒yor";
+                // 2. Alpha (BIST Ayrışma)
+                let alphaStr = res.Alpha_Str || "Hesaplanıyor";
                 let alphaColor = alphaStr.includes("Pozitif") ? "var(--accent-green)" : (alphaStr.includes("Negatif") ? "var(--accent-red)" : "var(--accent-yellow)");
                 let alphaIcon = alphaStr.includes("Pozitif") ? "fa-arrow-trend-up" : (alphaStr.includes("Negatif") ? "fa-arrow-trend-down" : "fa-minus");
                 let alphaEl = `<span style="color:${alphaColor}; font-weight:800; font-size:0.8rem;"><i class="fa-solid ${alphaIcon}"></i> ${alphaStr}</span>`;
                 
-                // 3. Squeeze (┼Şort)
-                let sqzStr = res.Short_Squeeze || "Hesaplan─▒yor";
-                let sqzColor = sqzStr.includes("Patlatma") ? "var(--accent-red)" : (sqzStr.includes("Y├╝kseliyor") ? "var(--accent-yellow)" : "var(--text-muted)");
-                let sqzIcon = sqzStr.includes("Patlatma") ? "fa-fire fa-beat" : (sqzStr.includes("Y├╝kseliyor") ? "fa-arrow-up" : "fa-minus");
+                // 3. Squeeze (Şort)
+                let sqzStr = res.Short_Squeeze || "Hesaplanıyor";
+                let sqzColor = sqzStr.includes("Patlatma") ? "var(--accent-red)" : (sqzStr.includes("Yükseliyor") ? "var(--accent-yellow)" : "var(--text-muted)");
+                let sqzIcon = sqzStr.includes("Patlatma") ? "fa-fire fa-beat" : (sqzStr.includes("Yükseliyor") ? "fa-arrow-up" : "fa-minus");
                 let sqzEl = `<span style="color:${sqzColor}; font-weight:800; font-size:0.8rem;"><i class="fa-solid ${sqzIcon}"></i> ${sqzStr}</span>`;
 
-                // 4. Ak─▒ll─▒ Para (CMF)
-                let smStr = res.Smart_Money || "Hesaplan─▒yor";
-                let smColor = smStr.includes("Giri┼ş") || smStr.includes("Ak├╝m├╝lasyon") ? "var(--accent-green)" : (smStr.includes("├ç─▒k─▒┼ş") || smStr.includes("Da─ş─▒t─▒m") ? "var(--accent-red)" : "var(--accent-yellow)");
+                // 4. Akıllı Para (CMF)
+                let smStr = res.Smart_Money || "Hesaplanıyor";
+                let smColor = smStr.includes("Giriş") || smStr.includes("Akümülasyon") ? "var(--accent-green)" : (smStr.includes("Çıkış") || smStr.includes("Dağıtım") ? "var(--accent-red)" : "var(--accent-yellow)");
                 let smEl = `<span style="color:${smColor}; font-weight:800; font-size:0.8rem;">${smStr}</span>`;
                 
                 // 5. Domino Etkisi
@@ -1996,7 +1996,7 @@ function renderAllDashboardTables() {
                 let domIcon = domStr !== "Yok" ? "fa-chess-knight" : "fa-ban";
                 let domEl = `<span style="color:${domColor}; font-weight:700; font-size:0.75rem;"><i class="fa-solid ${domIcon}"></i> ${domStr}</span>`;
 
-                // 6. Patlama Olas─▒l─▒─ş─▒ (P-Score)
+                // 6. Patlama Olasılığı (P-Score)
                 let pScore = res.Score !== undefined ? res.Score : 0;
                 let pScoreColor = pScore >= 80 ? 'var(--accent-green)' : (pScore >= 50 ? 'var(--accent-yellow)' : 'var(--accent-red)');
                 let pScoreStr = `
@@ -2014,7 +2014,7 @@ function renderAllDashboardTables() {
                     <td>${domEl}</td>
                     <td>${pScoreStr}</td>
                     <td>
-                        <button class="btn btn-sm" onclick="openGraphicTab('${res.Symbol}')" title="Detayl─▒ Analiz"><i class="fa-solid fa-chart-line"></i></button>
+                        <button class="btn btn-sm" onclick="openGraphicTab('${res.Symbol}')" title="Detaylı Analiz"><i class="fa-solid fa-chart-line"></i></button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -2023,31 +2023,31 @@ function renderAllDashboardTables() {
                 let scoreValue = res.Score !== undefined ? res.Score : 0;
                 let scoreColor = scoreValue >= 85 ? 'var(--accent-green)' : (scoreValue >= 75 ? 'var(--accent-yellow)' : 'var(--text-muted)');
                 
-                // Evre Rozeti (Phase Badge) & V-D├Ân├╝┼ş
+                // Evre Rozeti (Phase Badge) & V-Dönüş
                 let phaseBadge = res.Phase_Badge || 'TAVAN';
                 let phaseColor = res.Phase_Color || 'green';
                 let phaseBg = phaseColor === 'red' ? 'rgba(239, 68, 68, 0.2)' : (phaseColor === 'yellow' ? 'rgba(234, 179, 8, 0.2)' : 'rgba(16, 185, 129, 0.2)');
                 let phaseTxtColor = phaseColor === 'red' ? 'var(--accent-red)' : (phaseColor === 'yellow' ? 'var(--accent-yellow)' : 'var(--accent-green)');
                 let phaseIcon = phaseColor === 'red' ? 'fa-lock' : (phaseColor === 'yellow' ? 'fa-bolt' : 'fa-seedling');
-                let phaseTooltip = phaseBadge.includes("K─░L─░TLEME") ? "Tavana kilitlenme a┼şamas─▒. Al─▒m riski y├╝ksek." : (phaseBadge.includes("─░VMELENME") ? "Hacimle birlikte sert yukar─▒ momentum ba┼şlad─▒." : "Trendin ba┼şlang─▒c─▒. Y├╝ksek kazan├ğ potansiyeli.");
+                let phaseTooltip = phaseBadge.includes("KİLİTLEME") ? "Tavana kilitlenme aşaması. Alım riski yüksek." : (phaseBadge.includes("İVMELENME") ? "Hacimle birlikte sert yukarı momentum başladı." : "Trendin başlangıcı. Yüksek kazanç potansiyeli.");
                 let evreStr = `<span title="${phaseTooltip}" style="background:${phaseBg}; color:${phaseTxtColor}; padding:3px 7px; border-radius:4px; font-weight:700; font-size:0.72rem; white-space:nowrap; cursor:help;"><i class="fa-solid ${phaseIcon}"></i> ${phaseBadge}</span>`;
                 
-                // ­şøí´©Å Anti-Trap Shield (Tuzak ├ûnleme Rozeti) & Teyit Skoru
+                // 🛡️ Anti-Trap Shield (Tuzak Önleme Rozeti) & Teyit Skoru
                 if (res.Anti_Trap_Badge) {
                     let atColor = res.Anti_Trap_Color || '#10b981';
                     let atBg = atColor === '#10b981' ? 'rgba(16, 185, 129, 0.15)' : (atColor === '#ef4444' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(234, 179, 8, 0.15)');
-                    evreStr += `<div style="margin-top:3px;"><span title="Tuzak Kalkan─▒: Kurumsal para giri┼şi ve mum formasyonu ile al─▒m onay─▒." style="background:${atBg}; color:${atColor}; border:1px solid ${atColor}; padding:2px 5px; border-radius:3px; font-size:0.68rem; font-weight:700; white-space:nowrap; cursor:help;">${res.Anti_Trap_Badge}</span></div>`;
+                    evreStr += `<div style="margin-top:3px;"><span title="Tuzak Kalkanı: Kurumsal para girişi ve mum formasyonu ile alım onayı." style="background:${atBg}; color:${atColor}; border:1px solid ${atColor}; padding:2px 5px; border-radius:3px; font-size:0.68rem; font-weight:700; white-space:nowrap; cursor:help;">${res.Anti_Trap_Badge}</span></div>`;
                 }
 
                 if (res.ORB_Breakout) {
-                    evreStr += `<div style="margin-top:2px;"><span title="A├ğ─▒l─▒┼ş Aral─▒─ş─▒ K─▒r─▒l─▒m─▒ (ORB): Hisse g├╝n├╝n ilk saatlerindeki tepe noktas─▒n─▒ hacimli ┼şekilde yukar─▒ k─▒rd─▒." style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; border:1px solid #38bdf8; padding:1px 4px; border-radius:3px; font-size:0.66rem; font-weight:700; cursor:help;"><i class="fa-solid fa-bullseye"></i> ORB A├ğ─▒l─▒┼ş K─▒r─▒l─▒m─▒</span></div>`;
+                    evreStr += `<div style="margin-top:2px;"><span title="Açılış Aralığı Kırılımı (ORB): Hisse günün ilk saatlerindeki tepe noktasını hacimli şekilde yukarı kırdı." style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; border:1px solid #38bdf8; padding:1px 4px; border-radius:3px; font-size:0.66rem; font-weight:700; cursor:help;"><i class="fa-solid fa-bullseye"></i> ORB Açılış Kırılımı</span></div>`;
                 }
 
                 if (res.V_Reversal) {
-                    evreStr += `<div style="margin-top:3px;"><span title="V-D├Ân├╝┼ş: G├╝n i├ği dip seviyesinden ├ğok h─▒zl─▒ ve g├╝├ğl├╝ bir ┼şekilde toparlan─▒p ivme kazand─▒." style="background:rgba(168, 85, 247, 0.2); color:#c084fc; padding:2px 5px; border-radius:3px; font-size:0.68rem; font-weight:700; cursor:help;"><i class="fa-solid fa-bolt-lightning"></i> V-D├Ân├╝┼ş +%${(res.V_Power||0).toFixed(1)}</span></div>`;
+                    evreStr += `<div style="margin-top:3px;"><span title="V-Dönüş: Gün içi dip seviyesinden çok hızlı ve güçlü bir şekilde toparlanıp ivme kazandı." style="background:rgba(168, 85, 247, 0.2); color:#c084fc; padding:2px 5px; border-radius:3px; font-size:0.68rem; font-weight:700; cursor:help;"><i class="fa-solid fa-bolt-lightning"></i> V-Dönüş +%${(res.V_Power||0).toFixed(1)}</span></div>`;
                 }
                 
-                // Tavan Fiyat─▒, Kalan % ve ETA
+                // Tavan Fiyatı, Kalan % ve ETA
                 let tavanPVal = res.Ceiling_Price || (res.Position && res.Position.TP2 ? res.Position.TP2 : null);
                 let curPVal = res.Price || (res.Position && res.Position.Entry ? res.Position.Entry : null);
                 let distPct = "-";
@@ -2056,41 +2056,41 @@ function renderAllDashboardTables() {
                 } else if (tavanPVal && curPVal && curPVal > 0) {
                     distPct = (((tavanPVal - curPVal) / curPVal) * 100).toFixed(1);
                 }
-                let tavanP = tavanPVal ? "Ôé║" + parseFloat(tavanPVal).toFixed(2) : "-";
+                let tavanP = tavanPVal ? "₺" + parseFloat(tavanPVal).toFixed(2) : "-";
                 let etaVal = res.ETA || (res.Position ? res.Position.Projection : "-");
                 let tavanStr = `<div style="font-size:0.88rem; font-weight:700; color:var(--accent-green); font-family:monospace;">${tavanP}</div>
                                 <div style="font-size:0.75rem; color:var(--text-muted);">Kalan: <b style="color:var(--accent-blue);">+${distPct}%</b></div>
                                 <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;" title="Tahmini Tavan Saati"><i class="fa-regular fa-clock"></i> ${etaVal}</div>`;
                 
-                // Hacim Katlama & Mum G├╝c├╝ & VWAP & Domino
+                // Hacim Katlama & Mum Gücü & VWAP & Domino
                 let volM = res.Vol_Multiplier !== undefined && !isNaN(parseFloat(res.Vol_Multiplier)) ? parseFloat(res.Vol_Multiplier).toFixed(1) : "1.0";
                 let volColor = volM >= 2.5 ? 'var(--accent-green)' : (volM >= 1.5 ? 'var(--accent-yellow)' : 'var(--text-muted)');
                 let hacimStr = `<span style="color:${volColor}; font-weight:700; font-size:0.75rem;"><i class="fa-solid fa-fire"></i> ${volM}x Hacim</span>`;
                 
                 if (res.VWAP) {
-                    hacimStr += `<div style="font-size:0.68rem; color:var(--text-muted); margin-top:2px;" title="Hacim A─ş─▒rl─▒kl─▒ Ortalama Fiyat">ÔÜû´©Å VWAP: Ôé║${parseFloat(res.VWAP).toFixed(2)}</div>`;
+                    hacimStr += `<div style="font-size:0.68rem; color:var(--text-muted); margin-top:2px;" title="Hacim Ağırlıklı Ortalama Fiyat">⚖️ VWAP: ₺${parseFloat(res.VWAP).toFixed(2)}</div>`;
                 }
 
                 if (res.Breakdown_Risk) {
-                    hacimStr += `<br><span style="background:rgba(239, 68, 68, 0.25); color:var(--accent-red); padding:1px 5px; border-radius:3px; font-size:0.68rem; font-weight:800;"><i class="fa-solid fa-triangle-exclamation"></i> ├ç├ûZ├£LME R─░SK─░</span>`;
+                    hacimStr += `<br><span style="background:rgba(239, 68, 68, 0.25); color:var(--accent-red); padding:1px 5px; border-radius:3px; font-size:0.68rem; font-weight:800;"><i class="fa-solid fa-triangle-exclamation"></i> ÇÖZÜLME RİSKİ</span>`;
                 } else if (res.Trap_Risk) {
                     hacimStr += `<br><span style="background:rgba(239, 68, 68, 0.2); color:var(--accent-red); padding:1px 5px; border-radius:3px; font-size:0.68rem; font-weight:700;"><i class="fa-solid fa-triangle-exclamation"></i> Tuzak Riski</span>`;
                 } else if (res.Candle_Strength && res.Candle_Strength.includes('Marubozu')) {
-                    hacimStr += `<br><span style="background:rgba(16, 185, 129, 0.2); color:var(--accent-green); padding:1px 5px; border-radius:3px; font-size:0.68rem; font-weight:700;"><i class="fa-solid fa-dumbbell"></i> Bo─şa G├╝c├╝</span>`;
+                    hacimStr += `<br><span style="background:rgba(16, 185, 129, 0.2); color:var(--accent-green); padding:1px 5px; border-radius:3px; font-size:0.68rem; font-weight:700;"><i class="fa-solid fa-dumbbell"></i> Boğa Gücü</span>`;
                 }
                 
                 if (res.Domino_Sector && res.Domino_Peers && res.Domino_Peers.length > 0) {
                     let pStr = res.Domino_Peers.slice(0, 2).map(p => '#' + p).join(' ');
-                    hacimStr += `<div style="font-size:0.68rem; color:#94a3b8; margin-top:2px;" title="Sekt├Ârel Domino Karde┼ş Hisseleri"><i class="fa-solid fa-chess-knight"></i> ${res.Domino_Sector}: ${pStr}</div>`;
+                    hacimStr += `<div style="font-size:0.68rem; color:#94a3b8; margin-top:2px;" title="Sektörel Domino Kardeş Hisseleri"><i class="fa-solid fa-chess-knight"></i> ${res.Domino_Sector}: ${pStr}</div>`;
                 }
                 
-                // YEN─░: Sinyal Motoru ve FOMO
+                // YENİ: Sinyal Motoru ve FOMO
                 let sigQ = res.Signal_Quality || `${scoreValue}/100`;
                 let sigColor = scoreColor;
                 if (res.Signal_Quality) {
-                    if (res.Signal_Quality.includes("├çOK G├£├çL├£ AL")) sigColor = "var(--accent-green)";
-                    else if (res.Signal_Quality.includes("G├£├çL├£ AL")) sigColor = "var(--accent-green)";
-                    else if (res.Signal_Quality.includes("─░ZLE")) sigColor = "var(--accent-yellow)";
+                    if (res.Signal_Quality.includes("ÇOK GÜÇLÜ AL")) sigColor = "var(--accent-green)";
+                    else if (res.Signal_Quality.includes("GÜÇLÜ AL")) sigColor = "var(--accent-green)";
+                    else if (res.Signal_Quality.includes("İZLE")) sigColor = "var(--accent-yellow)";
                     else if (res.Signal_Quality.includes("ZAYIF")) sigColor = "var(--accent-orange)";
                     else if (res.Signal_Quality.includes("UZAK DUR")) sigColor = "var(--accent-red)";
                 }
@@ -2098,7 +2098,7 @@ function renderAllDashboardTables() {
                 let scoreStr = `<div style="font-weight:800; color:${sigColor}; font-size:1.0rem;">${sigQ}</div>`;
                 
                 if (res.FOMO_Level) {
-                    scoreStr += `<div style="font-size:0.7rem; color:${res.FOMO_Color}; font-weight:700; margin-top:4px;" title="FOMO ─░ndikat├Âr├╝: ${res.FOMO_Score.toFixed(1)}"><i class="fa-solid fa-fire-flame-curved"></i> FOMO: ${res.FOMO_Level}</div>`;
+                    scoreStr += `<div style="font-size:0.7rem; color:${res.FOMO_Color}; font-weight:700; margin-top:4px;" title="FOMO İndikatörü: ${res.FOMO_Score.toFixed(1)}"><i class="fa-solid fa-fire-flame-curved"></i> FOMO: ${res.FOMO_Level}</div>`;
                 }
 
                 if (res.Teyit_Score) {
@@ -2108,19 +2108,19 @@ function renderAllDashboardTables() {
                 
                 if (res.Factor_Breakdown) {
                     let breakdownHtml = res.Factor_Breakdown.map(f => `${f.Factor}: <b style="color:${f.Score > 0 ? 'var(--accent-green)' : 'var(--accent-red)'}">${f.Score > 0 ? '+' : ''}${f.Score}</b>`).join('<br>');
-                    scoreStr += `<div style="font-size:0.65rem; color:var(--text-muted); margin-top:4px; max-height:45px; overflow-y:auto; line-height:1.2; border:1px solid rgba(255,255,255,0.1); padding:3px; border-radius:4px;" title="Puanlama Detaylar─▒">${breakdownHtml}</div>`;
+                    scoreStr += `<div style="font-size:0.65rem; color:var(--text-muted); margin-top:4px; max-height:45px; overflow-y:auto; line-height:1.2; border:1px solid rgba(255,255,255,0.1); padding:3px; border-radius:4px;" title="Puanlama Detayları">${breakdownHtml}</div>`;
                 }
                 
                 if (res.Streak_Score) {
-                    scoreStr += `<div style="font-size:0.68rem; color:#38bdf8;" title="├çift Tavan ─░htimali"><i class="fa-solid fa-link"></i> %${res.Streak_Score} Seri</div>`;
+                    scoreStr += `<div style="font-size:0.68rem; color:#38bdf8;" title="Çift Tavan İhtimali"><i class="fa-solid fa-link"></i> %${res.Streak_Score} Seri</div>`;
                 }
                 
-                // YEN─░: ─░ndikat├Âr G├╝├ğlendirmesi (RSI & MACD)
+                // YENİ: İndikatör Güçlendirmesi (RSI & MACD)
                 if (res.Indicators && res.Indicators.RSI) {
                     let rsiVal = res.Indicators.RSI;
                     let rsiColor = rsiVal >= 70 ? 'var(--accent-red)' : (rsiVal <= 40 ? 'var(--accent-green)' : 'var(--text-muted)');
                     let macdIcon = res.Indicators.MACD_Positive ? '<i class="fa-solid fa-arrow-trend-up" style="color:var(--accent-green)"></i>' : '<i class="fa-solid fa-arrow-trend-down" style="color:var(--accent-red)"></i>';
-                    scoreStr += `<div style="font-size:0.7rem; color:${rsiColor}; margin-top:4px; display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,0.05); padding:2px 5px; border-radius:4px; border:1px solid rgba(255,255,255,0.1);" title="Anl─▒k RSI ve MACD Trendi"><span>RSI:${rsiVal}</span> ${macdIcon}</div>`;
+                    scoreStr += `<div style="font-size:0.7rem; color:${rsiColor}; margin-top:4px; display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,0.05); padding:2px 5px; border-radius:4px; border:1px solid rgba(255,255,255,0.1);" title="Anlık RSI ve MACD Trendi"><span>RSI:${rsiVal}</span> ${macdIcon}</div>`;
                 }
 
                 if (res.Warrant_Match) {
@@ -2130,7 +2130,7 @@ function renderAllDashboardTables() {
                 if (res.Position) {
                     scoreStr += `
                         <div style="font-size:0.7rem; display:flex; gap:4px; flex-wrap:wrap; margin-top:2px;">
-                            <span style="background:rgba(239, 68, 68, 0.15); color:var(--accent-red); padding:1px 4px; border-radius:3px; font-weight:600;" title="─░z S├╝ren Stop"><i class="fa-solid fa-shield-halved"></i> Ôé║${res.Position.SL}</span>
+                            <span style="background:rgba(239, 68, 68, 0.15); color:var(--accent-red); padding:1px 4px; border-radius:3px; font-weight:600;" title="İz Süren Stop"><i class="fa-solid fa-shield-halved"></i> ₺${res.Position.SL}</span>
                         </div>
                     `;
                 }
@@ -2143,8 +2143,8 @@ function renderAllDashboardTables() {
                     <td>${hacimStr}</td>
                     <td>${scoreStr}</td>
                     <td>
-                        <button type="button" class="btn-primary" style="padding:0.3rem 0.6rem; font-size:0.75rem; border-radius:6px; border:none; color:white; display:flex; align-items:center; gap:4px; cursor:pointer; background:linear-gradient(135deg, #ef4444, #b91c1c); box-shadow:0 2px 6px rgba(239,68,68,0.3);" onclick="document.getElementById('symbol-input').value='${res.Symbol}'; analyzeSymbol();" title="Tavan Hedefi, Stop Seviyeleri ve Alt─▒n Varantlar─▒ ─░ncele">
-                            <i class="fa-solid fa-rocket"></i> ─░ncele
+                        <button type="button" class="btn-primary" style="padding:0.3rem 0.6rem; font-size:0.75rem; border-radius:6px; border:none; color:white; display:flex; align-items:center; gap:4px; cursor:pointer; background:linear-gradient(135deg, #ef4444, #b91c1c); box-shadow:0 2px 6px rgba(239,68,68,0.3);" onclick="document.getElementById('symbol-input').value='${res.Symbol}'; analyzeSymbol();" title="Tavan Hedefi, Stop Seviyeleri ve Altın Varantları İncele">
+                            <i class="fa-solid fa-rocket"></i> İncele
                         </button>
                     </td>
                 `;
@@ -2163,7 +2163,7 @@ function renderAllDashboardTables() {
                 }
                 
                 let barsAgoMain = res.Crossover_Bars_Ago !== undefined ? res.Crossover_Bars_Ago : '?';
-                statusStr = `<span style="font-size:0.75rem; color:var(--text-muted);">­şöÇ ${barsAgoMain}s ├Ânce | ADX:${res.ADX_Val} RSI:${res.RSI_Val}</span>`;
+                statusStr = `<span style="font-size:0.75rem; color:var(--text-muted);">🔀 ${barsAgoMain}s önce | ADX:${res.ADX_Val} RSI:${res.RSI_Val}</span>`;
             } else if (cat === 'stay_away_1h') {
                 let s5 = res.Score_5 !== undefined ? res.Score_5 : 0;
                 let sColor = s5 === 5 ? 'var(--accent-red)' : (s5 >= 4 ? '#f87171' : 'var(--accent-yellow)');
@@ -2177,7 +2177,7 @@ function renderAllDashboardTables() {
                 }
                 
                 let barsAgoMain = res.Crossover_Bars_Ago !== undefined ? res.Crossover_Bars_Ago : '?';
-                statusStr = `<span style="font-size:0.75rem; color:var(--text-muted);">­şôë ${barsAgoMain}s ├Ânce | ADX:${res.ADX_Val} RSI:${res.RSI_Val}</span>`;
+                statusStr = `<span style="font-size:0.75rem; color:var(--text-muted);">📉 ${barsAgoMain}s önce | ADX:${res.ADX_Val} RSI:${res.RSI_Val}</span>`;
             } else {
                 let scoreValue = res.Score !== undefined ? res.Score : 0;
                 let scoreColor = scoreValue >= 70 ? 'var(--accent-green)' : (scoreValue >= 50 ? 'var(--accent-yellow)' : 'var(--accent-red)');
@@ -2190,7 +2190,7 @@ function renderAllDashboardTables() {
                     statusStr = `<span style="color:${c}; font-weight:bold;">${sign}%${Math.abs(pct).toFixed(2)}</span>`;
                 } else if (cat === 'high_volume' || cat === 'low_volume') {
                     let mv = res.Money_Volume ? parseFloat(res.Money_Volume) : 0;
-                    let mStr = mv > 1000000 ? (mv / 1000000).toFixed(1) + "M Ôé║" : mv.toFixed(0) + " Ôé║";
+                    let mStr = mv > 1000000 ? (mv / 1000000).toFixed(1) + "M ₺" : mv.toFixed(0) + " ₺";
                     statusStr = `<span style="color:var(--text-muted);">${mStr}</span>`;
                 } else {
                     statusStr = `<span style="color:var(--accent-green)">AL</span>`;
@@ -2203,8 +2203,8 @@ function renderAllDashboardTables() {
                 <td>${scoreContent}</td>
                 <td>${statusStr}</td>
                     <td>
-                        <button type="button" class="btn-primary" style="padding:0.3rem 0.6rem; font-size:0.75rem; border-radius:6px; border:none; color:white; display:flex; align-items:center; gap:4px; cursor:pointer; background:linear-gradient(135deg, #3b82f6, #1d4ed8); box-shadow:0 2px 6px rgba(59,130,246,0.3);" onclick="document.getElementById('symbol-input').value='${res.Symbol}'; analyzeSymbol();" title="Detayl─▒ AI Analizi, Varant Getiri Matrisi ve Grafi─şi A├ğ">
-                            <i class="fa-solid fa-chart-line"></i> ─░ncele
+                        <button type="button" class="btn-primary" style="padding:0.3rem 0.6rem; font-size:0.75rem; border-radius:6px; border:none; color:white; display:flex; align-items:center; gap:4px; cursor:pointer; background:linear-gradient(135deg, #3b82f6, #1d4ed8); box-shadow:0 2px 6px rgba(59,130,246,0.3);" onclick="document.getElementById('symbol-input').value='${res.Symbol}'; analyzeSymbol();" title="Detaylı AI Analizi, Varant Getiri Matrisi ve Grafiği Aç">
+                            <i class="fa-solid fa-chart-line"></i> İncele
                         </button>
                     </td>
                 `;
@@ -2212,19 +2212,19 @@ function renderAllDashboardTables() {
         });
     }
     
-    // Ayr─▒ca Radar Sayfas─▒ndaki 1 Saatlik F─▒rsatlar tablosunu da g├╝ncelle
+    // Ayrıca Radar Sayfasındaki 1 Saatlik Fırsatlar tablosunu da güncelle
     const opp1hTbody = document.getElementById('opp1h-tbody');
     if (opp1hTbody) {
         const opp1hItems = globalDashboardData['opportunities_1h'] || [];
         if (opp1hItems.length === 0) {
-            opp1hTbody.innerHTML = `<tr><td colspan="5" style="text-align: center;" class="text-muted">Bu kategoride sonu├ğ bulunamad─▒.</td></tr>`;
+            opp1hTbody.innerHTML = `<tr><td colspan="5" style="text-align: center;" class="text-muted">Bu kategoride sonuç bulunamadı.</td></tr>`;
         } else {
             opp1hTbody.innerHTML = '';
             opp1hItems.forEach(res => {
                 let tr = document.createElement('tr');
                 let s5 = res.Score_5 !== undefined ? res.Score_5 : 0;
                 let sColor = s5 === 5 ? 'var(--accent-green)' : (s5 >= 4 ? 'var(--accent-blue)' : 'var(--accent-yellow)');
-                let priceStr = res.Price ? "Ôé║" + parseFloat(res.Price).toFixed(2) : "-";
+                let priceStr = res.Price ? "₺" + parseFloat(res.Price).toFixed(2) : "-";
                 
                 if (res.Daily_Change_Pct !== undefined) {
                     let d_pct = parseFloat(res.Daily_Change_Pct);
@@ -2236,11 +2236,11 @@ function renderAllDashboardTables() {
                 let details = [];
                 if (res.EMA_Gap_Pct !== undefined) {
                     let barsAgo = res.Crossover_Bars_Ago !== undefined ? res.Crossover_Bars_Ago : '?';
-                    details.push(`<span style='color:#10b981; font-weight:bold; border:1px solid #10b981; padding:2px 4px; border-radius:4px; font-size:0.75rem;'>­şöÇ Kesi┼şim ${barsAgo} saat ├Ânce | Fark: %${res.EMA_Gap_Pct}</span>`);
+                    details.push(`<span style='color:#10b981; font-weight:bold; border:1px solid #10b981; padding:2px 4px; border-radius:4px; font-size:0.75rem;'>🔀 Kesişim ${barsAgo} saat önce | Fark: %${res.EMA_Gap_Pct}</span>`);
                 }
                 if (res.MACD_Match) details.push("<span style='color:#f59e0b'>MACD AL</span>");
                 if (res.RSI_Match) details.push("<span style='color:#10b981'>RSI>50</span>");
-                if (res.ADX_Match) details.push("<span style='color:#8b5cf6'>G├╝├ğl├╝ Trend</span>");
+                if (res.ADX_Match) details.push("<span style='color:#8b5cf6'>Güçlü Trend</span>");
                 if (res.MOM_Match) details.push("<span style='color:#22c55e'>Momentum+</span>");
                 
                 tr.innerHTML = `
@@ -2248,7 +2248,7 @@ function renderAllDashboardTables() {
                     <td style="font-family:monospace; font-weight:600;font-size:1.1rem;">${priceStr}</td>
                     <td style="color:${sColor};font-weight:700;font-size:1.1rem;">${s5} / 5</td>
                     <td style="font-size:0.85rem; line-height:1.4;">${details.join('<br>')}</td>
-                    <td><a href="/?symbol=${res.Symbol}&tab=graphic" target="_blank" class="btn btn-sm btn-outline-primary" style="text-decoration:none;" onclick="event.preventDefault(); openGraphicTab('${res.Symbol}'); switchMainTab('home', document.querySelector('.nav-btn.active'));">Grafikte A├ğ</a></td>
+                    <td><a href="/?symbol=${res.Symbol}&tab=graphic" target="_blank" class="btn btn-sm btn-outline-primary" style="text-decoration:none;" onclick="event.preventDefault(); openGraphicTab('${res.Symbol}'); switchMainTab('home', document.querySelector('.nav-btn.active'));">Grafikte Aç</a></td>
                 `;
                 opp1hTbody.appendChild(tr);
             });
@@ -2300,9 +2300,9 @@ function toggleProjView(mode) {
             let tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${item.time}</td>
-                <td style="color:var(--accent-red)">Ôé║${item.min}</td>
-                <td style="color:var(--text-light); font-weight:bold;">Ôé║${item.expected}</td>
-                <td style="color:var(--accent-green)">Ôé║${item.max}</td>
+                <td style="color:var(--accent-red)">₺${item.min}</td>
+                <td style="color:var(--text-light); font-weight:bold;">₺${item.expected}</td>
+                <td style="color:var(--accent-green)">₺${item.max}</td>
             `;
             hourlyTbody.appendChild(tr);
         });
@@ -2320,9 +2320,9 @@ function toggleProjView(mode) {
             let tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${item.day}</td>
-                <td style="color:var(--text-muted)">Ôé║${item.expected_open}</td>
-                <td style="color:var(--text-light); font-weight:bold;">Ôé║${item.expected_close}</td>
-                <td style="color:var(--accent-blue)">Ôé║${item.min} - Ôé║${item.max}</td>
+                <td style="color:var(--text-muted)">₺${item.expected_open}</td>
+                <td style="color:var(--text-light); font-weight:bold;">₺${item.expected_close}</td>
+                <td style="color:var(--accent-blue)">₺${item.min} - ₺${item.max}</td>
             `;
             dailyTbody.appendChild(tr);
         });
@@ -2332,7 +2332,7 @@ function toggleProjView(mode) {
     const activeMetrics = mode === 'hourly' ? hMetrics : sourceMetrics;
     const r2El = document.getElementById('svr-metric-r2');
     const rmseEl = document.getElementById('svr-metric-rmse');
-    if(r2El) r2El.innerText = `R┬▓: %${activeMetrics.r2 || "-"}`;
+    if(r2El) r2El.innerText = `R²: %${activeMetrics.r2 || "-"}`;
     if(rmseEl) rmseEl.innerText = `RMSE: ${activeMetrics.rmse || "-"}`;
     
     // Draw Chart
@@ -2352,13 +2352,13 @@ function updateSvrChart(mode) {
     let futurePred = sourceObj.future_predicted || sourceObj.data || [];
     
     let isHourly = (mode === 'hourly');
-    let titleText = isHourly ? "Saatlik Komite LSTM AI Tahmin Kanallar─▒ (Backtest + Gelecek)" : (mode === 'monthly' ? "Ayl─▒k (20 G├╝nl├╝k) LSTM AI Fiyat Projeksiyonu" : "Haftal─▒k (5 G├╝nl├╝k) LSTM AI Fiyat Projeksiyonu");
+    let titleText = isHourly ? "Saatlik Komite LSTM AI Tahmin Kanalları (Backtest + Gelecek)" : (mode === 'monthly' ? "Aylık (20 Günlük) LSTM AI Fiyat Projeksiyonu" : "Haftalık (5 Günlük) LSTM AI Fiyat Projeksiyonu");
     
     let labels = [];
     let realData = [];
     let svrData = [];
     
-    // Ge├ğmi┼ş veriler
+    // Geçmiş veriler
     for (let i = 0; i < pastReal.length; i++) {
         labels.push(isHourly ? pastReal[i].time : pastReal[i].day);
         realData.push(isHourly ? pastReal[i].expected : pastReal[i].expected_close);
@@ -2368,7 +2368,7 @@ function updateSvrChart(mode) {
     // Gelecek veriler
     for (let i = 0; i < futurePred.length; i++) {
         labels.push(isHourly ? futurePred[i].time : futurePred[i].day);
-        realData.push(null); // Ger├ğek fiyat gelecekte yok
+        realData.push(null); // Gerçek fiyat gelecekte yok
         svrData.push(isHourly ? futurePred[i].expected : futurePred[i].expected_close);
     }
     
@@ -2378,7 +2378,7 @@ function updateSvrChart(mode) {
             labels: labels,
             datasets: [
                 {
-                    label: 'Ger├ğekle┼şen Fiyat (Ge├ğmi┼ş)',
+                    label: 'Gerçekleşen Fiyat (Geçmiş)',
                     data: realData,
                     borderColor: '#3b82f6',
                     backgroundColor: 'transparent',
@@ -2387,7 +2387,7 @@ function updateSvrChart(mode) {
                     tension: 0.1
                 },
                 {
-                    label: 'LSTM AI Tahmin Rotas─▒ (Ge├ğmi┼ş + Gelecek)',
+                    label: 'LSTM AI Tahmin Rotası (Geçmiş + Gelecek)',
                     data: svrData,
                     borderColor: '#a855f7',
                     backgroundColor: 'transparent',
@@ -2414,7 +2414,7 @@ function updateSvrChart(mode) {
 }
 
 // ========================================================
-// ­şô▒ MOB─░L KART NAV─░GASYONU (GER─░ / ─░LER─░ & KAYDIRMA)
+// 📱 MOBİL KART NAVİGASYONU (GERİ / İLERİ & KAYDIRMA)
 // ========================================================
 let currentCardIndex = 0;
 const totalCards = 6;
@@ -2424,7 +2424,7 @@ function jumpToCard(cardIdx) {
     if (cardIdx >= totalCards) cardIdx = totalCards - 1;
     currentCardIndex = cardIdx;
     
-    // Slider Butonlar─▒n─▒ G├╝ncelle
+    // Slider Butonlarını Güncelle
     const indicators = document.querySelectorAll('#slider-indicators .indicator-dot');
     indicators.forEach((dot, idx) => {
         if (idx === cardIdx) {
@@ -2435,7 +2435,7 @@ function jumpToCard(cardIdx) {
         }
     });
 
-    // Alt Mobil Bar Butonlar─▒n─▒ G├╝ncelle
+    // Alt Mobil Bar Butonlarını Güncelle
     const bms = ['bm-tavan', 'bm-1h', 'bm-5m'];
     bms.forEach((id, idx) => {
         const el = document.getElementById(id);
@@ -2445,7 +2445,7 @@ function jumpToCard(cardIdx) {
         }
     });
 
-    // Hedef Karta Yumu┼şak Kayd─▒r
+    // Hedef Karta Yumuşak Kaydır
     const targetCard = document.getElementById(`radar-card-${cardIdx}`);
     if (targetCard) {
         targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -2468,7 +2468,7 @@ function navigateCard(direction) {
 }
 
 // ==========================================
-// ­şÜÇ ALTIN VARANT S─░M├£LAT├ûR├£ & GREEKS JS ENGINE
+// 🚀 ALTIN VARANT SİMÜLATÖRÜ & GREEKS JS ENGINE
 // ==========================================
 
 async function runVarantSimulation() {
@@ -2479,7 +2479,7 @@ async function runVarantSimulation() {
     const resBox = document.getElementById('sim-result-box');
     if (!resBox) return;
 
-    resBox.innerHTML = `<div style="text-align:center; padding:1rem; color:var(--text-muted);"><div class="spinner small" style="display:inline-block; margin-right:8px;"></div> ${issuer !== 'ALL' ? issuer + ' ' : ''}Varantlar─▒ ve Black-Scholes k├ór hesab─▒ yap─▒l─▒yor...</div>`;
+    resBox.innerHTML = `<div style="text-align:center; padding:1rem; color:var(--text-muted);"><div class="spinner small" style="display:inline-block; margin-right:8px;"></div> ${issuer !== 'ALL' ? issuer + ' ' : ''}Varantları ve Black-Scholes kâr hesabı yapılıyor...</div>`;
 
     try {
         const response = await fetch(`/api/varant_simulator?symbol=${symbol}&issuer=${encodeURIComponent(issuer)}&t=${Date.now()}`);
@@ -2490,7 +2490,7 @@ async function runVarantSimulation() {
             data.warrants.forEach(w => {
                 let badgeColor = w.type === 'CALL' ? 'var(--accent-green)' : 'var(--accent-red)';
                 let badgeBg = w.type === 'CALL' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)';
-                let riskColor = w.risk_badge.includes('D├£┼Ş├£K') ? 'var(--accent-green)' : 'var(--accent-yellow)';
+                let riskColor = w.risk_badge.includes('DÜŞÜK') ? 'var(--accent-green)' : 'var(--accent-yellow)';
                 
                 html += `
                 <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:8px; padding:0.6rem; display:flex; justify-content:space-between; align-items:center;">
@@ -2498,11 +2498,11 @@ async function runVarantSimulation() {
                         <div style="display:flex; align-items:center; gap:6px;">
                             <span style="font-weight:800; color:var(--text-light); font-size:0.95rem;">${w.code}</span>
                             <span style="background:${badgeBg}; color:${badgeColor}; font-size:0.7rem; font-weight:bold; padding:2px 6px; border-radius:4px;">${w.type}</span>
-                            <span style="font-size:0.72rem; color:var(--accent-yellow); font-weight:600;">­şÅø´©Å ${w.issuer}</span>
+                            <span style="font-size:0.72rem; color:var(--accent-yellow); font-weight:600;">🏛️ ${w.issuer}</span>
                             <span style="font-size:0.72rem; color:var(--text-muted);">Vade: ${w.maturity_days}G</span>
                         </div>
                         <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">
-                            Giri┼ş: <b>${w.current_warrant_price}</b> | Hedef: <b style="color:var(--accent-green);">${w.target_warrant_price}</b> | Kald─▒ra├ğ: <b>${w.gearing}</b> | ╬ö: <b>${w.delta}</b>
+                            Giriş: <b>${w.current_warrant_price}</b> | Hedef: <b style="color:var(--accent-green);">${w.target_warrant_price}</b> | Kaldıraç: <b>${w.gearing}</b> | Δ: <b>${w.delta}</b>
                         </div>
                     </div>
                     <div style="text-align:right;">
@@ -2515,10 +2515,10 @@ async function runVarantSimulation() {
             html += `</div>`;
             resBox.innerHTML = html;
         } else {
-            resBox.innerHTML = `<div style="text-align:center; padding:1rem; color:var(--text-muted);">Bu hisse ve se├ğilen kurum (${issuer}) i├ğin aktif varant bulunamad─▒.</div>`;
+            resBox.innerHTML = `<div style="text-align:center; padding:1rem; color:var(--text-muted);">Bu hisse ve seçilen kurum (${issuer}) için aktif varant bulunamadı.</div>`;
         }
     } catch (e) {
-        resBox.innerHTML = `<div style="text-align:center; padding:1rem; color:var(--accent-red);">Sim├╝lasyon y├╝klenirken hata: ${e.message}</div>`;
+        resBox.innerHTML = `<div style="text-align:center; padding:1rem; color:var(--accent-red);">Simülasyon yüklenirken hata: ${e.message}</div>`;
     }
 }
 
@@ -2562,7 +2562,7 @@ async function fetchWinRateScorecard() {
             }
         }
     } catch (e) {
-        console.error("Winrate Scorecard y├╝kleme hatas─▒:", e);
+        console.error("Winrate Scorecard yükleme hatası:", e);
     }
 }
 
@@ -2573,12 +2573,12 @@ async function loadDetailedVarantSim(symbol, spotPrice) {
     const issuer = issuerSelect ? issuerSelect.value : 'ALL';
     const tbody = document.getElementById('dt-varantsim-tbody');
     
-    if (spotEl) spotEl.innerText = `Ôé║${parseFloat(spotPrice || 100).toFixed(2)}`;
+    if (spotEl) spotEl.innerText = `₺${parseFloat(spotPrice || 100).toFixed(2)}`;
     let defaultTarget = roundTo(parseFloat(spotPrice || 100) * 1.099, 2);
     if (targetInput) targetInput.value = defaultTarget;
 
     if (!tbody) return;
-    tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;"><div class="spinner small" style="display:inline-block; margin-right:8px;"></div> ${issuer !== 'ALL' ? issuer + ' ' : ''}Varantlar─▒ ve Greeks matrisi hesaplan─▒yor...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;"><div class="spinner small" style="display:inline-block; margin-right:8px;"></div> ${issuer !== 'ALL' ? issuer + ' ' : ''}Varantları ve Greeks matrisi hesaplanıyor...</td></tr>`;
 
     try {
         const cleanSym = symbol.replace('.IS', '').toUpperCase();
@@ -2590,16 +2590,16 @@ async function loadDetailedVarantSim(symbol, spotPrice) {
             data.warrants.forEach(w => {
                 let tr = document.createElement('tr');
                 let badgeColor = w.type === 'CALL' ? 'var(--accent-green)' : 'var(--accent-red)';
-                let riskColor = w.risk_badge.includes('D├£┼Ş├£K') ? 'var(--accent-green)' : 'var(--accent-yellow)';
+                let riskColor = w.risk_badge.includes('DÜŞÜK') ? 'var(--accent-green)' : 'var(--accent-yellow)';
                 
                 tr.innerHTML = `
                     <td style="font-weight:800; color:var(--text-light); font-size:0.95rem;">${w.code}</td>
-                    <td><span style="color:${badgeColor}; font-weight:bold;">${w.type}</span> <span style="font-size:0.75rem; color:var(--accent-yellow); font-weight:600;">(­şÅø´©Å ${w.issuer})</span></td>
+                    <td><span style="color:${badgeColor}; font-weight:bold;">${w.type}</span> <span style="font-size:0.75rem; color:var(--accent-yellow); font-weight:600;">(🏛️ ${w.issuer})</span></td>
                     <td style="font-weight:bold;">${w.current_warrant_price}</td>
                     <td style="color:var(--accent-green); font-weight:bold;">${w.target_warrant_price}</td>
                     <td style="color:var(--accent-blue);">${w.spot_gain_pct}</td>
                     <td style="color:var(--accent-green); font-weight:800; font-size:0.95rem;">${w.warrant_gain_pct}</td>
-                    <td><span style="color:var(--accent-purple); font-weight:bold;">╬ö ${w.delta}</span> <span style="font-size:0.75rem; color:var(--text-muted);">(${w.gearing})</span></td>
+                    <td><span style="color:var(--accent-purple); font-weight:bold;">Δ ${w.delta}</span> <span style="font-size:0.75rem; color:var(--text-muted);">(${w.gearing})</span></td>
                     <td style="color:var(--accent-red); font-size:0.8rem;">${w.theta}</td>
                     <td style="color:var(--accent-yellow); font-size:0.8rem;">${w.weekend_decay}</td>
                     <td><span style="color:${riskColor}; font-size:0.75rem; font-weight:bold;">${w.risk_badge}</span></td>
@@ -2607,23 +2607,23 @@ async function loadDetailedVarantSim(symbol, spotPrice) {
                 tbody.appendChild(tr);
             });
         } else {
-            tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;">Bu hisse ve se├ğilen kurum (${issuer}) i├ğin aktif ihra├ğ edilmi┼ş varant bulunmamaktad─▒r.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;">Bu hisse ve seçilen kurum (${issuer}) için aktif ihraç edilmiş varant bulunmamaktadır.</td></tr>`;
         }
     } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="10" class="text-red text-center" style="padding:2rem;">Hesaplama hatas─▒: ${e.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10" class="text-red text-center" style="padding:2rem;">Hesaplama hatası: ${e.message}</td></tr>`;
     }
 }
 
 async function recalculateDetailVarantSim() {
     const sym = window.currentAnalyzedSymbol || document.getElementById('tk-sym')?.innerText || 'THYAO';
-    const spot = parseFloat(document.getElementById('tk-price')?.innerText?.replace('Ôé║','').replace(',','') || 100);
+    const spot = parseFloat(document.getElementById('tk-price')?.innerText?.replace('₺','').replace(',','') || 100);
     const targetInput = document.getElementById('dt-sim-target-input');
     const targetVal = parseFloat(targetInput?.value || spot * 1.099);
     const issuerSelect = document.getElementById('dt-sim-issuer-select');
     const issuer = issuerSelect ? issuerSelect.value : 'ALL';
     
     const tbody = document.getElementById('dt-varantsim-tbody');
-    if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;"><div class="spinner small" style="display:inline-block; margin-right:8px;"></div> Yeniden hesaplan─▒yor (${issuer})...</td></tr>`;
+    if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;"><div class="spinner small" style="display:inline-block; margin-right:8px;"></div> Yeniden hesaplanıyor (${issuer})...</td></tr>`;
 
     try {
         const cleanSym = sym.replace('.IS', '').toUpperCase();
@@ -2635,16 +2635,16 @@ async function recalculateDetailVarantSim() {
             data.warrants.forEach(w => {
                 let tr = document.createElement('tr');
                 let badgeColor = w.type === 'CALL' ? 'var(--accent-green)' : 'var(--accent-red)';
-                let riskColor = w.risk_badge.includes('D├£┼Ş├£K') ? 'var(--accent-green)' : 'var(--accent-yellow)';
+                let riskColor = w.risk_badge.includes('DÜŞÜK') ? 'var(--accent-green)' : 'var(--accent-yellow)';
                 
                 tr.innerHTML = `
                     <td style="font-weight:800; color:var(--text-light); font-size:0.95rem;">${w.code}</td>
-                    <td><span style="color:${badgeColor}; font-weight:bold;">${w.type}</span> <span style="font-size:0.75rem; color:var(--accent-yellow); font-weight:600;">(­şÅø´©Å ${w.issuer})</span></td>
+                    <td><span style="color:${badgeColor}; font-weight:bold;">${w.type}</span> <span style="font-size:0.75rem; color:var(--accent-yellow); font-weight:600;">(🏛️ ${w.issuer})</span></td>
                     <td style="font-weight:bold;">${w.current_warrant_price}</td>
                     <td style="color:var(--accent-green); font-weight:bold;">${w.target_warrant_price}</td>
                     <td style="color:var(--accent-blue);">${w.spot_gain_pct}</td>
                     <td style="color:var(--accent-green); font-weight:800; font-size:0.95rem;">${w.warrant_gain_pct}</td>
-                    <td><span style="color:var(--accent-purple); font-weight:bold;">╬ö ${w.delta}</span> <span style="font-size:0.75rem; color:var(--text-muted);">(${w.gearing})</span></td>
+                    <td><span style="color:var(--accent-purple); font-weight:bold;">Δ ${w.delta}</span> <span style="font-size:0.75rem; color:var(--text-muted);">(${w.gearing})</span></td>
                     <td style="color:var(--accent-red); font-size:0.8rem;">${w.theta}</td>
                     <td style="color:var(--accent-yellow); font-size:0.8rem;">${w.weekend_decay}</td>
                     <td><span style="color:${riskColor}; font-size:0.75rem; font-weight:bold;">${w.risk_badge}</span></td>
@@ -2652,14 +2652,14 @@ async function recalculateDetailVarantSim() {
                 tbody.appendChild(tr);
             });
         } else {
-            tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;">Bu hisse ve se├ğilen kurum (${issuer}) i├ğin aktif ihra├ğ edilmi┼ş varant bulunmamaktad─▒r.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;">Bu hisse ve seçilen kurum (${issuer}) için aktif ihraç edilmiş varant bulunmamaktadır.</td></tr>`;
         }
     } catch (e) {
         console.error("Varant Sim Recalculate Error:", e);
     }
 }
 
-// Sayfa y├╝klendi─şinde sim├╝lat├Âr├╝ ve sinyal karnesini otomatik y├╝kle
+// Sayfa yüklendiğinde simülatörü ve sinyal karnesini otomatik yükle
 window.addEventListener('DOMContentLoaded', () => {
     fetchWinRateScorecard();
     runVarantSimulation();
@@ -2667,7 +2667,7 @@ window.addEventListener('DOMContentLoaded', () => {
     fetchStatsTabData();
 });
 
-// ­şô© ANAL─░Z RAPORUNU JPG / G├ûRSEL OLARAK ─░ND─░RME FONKS─░YONU
+// 📸 ANALİZ RAPORUNU JPG / GÖRSEL OLARAK İNDİRME FONKSİYONU
 async function exportAnalysisAsJPG() {
     const sym = window.currentAnalyzedSymbol || document.getElementById('tk-sym')?.innerText || 'ANALIZ';
     const targetElement = document.getElementById('dashboard-wrapper');
@@ -2676,27 +2676,27 @@ async function exportAnalysisAsJPG() {
     if (!targetElement) return;
     
     if (typeof html2canvas === 'undefined') {
-        alert('G├Ârsel k├╝t├╝phanesi y├╝klenemedi. L├╝tfen sayfay─▒ yenileyiniz.');
+        alert('Görsel kütüphanesi yüklenemedi. Lütfen sayfayı yenileyiniz.');
         return;
     }
     
     const originalBtnText = btn ? btn.innerHTML : '';
     if (btn) {
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Haz─▒rlan─▒yor...';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Hazırlanıyor...';
         btn.disabled = true;
     }
     
     try {
         const canvas = await html2canvas(targetElement, {
             backgroundColor: '#131314',
-            scale: 2, // Y├╝ksek ├ğ├Âz├╝n├╝rl├╝kl├╝ Retina/HD ├ğ─▒kt─▒
+            scale: 2, // Yüksek çözünürlüklü Retina/HD çıktı
             useCORS: true,
             logging: false,
             windowWidth: targetElement.scrollWidth,
             windowHeight: targetElement.scrollHeight
         });
         
-        // JPG / PNG ─░ndirici Linki
+        // JPG / PNG İndirici Linki
         const imageURL = canvas.toDataURL('image/jpeg', 0.95);
         const downloadLink = document.createElement('a');
         const nowStr = new Date().toISOString().slice(0,10);
@@ -2707,7 +2707,7 @@ async function exportAnalysisAsJPG() {
         document.body.removeChild(downloadLink);
     } catch (err) {
         console.error("JPG Export Error:", err);
-        alert("G├Ârsel olu┼şturulurken bir hata olu┼ştu: " + err.message);
+        alert("Görsel oluşturulurken bir hata oluştu: " + err.message);
     } finally {
         if (btn) {
             btn.innerHTML = originalBtnText;
@@ -2716,7 +2716,7 @@ async function exportAnalysisAsJPG() {
     }
 }
 
-// ­şô▒ MOB─░L & MASA├£ST├£ KATEGOR─░ F─░LTRELEME FONKS─░YONU (PILL TABS)
+// 📱 MOBİL & MASAÜSTÜ KATEGORİ FİLTRELEME FONKSİYONU (PILL TABS)
 function filterRadarGrid(targetCardId, btnElement) {
     const allCards = document.querySelectorAll('#radar-cards-grid > .card');
     const allPillBtns = document.querySelectorAll('#radar-pill-tabs .pill-btn');
@@ -2757,7 +2757,7 @@ function filterRadarGrid(targetCardId, btnElement) {
     }
 }
 
-// ­şô▒ MOB─░L ALT BAR BUTONLARI ─░LE P─░LL TABS E┼ŞLE┼ŞT─░RME
+// 📱 MOBİL ALT BAR BUTONLARI İLE PİLL TABS EŞLEŞTİRME
 function jumpToCard(cardIdx) {
     const pillButtons = document.querySelectorAll('#radar-pill-tabs .pill-btn');
     const bottomNavBtns = document.querySelectorAll('.bottom-mobile-bar .bm-btn');
@@ -2781,10 +2781,10 @@ function navigateCard(direction) {
     navigateSwipe(direction); // Reuse the new contextual swipe logic
 }
 
-// ­şô▒ MOB─░L SWIPE KALDIRILDI ÔÇö Tablolar serbest yatay kayd─▒r─▒labilir
+// 📱 MOBİL SWIPE KALDIRILDI — Tablolar serbest yatay kaydırılabilir
 
 // ================================================================
-// ­şôè 10:15 SABAH TAVAN L─░STES─░ & 18:10 SEANS KAPANI┼Ş KARNES─░ JS
+// 📊 10:15 SABAH TAVAN LİSTESİ & 18:10 SEANS KAPANIŞ KARNESİ JS
 // ================================================================
 
 function openTavanAuditModal(skipFetch = false) {
@@ -2806,7 +2806,7 @@ function closeTavanAuditModal() {
     }
 }
 
-// ESC tu┼şuna bas─▒nca veya modal d─▒┼ş─▒na t─▒klay─▒nca kapatma
+// ESC tuşuna basınca veya modal dışına tıklayınca kapatma
 window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeTavanAuditModal();
 });
@@ -2820,7 +2820,7 @@ async function fetchTavanAuditData(dateStr = '') {
     const dateSelect = document.getElementById('tavan-audit-date-select');
     
     if (tbody) {
-        tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;"><div class="spinner small" style="display:inline-block; margin-right:8px;"></div> 10:15 Sabah Adaylar─▒ & 18:10 Kapan─▒┼ş Denetimi y├╝kleniyor...</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;"><div class="spinner small" style="display:inline-block; margin-right:8px;"></div> 10:15 Sabah Adayları & 18:10 Kapanış Denetimi yükleniyor...</td></tr>`;
     }
 
     try {
@@ -2834,13 +2834,13 @@ async function fetchTavanAuditData(dateStr = '') {
             const items = audit.items || [];
             const overall = data.overall_stats || {};
 
-            // 1. Tarih Se├ğiciyi Doldur
+            // 1. Tarih Seçiciyi Doldur
             if (dateSelect && data.available_dates) {
                 dateSelect.innerHTML = '';
                 data.available_dates.forEach(d => {
                     const opt = document.createElement('option');
                     opt.value = d;
-                    opt.innerText = (d === new Date().toISOString().slice(0, 10)) ? `­şôà Bug├╝n (${d})` : `­şôà ${d}`;
+                    opt.innerText = (d === new Date().toISOString().slice(0, 10)) ? `📅 Bugün (${d})` : `📅 ${d}`;
                     if (d === data.selected_date) opt.selected = true;
                     dateSelect.appendChild(opt);
                 });
@@ -2853,21 +2853,21 @@ async function fetchTavanAuditData(dateStr = '') {
                 badgeEl.style.background = isCompleted ? 'rgba(16,185,129,0.2)' : 'rgba(56,189,248,0.2)';
                 badgeEl.style.color = isCompleted ? '#10b981' : '#38bdf8';
                 badgeEl.style.borderColor = isCompleted ? 'rgba(16,185,129,0.4)' : 'rgba(56,189,248,0.4)';
-                badgeEl.innerHTML = isCompleted ? '<i class="fa-solid fa-check-double"></i> 18:10 KAPANI┼Ş DENET─░M─░ TAMAMLANDI' : '<i class="fa-solid fa-circle-notch fa-spin"></i> SEANS S├£R├£YOR (CANLI TAK─░P)';
+                badgeEl.innerHTML = isCompleted ? '<i class="fa-solid fa-check-double"></i> 18:10 KAPANIŞ DENETİMİ TAMAMLANDI' : '<i class="fa-solid fa-circle-notch fa-spin"></i> SEANS SÜRÜYOR (CANLI TAKİP)';
             }
 
             const evalTimeEl = document.getElementById('tavan-audit-eval-time');
             if (evalTimeEl) {
-                evalTimeEl.innerText = `Kay─▒t: ${audit.snapshot_time || '10:15'} | Denetim: ${audit.evaluation_time || '18:10'}`;
+                evalTimeEl.innerText = `Kayıt: ${audit.snapshot_time || '10:15'} | Denetim: ${audit.evaluation_time || '18:10'}`;
             }
 
-            // 3. K├╝m├╝latif Ba┼şar─▒ Bar─▒
+            // 3. Kümülatif Başarı Barı
             const cumBanner = document.getElementById('tavan-audit-cum-banner');
             if (cumBanner && overall) {
-                cumBanner.innerHTML = `­şÄ» <b>30 G├╝nl├╝k K├╝m├╝latif:</b> 10:15 Tavan Adaylar─▒n─▒n <span style="color:#10b981; font-weight:800;">%${overall.cumulative_tavan_success_pct}'i Tavana</span>, <span style="color:#facc15; font-weight:800;">%${overall.cumulative_plus5_success_pct}'i +%5 ├£zeri Kazanca</span> ula┼şt─▒. (Ort. Max: +%${overall.cumulative_avg_max_gain_pct})`;
+                cumBanner.innerHTML = `🎯 <b>30 Günlük Kümülatif:</b> 10:15 Tavan Adaylarının <span style="color:#10b981; font-weight:800;">%${overall.cumulative_tavan_success_pct}'i Tavana</span>, <span style="color:#facc15; font-weight:800;">%${overall.cumulative_plus5_success_pct}'i +%5 Üzeri Kazanca</span> ulaştı. (Ort. Max: +%${overall.cumulative_avg_max_gain_pct})`;
             }
 
-            // 4. KPI Kartlar─▒
+            // 4. KPI Kartları
             const totalCnt = summary.total_candidates || items.length || 0;
             const tavanCnt = summary.hit_ceiling_count || 0;
             const tavanPct = summary.hit_ceiling_pct || 0;
@@ -2884,10 +2884,10 @@ async function fetchTavanAuditData(dateStr = '') {
             setElText('aud-avg-close', `+%${avgClose}`);
             setElText('aud-warrant-avg', `+%${avgWarrant}`);
 
-            // 5. Tablo Sat─▒rlar─▒
+            // 5. Tablo Satırları
             if (tbody) {
                 if (items.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;">Bu tarihe ait 10:15 tavan aday─▒ kayd─▒ bulunmamaktad─▒r.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;">Bu tarihe ait 10:15 tavan adayı kaydı bulunmamaktadır.</td></tr>`;
                     return;
                 }
 
@@ -2926,12 +2926,12 @@ async function fetchTavanAuditData(dateStr = '') {
                     tr.innerHTML = `
                         <td>
                             <div style="font-weight:800; color:var(--text-light); font-size:0.95rem;">${it.symbol}</div>
-                            <div style="font-size:0.7rem; color:var(--accent-yellow); font-weight:600;">${it.morning_phase || 'G─░R─░┼Ş'} (Puan: ${it.morning_score})</div>
+                            <div style="font-size:0.7rem; color:var(--accent-yellow); font-weight:600;">${it.morning_phase || 'GİRİŞ'} (Puan: ${it.morning_score})</div>
                         </td>
-                        <td style="font-weight:bold; color:#fff;">Ôé║${parseFloat(it.morning_price).toFixed(2)}</td>
-                        <td style="color:var(--accent-red); font-weight:bold;">Ôé║${parseFloat(it.ceiling_target).toFixed(2)} <span style="font-size:0.72rem; color:var(--text-muted);">(${it.distance_to_ceiling_1015})</span></td>
-                        <td style="color:#facc15; font-weight:800;">Ôé║${parseFloat(it.daily_high).toFixed(2)}</td>
-                        <td style="font-weight:bold; color:var(--text-light);">Ôé║${parseFloat(it.closing_price).toFixed(2)}</td>
+                        <td style="font-weight:bold; color:#fff;">₺${parseFloat(it.morning_price).toFixed(2)}</td>
+                        <td style="color:var(--accent-red); font-weight:bold;">₺${parseFloat(it.ceiling_target).toFixed(2)} <span style="font-size:0.72rem; color:var(--text-muted);">(${it.distance_to_ceiling_1015})</span></td>
+                        <td style="color:#facc15; font-weight:800;">₺${parseFloat(it.daily_high).toFixed(2)}</td>
+                        <td style="font-weight:bold; color:var(--text-light);">₺${parseFloat(it.closing_price).toFixed(2)}</td>
                         <td style="color:${closeGainCol}; font-weight:bold;">${closeGainSign}%${parseFloat(it.closing_gain_pct).toFixed(2)}</td>
                         <td style="color:${maxGainCol}; font-weight:800; font-size:0.95rem;">${maxGainSign}%${parseFloat(it.max_gain_pct).toFixed(2)}</td>
                         <td>
@@ -2940,24 +2940,24 @@ async function fetchTavanAuditData(dateStr = '') {
                             </span>
                         </td>
                         <td>
-                            <div style="font-weight:800; color:#c084fc; font-size:0.85rem;">­şÅø´©Å ${it.ahlatci_warrant}</div>
+                            <div style="font-weight:800; color:#c084fc; font-size:0.85rem;">🏛️ ${it.ahlatci_warrant}</div>
                             <div style="font-size:0.72rem; color:#10b981; font-weight:700;">${it.warrant_gain_pct} <span style="color:var(--text-muted); font-size:0.68rem;">(${it.warrant_leverage})</span></div>
                         </td>
                         <td>
-                            <button onclick="closeTavanAuditModal(); analyzeSymbol('${it.symbol}')" class="btn-primary" style="padding:3px 8px; font-size:0.75rem;" title="Hisse Analizini A├ğ">─░ncele</button>
+                            <button onclick="closeTavanAuditModal(); analyzeSymbol('${it.symbol}')" class="btn-primary" style="padding:3px 8px; font-size:0.75rem;" title="Hisse Analizini Aç">İncele</button>
                         </td>
                     `;
                     tbody.appendChild(tr);
                 });
             }
         } else {
-            if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="text-red text-center" style="padding:2rem;">Denetim verisi al─▒namad─▒.</td></tr>`;
+            if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="text-red text-center" style="padding:2rem;">Denetim verisi alınamadı.</td></tr>`;
         }
     } catch (e) {
-        if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="text-red text-center" style="padding:2rem;">Ba─şlant─▒ hatas─▒: ${e.message}</td></tr>`;
+        if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="text-red text-center" style="padding:2rem;">Bağlantı hatası: ${e.message}</td></tr>`;
     }
 // ==========================================
-// ­şÅå UZUN VADEL─░ TAVAN & +%5 K├éR AR┼Ş─░V─░ KONTROLC├£S├£ (05 A─ŞUSTOS 2026'DAN ─░T─░BAREN)
+// 🏆 UZUN VADELİ TAVAN & +%5 KÂR ARŞİVİ KONTROLCÜSÜ (05 AĞUSTOS 2026'DAN İTİBAREN)
 // ==========================================
 }
 
@@ -2993,7 +2993,7 @@ function openTavanAuditForDate(dateStr) {
             // Show loading immediately
             const tbody = document.getElementById('tavan-audit-tbody');
             if (tbody) {
-                tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> ${dateStr} verileri y├╝kleniyor...</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="10" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> ${dateStr} verileri yükleniyor...</td></tr>`;
             }
             
             const select = document.getElementById('tavan-audit-date-select');
@@ -3011,7 +3011,7 @@ function openTavanAuditForDate(dateStr) {
             fetchTavanAuditData(dateStr);
         } else {
             console.error("tavan-audit-modal element not found in DOM!");
-            alert("Sistem Hatas─▒: Denetim penceresi bulunamad─▒.");
+            alert("Sistem Hatası: Denetim penceresi bulunamadı.");
         }
     } catch(e) {
         console.error("Error opening audit modal:", e);
@@ -3020,7 +3020,7 @@ function openTavanAuditForDate(dateStr) {
 }
 
 // ============================================================
-// ­şôè ─░STAT─░ST─░KLER SEKMES─░ - ANA FONKS─░YONLARI
+// 📊 İSTATİSTİKLER SEKMESİ - ANA FONKSİYONLARI
 // ============================================================
 
 let global_stats_data = null;
@@ -3048,7 +3048,7 @@ function switchStatsMode(mode) {
 }
 
 function renderStatsMode() {
-    if (!global_stats_data) return;
+    if (typeof global_stats_data === 'undefined' || !global_stats_data) return;
     const data = global_stats_data;
     const el = (id) => document.getElementById(id);
     
@@ -3188,7 +3188,7 @@ async function fetchStatsTabData() {
     const dailyTbody = document.getElementById('stats-history-tbody');
     
     if (dailyTbody) {
-        dailyTbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Performans ar┼şivi y├╝kleniyor...</td></tr>`;
+        dailyTbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Performans arşivi yükleniyor...</td></tr>`;
     }
 
     try {
@@ -3198,13 +3198,12 @@ async function fetchStatsTabData() {
 
         if (data.status === 'success' || data.summary) {
             renderStatsMode();
-            
-            
-            // Pop├╝le Et: Daily History Tablosu
+            const history = data.daily_breakdown || data.history || [];
+            // Popüle Et: Daily History Tablosu
             if (dailyTbody) {
                 dailyTbody.innerHTML = '';
                 if (history.length === 0) {
-                    dailyTbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;">Hen├╝z kaydedilmi┼ş seans bulunmuyor.</td></tr>`;
+                    dailyTbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;">Henüz kaydedilmiş seans bulunmuyor.</td></tr>`;
                 } else {
                     history.forEach(h => {
                         const tr = document.createElement('tr');
@@ -3214,7 +3213,7 @@ async function fetchStatsTabData() {
                         const closeSign = avgClose >= 0 ? '+' : '';
                         tr.style.cursor = 'pointer';
                         tr.onclick = () => openStatsDetailModal('daily_all', h.date);
-                        tr.title = `${h.date} Tarihli Hisseleri G├Ârmek ─░├ğin T─▒klay─▒n`;
+                        tr.title = `${h.date} Tarihli Hisseleri Görmek İçin Tıklayın`;
                         tr.innerHTML = `
                             <td><i class="fa-regular fa-calendar" style="color:var(--text-muted);"></i> ${h.date}</td>
                             <td style="color:var(--accent-blue); font-weight:bold;">${h.total_candidates || h.total_signals || 0}</td>
@@ -3228,7 +3227,7 @@ async function fetchStatsTabData() {
                 }
             }
         } else {
-            if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="6" class="text-red text-center" style="padding:2rem;">Veri al─▒namad─▒: ${data.message || 'Bilinmeyen hata'}</td></tr>`;
+            if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="6" class="text-red text-center" style="padding:2rem;">Veri alınamadı: ${data.message || 'Bilinmeyen hata'}</td></tr>`;
         }
     } catch (e) {
         if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="6" class="text-red text-center" style="padding:2rem;">Baglanti hatasi: ${e.message}</td></tr>`;
@@ -3236,7 +3235,7 @@ async function fetchStatsTabData() {
 }
 
 // ============================================================
-// ­şôè ISTATISTIK DETAY MODALI FONKSIYONLARI
+// 📊 ISTATISTIK DETAY MODALI FONKSIYONLARI
 // ============================================================
 function openStatsDetailModal(type, date = null) {
     if (!global_stats_data) return;
@@ -3252,39 +3251,39 @@ function openStatsDetailModal(type, date = null) {
     
     if (type === 'tavan') {
         items = allItems.filter(it => it.hit_ceiling);
-        titleText = '<i class="fa-solid fa-rocket"></i> T├╝m Zamanlar─▒n Tavan Hisseleri';
+        titleText = '<i class="fa-solid fa-rocket"></i> Tüm Zamanların Tavan Hisseleri';
     } else if (type === 'plus5') {
         items = allItems.filter(it => it.hit_plus5);
-        titleText = '<i class="fa-solid fa-chart-line"></i> T├╝m Zamanlar─▒n +%5 Yapan Hisseleri';
+        titleText = '<i class="fa-solid fa-chart-line"></i> Tüm Zamanların +%5 Yapan Hisseleri';
     } else if (type === 'positive_close') {
         items = allItems.filter(it => it.closing_gain_pct > 0);
-        titleText = '<i class="fa-solid fa-arrow-trend-up"></i> G├╝n├╝ K├órda Kapatanlar';
+        titleText = '<i class="fa-solid fa-arrow-trend-up"></i> Günü Kârda Kapatanlar';
     } else if (type === 'negative_close') {
         items = allItems.filter(it => it.closing_gain_pct < 0);
-        titleText = '<i class="fa-solid fa-arrow-trend-down"></i> G├╝n├╝ Zararda Kapatanlar';
+        titleText = '<i class="fa-solid fa-arrow-trend-down"></i> Günü Zararda Kapatanlar';
     } else if (type === 'elite_positive_close') {
         items = allItems.filter(it => it.closing_gain_pct > 0 && (it.morning_score >= 99.9));
-        titleText = '<i class="fa-solid fa-medal text-yellow"></i> Elit K├órda Kapatanlar (100 Puan)';
+        titleText = '<i class="fa-solid fa-medal text-yellow"></i> Elit Kârda Kapatanlar (100 Puan)';
     } else if (type === 'elite_negative_close') {
         items = allItems.filter(it => it.closing_gain_pct < 0 && (it.morning_score >= 99.9));
         titleText = '<i class="fa-solid fa-medal text-yellow"></i> Elit Zararda Kapatanlar (100 Puan)';
     } else if (type === 'elite_all') {
         items = allItems.filter(it => it.morning_score >= 99.9);
-        titleText = '<i class="fa-solid fa-medal text-yellow"></i> T├╝m Elit ├ûneriler (100 Puan)';
+        titleText = '<i class="fa-solid fa-medal text-yellow"></i> Tüm Elit Öneriler (100 Puan)';
     } else if (type === 'all') {
         items = allItems;
-        titleText = '<i class="fa-solid fa-list-ul"></i> Sistemin T├╝m ├ûnerileri';
+        titleText = '<i class="fa-solid fa-list-ul"></i> Sistemin Tüm Önerileri';
     } else if (type === 'daily_all' && date) {
         const dayData = (global_stats_data.daily_breakdown || []).find(d => d.date === date);
         items = dayData?.all_symbols || [];
-        titleText = `<i class="fa-regular fa-calendar"></i> ${date} Tarihli T├╝m ├ûneriler`;
+        titleText = `<i class="fa-regular fa-calendar"></i> ${date} Tarihli Tüm Öneriler`;
     }
     
     title.innerHTML = titleText;
     content.innerHTML = '';
     
     if (items.length === 0) {
-        content.innerHTML = '<div style="color:var(--text-muted); padding:1rem;">Kay─▒t bulunamad─▒.</div>';
+        content.innerHTML = '<div style="color:var(--text-muted); padding:1rem;">Kayıt bulunamadı.</div>';
     } else {
         items.forEach(item => {
             const sym = item.symbol || item;
@@ -3300,7 +3299,7 @@ function openStatsDetailModal(type, date = null) {
             
             const maxG = item.max_gain_pct !== undefined ? item.max_gain_pct.toFixed(2) : (item.max_gain !== undefined ? item.max_gain : '-');
 
-            const hitStatus = item.hit_ceiling ? '<span style="background:rgba(16,185,129,0.2); color:#10b981; padding:2px 5px; border-radius:4px; font-size:0.7rem;">­şöÑ TAVAN</span>' : (item.hit_plus5 ? '<span style="background:rgba(56,189,248,0.2); color:#38bdf8; padding:2px 5px; border-radius:4px; font-size:0.7rem;">Ô¡É +%5</span>' : '');
+            const hitStatus = item.hit_ceiling ? '<span style="background:rgba(16,185,129,0.2); color:#10b981; padding:2px 5px; border-radius:4px; font-size:0.7rem;">🔥 TAVAN</span>' : (item.hit_plus5 ? '<span style="background:rgba(56,189,248,0.2); color:#38bdf8; padding:2px 5px; border-radius:4px; font-size:0.7rem;">⭐ +%5</span>' : '');
 
             const card = document.createElement('div');
             card.style.background = 'rgba(255,255,255,0.05)';
@@ -3315,15 +3314,15 @@ function openStatsDetailModal(type, date = null) {
                 ${dt}
                 <div style="font-weight:900; color:var(--text-main); font-size:1.2rem; margin-bottom:5px;">${sym}</div>
                 <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px; background:rgba(0,0,0,0.2); padding:4px; border-radius:4px;">
-                    <span style="color:var(--text-muted);">├ûneri:</span>
+                    <span style="color:var(--text-muted);">Öneri:</span>
                     <span><b style="color:#fff;">${mPrice}</b> (<span style="color:${mColor}">${mPct > 0 ? '+' : ''}${mPct}%</span>)</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px; background:rgba(0,0,0,0.2); padding:4px; border-radius:4px;">
-                    <span style="color:var(--text-muted);">Kapan─▒┼ş:</span>
+                    <span style="color:var(--text-muted);">Kapanış:</span>
                     <span><b style="color:#fff;">${cPrice}</b> (<span style="color:${cColor}">${cPct > 0 ? '+' : ''}${cPct}%</span>)</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:8px; background:rgba(0,0,0,0.2); padding:4px; border-radius:4px;">
-                    <span style="color:var(--text-muted);">Zirve K├ór:</span>
+                    <span style="color:var(--text-muted);">Zirve Kâr:</span>
                     <span style="color:var(--accent-yellow); font-weight:bold;">+${maxG}%</span>
                 </div>
                 <div>${hitStatus}</div>
@@ -3337,7 +3336,7 @@ function openStatsDetailModal(type, date = null) {
 }
 
 // ============================================================
-// ­şöğ ORTAK RENDER YARDIMCILARI (Hem Modal hem Sekme ─░├ğin)
+// 🔧 ORTAK RENDER YARDIMCILARI (Hem Modal hem Sekme İçin)
 // ============================================================
 
 function renderHistoryKpis(summ, prefix) {
@@ -3365,7 +3364,7 @@ function renderHourlyCards(hourlyList, container) {
         return;
     }
 
-    // Saatlere g├Âre s─▒rala
+    // Saatlere göre sırala
     const sortOrder = { '10:15': 1, '11:30': 2, '14:00': 3, '16:00': 4 };
     hourlyList.sort((a, b) => (sortOrder[a.time] || 9) - (sortOrder[b.time] || 9));
 
@@ -3420,7 +3419,7 @@ function renderHallOfFame(hofList, tbody) {
     tbody.innerHTML = '';
     hofList.forEach((h, idx) => {
         const tr = document.createElement('tr');
-        const rankIcon = idx === 0 ? '­şÑç' : (idx === 1 ? '­şÑê' : (idx === 2 ? '­şÑë' : `#${idx + 1}`));
+        const rankIcon = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `#${idx + 1}`));
         tr.innerHTML = `
             <td><div style="font-weight:800; color:#fff; font-size:0.88rem;">${rankIcon}</div></td>
             <td><div style="font-weight:800; color:#fff; font-size:0.88rem;">${h.symbol}</div></td>
@@ -3440,10 +3439,10 @@ function renderHallOfFame(hofList, tbody) {
 }
 
 // ============================================================
-// ­şô▒ MOB─░L GRAF─░K YARDIMCILARI
+// 📱 MOBİL GRAFİK YARDIMCILARI
 // ============================================================
 
-// Yatay D├Ând├╝rme ─░pucu
+// Yatay Döndürme İpucu
 let rotateHintDismissed = localStorage.getItem('rotate-hint-dismissed') === 'true';
 
 function showRotateHint() {
@@ -3460,7 +3459,7 @@ function dismissRotateHint() {
     if (overlay) overlay.classList.remove('active');
 }
 
-// Yataya ge├ğince ipucunu otomatik kapat
+// Yataya geçince ipucunu otomatik kapat
 window.matchMedia('(orientation: landscape)').addEventListener('change', e => {
     if (e.matches) {
         const overlay = document.getElementById('rotateHintOverlay');
@@ -3480,7 +3479,7 @@ function openChartFullscreen(canvasId, title) {
 
     if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-chart-line"></i> ${title || 'Grafik'}`;
 
-    // Canvas'─▒ klonla
+    // Canvas'ı klonla
     body.innerHTML = '';
     const clone = originalCanvas.cloneNode(true);
     clone.style.width = '100%';
@@ -3498,7 +3497,7 @@ function closeChartFullscreen() {
     document.body.style.overflow = '';
 }
 
-// Dashboard y├╝klenince grafiklere "B├╝y├╝t" butonu ekle
+// Dashboard yüklenince grafiklere "Büyüt" butonu ekle
 function injectChartExpandButtons() {
     if (window.innerWidth > 850) return;
     document.querySelectorAll('.chart-container').forEach((container, idx) => {
@@ -3511,9 +3510,9 @@ function injectChartExpandButtons() {
 
         const btn = document.createElement('button');
         btn.className = 'chart-expand-btn';
-        btn.innerHTML = '<i class="fa-solid fa-expand"></i> B├╝y├╝t';
+        btn.innerHTML = '<i class="fa-solid fa-expand"></i> Büyüt';
         btn.onclick = function() {
-            // ─░lk a├ğ─▒l─▒┼şta yatay d├Ând├╝rme ipucu g├Âster
+            // İlk açılışta yatay döndürme ipucu göster
             if (!rotateHintDismissed) showRotateHint();
             openChartFullscreen(canvasId, container.closest('.card')?.querySelector('.card-title')?.textContent || 'Grafik');
         };
@@ -3522,17 +3521,17 @@ function injectChartExpandButtons() {
     });
 }
 
-// Sayfa y├╝klenince ve analiz tamamlan─▒nca ├ğa─ş─▒r
+// Sayfa yüklenince ve analiz tamamlanınca çağır
 const _origSwitchMainTab = window.switchMainTab;
 if (typeof _origSwitchMainTab === 'function') {
-    // Dashboard sekmesine ge├ğince butonlar─▒ ekle
+    // Dashboard sekmesine geçince butonları ekle
     const origFn = switchMainTab;
 }
 
-// 500ms sonra otomatik inject (sayfa y├╝klenince)
+// 500ms sonra otomatik inject (sayfa yüklenince)
 setTimeout(injectChartExpandButtons, 1500);
 
-// Analiz tamamlan─▒nca tekrar inject et (yeni grafikler olu┼şabilir)
+// Analiz tamamlanınca tekrar inject et (yeni grafikler oluşabilir)
 const _chartObserver = new MutationObserver(() => {
     setTimeout(injectChartExpandButtons, 500);
 });
@@ -3541,12 +3540,12 @@ if (dashWrapper) {
     _chartObserver.observe(dashWrapper, { childList: true, subtree: true });
 }
 
-// ========== S─░M├£LASYON MOTORU ==========
+// ========== SİMÜLASYON MOTORU ==========
 let globalSimData = null;
 
 async function fetchSimulationData() {
     const tbody = document.getElementById('sim-trade-log-tbody');
-    if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> ─░┼şlem Ge├ğmi┼şi Y├╝kleniyor...</td></tr>';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> İşlem Geçmişi Yükleniyor...</td></tr>';
     
     try {
         const res = await fetch(`/api/simulation/daily_pnl?t=` + Date.now());
@@ -3574,8 +3573,8 @@ async function fetchSimulationData() {
             
             const isProfit = totalGetiri >= 0;
             const el = (id) => document.getElementById(id);
-            if (el('sim-kpi-start')) el('sim-kpi-start').innerText = startBakiye.toLocaleString('tr-TR', {minimumFractionDigits:2}) + ' Ôé║';
-            if (el('sim-kpi-end')) el('sim-kpi-end').innerText = endBakiye.toLocaleString('tr-TR', {minimumFractionDigits:2}) + ' Ôé║';
+            if (el('sim-kpi-start')) el('sim-kpi-start').innerText = startBakiye.toLocaleString('tr-TR', {minimumFractionDigits:2}) + ' ₺';
+            if (el('sim-kpi-end')) el('sim-kpi-end').innerText = endBakiye.toLocaleString('tr-TR', {minimumFractionDigits:2}) + ' ₺';
             if (el('sim-kpi-total-pct')) {
                 el('sim-kpi-total-pct').innerText = (isProfit ? '+' : '') + totalGetiri.toFixed(2) + '%';
                 el('sim-kpi-total-pct').style.color = isProfit ? 'var(--accent-green)' : 'var(--accent-red)';
@@ -3589,7 +3588,7 @@ async function fetchSimulationData() {
             if (tbody) {
                 tbody.innerHTML = '';
                 if (trades.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" class="text-muted text-center" style="padding:2rem;">Kay─▒tl─▒ i┼şlem bulunamad─▒.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-muted text-center" style="padding:2rem;">Kayıtlı işlem bulunamadı.</td></tr>';
                 } else {
                     trades.forEach(t => {
                         const tr = document.createElement('tr');
@@ -3597,11 +3596,11 @@ async function fetchSimulationData() {
                         const pnlColor = t.pnl_pct >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
                         const pnlSign = t.pnl_pct >= 0 ? '+' : '';
                         
-                        const exitTimeStr = isClosed ? t.exit_time : '<span style="color:var(--accent-yellow)">─░┼şlemde</span>';
-                        const exitPriceStr = isClosed ? `Ôé║${t.exit_price.toFixed(2)}` : '-';
-                        const pnlValStr = isClosed ? `${pnlSign}Ôé║${(t.pnl_val || 0).toFixed(2)}` : '-';
+                        const exitTimeStr = isClosed ? t.exit_time : '<span style="color:var(--accent-yellow)">İşlemde</span>';
+                        const exitPriceStr = isClosed ? `₺${t.exit_price.toFixed(2)}` : '-';
+                        const pnlValStr = isClosed ? `${pnlSign}₺${(t.pnl_val || 0).toFixed(2)}` : '-';
                         const pnlPctStr = isClosed ? `${pnlSign}${(t.pnl_pct || 0).toFixed(2)}%` : '-';
-                        const statusStr = isClosed ? (t.exit_reason || 'Kapand─▒') : '<span style="color:var(--accent-yellow); font-weight:bold;"><i class="fa-solid fa-spinner fa-spin"></i> A├çIK POZ─░SYON</span>';
+                        const statusStr = isClosed ? (t.exit_reason || 'Kapandı') : '<span style="color:var(--accent-yellow); font-weight:bold;"><i class="fa-solid fa-spinner fa-spin"></i> AÇIK POZİSYON</span>';
 
                         const formatDt = (iso) => {
                             if (!iso) return '-';
@@ -3613,14 +3612,14 @@ async function fetchSimulationData() {
                             } catch(e) { return iso; }
                         };
                         const entryTimeFmt = formatDt(t.entry_time);
-                        const exitTimeFmt = isClosed ? formatDt(t.exit_time) : '<span style="color:var(--accent-yellow)">─░┼şlemde</span>';
+                        const exitTimeFmt = isClosed ? formatDt(t.exit_time) : '<span style="color:var(--accent-yellow)">İşlemde</span>';
 
                         tr.innerHTML = `
                             <td>${entryTimeFmt}</td>
                             <td>${exitTimeFmt}</td>
                             <td style="font-weight:bold; color:var(--text-light);">${t.symbol}</td>
                             <td>${t.shares || '-'}</td>
-                            <td>Ôé║${t.entry_price.toFixed(2)}</td>
+                            <td>₺${t.entry_price.toFixed(2)}</td>
                             <td>${exitPriceStr}</td>
                             <td style="color:${pnlColor}; font-weight:bold;">${pnlValStr}</td>
                             <td style="color:${pnlColor}; font-weight:bold;">${pnlPctStr}</td>
@@ -3631,10 +3630,10 @@ async function fetchSimulationData() {
                 }
             }
         } else {
-            if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-red text-center" style="padding:2rem;">Sim├╝lasyon verisi al─▒namad─▒.</td></tr>';
+            if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-red text-center" style="padding:2rem;">Simülasyon verisi alınamadı.</td></tr>';
         }
     } catch (e) {
-        if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-red text-center" style="padding:2rem;">Ba─şlant─▒ hatas─▒: ' + e.message + '</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-red text-center" style="padding:2rem;">Bağlantı hatası: ' + e.message + '</td></tr>';
     }
 }
 
@@ -3656,7 +3655,7 @@ function renderEquityCurveChart(equityData) {
         data: {
             labels: labels,
             datasets: [{
-                label: 'Bakiye (Ôé║)',
+                label: 'Bakiye (₺)',
                 data: dataPoints,
                 borderColor: '#3b82f6',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
@@ -3742,12 +3741,12 @@ function renderDailyBreakdown(dailyList, tbody, prefix = '') {
         return;
     }
     tbody.innerHTML = '';
-    // Reverse S─░L─░ND─░, en yeni tarih en ├╝stte ├ğ─▒ks─▒n
+    // Reverse SİLİNDİ, en yeni tarih en üstte çıksın
     expectedDates.forEach(dateStr => {
         const d = dailyList.find(x => x.date === dateStr);
         if (!d) {
             const tr = document.createElement('tr');
-            tr.innerHTML = '<td><div style="font-weight:800; font-size:0.9rem; color:var(--text-light); display:flex; align-items:center; gap:6px;"><i class="fa-regular fa-calendar" style="color:var(--text-muted);"></i> ' + dateStr + '</div></td><td colspan="5" class="text-center" style="color:var(--text-muted); font-size:0.85rem; font-style:italic; padding:1.5rem 0;"><i class="fa-solid fa-mug-hot" style="font-size:1.2rem; color:rgba(255,255,255,0.1); margin-right:8px;"></i> TAT─░L / VER─░ YOK</td>';
+            tr.innerHTML = '<td><div style="font-weight:800; font-size:0.9rem; color:var(--text-light); display:flex; align-items:center; gap:6px;"><i class="fa-regular fa-calendar" style="color:var(--text-muted);"></i> ' + dateStr + '</div></td><td colspan="5" class="text-center" style="color:var(--text-muted); font-size:0.85rem; font-style:italic; padding:1.5rem 0;"><i class="fa-solid fa-mug-hot" style="font-size:1.2rem; color:rgba(255,255,255,0.1); margin-right:8px;"></i> TATİL / VERİ YOK</td>';
             tbody.appendChild(tr);
             return;
         }
@@ -3771,15 +3770,15 @@ function renderDailyBreakdown(dailyList, tbody, prefix = '') {
                     <i class="fa-regular fa-calendar-check" style="color:#10b981;"></i> ${d.date}
                 </div>
                 <div style="font-size:0.65rem; color:#10b981; font-weight:700; margin-top:3px;">
-                    <i class="fa-solid fa-check"></i> ${d.status === 'COMPLETED' ? 'Tamamland─▒' : 'Canl─▒'}
+                    <i class="fa-solid fa-check"></i> ${d.status === 'COMPLETED' ? 'Tamamlandı' : 'Canlı'}
                 </div>
             </td>
             <td>
                 <div style="font-size:1.1rem; font-weight:800; color:#fff;">${total}</div>
             </td>
             <td>
-                <div style="font-size:0.9rem; font-weight:800; color:#10b981;">%${tavanRate} Ba┼şar─▒</div>
-                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">${tavan}/${total} Hisse Tavana Ula┼şt─▒</div>
+                <div style="font-size:0.9rem; font-weight:800; color:#10b981;">%${tavanRate} Başarı</div>
+                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">${tavan}/${total} Hisse Tavana Ulaştı</div>
             </td>
             <td>
                 <div style="font-weight:800; font-size:0.9rem; color:${dailyResultColor};">${closeSign}${avgClose.toFixed(2)}%</div>
@@ -3790,8 +3789,8 @@ function renderDailyBreakdown(dailyList, tbody, prefix = '') {
                 <div style="font-size:0.72rem; color:#c084fc; font-weight:700; margin-top:2px;">${warrantCode} ${warrantGain}</div>
             </td>
             <td>
-                <button onclick="console.log('Detaylar─▒ Ac clicked for ${d.date}'); openTavanAuditForDate('${d.date}')" class="btn-primary" style="background:rgba(239,68,68,0.25); color:#fca5a5; border:1px solid rgba(239,68,68,0.4); padding:4px 10px; font-size:0.8rem; font-weight:bold; border-radius:4px; cursor:pointer; display:flex; align-items:center; gap:6px;">
-                    <i class="fa-solid fa-folder-open"></i> Detaylar─▒ A├ğ
+                <button onclick="console.log('Detayları Ac clicked for ${d.date}'); openTavanAuditForDate('${d.date}')" class="btn-primary" style="background:rgba(239,68,68,0.25); color:#fca5a5; border:1px solid rgba(239,68,68,0.4); padding:4px 10px; font-size:0.8rem; font-weight:bold; border-radius:4px; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-folder-open"></i> Detayları Aç
                 </button>
             </td>
         `;
@@ -3817,11 +3816,11 @@ async function fetchLiveOrders() {
                 card.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem; margin-bottom:0.5rem;">
                         <strong style="color:var(--text-light); font-size:1.1rem;"><i class="fa-solid fa-crosshairs text-blue"></i> ${order.symbol}</strong>
-                        <span style="background:var(--accent-blue); color:#fff; font-size:0.75rem; padding:0.1rem 0.4rem; border-radius:4px;">G├╝├ğ: ${order.score}</span>
+                        <span style="background:var(--accent-blue); color:#fff; font-size:0.75rem; padding:0.1rem 0.4rem; border-radius:4px;">Güç: ${order.score}</span>
                     </div>
                     <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
-                        <span style="color:var(--text-muted);">Al─▒┼ş Fiyat─▒:</span>
-                        <strong style="color:var(--text-main);">Ôé║${order.entry_price.toFixed(2)}</strong>
+                        <span style="color:var(--text-muted);">Alış Fiyatı:</span>
+                        <strong style="color:var(--text-main);">₺${order.entry_price.toFixed(2)}</strong>
                     </div>
                     <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
                         <span style="color:var(--text-muted);">Miktar (Lot):</span>
@@ -3831,22 +3830,22 @@ async function fetchLiveOrders() {
                         <div style="font-size:0.8rem; color:var(--accent-yellow); margin-bottom:0.3rem;"><i class="fa-solid fa-link"></i> <strong>Zincir Emirler (OCO)</strong></div>
                         <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:0.2rem;">
                             <span style="color:var(--accent-red);">Stop-Loss (-%3):</span>
-                            <strong>Ôé║${order.stop_price.toFixed(2)}</strong>
+                            <strong>₺${order.stop_price.toFixed(2)}</strong>
                         </div>
                         <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:0.2rem;">
-                            <span style="color:var(--accent-green);">K├ór Al TP1 (+%5):</span>
-                            <strong>Ôé║${order.tp1_price.toFixed(2)}</strong>
+                            <span style="color:var(--accent-green);">Kâr Al TP1 (+%5):</span>
+                            <strong>₺${order.tp1_price.toFixed(2)}</strong>
                         </div>
                         <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
-                            <span style="color:var(--accent-green);">K├ór Al TP2 (Tavan):</span>
-                            <strong>Ôé║${order.tp2_price.toFixed(2)}</strong>
+                            <span style="color:var(--accent-green);">Kâr Al TP2 (Tavan):</span>
+                            <strong>₺${order.tp2_price.toFixed(2)}</strong>
                         </div>
                     </div>
                 `;
                 container.appendChild(card);
             });
         } else {
-            container.innerHTML = '<div style="color:var(--text-muted);"><i class="fa-solid fa-circle-exclamation"></i> Bug├╝n i├ğin ge├ğerli "├çelik Emir" kriterlerine uyan sinyal bulunamad─▒.</div>';
+            container.innerHTML = '<div style="color:var(--text-muted);"><i class="fa-solid fa-circle-exclamation"></i> Bugün için geçerli "Çelik Emir" kriterlerine uyan sinyal bulunamadı.</div>';
         }
     } catch (e) {
         container.innerHTML = '<div style="color:var(--accent-red);">Hata: ' + e.message + '</div>';
@@ -3890,7 +3889,7 @@ async function runBacktest() {
         btn.disabled = false;
         
         if (data.status !== 'success') {
-            alert('Backtest Hatas─▒: ' + data.message);
+            alert('Backtest Hatası: ' + data.message);
             return;
         }
         
@@ -3910,7 +3909,7 @@ async function runBacktest() {
         
         // Equity Chart
         const equityOptions = {
-            series: [{ name: 'Portf├Ây (TL)', data: bt.equity_curve }],
+            series: [{ name: 'Portföy (TL)', data: bt.equity_curve }],
             chart: { type: 'area', height: 400, toolbar: { show: false }, background: 'transparent' },
             colors: ['#8b5cf6'],
             fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05, stops: [0, 100] } },
@@ -3948,7 +3947,7 @@ async function runBacktest() {
         console.error(err);
         loading.style.display = 'none';
         btn.disabled = false;
-        alert('Sunucu hatas─▒: ' + err.message);
+        alert('Sunucu hatası: ' + err.message);
     }
 }// ========== BACKTEST AUTOCOMPLETE LOGIC ==========
 const btSymbolInput = document.getElementById('bt-symbol');
@@ -4048,9 +4047,9 @@ async function loadMTFRadar() {
         loading.style.display = 'none';
         
         if (data.status === 'success') {
-            countBadge.innerText = data.count + ' H─░SSE';
+            countBadge.innerText = data.count + ' HİSSE';
             if (data.count === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">┼Şu an MTF kriterlerine uyan hisse bulunamad─▒.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">Şu an MTF kriterlerine uyan hisse bulunamadı.</td></tr>';
                 return;
             }
             
@@ -4080,7 +4079,7 @@ async function loadMTFRadar() {
         }
     } catch (e) {
         loading.style.display = 'none';
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--accent-red);">Ba─şlant─▒ hatas─▒: ' + e.message + '</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--accent-red);">Bağlantı hatası: ' + e.message + '</td></tr>';
     }
 }
 // --- END MTF SCANNER LOGIC ---
