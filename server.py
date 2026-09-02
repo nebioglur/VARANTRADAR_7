@@ -80,15 +80,22 @@ def load_dashboard_cache():
         try:
             from datetime import datetime
             import time
+            import os
             with open(CACHE_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
             
             if isinstance(data, dict):
                 today_str = datetime.now().strftime("%Y-%m-%d")
                 cache_date = data.get("cache_date")
-                if cache_date and cache_date != today_str:
-                    print(f"[Server] Eski günün cache dosyası reddedildi ({cache_date} != {today_str}).")
-                    return {}
+                if cache_date:
+                    if cache_date != today_str:
+                        print(f"[Server] Eski günün cache dosyası reddedildi ({cache_date} != {today_str}).")
+                        return {}
+                else:
+                    mtime = os.path.getmtime(CACHE_FILE)
+                    if time.time() - mtime > 1800:
+                        print("[Server] Cache tarihi yok ve dosya 30 dakikadan eski. Reddedildi.")
+                        return {}
                 return data
         except Exception as e:
             print(f"[Server] load_dashboard_cache Error: {e}")
