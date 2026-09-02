@@ -3022,6 +3022,8 @@ function openTavanAuditForDate(dateStr) {
 // 📊 İSTATİSTİKLER SEKMESİ - ANA FONKSİYONLARI
 // ============================================================
 
+let global_stats_data = null;
+
 async function fetchStatsTabData() {
     const dailyTbody = document.getElementById('stats-history-tbody');
     
@@ -3032,6 +3034,7 @@ async function fetchStatsTabData() {
     try {
         const res = await fetch(`/api/tavan_history?t=` + Date.now());
         const data = await res.json();
+        global_stats_data = data;
 
         if (data.status === 'success' || data.summary) {
             const summ = data.summary || {};
@@ -3117,10 +3120,13 @@ async function fetchStatsTabData() {
                     history.forEach(h => {
                         const tr = document.createElement('tr');
                         const avgMax = h.avg_max_gain_pct || 0;
-                    const avgClose = h.avg_closing_gain_pct || 0;
-                    const closeColor = avgClose >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+                        const avgClose = h.avg_closing_gain_pct || 0;
+                        const closeColor = avgClose >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
                         const closeSign = avgClose >= 0 ? '+' : '';
-                    tr.innerHTML = `
+                        tr.style.cursor = 'pointer';
+                        tr.onclick = () => openStatsDetailModal('daily_all', h.date);
+                        tr.title = `${h.date} Tarihli Hisseleri Görmek İçin Tıklayın`;
+                        tr.innerHTML = `
                             <td><i class="fa-regular fa-calendar" style="color:var(--text-muted);"></i> ${h.date}</td>
                             <td style="color:var(--accent-blue); font-weight:bold;">${h.total_candidates || h.total_signals || 0}</td>
                             <td style="color:var(--accent-green); font-weight:bold;">${h.hit_ceiling_count || h.hit_ceiling || 0} Tavan (%${h.hit_ceiling_pct || h.tavan_rate || 0})</td>
@@ -3138,6 +3144,87 @@ async function fetchStatsTabData() {
     } catch (e) {
         if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="6" class="text-red text-center" style="padding:2rem;">Baglanti hatasi: ${e.message}</td></tr>`;
     }
+}
+
+// ============================================================
+// 📊 ISTATISTIK DETAY MODALI FONKSIYONLARI
+// ============================================================
+function openStatsDetailModal(type, date = null) {
+    if (!global_stats_data) return;
+    const modal = document.getElementById('stats-detail-modal');
+    const title = document.getElementById('stats-detail-title');
+    const content = document.getElementById('stats-detail-content');
+    if (!modal || !title || !content) return;
+    
+    let items = [];
+    let titleText = '';
+    
+    if (type === 'tavan') {
+        items = global_stats_data.summary?.all_time_tavan_symbols || [];
+        titleText = '<i class="fa-solid fa-rocket"></i> Tüm Zamanların Tavan Hisseleri';
+    } else if (type === 'plus5') {
+        items = global_stats_data.summary?.all_time_plus5_symbols || [];
+        titleText = '<i class="fa-solid fa-chart-line"></i> Tüm Zamanların +%5 Yapan Hisseleri';
+    } else if (type === 'daily_all' && date) {
+        const dayData = (global_stats_data.daily_breakdown || []).find(d => d.date === date);
+        items = dayData?.all_symbols || [];
+        titleText = `<i class="fa-regular fa-calendar"></i> ${date} Tarihli Tüm Öneriler`;
+    }
+    
+    title.innerHTML = titleText;
+    content.innerHTML = '';
+    
+    if (items.length === 0) {
+        content.innerHTML = '<div style="color:var(--text-muted); padding:1rem;">Kayıt bulunamadı.</div>';
+    } else {
+        items.forEach(item => {
+            const sym = item.symbol || item;
+            const dt = item.date ? `<div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-bottom:4px;">${item.date} <span style="color:var(--accent-blue);">${item.snapshot_time || '10:15'}</span></div>` : '';
+            
+            const mPrice = item.morning_price ? item.morning_price.toFixed(2) : '-';
+            const mPct = item.morning_gain_pct !== undefined ? item.morning_gain_pct.toFixed(2) : '-';
+            const mColor = item.morning_gain_pct > 0 ? 'var(--accent-green)' : (item.morning_gain_pct < 0 ? 'var(--accent-red)' : 'var(--text-muted)');
+            
+            const cPrice = item.closing_price ? item.closing_price.toFixed(2) : '-';
+            const cPct = item.closing_gain_pct !== undefined ? item.closing_gain_pct.toFixed(2) : '-';
+            const cColor = item.closing_gain_pct > 0 ? 'var(--accent-green)' : (item.closing_gain_pct < 0 ? 'var(--accent-red)' : 'var(--text-muted)');
+            
+            const maxG = item.max_gain_pct !== undefined ? item.max_gain_pct.toFixed(2) : (item.max_gain !== undefined ? item.max_gain : '-');
+
+            const hitStatus = item.hit_ceiling ? '<span style="background:rgba(16,185,129,0.2); color:#10b981; padding:2px 5px; border-radius:4px; font-size:0.7rem;">🔥 TAVAN</span>' : (item.hit_plus5 ? '<span style="background:rgba(56,189,248,0.2); color:#38bdf8; padding:2px 5px; border-radius:4px; font-size:0.7rem;">⭐ +%5</span>' : '');
+
+            const card = document.createElement('div');
+            card.style.background = 'rgba(255,255,255,0.05)';
+            card.style.border = '1px solid rgba(255,255,255,0.1)';
+            card.style.borderRadius = '8px';
+            card.style.padding = '0.8rem';
+            card.style.textAlign = 'center';
+            card.style.display = 'flex';
+            card.style.flexDirection = 'column';
+            card.style.justifyContent = 'space-between';
+            card.innerHTML = `
+                ${dt}
+                <div style="font-weight:900; color:var(--text-main); font-size:1.2rem; margin-bottom:5px;">${sym}</div>
+                <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px; background:rgba(0,0,0,0.2); padding:4px; border-radius:4px;">
+                    <span style="color:var(--text-muted);">Öneri:</span>
+                    <span><b style="color:#fff;">${mPrice}</b> (<span style="color:${mColor}">${mPct > 0 ? '+' : ''}${mPct}%</span>)</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px; background:rgba(0,0,0,0.2); padding:4px; border-radius:4px;">
+                    <span style="color:var(--text-muted);">Kapanış:</span>
+                    <span><b style="color:#fff;">${cPrice}</b> (<span style="color:${cColor}">${cPct > 0 ? '+' : ''}${cPct}%</span>)</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:8px; background:rgba(0,0,0,0.2); padding:4px; border-radius:4px;">
+                    <span style="color:var(--text-muted);">Zirve Kâr:</span>
+                    <span style="color:var(--accent-yellow); font-weight:bold;">+${maxG}%</span>
+                </div>
+                <div>${hitStatus}</div>
+            `;
+            content.appendChild(card);
+        });
+    }
+    
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
 }
 
 // ============================================================

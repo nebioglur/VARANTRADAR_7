@@ -1051,12 +1051,12 @@
                     <div id="stats-tab-total-days" style="font-size:2.5rem; font-weight:800; color:var(--text-main);">-</div>
                     <div id="stats-tab-total-candidates-sub" style="font-size:0.8rem; color:var(--text-muted); margin-top:5px;">Toplam Öneri</div>
                 </div>
-                <div class="card" style="background: linear-gradient(145deg, rgba(16,185,129,0.05) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(16,185,129,0.2); text-align:center; padding: 1.5rem;">
+                <div class="card" onclick="openStatsDetailModal('tavan')" style="background: linear-gradient(145deg, rgba(16,185,129,0.05) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(16,185,129,0.2); text-align:center; padding: 1.5rem; cursor:pointer;" title="Tavan Olan Hisseleri Görmek İçin Tıklayın">
                     <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-rocket"></i> Tavan Başarısı</div>
                     <div id="stats-tab-tavan-rate" style="font-size:2.5rem; font-weight:800; color:var(--accent-green);">-</div>
                     <div id="stats-tab-tavan-cnt-sub" style="font-size:0.8rem; color:var(--accent-green); margin-top:5px; opacity:0.8;">- Tavan</div>
                 </div>
-                <div class="card" style="background: linear-gradient(145deg, rgba(59,130,246,0.05) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(59,130,246,0.2); text-align:center; padding: 1.5rem;">
+                <div class="card" onclick="openStatsDetailModal('plus5')" style="background: linear-gradient(145deg, rgba(59,130,246,0.05) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(59,130,246,0.2); text-align:center; padding: 1.5rem; cursor:pointer;" title="+%5 Üzeri Yapan Hisseleri Görmek İçin Tıklayın">
                     <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-chart-line"></i> +%5 Üzeri Kâr</div>
                     <div id="stats-tab-plus5-rate" style="font-size:2.5rem; font-weight:800; color:var(--accent-blue);">-</div>
                     <div id="stats-tab-plus5-cnt-sub" style="font-size:0.8rem; color:var(--accent-blue); margin-top:5px; opacity:0.8;">- Hisse</div>
@@ -1587,6 +1587,20 @@
             </ul>
         </div>
     </div>
+    
+    <!-- 📊 ISTATISTIK DETAYLARI MODALI -->
+    <div id="stats-detail-modal" style="display:none; position:fixed; z-index:999999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); overflow-y:auto; padding:1.5rem 1rem;">
+        <div style="background:var(--card-bg, #0f172a); border:1px solid rgba(56, 189, 248, 0.4); box-shadow:0 0 30px rgba(56,189,248,0.25); border-radius:12px; max-width:800px; margin:0 auto; padding:1.5rem; position:relative; color:var(--text-light, #f8fafc);">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:1rem; margin-bottom:1.2rem;">
+                <h2 id="stats-detail-title" style="color:var(--accent-blue, #38bdf8); font-size:1.3rem; margin:0;"><i class="fa-solid fa-list-ul"></i> Detaylar</h2>
+                <button onclick="document.getElementById('stats-detail-modal').style.display='none'; document.body.style.overflow='auto';" style="background:transparent; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+            <div id="stats-detail-content" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;">
+                <!-- Content will be injected here -->
+            </div>
+        </div>
+    </div>
+    
     <!-- 📊 10:15 SABAH TAVAN LİSTESİ ➔ 18:10 SEANS KAPANIŞ DENETİM MODALI -->
     <div id="tavan-audit-modal" style="display:none; position:fixed; z-index:999999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); overflow-y:auto; padding:1.5rem 1rem;">
         <div style="background:var(--card-bg, #0f172a); border:1px solid rgba(239, 68, 68, 0.4); box-shadow:0 0 30px rgba(239,68,68,0.25); border-radius:12px; max-width:1150px; margin:0 auto; padding:1.5rem; position:relative; color:var(--text-light, #f8fafc);">

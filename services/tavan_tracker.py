@@ -408,6 +408,8 @@ class TavanAuditTracker:
 
         symbol_stats: Dict[str, Dict[str, Any]] = {}
         daily_breakdown = []
+        all_time_tavan_symbols = []
+        all_time_plus5_symbols = []
 
         # Tarihe göre sıralı incele (Yeniden eskiye)
         for d in sorted(list(filtered_audits.keys()), reverse=True):
@@ -438,9 +440,6 @@ class TavanAuditTracker:
                 h_price = it.get("daily_high", m_price)
                 
                 if m_price > 0:
-                    # Kullanıcının tam istediği matematik: Kapanış % - Öneri Saati %
-                    # Bu matematiksel olarak (Kapanış Fiyatı - Öneri Fiyatı) / Önceki Kapanış * 100 ile aynıdır.
-                    # Önceki Kapanışı (p_close), tavan hedefini (ceiling_target) 1.10'a bölerek buluyoruz.
                     c_target = it.get("ceiling_target", m_price * 1.10)
                     p_close = c_target / 1.10 if c_target > 0 else m_price
                     
@@ -452,7 +451,28 @@ class TavanAuditTracker:
                 else:
                     c_pct = 0.0
                     m_pct = 0.0
+                    p_close = m_price
                     
+                import math
+                m_gain_pct = ((m_price - p_close) / p_close) * 100 if p_close > 0 else 0.0
+                if math.isnan(m_gain_pct): m_gain_pct = 0.0
+
+                rich_item = {
+                    "date": d,
+                    "symbol": it.get("symbol"),
+                    "snapshot_time": it.get("snapshot_time", "10:15"),
+                    "morning_price": round(m_price, 2),
+                    "morning_gain_pct": round(m_gain_pct, 2),
+                    "closing_price": round(c_price, 2),
+                    "closing_gain_pct": round(c_pct, 2),
+                    "daily_high": round(h_price, 2),
+                    "max_gain_pct": round(m_pct, 2),
+                    "hit_ceiling": it.get("hit_ceiling", False),
+                    "hit_plus5": it.get("hit_plus5", False)
+                }
+                
+                # We will assign rich_item to a new list we build, but for now we append to all_time lists
+                
                 sum_close_pct += c_pct
                 sum_max_pct += m_pct
                 
@@ -470,8 +490,16 @@ class TavanAuditTracker:
                         elite_closed_negative += 1
                         elite_total_negative_gain += c_pct
                 
-                if it.get("hit_ceiling"): d_tavan += 1
-                if it.get("hit_plus5"): d_plus5 += 1
+                if it.get("hit_ceiling"):
+                    d_tavan += 1
+                    all_time_tavan_symbols.append(rich_item)
+                if it.get("hit_plus5"):
+                    d_plus5 += 1
+                    all_time_plus5_symbols.append(rich_item)
+                    
+                # We need to save the rich_item for daily_breakdown too.
+                # Let's attach it to 'it' so it can be extracted later.
+                it["_rich_item"] = rich_item
 
             if d_total > 0:
                 d_close_gain = sum_close_pct / d_total
@@ -517,7 +545,10 @@ class TavanAuditTracker:
                 "avg_closing_gain_pct": round(d_close_gain, 2),
                 "star_stock": star_desc,
                 "star_warrant": star_warrant,
-                "star_warrant_gain": star_warrant_gain
+                "star_warrant_gain": star_warrant_gain,
+                "tavan_symbols": [it.get("_rich_item") for it in items if it.get("hit_ceiling")],
+                "plus5_symbols": [it.get("_rich_item") for it in items if it.get("hit_plus5")],
+                "all_symbols": [it.get("_rich_item") for it in items if "_rich_item" in it]
             })
 
             # Sembol bazlı toplam başarı kütüphanesi
