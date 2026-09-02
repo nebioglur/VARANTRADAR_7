@@ -408,8 +408,7 @@ class TavanAuditTracker:
 
         symbol_stats: Dict[str, Dict[str, Any]] = {}
         daily_breakdown = []
-        all_time_tavan_symbols = []
-        all_time_plus5_symbols = []
+        all_time_symbols = []
 
         # Tarihe göre sıralı incele (Yeniden eskiye)
         for d in sorted(list(filtered_audits.keys()), reverse=True):
@@ -471,12 +470,14 @@ class TavanAuditTracker:
                     "hit_plus5": it.get("hit_plus5", False)
                 }
                 
-                # We will assign rich_item to a new list we build, but for now we append to all_time lists
-                
                 sum_close_pct += c_pct
                 sum_max_pct += m_pct
                 
+                all_time_symbols.append(rich_item)
+                
                 score = it.get("morning_score", 0)
+                rich_item["morning_score"] = score # also save score in rich_item so JS can filter elite
+
                 if c_pct > 0:
                     total_closed_positive += 1
                     total_positive_gain += c_pct
@@ -492,10 +493,8 @@ class TavanAuditTracker:
                 
                 if it.get("hit_ceiling"):
                     d_tavan += 1
-                    all_time_tavan_symbols.append(rich_item)
                 if it.get("hit_plus5"):
                     d_plus5 += 1
-                    all_time_plus5_symbols.append(rich_item)
                     
                 # We need to save the rich_item for daily_breakdown too.
                 # Let's attach it to 'it' so it can be extracted later.
@@ -636,7 +635,8 @@ class TavanAuditTracker:
                 "elite_closed_negative": elite_closed_negative,
                 "elite_avg_positive_gain": round(elite_total_positive_gain / elite_closed_positive, 2) if elite_closed_positive > 0 else 0.0,
                 "elite_avg_negative_gain": round(elite_total_negative_gain / elite_closed_negative, 2) if elite_closed_negative > 0 else 0.0,
-                "elite_net_profit_pct": round((elite_total_positive_gain + elite_total_negative_gain) / (elite_closed_positive + elite_closed_negative), 2) if (elite_closed_positive + elite_closed_negative) > 0 else 0.0
+                "elite_net_profit_pct": round((elite_total_positive_gain + elite_total_negative_gain) / ((elite_closed_positive + elite_closed_negative) or 1), 2),
+                "all_time_symbols": all_time_symbols
             },
             "hourly_summary": hourly_summary,
             "daily_breakdown": daily_breakdown,

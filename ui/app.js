@@ -3160,12 +3160,32 @@ function openStatsDetailModal(type, date = null) {
     let items = [];
     let titleText = '';
     
+    let allItems = global_stats_data.summary?.all_time_symbols || [];
+    
     if (type === 'tavan') {
-        items = global_stats_data.summary?.all_time_tavan_symbols || [];
+        items = allItems.filter(it => it.hit_ceiling);
         titleText = '<i class="fa-solid fa-rocket"></i> Tüm Zamanların Tavan Hisseleri';
     } else if (type === 'plus5') {
-        items = global_stats_data.summary?.all_time_plus5_symbols || [];
+        items = allItems.filter(it => it.hit_plus5);
         titleText = '<i class="fa-solid fa-chart-line"></i> Tüm Zamanların +%5 Yapan Hisseleri';
+    } else if (type === 'positive_close') {
+        items = allItems.filter(it => it.closing_gain_pct > 0);
+        titleText = '<i class="fa-solid fa-arrow-trend-up"></i> Günü Kârda Kapatanlar';
+    } else if (type === 'negative_close') {
+        items = allItems.filter(it => it.closing_gain_pct < 0);
+        titleText = '<i class="fa-solid fa-arrow-trend-down"></i> Günü Zararda Kapatanlar';
+    } else if (type === 'elite_positive_close') {
+        items = allItems.filter(it => it.closing_gain_pct > 0 && (it.morning_score >= 99.9));
+        titleText = '<i class="fa-solid fa-medal text-yellow"></i> Elit Kârda Kapatanlar (100 Puan)';
+    } else if (type === 'elite_negative_close') {
+        items = allItems.filter(it => it.closing_gain_pct < 0 && (it.morning_score >= 99.9));
+        titleText = '<i class="fa-solid fa-medal text-yellow"></i> Elit Zararda Kapatanlar (100 Puan)';
+    } else if (type === 'elite_all') {
+        items = allItems.filter(it => it.morning_score >= 99.9);
+        titleText = '<i class="fa-solid fa-medal text-yellow"></i> Tüm Elit Öneriler (100 Puan)';
+    } else if (type === 'all') {
+        items = allItems;
+        titleText = '<i class="fa-solid fa-list-ul"></i> Sistemin Tüm Önerileri';
     } else if (type === 'daily_all' && date) {
         const dayData = (global_stats_data.daily_breakdown || []).find(d => d.date === date);
         items = dayData?.all_symbols || [];
