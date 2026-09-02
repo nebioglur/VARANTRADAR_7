@@ -625,23 +625,9 @@ class TechnicalEngine(BaseEngine):
             # Günlük % Değişim
             change_pct = ((current_price - prev_close) / prev_close) * 100 if prev_close > 0 else 0.0
             
-            # Günlük Zirve Tespiti
-            daily_high = current_high
-            if daily_stats and symbol in daily_stats:
-                d_stat = daily_stats[symbol]
-                if isinstance(d_stat, dict) and 'High' in d_stat and d_stat['High']:
-                    daily_high = max(float(d_stat['High']), current_high)
-            
-            # Zirveden Düşüş Yüzdesi (Spike & Crash Tespiti)
-            drop_from_high_pct = ((daily_high - current_price) / daily_high) * 100 if daily_high > 0 else 0.0
-
-            # KULLANICI ŞİKAYETİ 1: "PROGRAM ZATEN TAVAN OLMUŞ HİSSLERİ VERMİŞ"
+            # KULLANICI ŞİKAYETİ: "PROGRAM ZATEN TAVAN OLMUŞ HİSSLERİ VERMİŞ"
+            # KULLANICI ŞART KOŞTU: %6.5 ve üzeri yükselmiş olan hisseleri listeye alma (Kar marjı en az %3.5 olmalı)
             if change_pct >= 6.5:
-                return None
-                
-            # KULLANICI ŞİKAYETİ 2: "Patlama yapıp geri dönen hisseleri alıyoruz ve zarar yazıyor" (Saman Alevi Filtresi)
-            # Kural: Hisse gün içi zirvesinden (High) %1.8 veya daha fazla geri çekilmişse elenir!
-            if drop_from_high_pct >= 1.8:
                 return None
             
             # Borsa İstanbul Tavanı (%10 teorik)
@@ -679,16 +665,11 @@ class TechnicalEngine(BaseEngine):
                 upper_wick_ratio = upper_wick / candle_range
                 body_ratio = candle_body / candle_range
                 
-                # Sıkılaştırılmış Kural: Üst fitil (wick) çok uzunsa, direkt reddet. 
-                # (Zirveden satış yemiş, patlamış ama sönmüş hisse)
-                if upper_wick_ratio > 0.40:
-                    return None
-                    
-                if upper_wick_ratio > 0.30:
+                if upper_wick_ratio > 0.35:
                     trap_risk = True
-                    score -= 25
+                    score -= 20
                     candle_strength = "Satış Baskılı (Üst Fitil Tuzağı)"
-                    details.append("⚠️ Dikkat: Uzun üst fitil (Satış Baskısı).")
+                    details.append("⚠️ Dikkat: Uzun üst fitil (Satış Baskısı / Boğa Tuzağı Riski).")
                 elif upper_wick_ratio <= 0.18 and body_ratio >= 0.65:
                     score += 15
                     candle_strength = "Güçlü Boğa (Marubozu)"
@@ -717,20 +698,6 @@ class TechnicalEngine(BaseEngine):
             if current_obv >= max_obv_20:
                 score += 15
                 details.append("OBV yeni zirvede (Kurumsal Para Girişi).")
-                
-            # ==========================================
-            # 4.5. 📈 RÖLATİF GÜÇ (RELATIVE STRENGTH) - Piyasadan Ayrışma
-            # ==========================================
-            market_c = getattr(self, "market_change", 0.0)
-            if change_pct > market_c + 2.0:
-                score += 20
-                details.append(f"⭐ Rölatif Güç: Piyasadan (+%2) pozitif ayrışıyor (Kurumsal İlgi).")
-            elif change_pct > market_c + 1.0:
-                score += 10
-                details.append(f"Rölatif Güç: Piyasadan daha güçlü.")
-            elif change_pct < market_c:
-                score -= 15
-                details.append("Zayıf Halka: Piyasanın gerisinde kalıyor.")
                 
             # ==========================================
             # 5. ⚖️ KESİN VWAP ŞARTI (Mal Dağıtımı / Tuzak Filtresi)

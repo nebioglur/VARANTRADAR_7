@@ -128,28 +128,33 @@ def background_scanner():
             return
         today_str = datetime.now().strftime("%Y-%m-%d")
         
-        # 1. Tavan Adayları Bildirimleri (Aynı gün sadece 1 kez gönder, sadece SCORE >= 90 ise)
+        # 1. Tavan Adayları Bildirimleri (Aynı gün sadece 1 kez gönder)
         for tavan in results.get("tavan_adaylari", []):
             sym = tavan.get("Symbol")
-            score = tavan.get("Score", 0)
-            if sym and score >= 90 and sent_tavan.get(sym) != today_str:
-                notif.send_tavan_alert(sym, score, tavan.get("Report", ""), tavan.get("Position"), extra=tavan)
+            if sym and sent_tavan.get(sym) != today_str:
+                notif.send_tavan_alert(sym, tavan.get("Score", 0), tavan.get("Report", ""), tavan.get("Position"), extra=tavan)
                 sent_tavan[sym] = today_str
                 time.sleep(0.5) # Telegram API rate limit önlemi
                 
-        # 2. 1 Saatlik Güçlü Fırsatlar Bildirimleri (Sadece TAM PUAN Score == 5 olanlar)
+        # 2. 1 Saatlik Güçlü Fırsatlar Bildirimleri (Score 4 veya 5 olanlar, günde 1 kez)
         for opp in results.get("opportunities_1h", []):
             sym = opp.get("Symbol")
             score_5 = opp.get("Score_5", 0)
-            if sym and score_5 == 5 and sent_1h.get(sym) != today_str:
+            if sym and score_5 >= 4 and sent_1h.get(sym) != today_str:
                 notif.send_1h_opportunity_alert(opp)
                 sent_1h[sym] = today_str
                 time.sleep(0.5)
                 
-        # 3. 5m RSI Sinyalleri Bildirimleri ÇOK FAZLA GÜRÜLTÜ (SPAM) YAPTIĞI İÇİN KAPATILDI.
-        # (Sadece ekranda / dashboard'da gösterilecek, Telegram'ı yormayacak)
-        pass
-
+        # 3. 5m RSI Sinyalleri Bildirimleri (Aynı gün, aynı sinyali sadece 1 kez gönder)
+        for rsi in results.get("signals_5m", []):
+            sym = rsi.get("Symbol")
+            sig = rsi.get("Signal")
+            sig_key = f"{today_str}_{sig}"
+            if sym and sent_5m.get(sym) != sig_key:
+                notif.send_5m_rsi_alert(sym, sig, rsi.get("RSI", 0), rsi.get("Price", 0))
+                sent_5m[sym] = sig_key
+                time.sleep(0.5)
+    
     # Hızlı Başlangıç (Fast Start): Eğer cache boşsa kullanıcıyı bekletmemek için sadece BIST 50'yi anında tara
     if not GLOBAL_DASHBOARD_CACHE:
         try:
@@ -167,8 +172,6 @@ def background_scanner():
                 GLOBAL_DASHBOARD_CACHE["opportunities_1h"] = sanitize_for_json(fast_1h_res.get("opportunities_1h", []))
                 GLOBAL_DASHBOARD_CACHE["tavan_adaylari"] = sanitize_for_json(fast_1h_res.get("tavan_adaylari", []))
                 GLOBAL_DASHBOARD_CACHE["stay_away_1h"] = sanitize_for_json(fast_1h_res.get("stay_away_1h", []))
-                GLOBAL_DASHBOARD_CACHE["whale_alerts"] = sanitize_for_json(fast_1h_res.get("whale_alerts", []))
-                GLOBAL_DASHBOARD_CACHE["market_breadth_pct"] = fast_1h_res.get("market_breadth_pct", 50.0)
                 save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
             except Exception as e_1h:
                 print(f"[BACKGROUND] Hızlı Başlangıç 1h hatası: {e_1h}")
@@ -219,8 +222,6 @@ def background_scanner():
                         GLOBAL_DASHBOARD_CACHE["opportunities_1h"] = sanitize_for_json(res_1h.get("opportunities_1h", []))
                         GLOBAL_DASHBOARD_CACHE["tavan_adaylari"] = sanitize_for_json(tavan_candidates)
                         GLOBAL_DASHBOARD_CACHE["stay_away_1h"] = sanitize_for_json(res_1h.get("stay_away_1h", []))
-                        GLOBAL_DASHBOARD_CACHE["whale_alerts"] = sanitize_for_json(res_1h.get("whale_alerts", []))
-                        GLOBAL_DASHBOARD_CACHE["market_breadth_pct"] = res_1h.get("market_breadth_pct", 50.0)
                         save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
                         
                         # Belirli Saatlerdeki Tavan Listesi Bellek Kaydı & 18:10 Kapanış Denetimi
@@ -547,12 +548,8 @@ def index():
 @app.route("/<path:filename>")
 def static_files(filename):
     response = make_response(send_from_directory("ui", filename))
-    if filename.endswith(".js"):
+    if filename.endswith(".js") or filename.endswith(".css"):
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-        response.headers["Content-Type"] = "application/javascript; charset=utf-8"
-    elif filename.endswith(".css"):
-        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-        response.headers["Content-Type"] = "text/css; charset=utf-8"
     return response
 
 @app.route('/api/analyze', methods=['GET'])
@@ -627,44 +624,12 @@ def api_dashboard_init():
     if os.path.exists("dashboard_cache.json"):
         mtime = os.path.getmtime("dashboard_cache.json")
         last_updated = datetime.fromtimestamp(mtime).strftime("%H:%M")
-
-    # --- TRADER COCKPIT DATA FETCH ---
-    xu_change = 0.0
-    try:
-        import yfinance as yf
-        xu = yf.download("XU100.IS", period="5d", interval="1d", progress=False)
-        close_col = 'Close' if 'Close' in xu.columns else 'close'
-        if not xu.empty and len(xu) >= 2:
-            xu_close = float(xu[close_col].iloc[-1])
-            xu_prev = float(xu[close_col].iloc[-2])
-            xu_change = round(((xu_close - xu_prev) / xu_prev) * 100, 2)
-    except:
-        pass
-
-    today_str = datetime.now().strftime("%Y-%m-%d")
-    total_pnl = 0.0
-    open_pos = 0
-    try:
-        from services.trade_database import get_connection
-        with get_connection() as conn:
-            c = conn.cursor()
-            c.execute("SELECT pnl_val FROM trades WHERE date_str = ?", (today_str,))
-            for r in c.fetchall():
-                if r[0]: total_pnl += float(r[0])
-            c.execute("SELECT COUNT(*) FROM trades WHERE date_str = ? AND status='OPEN'", (today_str,))
-            row = c.fetchone()
-            if row: open_pos = row[0]
-    except:
-        pass
         
     return jsonify({
         "status": "success",
         "total_analyzed": total,
         "dashboard_data": clean_cache or {},
-        "last_updated": last_updated,
-        "xu100_change": xu_change,
-        "daily_pnl": total_pnl,
-        "open_pos": open_pos
+        "last_updated": last_updated
     })
 
 @app.route('/api/pool_info', methods=['GET'])
@@ -878,8 +843,8 @@ def api_simulation_live_orders():
         
         valid_signals = []
         for s in signals:
-            score = float(s.get('score', 0) or 0)
-            phase = str(s.get('morning_phase', '') or '')
+            score = float(s.get('score', 0))
+            phase = str(s.get('morning_phase', ''))
             if score >= 80 and "YATAY" not in phase and "NEGATİF" not in phase and "UZAK DUR" not in phase:
                 valid_signals.append(s)
                 
@@ -934,9 +899,7 @@ def api_tavan_history():
             symbol_filter=symbol_filter,
             time_filter=time_filter
         )
-        response = jsonify(sanitize_for_json(res))
-        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-        return response
+        return jsonify(sanitize_for_json(res))
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
@@ -945,9 +908,7 @@ def api_winrate_stats():
     try:
         from services.win_rate_engine import WinRateEngine
         stats = WinRateEngine.get_performance_stats()
-        response = jsonify({"status": "success", "stats": sanitize_for_json(stats)})
-        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-        return response
+        return jsonify({"status": "success", "stats": sanitize_for_json(stats)})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
@@ -964,52 +925,30 @@ def api_tavan_tracker():
 @app.route('/api/simulation/daily_pnl', methods=['GET'])
 def api_simulation_daily_pnl():
     try:
-        import sqlite3
         from services.trade_database import get_connection
-        
         conn = get_connection()
-        conn.row_factory = sqlite3.Row
-        c = conn.cursor()
         
-        # Eğer hiç simülasyon verisi yoksa, mevcut sinyallerden otomatik üret
-        c.execute("SELECT COUNT(*) as cnt FROM equity_log")
-        count_row = c.fetchone()
-        eq_count = count_row['cnt'] if count_row else 0
-        
-        if eq_count == 0:
-            try:
-                from services.simulation_engine import SimulationEngine
-                c.execute("SELECT DISTINCT date_str FROM signals ORDER BY date_str")
-                dates = [r['date_str'] for r in c.fetchall()]
-                if dates:
-                    sim = SimulationEngine()
-                    for d in dates:
-                        try:
-                            sim.run_daily_simulation(d)
-                        except Exception as e_d:
-                            print(f"[API] Auto-sim {d} hatası: {e_d}")
-                    print(f"[API] Otomatik simülasyon {len(dates)} gün için tamamlandı.")
-            except Exception as e_sim:
-                print(f"[API] Auto-simulation error: {e_sim}")
-        
-        # Güncel veriyi döndür
-        c.execute("SELECT * FROM equity_log ORDER BY date_str ASC")
-        equity_rows = c.fetchall()
-        equity_curve = [dict(row) for row in equity_rows]
-        
-        c.execute("SELECT * FROM trades ORDER BY entry_time DESC LIMIT 100")
-        trade_rows = c.fetchall()
-        trades = [dict(row) for row in trade_rows]
-        
-        conn.close()
-        
-        response = jsonify({
-            "status": "success",
-            "equity_curve": sanitize_for_json(equity_curve),
-            "trades": sanitize_for_json(trades)
-        })
-        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-        return response
+        # Get all trades
+        import sqlite3
+        from contextlib import closing
+        with get_connection() as conn:
+            conn.row_factory = sqlite3.Row
+            c = conn.cursor()
+            # Fetch daily equity log
+            c.execute("SELECT * FROM equity_log ORDER BY date_str ASC")
+            equity_rows = c.fetchall()
+            equity_curve = [dict(row) for row in equity_rows]
+            
+            # Fetch closed trades
+            c.execute("SELECT * FROM trades ORDER BY entry_time DESC LIMIT 100")
+            trade_rows = c.fetchall()
+            trades = [dict(row) for row in trade_rows]
+            
+            return jsonify({
+                "status": "success",
+                "equity_curve": sanitize_for_json(equity_curve),
+        "trades": sanitize_for_json(trades)
+            })
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
@@ -1101,6 +1040,3 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=port
     )
-
-
-

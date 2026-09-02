@@ -173,98 +173,40 @@ hit_rate = history_engine.get_signal_hit_rate()
 ])
 
 # ---------------------------------------------------------
-# TAB 1: MARKET OVERVIEW (TRADER KOKPİTİ)
+# TAB 1: MARKET OVERVIEW
 # ---------------------------------------------------------
 with tab_market:
-    st.markdown("### 🛩️ Kurumsal Trader Kokpiti")
-    
-    # 1. PİYASA NABZI & ENDEKS
-    import yfinance as yf
-    try:
-        xu = yf.download("XU100.IS", period="5d", interval="1d", progress=False)
-        close_col = 'Close' if 'Close' in xu.columns else 'close'
-        xu_close = float(xu[close_col].iloc[-1])
-        xu_prev = float(xu[close_col].iloc[-2])
-        xu_change = ((xu_close - xu_prev) / xu_prev) * 100
+    st.markdown("### 📊 Market Overview & Heatmap")
+    col1, col2, col3, col4, col5 = st.columns(5)
+    with col1:
+        st.metric("Taranan Varlık", f"{len(df_results)}")
+    with col2:
+        firsatlar = df_results[df_results['final_score'] >= 75] # API'den gelen skora göre
+        st.metric("Potansiyel Fırsat", f"{len(firsatlar)}")
+    with col3:
+        en_guclu = df_results.iloc[0]
+        st.metric("En Güçlü Varlık", f"{en_guclu['symbol']}")
+    with col4:
+        st.metric("Max Kalite Skoru", f"%{int(en_guclu['final_score'])}")
+    with col5:
+        st.metric("Radar Hit Rate", f"%{hit_rate}")
         
-        shield_color = "🔴 KAPALI" if xu_change <= -1.5 else "🟢 AÇIK"
-        shield_text = "Riskli Piyasa (Alım Durduruldu)" if xu_change <= -1.5 else "Güvenli (Taramalar Aktif)"
-    except:
-        xu_close, xu_change, shield_color, shield_text = 0, 0, "⚠️ BİLİNMİYOR", "Veri Çekilemedi"
-        
-    # 2. GÜNLÜK PNL & SİMÜLASYON DURUMU
-    import sqlite3
-    from datetime import datetime
-    today_str = datetime.now().strftime("%Y-%m-%d")
-    total_pnl = 0.0
-    open_positions = 0
-    win_count = 0
-    loss_count = 0
-    
-    try:
-        conn = sqlite3.connect('database/bist_data.db')
-        c = conn.cursor()
-        c.execute("SELECT pnl_val FROM trades WHERE date_str = ?", (today_str,))
-        trades = c.fetchall()
-        for t in trades:
-            if t[0] is not None:
-                total_pnl += float(t[0])
-                if float(t[0]) > 0:
-                    win_count += 1
-                else:
-                    loss_count += 1
-        
-        c.execute("SELECT COUNT(*) FROM trades WHERE date_str = ? AND status = 'OPEN'", (today_str,))
-        row = c.fetchone()
-        if row:
-            open_positions = row[0]
-        conn.close()
-    except Exception as e:
-        pass
-        
-    # AI Yorumu
-    ai_comment = "BIST100'de stabil görünüm devam ediyor. Seçici alımlar ve MTF ivme fırsatları değerlendirilebilir."
-    if xu_change <= -1.5:
-        ai_comment = "⚠️ Endekste sert satış baskısı var. Robot alım motorları (Şalter) uyku moduna alındı. Nakitte kalın."
-    elif xu_change > 1.5:
-        ai_comment = "🚀 Endeks çok güçlü. Tavan adaylarında hedefler daha esnek tutulabilir. Boğa piyasası aktif."
-    elif total_pnl > 0 and xu_change > 0:
-        ai_comment = f"Endeks pozitif ayrışıyor. Bugün simülasyonda başarılı işlemler kilitlendi. Güçlü adaylar takipte."
-        
-    st.info(f"**🤖 AI Kurumsal Özet:** {ai_comment}")
-    
-    st.markdown("#### 1️⃣ Piyasa Sağlığı & Güvenlik Kalkanı")
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("BIST100 (XU100)", f"{xu_close:,.2f}", f"{xu_change:.2f}%")
-    c2.metric("Robot Şalter Durumu", shield_color, shield_text, delta_color="off")
-    c3.metric("Potansiyel Fırsatlar", f"{len(df_results[df_results['final_score'] >= 75]) if not df_results.empty else 0}")
-    c4.metric("Radar Hit Rate", f"%{hit_rate}")
-    
-    st.markdown("#### 2️⃣ Simülasyon Cüzdanı (Günün Özeti)")
-    sc1, sc2, sc3, sc4 = st.columns(4)
-    sc1.metric("Günlük Realize Kâr/Zarar", f"{total_pnl:,.2f} ₺", f"{win_count} Kazanç / {loss_count} Kayıp")
-    sc2.metric("Açık Pozisyonlar", f"{open_positions} İşlem", "Takip ediliyor", delta_color="off")
-    
-    if not df_results.empty:
-        sc3.metric("En Güçlü Varlık", f"{df_results.iloc[0]['symbol']}")
-        sc4.metric("Max Kalite Skoru", f"%{int(df_results.iloc[0]['final_score'])}")
-    
     st.markdown("#### BIST30 Asset Quality Heatmap")
-    if not df_results.empty:
-        try:
-            import plotly.express as px
-            fig = px.treemap(
-                df_results, 
-                path=[px.Constant("BIST30 Market"), 'symbol'], 
-                values='final_score',
-                color='final_score', 
-                hover_data=['decision', 'confidence'], 
-                color_continuous_scale='RdYlGn',
-                title='Asset Quality Score Dağılımı'
-            )
-            st.plotly_chart(fig, use_container_width=True)
-        except ImportError:
-            st.warning("⚠️ Plotly kütüphanesi yüklü değil.")
+    try:
+        import plotly.express as px
+        # Her hisseye pozitif değer atamak için puanı kullanıyoruz
+        fig = px.treemap(
+            df_results, 
+            path=[px.Constant("BIST30 Market"), 'symbol'], 
+            values='final_score',
+            color='final_score', 
+            hover_data=['decision', 'confidence'], # API'den gelen yeni alanlar
+            color_continuous_scale='RdYlGn',
+            title='Asset Quality Score Dağılımı'
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    except ImportError:
+        st.warning("⚠️ Plotly kütüphanesi yüklü değil. Harita ve grafikleri görebilmek için terminalden `pip install plotly` çalıştırın ve dosyayı GitHub'a yükleyin (requirements.txt).")
 
 # ---------------------------------------------------------
 # TAB 2: ASSET SCANNER
@@ -1483,30 +1425,3 @@ with tab_portfolio:
                     col3.metric("Duyarlılık", f"{s_sent['Score']}/100", delta=s_sent['Status'])
                     col4.metric("Smart Money", f"{s_sm['Score']}/100", delta=s_sm['Status'])
                     col5.metric("Makro Rejim", s_macro['Status'])
-with tab_stats:
-    st.markdown("### 📊 Win Rate & Historical Statistics")
-    try:
-        from services.tavan_tracker import TavanAuditTracker
-        from services.win_rate_engine import WinRateEngine
-        
-        stats = WinRateEngine.get_performance_stats()
-        
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Win Rate", f"%{stats.get('tavan_radar_win_rate', 0)}")
-        col2.metric("+%5 Hit Rate", f"%{stats.get('plus5_hit_rate', 0)}")
-        col3.metric("Profit Factor", str(stats.get('profit_factor', 0)))
-        col4.metric("Avg Warrant Gain", f"%{stats.get('avg_ahlatci_warrant_gain', 0)}")
-        
-        st.markdown("#### 📅 Daily Historical Breakdown")
-        history = TavanAuditTracker.get_long_term_history()
-        breakdown = history.get('daily_breakdown', [])
-        
-        if breakdown:
-            import pandas as pd
-            df = pd.DataFrame(breakdown)
-            st.dataframe(df, use_container_width=True)
-        else:
-            st.info("No historical tracking data found.")
-            
-    except Exception as e:
-        st.error(f"Error loading statistics: {str(e)}")

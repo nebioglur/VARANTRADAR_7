@@ -39,30 +39,6 @@ class MTFScanner:
           15m: cumulative return > 0 (son 10 mum)
         """
         pool = list(set(pool))[:max_symbols]  # cap to avoid timeout
-        
-        # ==========================================
-        # 🛑 ANA ŞALTER (MARKET SHIELD) - BIST ÇÖKÜŞ KONTROLÜ
-        # ==========================================
-        try:
-            xu = yf.download("XU100.IS", period="5d", interval="1d", progress=False)
-            if not xu.empty and len(xu) >= 2:
-                close_col = 'Close' if 'Close' in xu.columns else 'close'
-                if close_col in xu.columns:
-                    xu100_close = float(xu[close_col].iloc[-1])
-                    xu100_prev = float(xu[close_col].iloc[-2])
-                    xu100_change = ((xu100_close - xu100_prev) / xu100_prev) * 100
-                    
-                    if xu100_change <= -1.5:
-                        return [{
-                            "Symbol":   "XU100",
-                            "Score":    0,
-                            "Price":    round(xu100_close, 2),
-                            "Target":   0,
-                            "Trend":    "🛑 ŞALTER KAPALI",
-                            "Momentum": f"Piyasa %1.5'ten fazla düştü ({xu100_change:.2f}%). Alım durduruldu.",
-                        }]
-        except Exception:
-            pass
 
         # --- Step 1: Bulk 1h download ---
         try:
@@ -126,19 +102,6 @@ class MTFScanner:
                 cur_vol = float(vol15.iloc[-1])
                 vol_surge = (cur_vol / avg_vol) if avg_vol > 0 else 0
 
-                # 🛑 ÖĞLE ARASI TESTERE (LUNCH TRAP) FİLTRESİ
-                from datetime import datetime
-                import pytz
-                import datetime as dt
-                try:
-                    tz = pytz.timezone('Europe/Istanbul')
-                    now_time = datetime.now(tz).time()
-                    is_lunch_trap = dt.time(12, 30) <= now_time <= dt.time(14, 0)
-                    if is_lunch_trap and vol_surge < 3.0:
-                        continue # Öğle arası hacim 3 katına çıkmamışsa kesinlikle sahte kırılımdır, ele!
-                except Exception:
-                    pass
-
                 # Sadece yukari ivmeli hisseler
                 if cum_ret <= 0:
                     continue
@@ -148,21 +111,12 @@ class MTFScanner:
                 )
                 score = min(100, 50 + cum_ret * 8 + vol_surge * 3 + (ind_1h["rsi"] - 45) * 0.5 if ind_1h else 50 + cum_ret * 8)
 
-                if score >= 85 and vol_surge > 1.5:
-                    trend_badge = "🔥 GÜÇLÜ AL"
-                elif score >= 70:
-                    trend_badge = "✅ HIZLI AL"
-                elif score >= 60:
-                    trend_badge = "⚠️ POTANSİYEL"
-                else:
-                    trend_badge = "⏳ İZLE"
-
                 results.append({
                     "Symbol":   sym,
                     "Score":    round(score, 1),
                     "Price":    round(float(close15.iloc[-1]), 2),
                     "Target":   round(float(close15.iloc[-1]) * 1.05, 2),
-                    "Trend":    trend_badge,
+                    "Trend":    "MTF IVME",
                     "Momentum": f"15m Kumulatif: %{cum_ret:.2f} | Hacim: {vol_surge:.1f}x",
                 })
             except Exception:

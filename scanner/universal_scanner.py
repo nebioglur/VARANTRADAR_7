@@ -179,40 +179,7 @@ class UniversalScanner:
         tech_result["Money_Volume"] = money_volume
         tech_result["Price"] = round(close_today, 2)
         tech_result["High"] = round(float(df['high'].iloc[-1]), 2)
-                tech_result["Low"] = round(float(df['low'].iloc[-1]), 2)
-        
-        # --- DOĞRU YATIRIM (SMART INVESTMENT) METRICS ---
-        try:
-            # Calculate 14-day ATR (Average True Range)
-            high_low = df['high'] - df['low']
-            high_close = (df['high'] - df['close'].shift()).abs()
-            low_close = (df['low'] - df['close'].shift()).abs()
-            tr = high_low.combine(high_close, max).combine(low_close, max)
-            atr14 = tr.rolling(window=14).mean().iloc[-1]
-            
-            if atr14 and close_today > 0:
-                # Risk Seviyesi (Volatility based)
-                volatility_pct = (atr14 / close_today) * 100
-                if volatility_pct < 2.5:
-                    tech_result["Risk_Level"] = "Düşük Risk"
-                elif volatility_pct < 5.0:
-                    tech_result["Risk_Level"] = "Orta Risk"
-                else:
-                    tech_result["Risk_Level"] = "Yüksek Risk"
-                    
-                # Hedef ve Stop (Oyun Planı)
-                # Kural: Hedef 2.5x ATR yukarı, Stop 1.5x ATR aşağı
-                tech_result["Target"] = round(close_today + (atr14 * 2.5), 2)
-                tech_result["Stop_Loss"] = round(close_today - (atr14 * 1.5), 2)
-            else:
-                tech_result["Risk_Level"] = "Bilinmiyor"
-                tech_result["Target"] = 0.0
-                tech_result["Stop_Loss"] = 0.0
-        except Exception:
-            tech_result["Risk_Level"] = "Bilinmiyor"
-            tech_result["Target"] = 0.0
-            tech_result["Stop_Loss"] = 0.0
-
+        tech_result["Low"] = round(float(df['low'].iloc[-1]), 2)
         
         return tech_result
 
@@ -220,36 +187,6 @@ class UniversalScanner:
         """
         1 Saatlik veri indirir ve teknik kesişimler ile tavan adaylarını tespit eder.
         """
-        # ==========================================
-        # 🛑 ANA ŞALTER (MARKET SHIELD) - BIST ÇÖKÜŞ KONTROLÜ
-        # ==========================================
-        try:
-            xu = yf.download("XU100.IS", period="5d", interval="1d", progress=False)
-            if not xu.empty and len(xu) >= 2:
-                close_col = 'Close' if 'Close' in xu.columns else 'close'
-                if close_col in xu.columns:
-                    xu100_close = float(xu[close_col].iloc[-1])
-                    xu100_prev = float(xu[close_col].iloc[-2])
-                    xu100_change = ((xu100_close - xu100_prev) / xu100_prev) * 100
-                    
-                    self.tech_engine.market_change = xu100_change # Rölatif Güç analizi için kaydet
-                    
-                    if xu100_change <= -1.5:
-                        print(f"[MARKET SHIELD] XU100 Çöktü ({xu100_change:.2f}%). Robot alım motorları uyku modunda!")
-                        return {
-                            "opportunities_1h": [], 
-                            "tavan_adaylari": [{
-                                "Symbol": "XU100", 
-                                "Score": 0, 
-                                "Report": f"🛑 PİYASA ÇÖKTÜ ({xu100_change:.2f}%). SİGORTA AKTİF, NAKİTTE KALIN.", 
-                                "Position": "ŞALTER KAPALI"
-                            }],
-                            "stay_away_1h": []
-                        }
-        except Exception as e:
-            self.tech_engine.market_change = 0.0
-            print(f"[MARKET SHIELD] XU100 kontrol hatası: {e}")
-
         if daily_stats:
             filtered_symbols = []
             for sym in symbols:
@@ -276,13 +213,8 @@ class UniversalScanner:
         tavan_adaylari = []
         stay_away_1h = []
         vip_candidates = []
-        whale_alerts = []
         
         symbols_to_process = [symbols[0]] if len(symbols) == 1 else symbols
-        
-        # PİYASA RÖNTGENCİSİ (Market Breadth)
-        bullish_stocks_count = 0
-        total_processed_stocks = 0
         
         for sym in symbols_to_process:
             if len(symbols) == 1:
@@ -304,41 +236,6 @@ class UniversalScanner:
                 
             df['close'] = df['close'].ffill()
             df = df[required_cols]
-            
-            # --- PİYASA RÖNTGENCİSİ HESAPLAMASI ---
-            if len(df) > 21:
-                total_processed_stocks += 1
-                try:
-                    current_close = float(df['close'].iloc[-1])
-                    ema21 = float(df['close'].ewm(span=21, adjust=False).mean().iloc[-1])
-                    if current_close > ema21:
-                        bullish_stocks_count += 1
-                except:
-                    pass
-            
-            # --- 🐋 BALİNA (WHALE) AKÜMÜLASYON DEDEKTÖRÜ ---
-            try:
-                if len(df) > 20:
-                    vol_series = df['volume']
-                    current_vol = float(vol_series.iloc[-1])
-                    avg_vol = float(vol_series.rolling(20).mean().iloc[-1])
-                    if avg_vol > 1000 and current_vol > (avg_vol * 3.5): # 3.5x normal volume
-                        close_price = float(df['close'].iloc[-1])
-                        prev_close = float(df['close'].iloc[-2])
-                        price_change = ((close_price - prev_close) / prev_close) * 100
-                        if -2.0 <= price_change <= 4.0: # Fiyat henüz patlamamış
-                            whale_alerts.append({
-                                "Symbol": sym,
-                                "Current_Vol": current_vol,
-                                "Avg_Vol": avg_vol,
-                                "Spike_Multiplier": round(current_vol / avg_vol, 1),
-                                "Price": close_price,
-                                "Price_Change": round(price_change, 2),
-                                "Score": 95,
-                                "Report": f"Anormal Hacim: Ortalamanın {round(current_vol/avg_vol, 1)} katı işlem hacmi var ancak fiyat sadece %{round(price_change, 2)} değişti. Güçlü Balina akümülasyonu olabilir!"
-                            })
-            except Exception as e:
-                pass
             
             # --- STRICT CUSTOM STRATEGY FILTER (AL / YÜKSELİŞ) ---
             is_match_al, bars_ago_al, _ = self.tech_engine.check_custom_strict_strategy(df, direction="AL")
@@ -396,15 +293,10 @@ class UniversalScanner:
         
         stay_away_1h = sorted(stay_away_1h, key=lambda x: (x.get("Crossover_Bars_Ago", 999), x.get("EMA_Gap_Pct", 0)))
         
-        # Piyasa Röntgencisi Sonucu (Market Breadth)
-        market_breadth_pct = (bullish_stocks_count / total_processed_stocks * 100) if total_processed_stocks > 0 else 50.0
-        
         return {
             "opportunities_1h": opportunities,
             "stay_away_1h": stay_away_1h,
-            "tavan_adaylari": tavan_adaylari,
-            "whale_alerts": whale_alerts,
-            "market_breadth_pct": round(market_breadth_pct, 1)
+            "tavan_adaylari": tavan_adaylari
         }
 
     def _trigger_batch_vip_signals(self, vips: list):

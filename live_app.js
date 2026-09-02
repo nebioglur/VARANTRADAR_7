@@ -6,11 +6,6 @@ let chartInstance = null;
 let svrChartInstance = null;
 let currentProjections = null;
 
-// Auto-refresh interval state for stats and simulation tabs
-let statsRefreshInterval = null;
-let simRefreshInterval = null;
-let homeStatsRefreshInterval = null;
-
 // Chart State
 window.globalCharts = [];
 window.globalSeries = {};
@@ -269,26 +264,12 @@ function switchMainTab(tabName, btnElement) {
     }
     if (tabName === 'stats') {
         fetchStatsTabData();
-        // İstatistik sekmesi açıkken 60 saniyede bir otomatik güncelle
-        if (statsRefreshInterval) clearInterval(statsRefreshInterval);
-        statsRefreshInterval = setInterval(fetchStatsTabData, 60000);
-    } else {
-        if (statsRefreshInterval) { clearInterval(statsRefreshInterval); statsRefreshInterval = null; }
     }
     if (tabName === 'varant') {
-        // Varant sekmesini yükle (mevcut analiz varsa)
-        if (typeof loadDetailedVarantSim === 'function' && window.currentAnalyzedSymbol) {
-            const spotPrice = parseFloat(document.getElementById('tk-price')?.innerText?.replace('₺','').replace(',','') || 100);
-            loadDetailedVarantSim(window.currentAnalyzedSymbol, spotPrice);
-        }
+        fetchVarantDashboardData();
     }
     if (tabName === 'simulation') {
         fetchSimulationData();
-        // Simülasyon sekmesi açıkken 60 saniyede bir otomatik güncelle
-        if (simRefreshInterval) clearInterval(simRefreshInterval);
-        simRefreshInterval = setInterval(fetchSimulationData, 60000);
-    } else {
-        if (simRefreshInterval) { clearInterval(simRefreshInterval); simRefreshInterval = null; }
     }
 }
 
@@ -2679,13 +2660,10 @@ async function recalculateDetailVarantSim() {
 
 // Sayfa yüklendiğinde simülatörü ve sinyal karnesini otomatik yükle
 window.addEventListener('DOMContentLoaded', () => {
-    // NOT: fetchWinRateScorecard kaldırıldı - fetchHomeWinrateStats ile aynı DOM elementlerini eziyordu
+    fetchWinRateScorecard();
     runVarantSimulation();
     fetchHomeWinrateStats();
     fetchStatsTabData();
-    
-    // Ana sayfa istatistiklerini 60 saniyede bir otomatik güncelle
-    homeStatsRefreshInterval = setInterval(fetchHomeWinrateStats, 60000);
 });
 
 // 📸 ANALİZ RAPORUNU JPG / GÖRSEL OLARAK İNDİRME FONKSİYONU
@@ -3429,10 +3407,23 @@ async function fetchSimulationData() {
                         const pnlPctStr = isClosed ? `${pnlSign}${(t.pnl_pct || 0).toFixed(2)}%` : '-';
                         const statusStr = isClosed ? (t.exit_reason || 'Kapandı') : '<span style="color:var(--accent-yellow); font-weight:bold;"><i class="fa-solid fa-spinner fa-spin"></i> AÇIK POZİSYON</span>';
 
+                        const formatDt = (iso) => {
+                            if (!iso) return '-';
+                            try {
+                                const d = new Date(iso);
+                                if(isNaN(d.getTime())) return iso;
+                                const pad = n => n.toString().padStart(2, '0');
+                                return pad(d.getDate()) + '/' + pad(d.getMonth()+1) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+                            } catch(e) { return iso; }
+                        };
+                        const entryTimeFmt = formatDt(t.entry_time);
+                        const exitTimeFmt = isClosed ? formatDt(t.exit_time) : '<span style="color:var(--accent-yellow)">İşlemde</span>';
+
                         tr.innerHTML = `
-                            <td>${t.entry_time}</td>
-                            <td>${exitTimeStr}</td>
+                            <td>${entryTimeFmt}</td>
+                            <td>${exitTimeFmt}</td>
                             <td style="font-weight:bold; color:var(--text-light);">${t.symbol}</td>
+                            <td>${t.shares || '-'}</td>
                             <td>₺${t.entry_price.toFixed(2)}</td>
                             <td>${exitPriceStr}</td>
                             <td style="color:${pnlColor}; font-weight:bold;">${pnlValStr}</td>

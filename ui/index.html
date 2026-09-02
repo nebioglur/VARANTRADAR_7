@@ -6,7 +6,7 @@
     <title>VARANTRADAR PRO | FINTECH TERMINAL</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=20260830_whale_v2">
+    <link rel="stylesheet" href="style.css?v=20260815_v19_final_fix">
     <!-- ApexCharts -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     
@@ -91,34 +91,6 @@
                     <span style="font-size: 1rem; font-weight: bold; color: var(--accent-green); background: rgba(34,197,94,0.1); padding:0.4rem 0.9rem; border-radius:20px; border:1px solid rgba(34,197,94,0.3);" id="total-analyzed-counter">RADAR BUGÜNE KADAR 0 VERİYİ ANALİZ ETTİ</span>
                     <span style="font-size: 0.85rem; color: var(--text-muted);" id="last-scan-time"><i class="fa-solid fa-clock"></i> Son Tarama: Bekleniyor...</span>
                 </div>
-            </div>
-
-            <!-- TRADER COCKPIT -->
-            <div id="trader-cockpit" style="grid-column: 1 / -1; display:flex; justify-content:space-between; align-items:center; background:var(--bg-card); border:1px solid var(--border-color); border-radius:12px; padding:1.5rem; margin-bottom:1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-               <div style="flex: 1; margin-right: 1.5rem;">
-                  <h3 style="margin:0; font-size:1.2rem; color:var(--text-light);"><i class="fa-solid fa-plane"></i> Kurumsal Trader Kokpiti</h3>
-                  <div id="ai-summary" style="margin-top:0.5rem; padding:0.8rem; background:rgba(59,130,246,0.1); border-left:4px solid var(--accent-blue); border-radius:4px; font-size:0.95rem; line-height: 1.4;">
-                     Veriler Yükleniyor...
-                  </div>
-               </div>
-               <div style="display:flex; gap:2rem;">
-                  <div style="text-align:center;">
-                     <div style="font-size:0.8rem; color:var(--text-muted);">BIST100 (XU100)</div>
-                     <div id="xu100-val" style="font-size:1.4rem; font-weight:700;">--</div>
-                  </div>
-                  <div style="text-align:center;">
-                     <div style="font-size:0.8rem; color:var(--text-muted);">Piyasa Nefesi</div>
-                     <div id="breadth-val" style="font-size:1.4rem; font-weight:700;" title="BIST hisselerinin % kaçı teknik olarak pozitif trendde (EMA21 üzeri)?">--</div>
-                  </div>
-                  <div style="text-align:center;">
-                     <div style="font-size:0.8rem; color:var(--text-muted);">Şalter Durumu</div>
-                     <div id="shield-status" style="font-size:1.4rem; font-weight:700;">--</div>
-                  </div>
-                  <div style="text-align:center;">
-                     <div style="font-size:0.8rem; color:var(--text-muted);">Günlük Net Kâr (PNL)</div>
-                     <div id="daily-pnl" style="font-size:1.4rem; font-weight:700;">-- ₺</div>
-                  </div>
-               </div>
             </div>
             
             <!-- 📱 MOBİL VE HIZLI GEÇİŞ KONTROLLERİ (GERİ / İLERİ TUŞLARI) -->
@@ -1288,12 +1260,12 @@
                 <div class="table-scroll-wrapper" style="max-height: 500px; overflow-y: auto;">
                     <table class="data-table" style="width:100%; border-collapse: separate; border-spacing: 0;">
                             <tr>
-                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Giriş Zamanı</th>
-                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Çıkış Zamanı</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Alış Saati</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Satış Saati</th>
                                 <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Sembol</th>
                                 <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Lot</th>
-                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Giriş Fiyatı</th>
-                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Çıkış Fiyatı</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Alış Fiyatı</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Satış Fiyatı</th>
                                 <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Kâr / Zarar (₺)</th>
                                 <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Kâr / Zarar (%)</th>
                                 <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Durum / Çıkış Nedeni</th>
@@ -1741,29 +1713,6 @@
 
 
 
-    <!-- 🟢 TOAST NOTIFICATION CONTAINER -->
-    <div id="toast-container" class="toast-container"></div>
-
-    <!-- 🔊 AUDIO PING -->
-    <audio id="ping-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
-
-    <!-- 🩻 X-RAY MINI MODAL -->
-    <div id="xray-modal" class="modal-overlay" style="display:none;" onclick="closeXRayModal(event)">
-        <div class="modal-content xray-content" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3 id="xray-title"><i class="fa-solid fa-microscope"></i> AI X-Ray Analizi</h3>
-                <button class="btn-close" onclick="closeXRayModal(event)"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="modal-body" id="xray-body">
-                Yükleniyor...
-            </div>
-        </div>
-    </div>
-
-    <script src="app.js?v=20260830_whale_v10" charset="utf-8"></script>
+    <script src="app.js?v=20260820_mtf_v1"></script>
 </body>
 </html>
-
-
-
-

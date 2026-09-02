@@ -3,27 +3,6 @@ from datetime import datetime, time, timedelta
 import json
 from services.trade_database import get_connection
 from services.market_data import MarketDataManager
-import pytz
-from config.bist_symbols import YILDIZ_SYMBOLS
-
-# OTOMATİK KARA LİSTE CEZA PUANI TABLOSU (Günlük Stop-Loss sayacı)
-PENALTY_BLACKLIST_STRIKES = {}
-
-# SÜREKLİ KARA LİSTE (Sığ ve Manipülatif Hisseler)
-HARDCODED_BLACKLIST = {'TETMT.IS', 'ISBTR.IS', 'ISKUR.IS', 'KENT.IS', 'QNBFL.IS', 'QNBDI.IS', 'GARFA.IS', 'UFUK.IS', 'UZERB.IS'}
-
-SECTOR_MAP = {
-    'AKBNK.IS': 'BANKA', 'GARAN.IS': 'BANKA', 'YKBNK.IS': 'BANKA', 'ISCTR.IS': 'BANKA', 'VAKBN.IS': 'BANKA', 'HALKB.IS': 'BANKA',
-    'THYAO.IS': 'HAVACILIK', 'PGSUS.IS': 'HAVACILIK', 'TAVHL.IS': 'HAVACILIK',
-    'FROTO.IS': 'OTOMOTIV', 'TOASO.IS': 'OTOMOTIV', 'DOAS.IS': 'OTOMOTIV', 'KARSN.IS': 'OTOMOTIV', 'ASUZU.IS': 'OTOMOTIV',
-    'TCELL.IS': 'TELEKOM', 'TTKOM.IS': 'TELEKOM',
-    'KCHOL.IS': 'HOLDING', 'SAHOL.IS': 'HOLDING', 'SISE.IS': 'HOLDING', 'DOHOL.IS': 'HOLDING', 'ALARK.IS': 'HOLDING',
-    'TUPRS.IS': 'PETROKIMYA', 'PETKM.IS': 'PETROKIMYA', 'SASA.IS': 'KIMYA', 'HEKTS.IS': 'KIMYA',
-    'EREGL.IS': 'DEMIR', 'KRDMD.IS': 'DEMIR',
-    'BIMAS.IS': 'PERAKENDE', 'MGROS.IS': 'PERAKENDE', 'SOKM.IS': 'PERAKENDE',
-    'ASELS.IS': 'SAVUNMA', 'MIATK.IS': 'TEKNOLOJI', 'ARDYZ.IS': 'TEKNOLOJI',
-    'ASTOR.IS': 'ENERJI', 'ENJSA.IS': 'ENERJI', 'CWENE.IS': 'ENERJI', 'EUPWR.IS': 'ENERJI', 'ALFAS.IS': 'ENERJI'
-}
 
 class SimulationEngine:
     """
@@ -120,8 +99,8 @@ class SimulationEngine:
         valid_signals = []
         import json
         for s in signals:
-            score = float(s.get('score', 0) or 0)
-            phase = str(s.get('morning_phase', '') or '')
+            score = float(s['score'])
+            phase = str(s['morning_phase'])
             
             # KULLANICI İSTEĞİ: SİMULASYONDA EMA 50 EMA 200 ÜSTÜ FILTRESİNE UYAN HİSSELERİ ELE AL
             metadata_str = s.get('metadata')
@@ -150,7 +129,7 @@ class SimulationEngine:
                 except (ValueError, TypeError):
                     pass  # Dönüşüm hatası olursa filtreyi atla
                     
-            if score >= 75 and "YATAY" not in phase and "NEGATİF" not in phase and "UZAK DUR" not in phase:
+            if score >= 80 and "YATAY" not in phase and "NEGATİF" not in phase and "UZAK DUR" not in phase:
                 valid_signals.append(s)
                 
         selected = valid_signals
@@ -158,8 +137,9 @@ class SimulationEngine:
             return
             
         current_cash = self.daily_budget
-        # Optimize Edilmiş Sistem: İşlem başına portföyün %50'sini kullan (5000 TL)
-        ideal_allocation = 5000.0 
+        # Çelik Sistem: İşlem başına max zarar 100 TL. Stop = %3. 
+        # İdeal Sermaye = 100 / 0.03 = 3333 TL.
+        ideal_allocation = 3333.0 
         
         active_trades = []
         completed_trades = []
@@ -215,30 +195,10 @@ class SimulationEngine:
                 tp1_price = trade['tp1_price']
                 tp2_price = trade['tp2_price']
                 
-                # İZLEYEN STOP (TRAILING STOP) - Kârı Kilitleme (Sadece elde kalan lotlar için veya risk free için)
-                if close >= entry * 1.08:
-                    trade['stop_price'] = max(trade['stop_price'], entry * 1.06) # %8'i gördüyse %6'yı kilitle
-                    stop_price = trade['stop_price']
-                elif close >= entry * 1.06:
-                    trade['stop_price'] = max(trade['stop_price'], entry * 1.04) # %6'yı gördüyse %4'ü kilitle
-                    stop_price = trade['stop_price']
-                elif close >= entry * 1.04:
-                    trade['stop_price'] = max(trade['stop_price'], entry * 1.01) # %4'ü gördüyse %1'i kilitle (Maliyetin üstü)
-                    stop_price = trade['stop_price']
-                
-                # CUMA KAPANIŞ (HAFTA SONU) RİSK KALKANI - 17:45'te Tahtayı Boşalt
-                from datetime import time as dt_time
-                is_friday = current_time.weekday() == 4
-                if is_friday and current_time.time() >= dt_time(17, 45):
-                    sell_price = close * 0.9985 # Slipaj
-                    reason = f"⚠️ CUMA KAPANIŞ KALKANI (Hafta Sonu Nakde Geçildi)"
                 # En kötü senaryo: Önce Stop Loss patlar varsayımı
-                elif low <= stop_price:
+                if low <= stop_price:
                     sell_price = stop_price * 0.9985 # Slipaj
-                    if stop_price > entry:
-                        reason = f"🛡️ İZLEYEN STOP (Kâr Kilitlendi)"
-                    else:
-                        reason = f"⛔ ÇELİK STOP KESİLDİ (-%5)"
+                    reason = f"⛔ ÇELİK STOP KESİLDİ (-%3)"
                 elif high >= tp2_price:
                     sell_price = tp2_price
                     reason = f"🚀 TAVAN (TAM KÂR ALINDI)"
@@ -290,17 +250,11 @@ class SimulationEngine:
                     
                     if "STOP" in reason:
                         stopped_out_symbols.add(sym)
-                        PENALTY_BLACKLIST_STRIKES[sym] = PENALTY_BLACKLIST_STRIKES.get(sym, 0) + 1
                         
                     current_cash += sell_volume - commission
                     
             # 2. YENİ ALIMLARI KONTROL ET
             open_symbols = {t['symbol'] for t in active_trades if t['status'] == 'OPEN'}
-            
-            # GÜNLÜK HEDEF (PNL LOCK) VE DRAWDOWN ŞALTERİ
-            current_realized_pnl = sum(t.get('pnl_val', 0) for t in completed_trades)
-            daily_target_reached = current_realized_pnl >= 2000.0 # 2000 TL net kâra ulaşınca dur (Paydos)
-            daily_drawdown_reached = current_realized_pnl <= -1500.0 # -1500 TL zararda intikam işlemini engelle
             
             to_remove = []
             for s in pending_signals:
@@ -310,31 +264,9 @@ class SimulationEngine:
                 
                 if dt_current >= dt_ps:
                     to_remove.append(s)
-                    
-                    # 1. TEMEL KONTROLLER VE ŞALTERLER
                     if s['symbol'] in open_symbols:
                         continue
                         
-                    if daily_target_reached or daily_drawdown_reached:
-                        continue # Hedef veya Drawdown limitine ulaşıldı, yeni işlem açma!
-                        
-                    # 2. KARA LİSTE (BLACKLIST) VE CEZA KONTROLÜ
-                    new_sym = s['symbol']
-                    if new_sym in HARDCODED_BLACKLIST or PENALTY_BLACKLIST_STRIKES.get(new_sym, 0) >= 2:
-                        continue # Bu hisse yasaklı veya son zamanlarda çok fazla stoplattı!
-                        
-                    # 3. KORELASYON KALKANI (SEKTÖR LİMİTİ)
-                    active_sectors = set()
-                    for t in active_trades:
-                        if t['status'] == 'OPEN':
-                            sec = SECTOR_MAP.get(t['symbol'], 'DIGER')
-                            if sec != 'DIGER':
-                                active_sectors.add(sec)
-                    
-                    new_sec = SECTOR_MAP.get(new_sym, 'DIGER')
-                    if new_sec != 'DIGER' and new_sec in active_sectors:
-                        continue # Sektör limiti dolu, bu işlemi atla! (Korelasyon Kalkanı)
-                    
                     # "Squaze (yukarı ok) + Güçlü Giriş + Pozitif Alpha" Kontrolü
                     alpha_str = str(s.get("Alpha_Str", ""))
                     sqz_str = str(s.get("Short_Squeeze", ""))
@@ -346,66 +278,23 @@ class SimulationEngine:
                         ("Yükseliyor" in sqz_str or "Patlatma" in sqz_str)
                     )
                     
-                    # --- KELLY KRİTERİ İLE DİNAMİK KASA YÖNETİMİ (Smart Allocation) ---
-                    # İşlemin AI puanına ve Super Green durumuna göre risk ayarı
-                    ai_score = s.get("Score", 0)
-                    
-                    if is_super_green or ai_score >= 95:
-                        # Kusursuz Fırsat (VIP): Kasanın maksimum oranını (örneğin %100 veya 1.5x) kullan
-                        dynamic_ideal_alloc = self.daily_budget
-                    elif ai_score >= 85:
-                        # Güçlü Fırsat: Standart bütçe
-                        dynamic_ideal_alloc = ideal_allocation
+                    if is_super_green:
+                        allocation = min(current_cash, self.daily_budget) # Tam sermaye (Maksimum Giriş)
                     else:
-                        # Zayıf / Standart Fırsat: Defansif (Bütçeyi Yarıya Düşür)
-                        dynamic_ideal_alloc = ideal_allocation * 0.5
-                        
-                    allocation = min(current_cash, dynamic_ideal_alloc)
+                        allocation = min(current_cash, ideal_allocation)
                         
                     if allocation >= 1000:
                         sym = s['symbol']
                         df = dfs.get(sym)
                         if df is not None and current_time in df.index:
                             raw_entry = float(df.loc[current_time, 'Close'])
-                            ceiling = float(s.get('ceiling_target', 0) or 0)
-                            if ceiling <= 0:
-                                ceiling = raw_entry * 1.10  # Fallback: +%10 hedef
+                            ceiling = float(s['ceiling_target'])
                             prev_close = ceiling / 1.10
                             
-                            # 4. AÇILIŞ GAP (BOŞLUK) TUZAĞI FİLTRESİ
-                            current_hour = dt_current.hour
-                            current_minute = dt_current.minute
-                            is_morning_trap_zone = (current_hour == 9 and current_minute >= 55) or (current_hour == 10 and current_minute <= 30)
-                            if is_morning_trap_zone:
-                                gap_pct = ((raw_entry - prev_close) / prev_close) * 100
-                                if gap_pct > 3.0:
-                                    continue # %3'ten büyük GAP'li açılış tuzağı, fiyat oturana kadar alım yapma!
-                            
                             if raw_entry >= prev_close * 1.095:
-                                continue # Tavana çok yakın, riskli
+                                continue
                                 
                             entry_price = raw_entry * 1.0015
-                            
-                            # 📊 DİNAMİK HEDEF / STOP (Karaktere Göre Volatilite - ATR)
-                            past_data = df.loc[:current_time]
-                            recent_bars = past_data.tail(12) # Son 1 saat (5dk x 12)
-                            avg_candle_size = 0.5
-                            if not recent_bars.empty:
-                                avg_candle_size = ((recent_bars['High'] - recent_bars['Low']) / recent_bars['Low']).mean() * 100
-                            
-                            if avg_candle_size < 0.35: 
-                                # Çok Ağır Tahta (Büyük bankalar, holdingler) - Hedef Daraltılır
-                                dyn_tp1 = 1.025 # +%2.5 Kâr Al
-                                dyn_stop = 0.98 # -%2 Stop
-                            elif avg_candle_size > 0.8: 
-                                # Çok Volatil / Sığ Tahta (Yan tahtalar) - Hedef Genişletilir (Silkelenmemek için)
-                                dyn_tp1 = 1.06 # +%6 Kâr Al
-                                dyn_stop = 0.95 # -%5 Stop
-                            else: 
-                                # Normal Tahta
-                                dyn_tp1 = 1.04 # +%4 Kâr Al
-                                dyn_stop = 0.96 # -%4 Stop
-                                
                             shares = int(allocation // entry_price)
                             if shares > 0:
                                 current_cash -= (shares * entry_price) * 1.0004 
@@ -414,23 +303,22 @@ class SimulationEngine:
                                     'entry_time': str(current_time),
                                     'entry_price': entry_price,
                                     'ceiling_target': ceiling,
-                                    'stop_price': entry_price * dyn_stop,
-                                    'tp1_price': entry_price * dyn_tp1,
-                                    'tp2_price': ceiling,
+                                    'stop_price': entry_price * 0.97, # Çelik Kural: -%3 Zarar Kes
+                                    'tp1_price': entry_price * 1.05,  # Çelik Kural: +%5 Kâr Al (Yarısı)
+                                    'tp2_price': ceiling,             # Çelik Kural: Tavan Kâr Al
                                     'shares': shares,
                                     'status': 'OPEN',
                                     'scaled_out': False,
-                                    'is_reentry': False,
-                                    'character': 'HIZLI' if avg_candle_size > 0.8 else ('AĞIR' if avg_candle_size < 0.35 else 'NORMAL')
+                                    'is_reentry': False
                                 })
             for s in to_remove:
                 if s in pending_signals:
                     pending_signals.remove(s)
                     
             # 3. YENİDEN GİRİŞ (Trend Dönerse, Sadece Stop olanlar için)
-            if daily_target_reached:
-                stopped_out_symbols.clear() # Hedef tamamlandıysa re-entry yapma
-                
+            # Re-entry de sabit zincir emirle olur
+            # Not: Re-entry manuel işlemlerde zor olabilir, ama sistemi 'çelik' kılanlardan biri bu
+            # Kestik attık ama trend dönerse alarm çalar!
             for sym in list(stopped_out_symbols):
                 if sym not in open_symbols:
                     sig = next((x for x in selected if x['symbol'] == sym), None)
@@ -466,19 +354,6 @@ class SimulationEngine:
                                 if p_ema8 <= p_ema21 and c_ema8 > c_ema21:
                                     raw_entry = float(close_series.iloc[-1])
                                     entry_price = raw_entry * 1.0015
-                                    
-                                    recent_bars = sub_df.tail(12)
-                                    avg_candle_size = 0.5
-                                    if not recent_bars.empty:
-                                        avg_candle_size = ((recent_bars['High'] - recent_bars['Low']) / recent_bars['Low']).mean() * 100
-                                        
-                                    if avg_candle_size < 0.35: 
-                                        dyn_tp1, dyn_stop = 1.025, 0.98
-                                    elif avg_candle_size > 0.8: 
-                                        dyn_tp1, dyn_stop = 1.06, 0.95
-                                    else: 
-                                        dyn_tp1, dyn_stop = 1.04, 0.96
-                                        
                                     shares = int(allocation // entry_price)
                                     if shares > 0:
                                         current_cash -= (shares * entry_price) * 1.0004
@@ -487,14 +362,13 @@ class SimulationEngine:
                                             'entry_time': str(current_time),
                                             'entry_price': entry_price,
                                             'ceiling_target': entry_price * 1.10, 
-                                            'stop_price': entry_price * dyn_stop,
-                                            'tp1_price': entry_price * dyn_tp1,
+                                            'stop_price': entry_price * 0.97,
+                                            'tp1_price': entry_price * 1.05,
                                             'tp2_price': entry_price * 1.10,
                                             'shares': shares,
                                             'status': 'OPEN',
                                             'scaled_out': False,
-                                            'is_reentry': True,
-                                            'character': 'HIZLI' if avg_candle_size > 0.8 else ('AĞIR' if avg_candle_size < 0.35 else 'NORMAL')
+                                            'is_reentry': True
                                         })
                                         stopped_out_symbols.remove(sym)
 
