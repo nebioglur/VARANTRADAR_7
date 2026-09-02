@@ -481,7 +481,17 @@ async function fetchGlobalNews() {
                 
                 let summary = item.summary.replace(/<[^>]+>/g, '').substring(0, 150) + "...";
                 
-                card.innerHTML = `
+                
+            // Get today's date in YYYY-MM-DD
+            const todayObj = new Date();
+            const yyyy = todayObj.getFullYear();
+            const mm = String(todayObj.getMonth() + 1).padStart(2, '0');
+            const dd = String(todayObj.getDate()).padStart(2, '0');
+            const todayStr = `${yyyy}-${mm}-${dd}`;
+            
+            const closeLabel = (item.date === todayStr) ? 'Anlık:' : 'Kapanış:';
+            
+            card.innerHTML = `
                     <div>
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
                             ${sourceBadge}
@@ -3429,7 +3439,7 @@ function openStatsDetailModal(type, date = null) {
                     <span><b style="color:#fff;">${mPrice}</b> (<span style="color:${mColor}">${mPct > 0 ? '+' : ''}${mPct}%</span>)</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px; background:rgba(0,0,0,0.2); padding:4px; border-radius:4px;">
-                    <span style="color:var(--text-muted);">Kapanış:</span>
+                    <span style="color:var(--text-muted);">${closeLabel}</span>
                     <span><b style="color:#fff;">${cPrice}</b> (<span style="color:${cColor}">${cPct > 0 ? '+' : ''}${cPct}%</span>)</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:8px; background:rgba(0,0,0,0.2); padding:4px; border-radius:4px;">
