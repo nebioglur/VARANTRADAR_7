@@ -3372,20 +3372,24 @@ function openStatsDetailModal(type, date = null) {
             
             const maxG = item.max_gain_pct !== undefined ? item.max_gain_pct.toFixed(2) : (item.max_gain !== undefined ? item.max_gain : '-');
 
-            const hitStatus = item.hit_ceiling ? '<span style="background:rgba(16,185,129,0.2); color:#10b981; padding:2px 5px; border-radius:4px; font-size:0.7rem;">🔥 TAVAN</span>' : (item.hit_plus5 ? '<span style="background:rgba(56,189,248,0.2); color:#38bdf8; padding:2px 5px; border-radius:4px; font-size:0.7rem;">⭐ +%5</span>' : '');
+            let diffVal = 0;
+            let diffPct = 0;
+            if (item.closing_price && item.morning_price) {
+                diffVal = item.closing_price - item.morning_price;
+                diffPct = (diffVal / item.morning_price) * 100;
+            }
+            const diffColor = diffVal > 0 ? 'var(--accent-green)' : (diffVal < 0 ? 'var(--accent-red)' : 'var(--text-muted)');
+            const diffStr = diffVal > 0 ? '+' + diffVal.toFixed(2) : diffVal.toFixed(2);
+            const diffPctStr = diffPct > 0 ? '+' + diffPct.toFixed(2) : diffPct.toFixed(2);
 
+            const hitStatus = item.hit_ceiling ? '<span style="background:rgba(16,185,129,0.2); color:#10b981; padding:2px 5px; border-radius:4px; font-size:0.7rem;"><i class="fa-solid fa-fire"></i> TAVAN</span>' : 
+                               (item.hit_plus5 ? '<span style="background:rgba(245,158,11,0.2); color:#f59e0b; padding:2px 5px; border-radius:4px; font-size:0.7rem;">+%5</span>' : '');
+            
             const card = document.createElement('div');
-            card.style.background = 'rgba(255,255,255,0.05)';
-            card.style.border = '1px solid rgba(255,255,255,0.1)';
-            card.style.borderRadius = '8px';
-            card.style.padding = '0.8rem';
-            card.style.textAlign = 'center';
-            card.style.display = 'flex';
-            card.style.flexDirection = 'column';
-            card.style.justifyContent = 'space-between';
+            card.className = 'history-card';
             card.innerHTML = `
                 ${dt}
-                <div style="font-weight:900; color:var(--text-main); font-size:1.2rem; margin-bottom:5px;">${sym}</div>
+                <div style="font-size:1.1rem; font-weight:700; margin-bottom:10px; color:#fff;">${sym}</div>
                 <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px; background:rgba(0,0,0,0.2); padding:4px; border-radius:4px;">
                     <span style="color:var(--text-muted);">Öneri:</span>
                     <span><b style="color:#fff;">${mPrice}</b> (<span style="color:${mColor}">${mPct > 0 ? '+' : ''}${mPct}%</span>)</span>
@@ -3395,8 +3399,8 @@ function openStatsDetailModal(type, date = null) {
                     <span><b style="color:#fff;">${cPrice}</b> (<span style="color:${cColor}">${cPct > 0 ? '+' : ''}${cPct}%</span>)</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:8px; background:rgba(0,0,0,0.2); padding:4px; border-radius:4px;">
-                    <span style="color:var(--text-muted);">Zirve Kâr:</span>
-                    <span style="color:var(--accent-yellow); font-weight:bold;">+${maxG}%</span>
+                    <span style="color:var(--text-muted);">Net Getiri:</span>
+                    <span style="color:${diffColor}; font-weight:bold;">${diffStr} ₺ (${diffPctStr}%)</span>
                 </div>
                 <div>${hitStatus}</div>
             `;
