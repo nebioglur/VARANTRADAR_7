@@ -179,8 +179,8 @@ def background_scanner():
         try:
             print("[BACKGROUND] Hızlı Başlangıç (Fast Start) - Sadece BIST 50 taranıyor...")
             fast_results = scanner.scan_pool_bulk(BIST50_SYMBOLS)
-              from datetime import datetime
-              fast_results["cache_date"] = datetime.now().strftime("%Y-%m-%d")
+            from datetime import datetime
+            fast_results["cache_date"] = datetime.now().strftime("%Y-%m-%d")
             
             GLOBAL_DASHBOARD_CACHE = sanitize_for_json(fast_results)
             save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
@@ -219,16 +219,16 @@ def background_scanner():
             
             # 550 hisseyi tek bir pakette indir:
             results = scanner.scan_pool_bulk(BIST_SYMBOLS)
-              from datetime import datetime
-              if isinstance(results, dict): results["cache_date"] = datetime.now().strftime("%Y-%m-%d")
+            from datetime import datetime
+            if isinstance(results, dict): results["cache_date"] = datetime.now().strftime("%Y-%m-%d")
             
             from datetime import datetime
-                  today_str = datetime.now().strftime("%Y-%m-%d")
-                  if GLOBAL_DASHBOARD_CACHE.get("cache_date", today_str) != today_str:
-                      print("[BACKGROUND] Yeni gun tespit edildi. Eski bellekteki veriler temizleniyor.")
-                      GLOBAL_DASHBOARD_CACHE = {}
+            today_str = datetime.now().strftime("%Y-%m-%d")
+            if GLOBAL_DASHBOARD_CACHE.get("cache_date", today_str) != today_str:
+                print("[BACKGROUND] Yeni gun tespit edildi. Eski bellekteki veriler temizleniyor.")
+                GLOBAL_DASHBOARD_CACHE = {}
 
-                  if results and isinstance(results, dict):
+            if results and isinstance(results, dict):
                 # Mevcut 1h, tavan ve 5m verilerini KORU!
                 if "opportunities_1h" in GLOBAL_DASHBOARD_CACHE:
                     results["opportunities_1h"] = GLOBAL_DASHBOARD_CACHE["opportunities_1h"]
