@@ -1042,6 +1042,14 @@
             <div style="margin-bottom:2rem; text-align: center;">
                 <h2 style="color:var(--accent-purple); font-size: 1.8rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-chart-pie"></i> Performans Merkezi (KPI)</h2>
                 <p style="color:var(--text-muted); font-size: 0.95rem;">Sistemimizin başarı istatistikleri ve genel performansı.</p>
+                
+                <!-- NEW TOGGLE FOR TODAY VS CUMULATIVE -->
+                <div style="display:flex; justify-content:center; margin-top: 1.5rem;">
+                    <div style="display:flex; background: rgba(30,41,59,0.7); padding: 5px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                        <button id="stats-mode-daily-btn" onclick="switchStatsMode('daily')" style="background:transparent; border:none; color:var(--text-muted); padding: 8px 16px; border-radius: 6px; cursor:pointer; font-weight:600; font-size: 0.9rem; transition:all 0.3s ease;">Bugünün Özeti (Canlı)</button>
+                        <button id="stats-mode-cumulative-btn" onclick="switchStatsMode('cumulative')" style="background:var(--accent-purple); border:none; color:#fff; padding: 8px 16px; border-radius: 6px; cursor:pointer; font-weight:600; font-size: 0.9rem; transition:all 0.3s ease;">Kümülatif Başarı (Tüm Zamanlar)</button>
+                    </div>
+                </div>
             </div>
 
             <!-- Main KPIs Row 1 -->
