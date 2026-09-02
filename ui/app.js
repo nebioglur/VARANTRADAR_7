@@ -3352,6 +3352,31 @@ function openStatsDetailModal(type, date = null) {
         titleText = `<i class="fa-regular fa-calendar"></i> ${date} Tarihli Tüm Öneriler`;
     }
     
+    
+    let posCount = 0;
+    let negCount = 0;
+    
+    if (items.length > 0) {
+        // Sort items by Net Getiri (Percentage) Descending
+        items.sort((a, b) => {
+            let pctA = a.morning_price ? ((a.closing_price || 0) - a.morning_price) / a.morning_price : 0;
+            let pctB = b.morning_price ? ((b.closing_price || 0) - b.morning_price) / b.morning_price : 0;
+            return pctB - pctA;
+        });
+        
+        // Count positive and negative net returns
+        items.forEach(it => {
+            let diff = (it.closing_price || 0) - (it.morning_price || 0);
+            if (diff > 0) posCount++;
+            else if (diff < 0) negCount++;
+        });
+        
+        titleText += `<div style="font-size:0.8rem; margin-top:8px; color:var(--text-muted); font-weight:normal; display:flex; gap:10px; align-items:center;">
+            <span style="background:rgba(16,185,129,0.1); color:var(--accent-green); padding:2px 8px; border-radius:12px;"><i class="fa-solid fa-arrow-trend-up"></i> ${posCount} Kazanç</span>
+            <span style="background:rgba(239,68,68,0.1); color:var(--accent-red); padding:2px 8px; border-radius:12px;"><i class="fa-solid fa-arrow-trend-down"></i> ${negCount} Kayıp</span>
+        </div>`;
+    }
+
     title.innerHTML = titleText;
     content.innerHTML = '';
     
@@ -3366,9 +3391,18 @@ function openStatsDetailModal(type, date = null) {
             const mPct = item.morning_gain_pct !== undefined ? item.morning_gain_pct.toFixed(2) : '-';
             const mColor = item.morning_gain_pct > 0 ? 'var(--accent-green)' : (item.morning_gain_pct < 0 ? 'var(--accent-red)' : 'var(--text-muted)');
             
+            // Calculate True Daily Closing Percentage
+            let p_close = item.morning_price || 0;
+            if (item.morning_gain_pct !== undefined && item.morning_gain_pct !== 0) {
+                p_close = item.morning_price / (1 + (item.morning_gain_pct / 100));
+            }
+            let trueCPct = 0;
+            if (p_close > 0 && item.closing_price) {
+                trueCPct = ((item.closing_price - p_close) / p_close) * 100;
+            }
             const cPrice = item.closing_price ? item.closing_price.toFixed(2) : '-';
-            const cPct = item.closing_gain_pct !== undefined ? item.closing_gain_pct.toFixed(2) : '-';
-            const cColor = item.closing_gain_pct > 0 ? 'var(--accent-green)' : (item.closing_gain_pct < 0 ? 'var(--accent-red)' : 'var(--text-muted)');
+            const cPct = trueCPct.toFixed(2);
+            const cColor = trueCPct > 0 ? 'var(--accent-green)' : (trueCPct < 0 ? 'var(--accent-red)' : 'var(--text-muted)');
             
             const maxG = item.max_gain_pct !== undefined ? item.max_gain_pct.toFixed(2) : (item.max_gain !== undefined ? item.max_gain : '-');
 
