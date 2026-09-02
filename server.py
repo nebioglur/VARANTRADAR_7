@@ -78,15 +78,18 @@ CACHE_FILE = "dashboard_cache.json"
 def load_dashboard_cache():
     if os.path.exists(CACHE_FILE):
         try:
-            # Sadece 30 dakikadan yeni cache'leri kabul et
+            from datetime import datetime
             import time
-            mtime = os.path.getmtime(CACHE_FILE)
-            if time.time() - mtime > 1800:
-                print("[Server] Eski cache dosyası reddedildi (30 dk'dan eski).")
-                return {}
-            
             with open(CACHE_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+            
+            if isinstance(data, dict):
+                today_str = datetime.now().strftime("%Y-%m-%d")
+                cache_date = data.get("cache_date")
+                if cache_date and cache_date != today_str:
+                    print(f"[Server] Eski günün cache dosyası reddedildi ({cache_date} != {today_str}).")
+                    return {}
+                return data
         except Exception as e:
             print(f"[Server] load_dashboard_cache Error: {e}")
             return {}
@@ -176,6 +179,8 @@ def background_scanner():
         try:
             print("[BACKGROUND] Hızlı Başlangıç (Fast Start) - Sadece BIST 50 taranıyor...")
             fast_results = scanner.scan_pool_bulk(BIST50_SYMBOLS)
+              from datetime import datetime
+              fast_results["cache_date"] = datetime.now().strftime("%Y-%m-%d")
             
             GLOBAL_DASHBOARD_CACHE = sanitize_for_json(fast_results)
             save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
@@ -214,8 +219,16 @@ def background_scanner():
             
             # 550 hisseyi tek bir pakette indir:
             results = scanner.scan_pool_bulk(BIST_SYMBOLS)
+              from datetime import datetime
+              if isinstance(results, dict): results["cache_date"] = datetime.now().strftime("%Y-%m-%d")
             
-            if results and isinstance(results, dict):
+            from datetime import datetime
+                  today_str = datetime.now().strftime("%Y-%m-%d")
+                  if GLOBAL_DASHBOARD_CACHE.get("cache_date", today_str) != today_str:
+                      print("[BACKGROUND] Yeni gun tespit edildi. Eski bellekteki veriler temizleniyor.")
+                      GLOBAL_DASHBOARD_CACHE = {}
+
+                  if results and isinstance(results, dict):
                 # Mevcut 1h, tavan ve 5m verilerini KORU!
                 if "opportunities_1h" in GLOBAL_DASHBOARD_CACHE:
                     results["opportunities_1h"] = GLOBAL_DASHBOARD_CACHE["opportunities_1h"]
