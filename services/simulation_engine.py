@@ -37,6 +37,13 @@ class SimulationEngine:
                     t.get('pnl_val'), t.get('pnl_pct'), t.get('exit_reason')
                 ))
             except Exception as e:
+            import traceback
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("SubEngine", f"Hata: {err_str}")
+            except:
+                pass
                 print(f"[SimEngine] Trade save err {t['symbol']}: {e}")
                 
         # Equity Log
@@ -48,6 +55,13 @@ class SimulationEngine:
             prev = cursor.fetchone()
             start_eq = float(prev['end_equity']) if prev else self.daily_budget
         except Exception as e:
+            import traceback
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("SubEngine", f"Hata: {err_str}")
+            except:
+                pass
             start_eq = self.daily_budget
 
         try:
@@ -64,6 +78,13 @@ class SimulationEngine:
                 total_pnl, len(trades), win_trades
             ))
         except Exception as e:
+            import traceback
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("SubEngine", f"Hata: {err_str}")
+            except:
+                pass
             print(f"[SimEngine] Equity save err: {e}")
             
         conn.commit()

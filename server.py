@@ -14,6 +14,17 @@ if hasattr(time, 'tzset'):
 
 import numpy as np
 import pandas as pd
+
+import logging
+from utils.sys_logger import log_error, log_info
+import traceback
+
+os.makedirs("data", exist_ok=True)
+file_handler = logging.FileHandler("data/system_logs.txt", encoding="utf-8")
+file_handler.setFormatter(logging.Formatter('[%(asctime)s] [%(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S"))
+logging.getLogger().addHandler(file_handler)
+logging.getLogger().setLevel(logging.INFO)
+
 from flask import Flask, request, jsonify, send_from_directory, make_response
 from flask_cors import CORS
 import feedparser
@@ -62,6 +73,12 @@ def load_stats():
             with open(STATS_FILE, "r") as f:
                 return json.load(f)
         except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
             print(f"[Server] load_stats Error: {e}")
             return {"total_analyzed": 0}
     return {"total_analyzed": 0}
@@ -71,6 +88,12 @@ def save_stats(stats):
         with open(STATS_FILE, "w") as f:
             json.dump(stats, f)
     except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
         print(f"Stats save error: {e}")
 
 CACHE_FILE = "dashboard_cache.json"
@@ -97,6 +120,12 @@ def load_dashboard_cache():
                         return {}
                 return data
         except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
             print(f"[Server] load_dashboard_cache Error: {e}")
             return {}
     return {}
@@ -115,6 +144,12 @@ def sync_to_github():
             subprocess.run([git_cmd, "push", "origin", "main"], check=False)
             print("[GITHUB] Veriler canli sunucu icin basariyla push edildi.")
     except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
         print(f"[GITHUB ERROR] {e}")
 
 def save_dashboard_cache(data):
@@ -123,6 +158,12 @@ def save_dashboard_cache(data):
         with open(CACHE_FILE, "w", encoding="utf-8") as f:
             json.dump(clean, f, ensure_ascii=False, indent=2)
     except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
         print(f"Cache save error: {e}")
 
 GLOBAL_DASHBOARD_CACHE = load_dashboard_cache()
@@ -224,6 +265,12 @@ def background_scanner():
             process_notifications(GLOBAL_DASHBOARD_CACHE)
             print("[BACKGROUND] Hızlı Başlangıç Faz 3 tamamlandı - Tüm fırsatlar HAZIR!")
         except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
             print(f"[BACKGROUND] Hızlı Başlangıç Hatası: {e}")
             import traceback
             traceback.print_exc()
@@ -340,6 +387,12 @@ def background_scanner():
                 print(f"[BACKGROUND] Kapsamlı Tarama tamamlandı. Veriler önbelleğe ve diske kaydedildi.")
             
         except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
             print(f"[BACKGROUND] Bulk Tarama hatası: {e}")
             import traceback
             traceback.print_exc()
@@ -450,6 +503,12 @@ def api_chart_data():
         data = TechnicalEngine.get_chart_data(symbol, interval)
         return jsonify(sanitize_for_json(data))
     except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/backtest/run', methods=['GET'])
@@ -550,6 +609,12 @@ def api_backtest_run():
         "monte_carlo": sanitize_for_json(mc_results)
         })
     except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
         import traceback
         traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -643,6 +708,12 @@ def api_analyze():
             "message": str(e)
         }), 403
     except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
         import traceback
         traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -714,6 +785,12 @@ def api_scan_mtf():
             "source": "live_bist50"
         })
     except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
         import traceback
         traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -728,6 +805,12 @@ def api_scan():
         results = scanner.scan_pool_bulk(pool).get("opportunities", [])
         return jsonify({"status": "success", "count": len(results), "results": sanitize_for_json(results)})
     except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/scan_warrants', methods=['GET'])
@@ -740,6 +823,12 @@ def api_scan_warrants():
         results = scanner.scan_pool_bulk(pool).get("opportunities", [])
         return jsonify({"status": "success", "count": len(results), "results": sanitize_for_json(results)})
     except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/scan_bist50', methods=['GET'])
@@ -751,6 +840,12 @@ def api_scan_bist50():
         results = scanner.scan_pool_bulk(pool).get("opportunities", [])
         return jsonify({"status": "success", "count": len(results), "results": sanitize_for_json(results)})
     except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/scan_yildiz', methods=['GET'])
@@ -762,6 +857,12 @@ def api_scan_yildiz():
         results = scanner.scan_pool_bulk(pool).get("opportunities", [])
         return jsonify({"status": "success", "count": len(results), "results": sanitize_for_json(results)})
     except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/scan_all', methods=['GET'])
@@ -773,6 +874,12 @@ def api_scan_all():
         results = scanner.scan_pool_bulk(pool).get("opportunities", [])
         return jsonify({"status": "success", "count": len(results), "results": sanitize_for_json(results)})
     except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/scan_fx', methods=['GET'])
@@ -784,6 +891,12 @@ def api_scan_fx():
         results = scanner.scan_pool_bulk(pool).get("opportunities", [])
         return jsonify({"status": "success", "count": len(results), "results": sanitize_for_json(results)})
     except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/scan_commodity', methods=['GET'])
@@ -795,6 +908,12 @@ def api_scan_commodity():
         results = scanner.scan_pool_bulk(pool).get("opportunities", [])
         return jsonify({"status": "success", "count": len(results), "results": sanitize_for_json(results)})
     except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/scan_crypto', methods=['GET'])
@@ -806,6 +925,12 @@ def api_scan_crypto():
         results = scanner.scan_pool_bulk(pool).get("opportunities", [])
         return jsonify({"status": "success", "count": len(results), "results": sanitize_for_json(results)})
     except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/health', methods=['GET'])
@@ -816,6 +941,12 @@ def api_health():
         health_report = pipeline.get_health_report()
         return jsonify({"status": "success", "data": health_report})
     except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/news/global', methods=['GET'])
@@ -838,6 +969,12 @@ def api_news_global():
                 })
         return jsonify({"status": "success", "news": news_items})
     except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/news/ticker/<symbol>', methods=['GET'])
@@ -850,6 +987,12 @@ def api_news_ticker(symbol):
             news = []
         return jsonify({"status": "success", "news": news})
     except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/brokerage/<symbol>', methods=['GET'])
@@ -875,6 +1018,12 @@ def api_brokerage(symbol):
         
         akd_data = generate_ai_akd(symbol, c, chg_pct, vol)
     except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
@@ -930,6 +1079,12 @@ def api_simulation_live_orders():
             "orders": sanitize_for_json(sorted(orders, key=lambda x: x["score"], reverse=True))
         })
     except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/tavan_history', methods=['GET'])
@@ -948,6 +1103,12 @@ def api_tavan_history():
         )
         return jsonify(sanitize_for_json(res))
     except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
         return jsonify({"status": "error", "message": str(e)})
 
 @app.route('/api/winrate_stats', methods=['GET'])
@@ -957,6 +1118,12 @@ def api_winrate_stats():
         stats = WinRateEngine.get_performance_stats()
         return jsonify({"status": "success", "stats": sanitize_for_json(stats)})
     except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
         return jsonify({"status": "error", "message": str(e)})
 
 @app.route('/api/tavan_tracker', methods=['GET'])
@@ -967,6 +1134,12 @@ def api_tavan_tracker():
         res = TavanAuditTracker.get_audit_report(date_str)
         return jsonify(sanitize_for_json(res))
     except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
         return jsonify({"status": "error", "message": str(e)})
 
 @app.route('/api/simulation/daily_pnl', methods=['GET'])
@@ -997,6 +1170,12 @@ def api_simulation_daily_pnl():
         "trades": sanitize_for_json(trades)
             })
     except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
         return jsonify({"status": "error", "message": str(e)})
 
 @app.route('/api/simulation/send_telegram', methods=['POST'])
@@ -1058,6 +1237,12 @@ def api_simulation_send_telegram():
             return jsonify({"status": "error", "message": "Telegram'a gönderilirken bir hata oluştu."}), 500
             
     except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
         import traceback
         traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -1104,6 +1289,12 @@ def get_xu100_change():
                 XU100_CACHE['change'] = chg
                 XU100_CACHE['last_updated'] = now
         except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
             pass
     return XU100_CACHE['change']
 \n)
@@ -1123,4 +1314,10 @@ def api_logs():
             
         return jsonify({"status": "success", "logs": "".join(lines[-200:])})
     except Exception as e:
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("Background", f"Tarama Hatası: {err_str}")
+            except:
+                pass
         return jsonify({"status": "error", "message": str(e)}), 500

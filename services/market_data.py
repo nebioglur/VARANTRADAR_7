@@ -41,6 +41,13 @@ class MarketDataManager:
                         metadata=excluded.metadata
                 """, (date_str, sym, score, morning_price, ceiling_target, morning_phase, metadata))
             except Exception as e:
+            import traceback
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("SubEngine", f"Hata: {err_str}")
+            except:
+                pass
                 print(f"[MarketData] Sinyal kayıt hatası {sym}: {e}")
                 
         conn.commit()
@@ -106,8 +113,22 @@ class MarketDataManager:
                             ON CONFLICT(timestamp, symbol) DO NOTHING
                         """, (date_str, timestamp_str, sym, _open, _high, _low, _close, _vol))
                     except Exception as e:
+            import traceback
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("SubEngine", f"Hata: {err_str}")
+            except:
+                pass
                         pass
         except Exception as e:
+            import traceback
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("SubEngine", f"Hata: {err_str}")
+            except:
+                pass
             print(f"[MarketData] YF indirme hatası: {e}")
             
         conn.commit()
@@ -154,6 +175,13 @@ class MarketDataManager:
                 dl_df.columns = [c[0] if isinstance(c, tuple) else c for c in dl_df.columns]
                 return dl_df
         except Exception as e:
+            import traceback
+            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            try:
+                from utils.sys_logger import log_error
+                log_error("SubEngine", f"Hata: {err_str}")
+            except:
+                pass
             pass
             
         return pd.DataFrame()
