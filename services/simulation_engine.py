@@ -122,17 +122,20 @@ class SimulationEngine:
                 ema50 = ema50 or indicators.get('EMA_50') or indicators.get('EMA_50')
                 ema200 = ema200 or indicators.get('EMA_200') or indicators.get('EMA_200')
                     
-            if ema50 and ema200 and price:
-                try:
-                    if float(price) <= float(ema50) or float(price) <= float(ema200):
-                        continue # EMA filtrelerine uymadığı için simülasyona alınmaz
-                except (ValueError, TypeError):
-                    pass  # Dönüşüm hatası olursa filtreyi atla
+            # EMA Filtresi ZORUNLU
+            if not ema50 or not ema200 or not price:
+                continue # Veri eksikse atla
+            try:
+                if float(price) <= float(ema50) or float(price) <= float(ema200):
+                    continue # Fiyat EMA altında
+            except (ValueError, TypeError):
+                continue # Dönüşüm hatası
                     
-            if score >= 80 and "YATAY" not in phase and "NEGATİF" not in phase and "UZAK DUR" not in phase:
+            if score >= 92 and phase in ["Erken Kopuş (Phase 1)", "İvmelenme (Phase 2)", "Kilitleme Baskısı (Phase 3)"]:
                 valid_signals.append(s)
                 
-        selected = valid_signals
+        valid_signals.sort(key=lambda x: float(x.get('score', 0)), reverse=True)
+        selected = valid_signals[:5]
         if not selected:
             return
             
@@ -279,7 +282,7 @@ class SimulationEngine:
                     )
                     
                     if is_super_green:
-                        allocation = min(current_cash, self.daily_budget) # Tam sermaye (Maksimum Giriş)
+                        allocation = ideal_allocation # Tam sermaye (Maksimum Giriş)
                     else:
                         allocation = min(current_cash, ideal_allocation)
                         
@@ -334,7 +337,7 @@ class SimulationEngine:
                         )
                         
                     if is_super_green:
-                        allocation = min(current_cash, self.daily_budget)
+                        allocation = ideal_allocation
                     else:
                         allocation = min(current_cash, ideal_allocation)
                         

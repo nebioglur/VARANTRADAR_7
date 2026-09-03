@@ -47,7 +47,7 @@ class RadarEngine:
                             
                             # Modül 3: İlk Filtre (Hacim ve Fiyat)
                             # Ortalama günlük hacim > min_volume ve Fiyat > 1 TL
-                            if avg_vol >= min_volume and close_price > 1.0:
+                            if avg_vol >= 25000000 and close_price > 1.0:
                                 valid_symbols.append(symbol)
                                 
             logger.info(f"Ön filtreden geçen hisse sayısı: {len(valid_symbols)}")
