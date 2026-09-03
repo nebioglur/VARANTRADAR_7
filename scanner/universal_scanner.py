@@ -111,6 +111,24 @@ class UniversalScanner:
         favorites = [r for r in all_results if r["Symbol"] in AI_FAVORITES]
         favorites = sorted(favorites, key=lambda x: x.get("Score", 0), reverse=True)
         
+        
+        # 0 Risk / Defansif Hisseler (Borsa eksideyken bile sağlam duranlar)
+        defensive = []
+        for r in all_results:
+            d_close = r.get("Daily_Close", 0)
+            e50 = r.get("Daily_EMA50", 0)
+            e200 = r.get("Daily_EMA200", 0)
+            rsi = r.get("Indicators", {}).get("RSI_14", 50)
+            change = r.get("Change_Pct", 0)
+            
+            if change > 0 and e50 > 0 and e200 > 0:
+                if d_close > e50 and d_close > e200:
+                    dist_to_e50 = (d_close - e50) / e50 * 100
+                    if 0 <= dist_to_e50 <= 5.0 and 45 <= rsi <= 65:
+                        defensive.append(r)
+        
+        defensive = sorted(defensive, key=lambda x: x["Change_Pct"], reverse=True)[:20]
+
         # 6. Fırsatlar (Skoru en yüksek olanlar AL sinyalli)
         opportunities = sorted([r for r in all_results if r.get("Score", 0) >= 65 and r.get("Status") == "AL"], 
                                key=lambda x: x["Score"], reverse=True)[:20]
@@ -137,6 +155,7 @@ class UniversalScanner:
             "high_volume": high_vol,
             "low_volume": low_vol,
             "favorites": favorites,
+            "defensive_stocks": defensive,
             "all_symbols_stats": all_symbols_stats
         }
         

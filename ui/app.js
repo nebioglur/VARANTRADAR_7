@@ -1820,6 +1820,7 @@ function renderAllDashboardTables() {
         'opportunities_1h': 'tb-opportunities-1h',
         'stay_away_1h': 'tb-stay-away-1h',
         'opportunities': 'tb-opportunities',
+        'defensive_stocks': 'defensive-tbody',
         'gainers': 'tb-gainers',
         'losers': 'tb-losers',
         'favorites': 'tb-favorites',
