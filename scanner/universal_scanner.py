@@ -128,29 +128,46 @@ class UniversalScanner:
             atr = r.get("ATR", 0)
             vol_today = r.get("Volume", 0)
             
-            if change > 0 and e50 > 0 and e200 > 0:
-                if d_close > e50 and d_close > e200:
-                    dist_to_e50 = (d_close - e50) / e50 * 100
-                    
-                    # KURALLAR BÜTÜNÜ:
-                    # 1. Destekten çok uzak değil (Maks %5)
-                    # 2. RSI Makul (45-65)
-                    # 3. Hacim 50 Milyon TL üzeri (Sığ tahta değil)
-                    # 4. Bugünkü hacim son 10 günün ortalamasından büyük (Smart Money)
-                    # 5. MACD > 0 ve MACD > MACD_Signal (Al konumunda)
-                    # 6. Volatilite düşük (ATR < Fiyatın %5'i)
-                    
-                    is_safe_distance = (0 <= dist_to_e50 <= 5.0)
-                    is_safe_rsi = (45 <= rsi <= 65)
-                    is_liquid = (money_vol > 50_000_000)
-                    is_volume_up = (vol_today > vol_sma10)
-                    is_macd_up = (macd > 0 and macd > macd_signal)
-                    is_low_volatility = (atr / d_close < 0.05) if d_close > 0 else False
-                    
-                    if is_safe_distance and is_safe_rsi and is_liquid and is_volume_up and is_macd_up and is_low_volatility:
-                        defensive.append(r)
+            # Puanlama Mantığı (Esnek Defansif Seçim)
+            # Katı kilitler yerine mevcut piyasadaki en güvenlileri seçer
+            if e50 > 0 and e200 > 0:
+                def_score = 0
+                
+                # 1. Trend Gücü (En Önemli Kalkan)
+                if d_close > e200: def_score += 20
+                if d_close > e50: def_score += 15
+                
+                # 2. Günlük Değişim (Pozitif Ayrışma)
+                if change > 0: def_score += 10
+                elif change > -1.0: def_score += 5 # Az düşmüşse yine fena değil
+                
+                # 3. Destekten Çok Uzaklaşmamış Olma (Güvenli Liman)
+                dist_to_e50 = abs(d_close - e50) / e50 * 100
+                if dist_to_e50 <= 4.0: def_score += 15
+                elif dist_to_e50 <= 8.0: def_score += 5
+                
+                # 4. RSI Dengesi
+                if 45 <= rsi <= 65: def_score += 10
+                
+                # 5. Likidite ve Smart Money
+                if money_vol > 50_000_000: def_score += 10
+                if vol_today > vol_sma10: def_score += 10
+                
+                # 6. Teknik Momentum
+                if macd > macd_signal: def_score += 5
+                if macd > 0: def_score += 5
+                
+                # 7. Volatilite (Düşük dalgalanma = Güven)
+                if d_close > 0 and (atr / d_close) < 0.05: def_score += 5
+                
+                r['Defensive_Score'] = def_score
+                
+                # Skoru 60 ve üzeri olanları potansiyel defansif olarak gör
+                if def_score >= 60:
+                    defensive.append(r)
         
-        defensive = sorted(defensive, key=lambda x: x["Change_Pct"], reverse=True)[:20]
+        # En güvenliden (skoru yüksek) en az güvenliye doğru sırala
+        defensive = sorted(defensive, key=lambda x: (x.get("Defensive_Score", 0), x.get("Change_Pct", 0)), reverse=True)[:15]
 
         # 6. Fırsatlar (Skoru en yüksek olanlar AL sinyalli)
         opportunities = sorted([r for r in all_results if r.get("Score", 0) >= 65 and r.get("Status") == "AL"], 
