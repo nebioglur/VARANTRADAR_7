@@ -14,6 +14,17 @@ if hasattr(time, 'tzset'):
 
 import numpy as np
 import pandas as pd
+
+import logging
+from utils.sys_logger import log_error, log_info
+import traceback
+
+os.makedirs("data", exist_ok=True)
+file_handler = logging.FileHandler("data/system_logs.txt", encoding="utf-8")
+file_handler.setFormatter(logging.Formatter('[%(asctime)s] [%(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S"))
+logging.getLogger().addHandler(file_handler)
+logging.getLogger().setLevel(logging.INFO)
+
 from flask import Flask, request, jsonify, send_from_directory, make_response
 from flask_cors import CORS
 import feedparser
