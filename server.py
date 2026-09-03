@@ -1074,31 +1074,7 @@ def api_simulation_send_telegram():
         traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
 
-if __name__ == "__main__":
 
-    print("[SYSTEM] VarantRadar Pro Web Server Baslatiliyor...")
-
-    port = int(os.environ.get("PORT", 5000))
-
-    # Flask debug restart yapınca ikinci thread açılmasın
-    if os.environ.get("WERKZEUG_RUN_MAIN") != "true":
-        t = threading.Thread(
-            target=background_scanner,
-            daemon=True
-        )
-        t.start()
-
-    render_url = os.getenv("RENDER_EXTERNAL_URL")
-
-    if render_url:
-        print(f"[URL] Render URL: {render_url}")
-    else:
-        print(f"[URL] Local URL: http://127.0.0.1:{port}")
-
-    app.run(
-        host="0.0.0.0",
-        port=port
-    )
 
 import time
 XU100_CACHE = {"change": 0.0, "last_updated": 0}
@@ -1136,3 +1112,30 @@ def api_logs():
         return jsonify({"status": "success", "logs": "".join(lines[-200:])})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+if __name__ == "__main__":
+
+    print("[SYSTEM] VarantRadar Pro Web Server Baslatiliyor...")
+
+    port = int(os.environ.get("PORT", 5000))
+
+    # Flask debug restart yapınca ikinci thread açılmasın
+    if os.environ.get("WERKZEUG_RUN_MAIN") != "true":
+        t = threading.Thread(
+            target=background_scanner,
+            daemon=True
+        )
+        t.start()
+
+    render_url = os.getenv("RENDER_EXTERNAL_URL")
+
+    if render_url:
+        print(f"[URL] Render URL: {render_url}")
+    else:
+        print(f"[URL] Local URL: http://127.0.0.1:{port}")
+
+    app.run(
+        host="0.0.0.0",
+        port=port
+    )
