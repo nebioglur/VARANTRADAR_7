@@ -997,6 +997,9 @@ def api_simulation_daily_pnl():
             c.execute("SELECT * FROM equity_log ORDER BY date_str ASC")
             equity_rows = c.fetchall()
             equity_curve = [dict(row) for row in equity_rows]
+            if not equity_curve:
+                from datetime import datetime
+                equity_curve = [{"date_str": datetime.now().strftime("%Y-%m-%d"), "final_equity": 100000.0, "total_pnl": 0.0}]
             
             # Fetch closed trades
             c.execute("SELECT * FROM trades ORDER BY entry_time DESC LIMIT 100")
