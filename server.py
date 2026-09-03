@@ -666,7 +666,7 @@ def api_dashboard_init():
     return jsonify({
         "status": "success",
         "total_analyzed": total,
-        "dashboard_data": clean_cache or {},
+        "dashboard_data": clean_cache or {},\n        "xu100_change": get_xu100_change(),
         "last_updated": last_updated
     })
 
@@ -1077,4 +1077,24 @@ if __name__ == "__main__":
     app.run(
         host="0.0.0.0",
         port=port
-    )
+    
+import time
+XU100_CACHE = {"change": 0.0, "last_updated": 0}
+
+def get_xu100_change():
+    global XU100_CACHE
+    now = time.time()
+    if now - XU100_CACHE['last_updated'] > 300: # 5 min cache
+        try:
+            import yfinance as yf
+            hist = yf.Ticker('XU100.IS').history(period='5d')
+            if len(hist) >= 2:
+                c1 = hist['Close'].iloc[-2]
+                c2 = hist['Close'].iloc[-1]
+                chg = ((c2 - c1) / c1) * 100
+                XU100_CACHE['change'] = chg
+                XU100_CACHE['last_updated'] = now
+        except Exception as e:
+            pass
+    return XU100_CACHE['change']
+\n)

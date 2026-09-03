@@ -1740,7 +1740,19 @@ async function fetchDashboardData() {
         const data = await response.json();
         
         if (data && data.status === 'success') {
-            setElText('total-analyzed-counter', `RADAR BUGÜNE KADAR ${data.total_analyzed || 0} VERİYİ ANALİZ ETTİ`);
+            setElText('total-analyzed-counter', `RADAR BUGÜNE KADAR ${data.total_analyzed || 0} VERİYİ ANALİZ ETTİ`);\n
+            const shieldEl = document.getElementById('shield-status');
+            if (shieldEl) {
+                const chg = data.xu100_change || 0;
+                if (chg <= -1.0) {
+                    shieldEl.innerHTML = `<span style="color:#ef4444; font-size:1.1rem;"><i class="fa-solid fa-triangle-exclamation"></i> Ayı (%100 Nakit)</span>`;
+                } else if (chg <= 0.0) {
+                    shieldEl.innerHTML = `<span style="color:var(--accent-yellow); font-size:1.1rem;"><i class="fa-solid fa-scale-balanced"></i> Dalgalı (%60 Nakit)</span>`;
+                } else {
+                    shieldEl.innerHTML = `<span style="color:var(--accent-green); font-size:1.1rem;"><i class="fa-solid fa-arrow-trend-up"></i> Boğa (%30 Nakit)</span>`;
+                }
+            }
+
             
             // Son tarama saatini ekranda göster
             const lastUpdated = data.last_updated || "Bilinmiyor";
