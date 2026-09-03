@@ -121,10 +121,33 @@ class UniversalScanner:
             rsi = r.get("Indicators", {}).get("RSI_14", 50)
             change = r.get("Change_Pct", 0)
             
+            money_vol = r.get("Money_Volume", 0)
+            macd = r.get("MACD", 0)
+            macd_signal = r.get("MACD_Signal", 0)
+            vol_sma10 = r.get("Vol_SMA10", 0)
+            atr = r.get("ATR", 0)
+            vol_today = r.get("Volume", 0)
+            
             if change > 0 and e50 > 0 and e200 > 0:
                 if d_close > e50 and d_close > e200:
                     dist_to_e50 = (d_close - e50) / e50 * 100
-                    if 0 <= dist_to_e50 <= 5.0 and 45 <= rsi <= 65:
+                    
+                    # KURALLAR BÜTÜNÜ:
+                    # 1. Destekten çok uzak değil (Maks %5)
+                    # 2. RSI Makul (45-65)
+                    # 3. Hacim 50 Milyon TL üzeri (Sığ tahta değil)
+                    # 4. Bugünkü hacim son 10 günün ortalamasından büyük (Smart Money)
+                    # 5. MACD > 0 ve MACD > MACD_Signal (Al konumunda)
+                    # 6. Volatilite düşük (ATR < Fiyatın %5'i)
+                    
+                    is_safe_distance = (0 <= dist_to_e50 <= 5.0)
+                    is_safe_rsi = (45 <= rsi <= 65)
+                    is_liquid = (money_vol > 50_000_000)
+                    is_volume_up = (vol_today > vol_sma10)
+                    is_macd_up = (macd > 0 and macd > macd_signal)
+                    is_low_volatility = (atr / d_close < 0.05) if d_close > 0 else False
+                    
+                    if is_safe_distance and is_safe_rsi and is_liquid and is_volume_up and is_macd_up and is_low_volatility:
                         defensive.append(r)
         
         defensive = sorted(defensive, key=lambda x: x["Change_Pct"], reverse=True)[:20]
@@ -196,6 +219,27 @@ class UniversalScanner:
         tech_result["Change_Pct"] = round(change_pct, 2)
         tech_result["Volume"] = volume_today
         tech_result["Money_Volume"] = money_volume
+        
+        # Ek Indikatörler (Defansif vs için)
+        try:
+            exp1 = df['close'].ewm(span=12, adjust=False).mean()
+            exp2 = df['close'].ewm(span=26, adjust=False).mean()
+            macd = exp1 - exp2
+            macd_signal = macd.ewm(span=9, adjust=False).mean()
+            tech_result["MACD"] = float(macd.iloc[-1])
+            tech_result["MACD_Signal"] = float(macd_signal.iloc[-1])
+            
+            high_low = df['high'] - df['low']
+            high_close = (df['high'] - df['close'].shift()).abs()
+            low_close = (df['low'] - df['close'].shift()).abs()
+            tr = high_low.combine(high_close, max).combine(low_close, max)
+            atr = tr.rolling(14).mean()
+            tech_result["ATR"] = float(atr.iloc[-1])
+            
+            vol_sma = df['volume'].rolling(10).mean()
+            tech_result["Vol_SMA10"] = float(vol_sma.iloc[-1])
+        except:
+            pass
         tech_result["Price"] = round(close_today, 2)
         tech_result["High"] = round(float(df['high'].iloc[-1]), 2)
         tech_result["Low"] = round(float(df['low'].iloc[-1]), 2)
