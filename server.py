@@ -686,7 +686,8 @@ def api_dashboard_init():
     return jsonify({
         "status": "success",
         "total_analyzed": total,
-        "dashboard_data": clean_cache or {},\n        "xu100_change": get_xu100_change(),
+        "dashboard_data": clean_cache or {},
+        "xu100_change": get_xu100_change(),
         "last_updated": last_updated
     })
 
@@ -1097,7 +1098,8 @@ if __name__ == "__main__":
     app.run(
         host="0.0.0.0",
         port=port
-    
+    )
+
 import time
 XU100_CACHE = {"change": 0.0, "last_updated": 0}
 
@@ -1117,7 +1119,6 @@ def get_xu100_change():
         except Exception as e:
             pass
     return XU100_CACHE['change']
-\n)
 
 @app.route('/api/logs', methods=['GET'])
 def api_logs():
