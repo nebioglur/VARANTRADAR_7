@@ -15,7 +15,7 @@ class MarketDataManager:
         conn = get_connection()
         cursor = conn.cursor()
         for cand in candidates:
-            sym = cand.get('symbol', '')
+            sym = cand.get('symbol', '') or cand.get('Symbol', '')
             if not sym:
                 continue
             
@@ -23,10 +23,10 @@ class MarketDataManager:
             if not sym.endswith('.IS'):
                 sym += '.IS'
                 
-            score = float(cand.get('Score', 0))
-            morning_price = float(cand.get('morning_price', 0))
-            ceiling_target = float(cand.get('ceiling_target', 0))
-            morning_phase = cand.get('morning_phase', '')
+            score = float(cand.get('Score', 0) or cand.get('score', 0))
+            morning_price = float(cand.get('morning_price', 0) or cand.get('Price', 0) or cand.get('Daily_Close', 0))
+            ceiling_target = float(cand.get('ceiling_target', 0) or cand.get('Ceiling_Price', 0))
+            morning_phase = cand.get('morning_phase', '') or cand.get('Phase', '') or cand.get('Phase_Badge', '')
             metadata = json.dumps(cand, ensure_ascii=False)
             
             try:
