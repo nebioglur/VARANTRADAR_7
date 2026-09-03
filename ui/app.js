@@ -4217,3 +4217,22 @@ async function loadMTFRadar() {
 }
 // --- END MTF SCANNER LOGIC ---
 
+
+
+async function fetchLogs() {
+    const container = document.getElementById('log-container');
+    if (!container) return;
+    container.innerHTML = 'Yükleniyor...';
+    try {
+        const res = await fetch('/api/logs?t=' + Date.now());
+        const data = await res.json();
+        if (data.status === 'success') {
+            container.innerHTML = data.logs || 'Kayıt bulunamadı.';
+            container.scrollTop = container.scrollHeight;
+        } else {
+            container.innerHTML = `<span style="color:var(--accent-red)">Hata: ${data.message}</span>`;
+        }
+    } catch (err) {
+        container.innerHTML = `<span style="color:var(--accent-red)">Bağlantı hatası: ${err}</span>`;
+    }
+}

@@ -1107,3 +1107,20 @@ def get_xu100_change():
             pass
     return XU100_CACHE['change']
 \n)
+
+@app.route('/api/logs', methods=['GET'])
+def api_logs():
+    try:
+        if not session.get('logged_in'):
+            return jsonify({"status": "error", "message": "Unauthorized"}), 401
+        
+        log_file = "data/system_logs.txt"
+        if not os.path.exists(log_file):
+            return jsonify({"status": "success", "logs": "Henüz log kaydı yok."})
+            
+        with open(log_file, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+            
+        return jsonify({"status": "success", "logs": "".join(lines[-200:])})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
