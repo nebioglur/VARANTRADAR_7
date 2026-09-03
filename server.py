@@ -127,6 +127,15 @@ def save_dashboard_cache(data):
 
 GLOBAL_DASHBOARD_CACHE = load_dashboard_cache()
 
+
+# === VERITABANI TABLOLARINI OLUŞTUR (Simülasyon Motoru için) ===
+try:
+    from services.trade_database import init_db
+    init_db()
+    print("[SERVER] Simülasyon veritabanı tabloları hazır.")
+except Exception as e_init:
+    print(f"[SERVER] init_db hatası: {e_init}")
+
 def background_scanner():
     """Arka planda çalışıp periyodik olarak TÜM BIST fırsatlarını tarar ve belleğe alır."""
     global GLOBAL_DASHBOARD_CACHE
