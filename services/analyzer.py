@@ -40,6 +40,8 @@ class Analyzer:
         std = df['close'].rolling(window=20).std()
         df['BB_Upper'] = df['SMA'] + (std * 2)
         df['BB_Lower'] = df['SMA'] - (std * 2)
+        df['Z_Score'] = (df['close'] - df['SMA']) / std
+        df['Close_at_High'] = (df['high'] - df['close']) / df['close'] < 0.005
 
         try:
             # VWAP
