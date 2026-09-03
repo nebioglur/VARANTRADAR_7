@@ -129,6 +129,9 @@ class UniversalScanner:
             vol_today = r.get("Volume") or 0
             rsi = r.get("Indicators", {}).get("RSI_14") or 50
             
+            gap_pct = r.get("Gap_Pct", 0)
+            is_squeeze = r.get("Short_Squeeze_Candidate", False)
+            
             # Puanlama Mantığı (Esnek Defansif Seçim)
             # Katı kilitler yerine mevcut piyasadaki en güvenlileri seçer
             if e50 > 0 and e200 > 0:
@@ -160,6 +163,13 @@ class UniversalScanner:
                 
                 # 7. Volatilite (Düşük dalgalanma = Güven)
                 if d_close > 0 and (atr / d_close) < 0.05: def_score += 5
+                
+                # ALPHA 3: Açıkçı Sıkıştırması (Squeeze) Puanı
+                if is_squeeze: def_score += 20
+                
+                # ALPHA 4: Gap Arbitrajı (Boşlukla açan hisselerden kaçın)
+                if gap_pct > 3.0: def_score -= 15
+                elif gap_pct < -2.0: def_score += 10 # Dipte açanlara destek puanı
                 
                 # 8. Squeeze / VCP Filtresi (Bollinger Daralması)
                 # Fiyat patlamadan hemen önceki o çok dar bantları tespit et
@@ -233,10 +243,19 @@ class UniversalScanner:
         if not tech_result:
             return None
             
-        # KESİN ŞART: Hisse EMA 200'ün altındaysa komple reddet
+        # NOT: Artık EMA200 altındakileri reddetmiyoruz çünkü 'Short Squeeze' 
+        # ve 'Defansif Dönüş' stratejileri için bu fırsatlara ihtiyacımız var!
         ema200 = tech_result.get("Daily_EMA200", 0)
-        if ema200 > 0 and close_today < ema200:
-            return None
+        
+        # 1. ALPHA: Yabancı Takas / Kurumsal Toplama (Institutional Accumulation Proxy)
+        # Hacim patlaması + Açılış Boşluğu (Gap) Tespiti
+        open_today = float(df['open'].iloc[-1])
+        gap_pct = ((open_today - close_yday) / close_yday * 100) if close_yday > 0 else 0
+        tech_result['Gap_Pct'] = round(gap_pct, 2)
+        
+        # 2. ALPHA: Açıkçı Sıkıştırması (Short Squeeze) Setup
+        is_squeeze = (close_today < ema200) and (change_pct > 3.0) and (gap_pct <= 0)
+        tech_result['Short_Squeeze_Candidate'] = is_squeeze
             
         # Ek verileri sonucun içine göm
         tech_result["Symbol"] = symbol
