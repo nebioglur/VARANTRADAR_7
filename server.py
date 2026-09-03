@@ -147,7 +147,16 @@ try:
 except Exception as e_init:
     print(f"[SERVER] init_db hatası: {e_init}")
 
+BACKGROUND_ERROR = "No Error"
 def background_scanner():
+    global BACKGROUND_ERROR
+    try:
+        _background_scanner_impl()
+    except Exception as e:
+        import traceback
+        BACKGROUND_ERROR = str(e) + " - " + traceback.format_exc()
+
+def _background_scanner_impl():
     """Arka planda çalışıp periyodik olarak TÜM BIST fırsatlarını tarar ve belleğe alır."""
     global GLOBAL_DASHBOARD_CACHE
     pipeline = DataPipeline()
