@@ -1740,7 +1740,7 @@ async function fetchDashboardData() {
         const data = await response.json();
         
         if (data && data.status === 'success') {
-            setElText('total-analyzed-counter', `RADAR BUGÜNE KADAR ${data.total_analyzed || 0} VERİYİ ANALİZ ETTİ`);\n
+            setElText('total-analyzed-counter', `RADAR BUGÜNE KADAR ${data.total_analyzed || 0} VERİYİ ANALİZ ETTİ`);
             const shieldEl = document.getElementById('shield-status');
             if (shieldEl) {
                 const chg = data.xu100_change || 0;
