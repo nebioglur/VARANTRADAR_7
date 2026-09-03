@@ -161,6 +161,12 @@ class UniversalScanner:
                 # 7. Volatilite (Düşük dalgalanma = Güven)
                 if d_close > 0 and (atr / d_close) < 0.05: def_score += 5
                 
+                # 8. Squeeze / VCP Filtresi (Bollinger Daralması)
+                # Fiyat patlamadan hemen önceki o çok dar bantları tespit et
+                bb_width = r.get('Indicators', {}).get('BB_Width', 0)
+                if 0 < bb_width < 0.05: def_score += 15 # Kusursuz sıkışma
+                elif 0 < bb_width < 0.10: def_score += 8 # İyi sıkışma
+                
                 r['Defensive_Score'] = def_score
                 
                 # Skoru 50 ve üzeri olanları potansiyel defansif olarak gör

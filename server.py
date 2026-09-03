@@ -927,10 +927,23 @@ def api_simulation_live_orders():
         is_bear_market = (bist_chg < -0.5)
         ideal_allocation = 1500.0 if is_bear_market else 3333.0 # Çelik kural, ayıda risk yarıya iner!
         
+        # SAATLİK TUZAK (FAKEOUT) FİLTRESİ
+        import datetime
+        now_time = datetime.datetime.now().time()
+        lunch_start = datetime.time(12, 30)
+        lunch_end = datetime.time(14, 0)
+        # Öğle tatili civarındaki sığ hacimli hareketleri filtrele
+        is_fakeout_zone = (lunch_start <= now_time <= lunch_end)
+        
         import json
         for s in valid_signals:
             morning_price = float(s.get('morning_price', 0))
             if morning_price <= 0: continue
+            
+            if is_fakeout_zone:
+                # Sadece aşırı güçlü YZ favorileri fakeout saatinde geçebilir
+                if s.get('score', 0) < 95:
+                    continue
             
             meta = {}
             try:
