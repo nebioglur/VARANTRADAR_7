@@ -778,12 +778,17 @@ def api_scan_yildiz():
 
 @app.route('/api/scan_all', methods=['GET'])
 def api_scan_all():
-    pool = BIST_SYMBOLS # Artık Bulk Scan sayesinde tüm hisseleri saniyeler içinde tarayabilir.
     try:
-        pipeline = DataPipeline()
-        scanner = UniversalScanner(pipeline)
-        results = scanner.scan_pool_bulk(pool).get("opportunities", [])
-        return jsonify({"status": "success", "count": len(results), "results": sanitize_for_json(results)})
+        if not GLOBAL_DASHBOARD_CACHE:
+            return jsonify({"status": "error", "message": "Arka plan taraması devam ediyor. Lütfen 10 dakika sonra tekrar deneyin."}), 400
+            
+        res = []
+        if "tavan_adaylari" in GLOBAL_DASHBOARD_CACHE:
+            res.extend(GLOBAL_DASHBOARD_CACHE["tavan_adaylari"])
+        if "opportunities_1h" in GLOBAL_DASHBOARD_CACHE:
+            res.extend(GLOBAL_DASHBOARD_CACHE["opportunities_1h"])
+            
+        return jsonify({"status": "success", "count": len(res), "results": sanitize_for_json(res)})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
