@@ -912,22 +912,51 @@ def api_simulation_live_orders():
             if score >= 80 and "YATAY" not in phase and "NEGATİF" not in phase and "UZAK DUR" not in phase:
                 valid_signals.append(s)
                 
-        orders = []
-        ideal_allocation = 3333.0 # Çelik kural: Sabit 100 TL risk, %3 stop = 3333 TL alım
+                orders = []
+        # ENDEKS KALKANI (Market Regime Filter)
+        bist_chg = get_xu100_change()
+        is_bear_market = (bist_chg < -0.5)
+        ideal_allocation = 1500.0 if is_bear_market else 3333.0 # Çelik kural, ayıda risk yarıya iner!
         
+        import json
         for s in valid_signals:
             morning_price = float(s.get('morning_price', 0))
             if morning_price <= 0: continue
             
-            entry_price = morning_price * 1.0015 # %0.15 slipaj payı ile tahmini giriş
+            meta = {}
+            try:
+                meta = json.loads(s.get('metadata', '{}'))
+            except: pass
+            
+            # MTF ONAYI: Günlük EMA50 > EMA200 değilse pas geç (Katı filtre)
+            e50 = meta.get('Daily_EMA50')
+            e200 = meta.get('Daily_EMA200')
+            if e50 is None or e200 is None:
+                inds = meta.get('Indicators', {})
+                e50 = inds.get('EMA_50')
+                e200 = inds.get('EMA_200')
+                
+            if e50 and e200 and float(e50) <= float(e200):
+                continue # MTF (Günlük) ana trend negatif, riske girme!
+                
+            entry_price = morning_price * 1.0015 # %0.15 slipaj payı
             shares = int(ideal_allocation // entry_price)
             if shares <= 0: continue
             
             ceiling = float(s.get('ceiling_target', entry_price * 1.10))
             
-            stop_price = entry_price * 0.97
-            tp1_price = entry_price * 1.05
-            tp2_price = ceiling
+            # ATR TABANLI DİNAMİK HEDEFLEME
+            atr = meta.get('ATR')
+            if atr and float(atr) > 0:
+                atr_val = float(atr)
+                stop_price = entry_price - (atr_val * 1.2)  # 1.2x ATR Stop
+                tp1_price = entry_price + (atr_val * 1.5)   # 1.5x ATR TP1
+                tp2_price = entry_price + (atr_val * 3.0)   # 3.0x ATR TP2 (or Ceiling)
+                tp2_price = min(tp2_price, ceiling) # Tavandan fazlasını hedefleme
+            else:
+                stop_price = entry_price * 0.97
+                tp1_price = entry_price * 1.05
+                tp2_price = ceiling
             
             orders.append({
                 'symbol': s['symbol'],

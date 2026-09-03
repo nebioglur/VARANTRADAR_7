@@ -139,10 +139,14 @@ class SimulationEngine:
         if not selected:
             return
             
-        current_cash = self.daily_budget
-        # Çelik Sistem: İşlem başına max zarar 100 TL. Stop = %3. 
-        # İdeal Sermaye = 100 / 0.03 = 3333 TL.
-        ideal_allocation = 3333.0 
+                current_cash = self.daily_budget
+        # ENDEKS KALKANI (Market Regime)
+        try:
+            from server import get_xu100_change
+            is_bear = (get_xu100_change() < -0.5)
+        except:
+            is_bear = False
+        ideal_allocation = 1500.0 if is_bear else 3333.0 
         
         active_trades = []
         completed_trades = []
@@ -193,15 +197,26 @@ class SimulationEngine:
                 
                 entry = trade['entry_price']
                 
-                # Çelik Hedefler (Gerçek hayatta Zincir Emir olarak bankaya girilir)
+                # DİNAMİK İZLEYEN STOP (Trailing Stop)
+                # Kâr > %2 ise stopu maliyete (Sıfıra) çek
+                if high >= entry * 1.02 and trade['stop_price'] < entry * 1.002:
+                    trade['stop_price'] = entry * 1.002
+                    trade['reason_prefix'] = "[İZLEYEN STOP AKTİF] "
+                
+                # Kâr > %4 ise stopu %2 kâra kilitle
+                if high >= entry * 1.04 and trade['stop_price'] < entry * 1.02:
+                    trade['stop_price'] = entry * 1.02
+                    trade['reason_prefix'] = "[KÂR KİLİTLENDİ] "
+
                 stop_price = trade['stop_price']
                 tp1_price = trade['tp1_price']
                 tp2_price = trade['tp2_price']
+                prefix = trade.get('reason_prefix', '')
                 
                 # En kötü senaryo: Önce Stop Loss patlar varsayımı
                 if low <= stop_price:
                     sell_price = stop_price * 0.9985 # Slipaj
-                    reason = f"⛔ ÇELİK STOP KESİLDİ (-%3)"
+                    reason = f"{prefix}⛔ ÇELİK STOP KESİLDİ"
                 elif high >= tp2_price:
                     sell_price = tp2_price
                     reason = f"🚀 TAVAN (TAM KÂR ALINDI)"
