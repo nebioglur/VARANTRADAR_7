@@ -53,13 +53,6 @@ class RadarEngine:
             logger.info(f"Ön filtreden geçen hisse sayısı: {len(valid_symbols)}")
             
         except Exception as e:
-            import traceback
-            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
-            try:
-                from utils.sys_logger import log_error
-                log_error("SubEngine", f"Hata: {err_str}")
-            except:
-                pass
             logger.error(f"Toplu veri çekiminde hata: {e}")
             return pd.DataFrame()
 
@@ -75,13 +68,6 @@ class RadarEngine:
                     if result:
                         results.append(result)
                 except Exception as e:
-            import traceback
-            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
-            try:
-                from utils.sys_logger import log_error
-                log_error("SubEngine", f"Hata: {err_str}")
-            except:
-                pass
                     logger.error(f"{symbol} analizi sırasında hata: {e}")
                     
         # 3. Sonuçları Sıralama (Modül 1.4 & 7)
@@ -146,13 +132,6 @@ class RadarEngine:
                 "ETA": ai_report['ETA']
             }
         except Exception as e:
-            import traceback
-            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
-            try:
-                from utils.sys_logger import log_error
-                log_error("SubEngine", f"Hata: {err_str}")
-            except:
-                pass
             logger.error(f"Hata _analyze_single_stock ({symbol}): {e}")
             return None
 

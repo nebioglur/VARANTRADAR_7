@@ -42,13 +42,6 @@ class TavanAuditTracker:
                     if data and isinstance(data, dict) and len(data) > 0:
                         return data
             except Exception as e:
-            import traceback
-            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
-            try:
-                from utils.sys_logger import log_error
-                log_error("SubEngine", f"Hata: {err_str}")
-            except:
-                pass
                 print(f"[TavanAuditTracker] Yukleme hatasi: {e}")
         
         # Henüz seans kaydı yoksa 04 Ağustos 2026 başlangıç verilerini yükle ve kaydet
@@ -63,13 +56,6 @@ class TavanAuditTracker:
             with open(AUDIT_FILE_PATH, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
         except Exception as e:
-            import traceback
-            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
-            try:
-                from utils.sys_logger import log_error
-                log_error("SubEngine", f"Hata: {err_str}")
-            except:
-                pass
             print(f"[TavanAuditTracker] Kaydetme hatası: {e}")
 
     @classmethod
@@ -257,13 +243,6 @@ class TavanAuditTracker:
                                 badge_col = "red"
                                 item["stop_loss_triggered"] = True
             except Exception as e:
-            import traceback
-            err_str = "".join(traceback.format_exception(type(e), e, e.__traceback__))
-            try:
-                from utils.sys_logger import log_error
-                log_error("SubEngine", f"Hata: {err_str}")
-            except:
-                pass
                 print(f"[ZARAR KES HATA] {sym}: {e}")
 
             # Kaldıraçlı Ahlatcı Varant Getirisi (~6.2x)
