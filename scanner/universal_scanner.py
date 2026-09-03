@@ -121,12 +121,13 @@ class UniversalScanner:
             rsi = r.get("Indicators", {}).get("RSI_14", 50)
             change = r.get("Change_Pct", 0)
             
-            money_vol = r.get("Money_Volume", 0)
-            macd = r.get("MACD", 0)
-            macd_signal = r.get("MACD_Signal", 0)
-            vol_sma10 = r.get("Vol_SMA10", 0)
-            atr = r.get("ATR", 0)
-            vol_today = r.get("Volume", 0)
+            money_vol = r.get("Money_Volume") or 0
+            macd = r.get("MACD") or 0
+            macd_signal = r.get("MACD_Signal") or 0
+            vol_sma10 = r.get("Vol_SMA10") or 0
+            atr = r.get("ATR") or 0
+            vol_today = r.get("Volume") or 0
+            rsi = r.get("Indicators", {}).get("RSI_14") or 50
             
             # Puanlama Mantığı (Esnek Defansif Seçim)
             # Katı kilitler yerine mevcut piyasadaki en güvenlileri seçer
@@ -142,7 +143,7 @@ class UniversalScanner:
                 elif change > -1.0: def_score += 5 # Az düşmüşse yine fena değil
                 
                 # 3. Destekten Çok Uzaklaşmamış Olma (Güvenli Liman)
-                dist_to_e50 = abs(d_close - e50) / e50 * 100
+                dist_to_e50 = abs(d_close - e50) / e50 * 100 if e50 > 0 else 100
                 if dist_to_e50 <= 4.0: def_score += 15
                 elif dist_to_e50 <= 8.0: def_score += 5
                 
@@ -162,8 +163,8 @@ class UniversalScanner:
                 
                 r['Defensive_Score'] = def_score
                 
-                # Skoru 60 ve üzeri olanları potansiyel defansif olarak gör
-                if def_score >= 60:
+                # Skoru 50 ve üzeri olanları potansiyel defansif olarak gör
+                if def_score >= 50:
                     defensive.append(r)
         
         # En güvenliden (skoru yüksek) en az güvenliye doğru sırala
