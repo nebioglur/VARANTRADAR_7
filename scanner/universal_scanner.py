@@ -180,7 +180,7 @@ class UniversalScanner:
                 r['Defensive_Score'] = def_score
                 
                 # Skoru 50 ve üzeri olanları potansiyel defansif olarak gör
-                if def_score >= 50:
+                if def_score >= 35:
                     defensive.append(r)
         
         # En güvenliden (skoru yüksek) en az güvenliye doğru sırala
