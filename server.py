@@ -96,6 +96,10 @@ def load_dashboard_cache():
             
             if isinstance(data, dict):
                 today_str = datetime.now().strftime("%Y-%m-%d")
+            if GLOBAL_DASHBOARD_CACHE.get("cache_date", today_str) != today_str:
+                print("[BACKGROUND] Yeni gun tespit edildi. Eski bellekteki veriler temizleniyor.")
+                GLOBAL_DASHBOARD_CACHE = {}
+
                 cache_date = data.get("cache_date")
                 
                 if cache_date and cache_date != today_str:
@@ -267,11 +271,8 @@ def _background_scanner_impl():
             
             from datetime import datetime
             today_str = datetime.now().strftime("%Y-%m-%d")
-            if GLOBAL_DASHBOARD_CACHE.get("cache_date", today_str) != today_str:
-                print("[BACKGROUND] Yeni gun tespit edildi. Eski bellekteki veriler temizleniyor.")
-                GLOBAL_DASHBOARD_CACHE = {}
-
-            if results and isinstance(results, dict):
+            
+            if results and isinstance(results, dict) and len(results.get("all_symbols_stats", {})) > 50:
                 # Mevcut 1h, tavan ve 5m verilerini KORU!
                 if "opportunities_1h" in GLOBAL_DASHBOARD_CACHE:
                     results["opportunities_1h"] = GLOBAL_DASHBOARD_CACHE["opportunities_1h"]
@@ -285,7 +286,14 @@ def _background_scanner_impl():
                 GLOBAL_DASHBOARD_CACHE = sanitize_for_json(results)
                 save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
                 print("[BACKGROUND] Günlük veriler güncellendi. 1h taraması başlıyor...")
+            else:
+                print(f"[BACKGROUND] Yfinance hatası veya boş veri! results length: {len(results.get('all_symbols_stats', {})) if isinstance(results, dict) else 0}. Cache korunuyor.")
+                # Eger cache hic yoksa, en azindan bos listelerle dolsun ki UI patlamasin.
+                if not GLOBAL_DASHBOARD_CACHE:
+                    GLOBAL_DASHBOARD_CACHE = results
+                results = GLOBAL_DASHBOARD_CACHE
                 
+            if results and isinstance(results, dict):
                 daily_stats = results.get("all_symbols_stats", {})
                 try:
                     res_1h = scanner.scan_pool_bulk_1h(BIST_SYMBOLS, daily_stats)
