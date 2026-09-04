@@ -102,11 +102,10 @@ def load_dashboard_cache():
                     print(f"[Server] Eski gunun cache dosyasi reddedildi.")
                     return {}
                     
-                # Cache bugune ait olsa bile, dosya 45 dakikadan eskiyse COPE AT
-                # Boylece Fast-Start tetiklenir ve kullaniciya "hep eski" veri gosterilmez
-                mtime = os.path.getmtime(CACHE_FILE)
-                if time.time() - mtime > 2700:
-                    print("[Server] Cache 45 dakikadan eski! Guncel veri icin Fast-Start tetiklenecek.")
+                # Dosya mtime (git clone nedeniyle yaniltici olabilir), gercek timestamp kullan.
+                real_ts = data.get("cache_timestamp", 0)
+                if time.time() - real_ts > 1800: # 30 dakikadan eskiyse kesin reddet
+                    print("[Server] Cache JSON icindeki gercek timestamp 30 dakikadan eski! Fast-Start tetiklenecek.")
                     return {}
                     
                 return data
@@ -132,6 +131,8 @@ def sync_to_github():
 
 def save_dashboard_cache(data):
     try:
+        import time
+        data["cache_timestamp"] = time.time()
         clean = sanitize_for_json(data)
         with open(CACHE_FILE, "w", encoding="utf-8") as f:
             json.dump(clean, f, ensure_ascii=False, indent=2)
