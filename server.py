@@ -37,7 +37,7 @@ from decision.exceptions import InsufficientConfidenceError
 from scanner.universal_scanner import UniversalScanner
 from data.pipeline import DataPipeline
 from data.providers.yfinance_provider import YFinanceProvider
-from config.bist_symbols import BIST_SYMBOLS, BIST30_SYMBOLS, BIST50_SYMBOLS, YILDIZ_SYMBOLS, FX_SYMBOLS, COMMODITY_SYMBOLS, CRYPTO_SYMBOLS
+from config.bist_symbols import BIST_SYMBOLS, BIST30_SYMBOLS, BIST100_SYMBOLS, YILDIZ_SYMBOLS, FX_SYMBOLS, COMMODITY_SYMBOLS, CRYPTO_SYMBOLS
 
 def sanitize_for_json(obj):
     """
@@ -215,8 +215,8 @@ def _background_scanner_impl():
     # Hızlı Başlangıç (Fast Start): Eğer cache boşsa kullanıcıyı bekletmemek için sadece BIST 50'yi anında tara
     if not GLOBAL_DASHBOARD_CACHE:
         try:
-            print("[BACKGROUND] Hızlı Başlangıç (Fast Start) - Sadece BIST 50 taranıyor...")
-            fast_results = scanner.scan_pool_bulk(BIST50_SYMBOLS)
+            print("[BACKGROUND] Hızlı Başlangıç (Fast Start) - BIST 100 taranıyor...")
+            fast_results = scanner.scan_pool_bulk(BIST100_SYMBOLS)
             from datetime import datetime
             fast_results["cache_date"] = datetime.now().strftime("%Y-%m-%d")
             
@@ -227,7 +227,7 @@ def _background_scanner_impl():
             daily_stats = fast_results.get("all_symbols_stats", {})
             try:
                 print("[BACKGROUND] Hızlı Başlangıç Faz 2 - 1 Saatlik (1h) Taraması yapılıyor...")
-                fast_1h_res = scanner.scan_pool_bulk_1h(BIST50_SYMBOLS, daily_stats)
+                fast_1h_res = scanner.scan_pool_bulk_1h(BIST100_SYMBOLS, daily_stats)
                 GLOBAL_DASHBOARD_CACHE["opportunities_1h"] = sanitize_for_json(fast_1h_res.get("opportunities_1h", []))
                 GLOBAL_DASHBOARD_CACHE["tavan_adaylari"] = sanitize_for_json(fast_1h_res.get("tavan_adaylari", []))
                 GLOBAL_DASHBOARD_CACHE["stay_away_1h"] = sanitize_for_json(fast_1h_res.get("stay_away_1h", []))
@@ -242,7 +242,7 @@ def _background_scanner_impl():
             
             try:
                 print("[BACKGROUND] Hızlı Başlangıç Faz 3 - 5 Dakikalık (5m) Taraması yapılıyor...")
-                valid_bist50 = [s for s in BIST50_SYMBOLS if s in daily_stats]
+                valid_bist50 = [s for s in BIST100_SYMBOLS if s in daily_stats]
                 fast_5m = scanner.scan_pool_bulk_5m(valid_bist50)
                 GLOBAL_DASHBOARD_CACHE["signals_5m"] = sanitize_for_json(fast_5m)
                 save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
@@ -732,8 +732,8 @@ def api_scan_mtf():
         # Cache bos: ilk acilis, hizli BIST50 taramasi yap (50 hisse, tolere edilebilir sure)
         print("[MTF API] Cache bos, hizli BIST50 taramasi yapiliyor...")
         from services.mtf_scanner import MTFScanner
-        from config.bist_symbols import BIST50_SYMBOLS
-        results = MTFScanner.scan_pool(BIST50_SYMBOLS, max_symbols=50)
+        from config.bist_symbols import BIST100_SYMBOLS
+        results = MTFScanner.scan_pool(BIST100_SYMBOLS, max_symbols=50)
         GLOBAL_DASHBOARD_CACHE["mtf_results"] = sanitize_for_json(results)
         save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
         return jsonify({
@@ -773,7 +773,7 @@ def api_scan_warrants():
 
 @app.route('/api/scan_bist50', methods=['GET'])
 def api_scan_bist50():
-    pool = BIST50_SYMBOLS
+    pool = BIST100_SYMBOLS
     try:
         pipeline = DataPipeline()
         scanner = UniversalScanner(pipeline)

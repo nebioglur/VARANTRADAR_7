@@ -301,7 +301,8 @@ class UniversalScanner:
                     c = stats.get("Daily_Close", 0)
                     e50 = stats.get("Daily_EMA50", float('inf'))
                     e200 = stats.get("Daily_EMA200", float('inf'))
-                    if c > e50 and c > e200:
+                    # Filtreyi esnettik: Sadece EMA200'ün %15 altından daha kötü olan çok ağır çöküştekileri ele
+                    if c > e200 * 0.85:
                         filtered_symbols.append(sym)
                 else:
                     filtered_symbols.append(sym)

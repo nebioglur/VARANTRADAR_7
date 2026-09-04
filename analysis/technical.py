@@ -927,7 +927,7 @@ class TechnicalEngine(BaseEngine):
             print(f"[TavanAdayi] Hesaplama hatasi: {e}")
             return None
             
-        if score < 50:
+        if score < 40:
             return None
             
         score = min(100, max(0, score))
