@@ -386,7 +386,7 @@ def _background_scanner_impl():
             print(f"[BACKGROUND] MTF Hatasi: {e_mtf}")
 
         # Dinlen (15 dakika)
-        time.sleep(4.5 * 60) # Hizlandirilmis guncelleme
+        time.sleep(8 * 60) # Hizlandirilmis guncelleme
 
 # Varant Sembolleri (Örnek Liste - IS Warrant yapısı)
 # ⚠️ DİKKAT: Bu varant sembolleri eski vadeli (Temmuz 2024). Güncel vadeli sembollerle değiştirilmelidir.
