@@ -924,7 +924,7 @@ def api_simulation_live_orders():
             if score >= 80 and "YATAY" not in phase and "NEGATİF" not in phase and "UZAK DUR" not in phase:
                 valid_signals.append(s)
                 
-                orders = []
+        orders = []
         # ENDEKS KALKANI (Market Regime Filter)
         bist_chg = get_xu100_change()
         
@@ -946,11 +946,11 @@ def api_simulation_live_orders():
         # Eğer endeks artıdaysa ama piyasadaki hisselerin %60'ından fazlası eksideyse = SUNİ RALLİ
         is_fake_rally = (bist_chg > 0 and ad_ratio < 0.40)
         
-        # Suni rallide risk %80 düşürülür (Güvenilmez piyasa)
+        # Suni rallide risk %80 daraltılır (Güvenilmez piyasa)
+        is_bear_market = (bist_chg < -0.5)
         if is_fake_rally:
             base_allocation = 666.0
         else:
-            is_bear_market = (bist_chg < -0.5)
             base_allocation = 1500.0 if is_bear_market else 3333.0  
         
         # SAATLİK TUZAK (FAKEOUT) FİLTRESİ
