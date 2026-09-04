@@ -97,19 +97,21 @@ def load_dashboard_cache():
             if isinstance(data, dict):
                 today_str = datetime.now().strftime("%Y-%m-%d")
                 cache_date = data.get("cache_date")
-                if cache_date:
-                    if cache_date != today_str:
-                        print(f"[Server] Eski günün cache dosyası reddedildi ({cache_date} != {today_str}).")
-                        return {}
-                else:
-                    mtime = os.path.getmtime(CACHE_FILE)
-                    if time.time() - mtime > 1800:
-                        print("[Server] Cache tarihi yok ve dosya 30 dakikadan eski. Reddedildi.")
-                        return {}
+                
+                if cache_date and cache_date != today_str:
+                    print(f"[Server] Eski gunun cache dosyasi reddedildi.")
+                    return {}
+                    
+                # Cache bugune ait olsa bile, dosya 45 dakikadan eskiyse COPE AT
+                # Boylece Fast-Start tetiklenir ve kullaniciya "hep eski" veri gosterilmez
+                mtime = os.path.getmtime(CACHE_FILE)
+                if time.time() - mtime > 2700:
+                    print("[Server] Cache 45 dakikadan eski! Guncel veri icin Fast-Start tetiklenecek.")
+                    return {}
+                    
                 return data
         except Exception as e:
-            print(f"[Server] load_dashboard_cache Error: {e}")
-            return {}
+            print(f"Cache load error: {e}")
     return {}
 
 def sync_to_github():
@@ -378,7 +380,7 @@ def _background_scanner_impl():
             print(f"[BACKGROUND] MTF Hatasi: {e_mtf}")
 
         # Dinlen (15 dakika)
-        time.sleep(900)
+        time.sleep(60) # Hizlandirilmis guncelleme
 
 # Varant Sembolleri (Örnek Liste - IS Warrant yapısı)
 # ⚠️ DİKKAT: Bu varant sembolleri eski vadeli (Temmuz 2024). Güncel vadeli sembollerle değiştirilmelidir.
