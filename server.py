@@ -232,6 +232,11 @@ def _background_scanner_impl():
                 GLOBAL_DASHBOARD_CACHE["tavan_adaylari"] = sanitize_for_json(fast_1h_res.get("tavan_adaylari", []))
                 GLOBAL_DASHBOARD_CACHE["stay_away_1h"] = sanitize_for_json(fast_1h_res.get("stay_away_1h", []))
                 save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
+                
+                # Hızlı Başlangıçta da sinyalleri DB'ye yaz (Simülasyon boş kalmasın)
+                from services.market_data import MarketDataManager
+                MarketDataManager.record_signals(fast_results["cache_date"], fast_1h_res.get("tavan_adaylari", []))
+                MarketDataManager.fetch_and_store_intraday(fast_results["cache_date"])
             except Exception as e_1h:
                 print(f"[BACKGROUND] Hızlı Başlangıç 1h hatası: {e_1h}")
             
