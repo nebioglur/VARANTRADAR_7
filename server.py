@@ -924,8 +924,31 @@ def api_simulation_live_orders():
                 orders = []
         # ENDEKS KALKANI (Market Regime Filter)
         bist_chg = get_xu100_change()
-        is_bear_market = (bist_chg < -0.5)
-        ideal_allocation = 1500.0 if is_bear_market else 3333.0 # Çelik kural, ayıda risk yarıya iner!
+        
+        # 1. PİYASA GENİŞLİĞİ (Market Breadth - Suni Ralli Kalkanı)
+        advancers = 0
+        decliners = 0
+        total_scanned = 0
+        cache_data = globals().get("GLOBAL_DASHBOARD_CACHE", {})
+        for cat, items in cache_data.items():
+            if isinstance(items, list):
+                for item in items:
+                    if isinstance(item, dict) and "Change_Pct" in item:
+                        total_scanned += 1
+                        val = float(item["Change_Pct"])
+                        if val > 0: advancers += 1
+                        elif val < 0: decliners += 1
+        
+        ad_ratio = (advancers / total_scanned) if total_scanned > 0 else 0.5
+        # Eğer endeks artıdaysa ama piyasadaki hisselerin %60'ından fazlası eksideyse = SUNİ RALLİ
+        is_fake_rally = (bist_chg > 0 and ad_ratio < 0.40)
+        
+        # Suni rallide risk %80 düşürülür (Güvenilmez piyasa)
+        if is_fake_rally:
+            base_allocation = 666.0
+        else:
+            is_bear_market = (bist_chg < -0.5)
+            base_allocation = 1500.0 if is_bear_market else 3333.0  
         
         # SAATLİK TUZAK (FAKEOUT) FİLTRESİ
         import datetime
@@ -962,7 +985,13 @@ def api_simulation_live_orders():
                 continue # MTF (Günlük) ana trend negatif, riske girme!
                 
             entry_price = morning_price * 1.0015 # %0.15 slipaj payı
-            shares = int(ideal_allocation // entry_price)
+            # 2. KELLY KRITERI (Dinamik Pozisyon Boyutlandirma)
+            ai_score = float(s.get('score', 60))
+            win_prob = ai_score / 100.0
+            reward_risk = 2.0
+            kelly_fraction = max(0.1, min(1.0, win_prob - ((1.0 - win_prob) / reward_risk)))
+            final_allocation = base_allocation * (kelly_fraction / 0.5)
+            shares = int(final_allocation // entry_price)
             if shares <= 0: continue
             
             ceiling = float(s.get('ceiling_target', entry_price * 1.10))
