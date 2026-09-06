@@ -310,6 +310,17 @@ class UniversalScanner:
         except Exception as e:
             v8_breakout = {"is_breakout": False, "status": "ERROR"}
         tech_result["v8_breakout"] = v8_breakout
+
+        # --- V8 EXECUTION ---
+        try:
+            from v8_engine.execution import ExecutionEngine
+            exec_engine = ExecutionEngine()
+            v8_exec = exec_engine.evaluate_entry(v8_breakout, regime)
+        except Exception as e:
+            v8_exec = {"entry_status": "ERROR"}
+        tech_result["v8_execution"] = v8_exec
+        # --------------------
+
         # -------------------
 
         # --------------------

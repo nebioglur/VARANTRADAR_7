@@ -1236,6 +1236,8 @@ def api_v8_radar_breakout():
             bo["price"] = data.get("Daily_Close", 0.0)
             bo["change_pct"] = data.get("Change_Pct", 0.0)
             bo["volume"] = data.get("Volume", 0)
+            bo["entry_status"] = data.get("v8_execution", {}).get("entry_status", "UNKNOWN")
+            bo["entry_reasons"] = data.get("v8_execution", {}).get("reasons", [])
             breakout_list.append(bo)
             
     # Siralama: Oncelikle kaliteli kirilimlar
