@@ -287,6 +287,17 @@ class UniversalScanner:
         tech_result["High"] = round(float(df['high'].iloc[-1]), 2)
         tech_result["Low"] = round(float(df['low'].iloc[-1]), 2)
         
+        
+        # --- V8 DISCOVERY ---
+        try:
+            from v8_engine.discovery import DiscoveryEngine
+            disc_engine = DiscoveryEngine()
+            v8_disc = disc_engine.analyze_preparation(df, symbol)
+        except Exception as e:
+            v8_disc = {"state": "ERROR", "preparation_score": 0, "reasons": []}
+        tech_result["v8_discovery"] = v8_disc
+        # --------------------
+
         return tech_result
 
     def scan_pool_bulk_1h(self, symbols: List[str], daily_stats: Dict[str, Any] = None) -> Dict[str, List[Dict[str, Any]]]:
