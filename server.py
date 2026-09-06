@@ -96,9 +96,9 @@ def load_dashboard_cache():
             
             if isinstance(data, dict):
                 today_str = datetime.now().strftime("%Y-%m-%d")
-            if GLOBAL_DASHBOARD_CACHE.get("cache_date", today_str) != today_str:
+            if data.get("cache_date", today_str) != today_str:
                 print("[BACKGROUND] Yeni gun tespit edildi. Eski bellekteki veriler temizleniyor.")
-                GLOBAL_DASHBOARD_CACHE = {}
+                pass
 
                 cache_date = data.get("cache_date")
                 
@@ -649,7 +649,6 @@ def api_online():
 
 
 @app.route("/v8")
-@login_required
 def v8_dashboard():
     response = make_response(send_from_directory("ui", "v8_dashboard.html"))
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
@@ -1239,7 +1238,6 @@ def get_xu100_change():
 
 
 @app.route('/api/v8/learning/outcomes', methods=['GET'])
-@login_required
 def api_v8_learning_outcomes():
     try:
         from v8_engine.database import V8Database
@@ -1284,7 +1282,6 @@ def api_v8_learning_outcomes():
         return jsonify({"status": "error", "message": str(e)})
 
 @app.route('/api/v8/radar/breakout', methods=['GET'])
-@login_required
 def api_v8_radar_breakout():
     all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
     breakout_list = []
@@ -1304,7 +1301,6 @@ def api_v8_radar_breakout():
     return jsonify({"status": "success", "data": breakout_list})
 
 @app.route('/api/v8/radar/discovery', methods=['GET'])
-@login_required
 def api_v8_radar_discovery():
     all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
     discovery_list = []
@@ -1323,7 +1319,6 @@ def api_v8_radar_discovery():
     return jsonify({"status": "success", "data": discovery_list})
 
 @app.route('/api/v8/market/regime', methods=['GET'])
-@login_required
 def api_v8_market_regime():
     regime_data = GLOBAL_DASHBOARD_CACHE.get("v8_market_regime", {"regime": "UNKNOWN", "score": 50.0, "xu100_trend": 0.0})
     return jsonify(regime_data)
