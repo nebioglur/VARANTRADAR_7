@@ -4339,7 +4339,14 @@ function loadV8Breakout() {
                         <div style="color:${fakeRiskColor}">Tuzak: %${d.fakeout_risk}</div>
                     </td>
                     <td><span style="${entryStyle}">${d.entry_status}</span></td>
-                    <td style="font-size:0.8rem; color:var(--text-muted); max-width:200px; white-space:normal;">${d.entry_reasons[0] || '-'}</td>
+                    
+                    <td style="font-size:0.8rem; color:var(--text-muted); max-width:200px; white-space:normal;">
+                        <div>${d.entry_reasons[0] || '-'}</div>
+                        ${d.varrant_info && d.varrant_info.status === 'VARRANT_FOUND' ? 
+                          '<div style="margin-top:4px; font-size:0.75rem; color:var(--accent-purple);"><i class="fa-solid fa-bolt"></i> Varant: ' + d.varrant_info.varrant_prefix + ' (Kaldıraç: ~' + d.varrant_info.estimated_leverage + 'x)</div>' 
+                          : ''}
+                    </td>
+    
                 `;
                 tbody.appendChild(tr);
             });
@@ -4400,6 +4407,10 @@ if (typeof originalSwitchMainTab === 'function' && !window.v8Hooked) {
     window.v8Hooked = true;
     window.switchMainTab = function(tabId, btnElement) {
         originalSwitchMainTab(tabId, btnElement);
+        
+        const v8Wrapper = document.getElementById('v8-wrapper');
+        if (v8Wrapper) v8Wrapper.style.display = tabId === 'v8' ? 'block' : 'none';
+
         if(tabId === 'v8') {
             refreshV8Data();
             if(!v8Interval) {
