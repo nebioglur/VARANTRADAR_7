@@ -647,6 +647,14 @@ def api_online():
     return jsonify({"online": len(_online_users)})
 
 
+
+@app.route("/v8")
+@login_required
+def v8_dashboard():
+    response = make_response(send_from_directory("ui", "v8_dashboard.html"))
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return response
+
 @app.route("/")
 def index():
     response = make_response(send_from_directory("ui", "index.html"))
