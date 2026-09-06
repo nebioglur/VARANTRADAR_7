@@ -164,6 +164,17 @@ def background_scanner():
         BACKGROUND_ERROR = str(e) + " - " + traceback.format_exc()
 
 def _background_scanner_impl():
+    # --- V8 ENGINE INIT ---
+    try:
+        from v8_engine.database import V8Database
+        from v8_engine.regime import MarketRegimeEngine
+        V8Database.init_db()
+        regime_engine = MarketRegimeEngine()
+    except Exception as e:
+        print(f"[V8 INIT ERROR] {e}")
+        regime_engine = None
+    # ----------------------
+
     """Arka planda çalışıp periyodik olarak TÜM BIST fırsatlarını tarar ve belleğe alır."""
     global GLOBAL_DASHBOARD_CACHE
     pipeline = DataPipeline()
@@ -262,6 +273,17 @@ def _background_scanner_impl():
 
     while True:
         try:
+            
+            # --- V8 REGIME UPDATE ---
+            if regime_engine:
+                try:
+                    regime_data = regime_engine.determine_regime()
+                    GLOBAL_DASHBOARD_CACHE["v8_market_regime"] = regime_data
+                    print(f"[V8 REGIME] Current Market Regime: {regime_data.get('regime')} (Score: {regime_data.get('score')})")
+                except Exception as re_e:
+                    print(f"[V8 REGIME ERROR] {re_e}")
+            # ------------------------
+            
             print("[BACKGROUND] Tüm BIST hisseleri için Kapsamlı (Bulk) Günlük Data indiriliyor...")
             
             # 550 hisseyi tek bir pakette indir:
@@ -1199,6 +1221,12 @@ def get_xu100_change():
         except Exception as e:
             pass
     return XU100_CACHE['change']
+
+@app.route('/api/v8/market/regime', methods=['GET'])
+@login_required
+def api_v8_market_regime():
+    regime_data = GLOBAL_DASHBOARD_CACHE.get("v8_market_regime", {"regime": "UNKNOWN", "score": 50.0, "xu100_trend": 0.0})
+    return jsonify(regime_data)
 
 @app.route('/api/logs', methods=['GET'])
 def api_logs():
