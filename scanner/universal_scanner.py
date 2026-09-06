@@ -296,6 +296,22 @@ class UniversalScanner:
         except Exception as e:
             v8_disc = {"state": "ERROR", "preparation_score": 0, "reasons": []}
         tech_result["v8_discovery"] = v8_disc
+
+        # --- V8 BREAKOUT ---
+        try:
+            from v8_engine.breakout import BreakoutEngine
+            bo_engine = BreakoutEngine()
+            try:
+                import server
+                regime = server.GLOBAL_DASHBOARD_CACHE.get("v8_market_regime", {}).get("regime", "NEUTRAL")
+            except:
+                regime = "NEUTRAL"
+            v8_breakout = bo_engine.analyze_breakout(df, symbol, regime)
+        except Exception as e:
+            v8_breakout = {"is_breakout": False, "status": "ERROR"}
+        tech_result["v8_breakout"] = v8_breakout
+        # -------------------
+
         # --------------------
 
         return tech_result
