@@ -40,12 +40,16 @@ class V8Database:
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS v8_outcomes (
                 signal_id TEXT PRIMARY KEY,
+                t_3m_price REAL,
                 t_5m_price REAL,
+                t_10m_price REAL,
                 t_15m_price REAL,
                 t_30m_price REAL,
                 t_60m_price REAL,
                 t_120m_price REAL,
+                t_240m_price REAL,
                 t_eod_price REAL,
+                t_1d_price REAL,
                 max_favorable_excursion REAL,
                 max_adverse_excursion REAL,
                 final_result TEXT
@@ -64,7 +68,29 @@ class V8Database:
         ''')
         
         conn.commit()
+        V8Database._migrate_outcomes(cursor, conn)
         conn.close()
+        
+    @staticmethod
+    def _migrate_outcomes(cursor, conn):
+        """Mevcut v8_outcomes tablosuna eksik kolonlari ekler."""
+        cursor.execute("PRAGMA table_info(v8_outcomes)")
+        existing = {row['name'] for row in cursor.fetchall()}
+        needed = {
+            't_3m_price': 'REAL',
+            't_10m_price': 'REAL',
+            't_120m_price': 'REAL',
+            't_240m_price': 'REAL',
+            't_1d_price': 'REAL',
+        }
+        for col, ctype in needed.items():
+            if col not in existing:
+                try:
+                    cursor.execute(f"ALTER TABLE v8_outcomes ADD COLUMN {col} {ctype}")
+                    print(f"[V8 DB Migration] Added column {col}")
+                except Exception as e:
+                    print(f"[V8 DB Migration] {col} error: {e}")
+        conn.commit()
         
     @staticmethod
     def save_signal(signal_data: dict):

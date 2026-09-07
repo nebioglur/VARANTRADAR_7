@@ -2844,30 +2844,6 @@ function filterRadarGrid(targetCardId, btnElement) {
     }
 }
 
-// 📱 MOBİL ALT BAR BUTONLARI İLE PİLL TABS EŞLEŞTİRME
-function jumpToCard(cardIdx) {
-    const pillButtons = document.querySelectorAll('#radar-pill-tabs .pill-btn');
-    const bottomNavBtns = document.querySelectorAll('.bottom-mobile-bar .bm-btn');
-    
-    bottomNavBtns.forEach(b => b.classList.remove('active'));
-    
-    if (cardIdx === 0 && document.getElementById('bm-tavan')) {
-        document.getElementById('bm-tavan').classList.add('active');
-        if (pillButtons[1]) filterRadarGrid('radar-card-0', pillButtons[1]);
-    } else if (cardIdx === 1 && document.getElementById('bm-1h')) {
-        document.getElementById('bm-1h').classList.add('active');
-        if (pillButtons[2]) filterRadarGrid('radar-card-1', pillButtons[2]);
-    } else if (cardIdx === 2 && document.getElementById('bm-5m')) {
-        document.getElementById('bm-5m').classList.add('active');
-        if (pillButtons[3]) filterRadarGrid('radar-card-2', pillButtons[3]);
-    }
-}
-
-let currentActiveCardIdx = 0;
-function navigateCard(direction) {
-    navigateSwipe(direction); // Reuse the new contextual swipe logic
-}
-
 // 📱 MOBİL SWIPE KALDIRILDI — Tablolar serbest yatay kaydırılabilir
 
 // ================================================================
@@ -4353,7 +4329,7 @@ function loadV8Discovery() {
             tbody.innerHTML = '';
             
             if (!json.data || json.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:1rem; color:var(--text-muted);">Şu an sıkışma hazırlığında olan hisse yok.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:1rem; color:var(--text-muted);">Şu an sıkışma hazırlığında olan hisse yok.</td></tr>';
                 return;
             }
 
@@ -4363,10 +4339,18 @@ function loadV8Discovery() {
                 if (d.state === "READY") stateStyle = "color:var(--accent-blue); font-weight:bold;";
                 if (d.state === "PREPARING") stateStyle = "color:var(--accent-green);";
                 
+                const tf = d.timeframe_breakdown || {};
+                const short = tf.short ? tf.short.score : '-';
+                const medium = tf.medium ? tf.medium.score : '-';
+                const long = tf.long ? tf.long.score : '-';
+                
                 tr.innerHTML = `
                     <td style="font-weight:bold; color:var(--text-light);">${d.symbol}</td>
                     <td><span style="${stateStyle}">${d.state}</span></td>
                     <td style="text-align:center;">${d.preparation_score}</td>
+                    <td style="text-align:center; font-size:0.8rem; color:var(--text-muted);">${short}</td>
+                    <td style="text-align:center; font-size:0.8rem; color:var(--text-muted);">${medium}</td>
+                    <td style="text-align:center; font-size:0.8rem; color:var(--text-muted);">${long}</td>
                     <td style="text-align:center; color:var(--accent-green);">${d.metrics.relative_volume}x</td>
                 `;
                 tbody.appendChild(tr);
@@ -4383,7 +4367,7 @@ function loadV8Breakout() {
             tbody.innerHTML = '';
             
             if (!json.data || json.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:1rem; color:var(--text-muted);">Aktif bir kırılım tespit edilmedi.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:1rem; color:var(--text-muted);">Aktif bir kırılım tespit edilmedi.</td></tr>';
                 return;
             }
 
@@ -4396,6 +4380,15 @@ function loadV8Breakout() {
                 if(d.entry_status === "WAIT_PULLBACK") entryStyle = "color:var(--accent-yellow);";
                 if(d.entry_status === "CHASE_RISK" || d.entry_status === "NO_ENTRY") entryStyle = "color:var(--accent-red);";
                 
+                const speed = d.momentum_speed || 'NORMAL';
+                let speedColor = "var(--text-muted)";
+                if(speed === "EXPLOSIVE") speedColor = "var(--accent-green)";
+                if(speed === "STRONG") speedColor = "var(--accent-blue)";
+                if(speed === "WEAK") speedColor = "var(--accent-red)";
+                
+                const tfq = d.timeframe_quality || 0;
+                const tfqColor = tfq >= 60 ? "var(--accent-green)" : (tfq >= 40 ? "var(--accent-yellow)" : "var(--text-muted)");
+                
                 tr.innerHTML = `
                     <td style="font-weight:bold; color:var(--accent-green);">${d.symbol}</td>
                     <td style="font-size:0.85rem;">
@@ -4403,6 +4396,8 @@ function loadV8Breakout() {
                         <div style="color:${fakeRiskColor}">Tuzak: %${d.fakeout_risk}</div>
                     </td>
                     <td><span style="${entryStyle}">${d.entry_status}</span></td>
+                    <td style="font-size:0.8rem; color:${speedColor}; font-weight:bold;">${speed}</td>
+                    <td style="text-align:center; font-size:0.85rem; color:${tfqColor}; font-weight:bold;">${tfq}</td>
                     
                     <td style="font-size:0.8rem; color:var(--text-muted); max-width:200px; white-space:normal;">
                         <div>${d.entry_reasons[0] || '-'}</div>
@@ -4426,7 +4421,7 @@ function loadV8Learning() {
             tbody.innerHTML = '';
             
             if (!json.data || json.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:1rem; color:var(--text-muted);">Henüz V8 tarafından alınan bir pozisyon kaydı yok.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="14" style="text-align:center; padding:1rem; color:var(--text-muted);">Henüz V8 tarafından alınan bir pozisyon kaydı yok.</td></tr>';
                 return;
             }
 
@@ -4442,10 +4437,14 @@ function loadV8Learning() {
                     <td style="font-size:0.8rem; color:var(--text-muted);">${timeStr}</td>
                     <td style="font-weight:bold;">${d.symbol}</td>
                     <td style="text-align:right;">${d.entry_price.toFixed(2)}</td>
+                    <td style="text-align:right; font-size:0.85rem;">${formatV8Price(d.entry_price, d.t_3m_price)}</td>
                     <td style="text-align:right; font-size:0.85rem;">${formatV8Price(d.entry_price, d.t_5m_price)}</td>
+                    <td style="text-align:right; font-size:0.85rem;">${formatV8Price(d.entry_price, d.t_10m_price)}</td>
                     <td style="text-align:right; font-size:0.85rem;">${formatV8Price(d.entry_price, d.t_15m_price)}</td>
                     <td style="text-align:right; font-size:0.85rem;">${formatV8Price(d.entry_price, d.t_30m_price)}</td>
                     <td style="text-align:right; font-size:0.85rem;">${formatV8Price(d.entry_price, d.t_60m_price)}</td>
+                    <td style="text-align:right; font-size:0.85rem;">${formatV8Price(d.entry_price, d.t_120m_price)}</td>
+                    <td style="text-align:right; font-size:0.85rem;">${formatV8Price(d.entry_price, d.t_240m_price)}</td>
                     <td style="text-align:right; ${mfeColor}">+${d.mfe.toFixed(2)}%</td>
                     <td style="text-align:right; ${maeColor}">${d.mae.toFixed(2)}%</td>
                     <td style="text-align:center; font-weight:bold; ${statColor}">${d.status}</td>

@@ -67,8 +67,9 @@ class OutcomeEngine:
 
     def run_outcome_tracker_loop(self):
         """
-        Arka planda çalışan sonuç takip döngüsü (5 dakikada bir çalışır).
-        Veritabanındaki ACTIVE sinyalleri tarar ve güncel fiyatlarına göre T+5, T+15 sonuçlarını yazar.
+        Arka planda calisan sonuc takip dongusu (60 saniyede bir calisir).
+        Veritabanindaki ACTIVE sinyalleri tarar ve 1m/5m/10m/15m/30m/60m/120m/240m/EOD/1d
+        fiyatlarini backfill ile yazar.
         """
         def _tracker():
             from v8_engine.database import V8Database
@@ -77,18 +78,18 @@ class OutcomeEngine:
                     conn = V8Database.get_connection()
                     cursor = conn.cursor()
                     
-                    # Sadece son 1 gün içindeki ACTIVE sinyalleri çek
-                    cursor.execute("SELECT * FROM v8_signals WHERE status='ACTIVE' AND timestamp >= datetime('now', '-1 day')")
+                    # Sadece son 2 gun icindeki ACTIVE sinyalleri cek
+                    cursor.execute("SELECT * FROM v8_signals WHERE status='ACTIVE' AND timestamp >= datetime('now', '-2 day')")
                     active_signals = cursor.fetchall()
                     
                     if not active_signals:
                         conn.close()
-                        time.sleep(300)
+                        time.sleep(60)
                         continue
                         
-                    # İlgili hisselerin anlık fiyatlarını çek
+                    # İlgili hisselerin anlik fiyatlarini cek
                     symbols = list(set([s['symbol'] for s in active_signals]))
-                    data = yf.download(symbols, period="1d", interval="1m", group_by='ticker', progress=False)
+                    data = yf.download(symbols, period="5d", interval="1m", group_by='ticker', progress=False)
                     
                     now = datetime.now()
                     
@@ -115,7 +116,7 @@ class OutcomeEngine:
                                 else:
                                     # Bulk veri yoksa tek sembol fallback dene
                                     try:
-                                        df = yf.Ticker(sym).history(period="1d", interval="1m").dropna(how='all').copy()
+                                        df = yf.Ticker(sym).history(period="5d", interval="1m").dropna(how='all').copy()
                                     except Exception:
                                         continue
 
@@ -143,20 +144,42 @@ class OutcomeEngine:
                                 if sub.empty: return None
                                 return float(sub['Close'].iloc[0])
 
-                            old_t5 = outcome['t_5m_price'] if (outcome is not None and outcome['t_5m_price'] is not None) else None
-                            old_t15 = outcome['t_15m_price'] if (outcome is not None and outcome['t_15m_price'] is not None) else None
-                            old_t30 = outcome['t_30m_price'] if (outcome is not None and outcome['t_30m_price'] is not None) else None
-                            old_t60 = outcome['t_60m_price'] if (outcome is not None and outcome['t_60m_price'] is not None) else None
+                            def _get_existing(col):
+                                if outcome is None or outcome[col] is None:
+                                    return None
+                                return outcome[col]
 
-                            t5 = old_t5 if old_t5 is not None else (_price_at(5) if elapsed_mins >= 5 else None)
-                            t15 = old_t15 if old_t15 is not None else (_price_at(15) if elapsed_mins >= 15 else None)
-                            t30 = old_t30 if old_t30 is not None else (_price_at(30) if elapsed_mins >= 30 else None)
-                            t60 = old_t60 if old_t60 is not None else (_price_at(60) if elapsed_mins >= 60 else None)
+                            # Kisa vadeli pencereler: 3m, 5m, 10m, 15m, 30m
+                            # Orta vadeli: 60m, 120m, 240m (4h)
+                            t3  = _get_existing('t_3m_price')  or (_price_at(3) if elapsed_mins >= 3 else None)
+                            t5  = _get_existing('t_5m_price')  or (_price_at(5) if elapsed_mins >= 5 else None)
+                            t10 = _get_existing('t_10m_price') or (_price_at(10) if elapsed_mins >= 10 else None)
+                            t15 = _get_existing('t_15m_price') or (_price_at(15) if elapsed_mins >= 15 else None)
+                            t30 = _get_existing('t_30m_price') or (_price_at(30) if elapsed_mins >= 30 else None)
+                            t60 = _get_existing('t_60m_price') or (_price_at(60) if elapsed_mins >= 60 else None)
+                            t120 = _get_existing('t_120m_price') or (_price_at(120) if elapsed_mins >= 120 else None)
+                            t240 = _get_existing('t_240m_price') or (_price_at(240) if elapsed_mins >= 240 else None)
 
-                            mfe = outcome['max_favorable_excursion'] if (outcome is not None and outcome['max_favorable_excursion'] is not None) else 0.0
-                            mae = outcome['max_adverse_excursion'] if (outcome is not None and outcome['max_adverse_excursion'] is not None) else 0.0
+                            # EOD: ayni gun son kapanis fiyati (seans bitince dolar)
+                            t_eod = _get_existing('t_eod_price')
+                            if t_eod is None:
+                                # Ayni gune ait tum barlarin son close'u (simdilik mevcut son)
+                                same_day = df[df.index.date == sig_time.date()]
+                                if not same_day.empty:
+                                    t_eod = float(same_day['Close'].iloc[-1])
 
-                            # MFE/MAE: giristen bugunku tum barlar uzerinden (koseli parantezli erisim tz-uyumsuzlugunu onler)
+                            # T+1 gunku kapanis: ertesi gun son bar (varsa)
+                            t_1d = _get_existing('t_1d_price')
+                            if t_1d is None:
+                                next_day = sig_time.date() + pd.Timedelta(days=1)
+                                next_bars = df[df.index.date == next_day]
+                                if not next_bars.empty:
+                                    t_1d = float(next_bars['Close'].iloc[-1])
+
+                            mfe = _get_existing('max_favorable_excursion') or 0.0
+                            mae = _get_existing('max_adverse_excursion') or 0.0
+
+                            # MFE/MAE: giristen bugunku tum barlar uzerinden
                             try:
                                 entry_ts = sig_time
                                 bars = df.loc[df.index >= entry_ts, 'Close']
@@ -180,20 +203,31 @@ class OutcomeEngine:
                             if elapsed_mins > 360 or market_closed:
                                 status_update = "CLOSED"
 
-                            # Outcome kaydet/güncelle
-                            # Not: SQLite3 ON CONFLICT UPSERT yontemi
+                            # Outcome kaydet/guncelle
                             cursor.execute('''
-                                INSERT INTO v8_outcomes (signal_id, t_5m_price, t_15m_price, t_30m_price, t_60m_price, max_favorable_excursion, max_adverse_excursion, final_result)
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                                INSERT INTO v8_outcomes (
+                                    signal_id,
+                                    t_3m_price, t_5m_price, t_10m_price, t_15m_price,
+                                    t_30m_price, t_60m_price, t_120m_price, t_240m_price,
+                                    t_eod_price, t_1d_price,
+                                    max_favorable_excursion, max_adverse_excursion, final_result
+                                )
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                                 ON CONFLICT(signal_id) DO UPDATE SET
+                                t_3m_price=COALESCE(v8_outcomes.t_3m_price, excluded.t_3m_price),
                                 t_5m_price=COALESCE(v8_outcomes.t_5m_price, excluded.t_5m_price),
+                                t_10m_price=COALESCE(v8_outcomes.t_10m_price, excluded.t_10m_price),
                                 t_15m_price=COALESCE(v8_outcomes.t_15m_price, excluded.t_15m_price),
                                 t_30m_price=COALESCE(v8_outcomes.t_30m_price, excluded.t_30m_price),
                                 t_60m_price=COALESCE(v8_outcomes.t_60m_price, excluded.t_60m_price),
+                                t_120m_price=COALESCE(v8_outcomes.t_120m_price, excluded.t_120m_price),
+                                t_240m_price=COALESCE(v8_outcomes.t_240m_price, excluded.t_240m_price),
+                                t_eod_price=COALESCE(v8_outcomes.t_eod_price, excluded.t_eod_price),
+                                t_1d_price=COALESCE(v8_outcomes.t_1d_price, excluded.t_1d_price),
                                 max_favorable_excursion=excluded.max_favorable_excursion,
                                 max_adverse_excursion=excluded.max_adverse_excursion,
                                 final_result=excluded.final_result
-                            ''', (sig_id, t5, t15, t30, t60, mfe, mae, status_update))
+                            ''', (sig_id, t3, t5, t10, t15, t30, t60, t120, t240, t_eod, t_1d, mfe, mae, status_update))
 
                             if status_update == "CLOSED":
                                 # Kapanista net degisime gore kesin sonuc etiketle
@@ -210,7 +244,7 @@ class OutcomeEngine:
                 except Exception as e:
                     print(f"[Outcome Engine] Global tracker error: {e}")
                 
-                time.sleep(300) # Her 5 dakikada bir kontrol et
+                time.sleep(60)
                 
         # Start thread
         t = threading.Thread(target=_tracker, daemon=True)

@@ -1415,7 +1415,9 @@ def api_v8_learning_outcomes():
         # Sinyalleri ve sonuclarini JOIN ile getir
         query = '''
             SELECT s.signal_id, s.symbol, s.timestamp, s.entry_price, s.score, s.status, s.market_regime,
-                   o.t_5m_price, o.t_15m_price, o.t_30m_price, o.t_60m_price,
+                   o.t_3m_price, o.t_5m_price, o.t_10m_price, o.t_15m_price,
+                   o.t_30m_price, o.t_60m_price, o.t_120m_price, o.t_240m_price,
+                   o.t_eod_price, o.t_1d_price,
                    o.max_favorable_excursion as mfe, o.max_adverse_excursion as mae, o.final_result
             FROM v8_signals s
             LEFT JOIN v8_outcomes o ON s.signal_id = o.signal_id
@@ -1435,10 +1437,16 @@ def api_v8_learning_outcomes():
                 "score": r["score"],
                 "status": r["status"],
                 "market_regime": r["market_regime"],
+                "t_3m_price": r["t_3m_price"],
                 "t_5m_price": r["t_5m_price"],
+                "t_10m_price": r["t_10m_price"],
                 "t_15m_price": r["t_15m_price"],
                 "t_30m_price": r["t_30m_price"],
                 "t_60m_price": r["t_60m_price"],
+                "t_120m_price": r["t_120m_price"],
+                "t_240m_price": r["t_240m_price"],
+                "t_eod_price": r["t_eod_price"],
+                "t_1d_price": r["t_1d_price"],
                 "mfe": r["mfe"],
                 "mae": r["mae"],
                 "final_result": r["final_result"]
