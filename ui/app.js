@@ -3722,14 +3722,15 @@ let globalSimData = null;
 async function fetchSimulationData() {
     const tbody = document.getElementById('sim-trade-log-tbody');
     if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> İşlem Geçmişi Yükleniyor...</td></tr>';
-    
+
     try {
         const res = await fetch(`/api/simulation/daily_pnl?t=` + Date.now());
         const data = await res.json();
-        
+
         if (data.status === 'success') {
             globalSimData = data;
             fetchLiveOrders();
+            fetchLiveTerminal();
             
             // Calculate KPIs
             const equityCurve = data.equity_curve || [];
@@ -3814,6 +3815,160 @@ async function fetchSimulationData() {
 }
 
 let equityChartInstance = null;
+
+// ========== ANLIK İŞLEM TERMİNALİ ==========
+let ltTimerStarted = false;
+
+async function fetchLiveTerminal() {
+    try {
+        const res = await fetch('/api/simulation/terminal?t=' + Date.now());
+        const data = await res.json();
+        if (data.status !== 'success') return;
+        const t = data.terminal || {};
+
+        const el = (id) => document.getElementById(id);
+        const fmt = (v) => (v || 0).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ₺';
+
+        if (el('lt-cash')) el('lt-cash').innerText = fmt(t.cash);
+        if (el('lt-invested')) el('lt-invested').innerText = fmt(t.invested);
+        if (el('lt-open-pnl')) {
+            const pnl = t.open_pnl || 0;
+            el('lt-open-pnl').innerText = (pnl >= 0 ? '+' : '') + fmt(pnl);
+            el('lt-open-pnl').style.color = pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+        }
+        if (el('lt-equity')) el('lt-equity').innerText = fmt(t.equity);
+
+        // Açık pozisyonlar
+        const tbody = el('lt-open-tbody');
+        if (tbody) {
+            tbody.innerHTML = '';
+            const open = t.open || [];
+            if (open.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding:1rem;">Açık pozisyon yok. Yukarıdan sembol girip AL tuşuyla pozisyon açabilirsiniz.</td></tr>';
+            } else {
+                open.forEach(p => {
+                    const tr = document.createElement('tr');
+                    const entry = p.entry_price || 0;
+                    const last = p.last_price || entry;
+                    const pct = entry > 0 ? ((last - entry) / entry) * 100 : 0;
+                    const pnlVal = (last - entry) * (p.shares || 0);
+                    const color = pct >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+                    const protectedTxt = p.trailing_active
+                        ? '<span style="color:var(--accent-green); font-weight:bold;">🔒 ' + (p.stop_price || 0).toFixed(2) + '</span>'
+                        : '<span style="color:var(--text-muted);">-</span>';
+
+                    tr.innerHTML = `
+                        <td style="font-weight:bold; color:var(--text-light);">${p.symbol}</td>
+                        <td>${(p.entry_time || '').slice(11, 16)}</td>
+                        <td>${p.shares}</td>
+                        <td>₺${entry.toFixed(2)}</td>
+                        <td style="color:var(--accent-blue); font-weight:bold;">₺${last.toFixed(2)}</td>
+                        <td style="color:${color}; font-weight:bold;">${pnlVal >= 0 ? '+' : ''}₺${pnlVal.toFixed(2)} (${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%)</td>
+                        <td style="color:var(--accent-green);">₺${(p.tp_price || 0).toFixed(2)}</td>
+                        <td style="color:var(--accent-red);">₺${(p.stop_price || 0).toFixed(2)}</td>
+                        <td>${protectedTxt}</td>
+                        <td><button onclick="ltClosePosition(${p.id})" style="background:rgba(225,29,72,0.15); border:1px solid var(--accent-red); color:var(--accent-red); border-radius:6px; padding:4px 10px; cursor:pointer; font-size:0.78rem; font-weight:bold;">SAT</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+
+        // Son kapananlar
+        const closedTbody = el('lt-closed-tbody');
+        if (closedTbody) {
+            closedTbody.innerHTML = '';
+            const closed = t.closed || [];
+            if (closed.length === 0) {
+                closedTbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Kayıt yok.</td></tr>';
+            } else {
+                closed.forEach(p => {
+                    const tr = document.createElement('tr');
+                    const color = (p.pnl_val || 0) >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+                    const sign = (p.pnl_val || 0) >= 0 ? '+' : '';
+                    tr.innerHTML = `
+                        <td>${(p.exit_time || '').slice(5, 16)}</td>
+                        <td style="font-weight:bold;">${p.symbol}</td>
+                        <td>₺${(p.entry_price || 0).toFixed(2)}</td>
+                        <td>₺${(p.exit_price || 0).toFixed(2)}</td>
+                        <td style="color:${color}; font-weight:bold;">${sign}₺${(p.pnl_val || 0).toFixed(2)} (${sign}${(p.pnl_pct || 0).toFixed(2)}%)</td>
+                        <td style="font-size:0.75rem; color:var(--text-muted);">${p.exit_reason || '-'}</td>
+                    `;
+                    closedTbody.appendChild(tr);
+                });
+            }
+        }
+
+        if (el('lt-last-scan')) {
+            const lastUpd = (t.open && t.open.length > 0) ? t.open[0].last_update : null;
+            el('lt-last-scan').innerText = lastUpd ? ('Son fiyat: ' + lastUpd.slice(11, 19)) : 'Beklemede';
+        }
+    } catch (e) {
+        console.error('[LiveTerminal]', e);
+    }
+}
+
+async function ltOpenPosition() {
+    const el = (id) => document.getElementById(id);
+    const msgEl = el('lt-msg');
+    const symbol = (el('lt-symbol')?.value || '').trim().toUpperCase();
+    if (!symbol) {
+        if (msgEl) { msgEl.innerText = 'Sembol girin'; msgEl.style.color = 'var(--accent-red)'; }
+        return;
+    }
+    const btn = el('lt-buy-btn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gönderiliyor'; }
+
+    try {
+        const res = await fetch('/api/simulation/terminal/open', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                symbol: symbol,
+                allocation: parseFloat(el('lt-allocation')?.value) || 2000,
+                tp_pct: parseFloat(el('lt-tp')?.value) || 5,
+                sl_pct: parseFloat(el('lt-sl')?.value) || 3,
+                trailing: el('lt-trailing')?.checked !== false
+            })
+        });
+        const data = await res.json();
+        if (msgEl) {
+            msgEl.innerText = data.message || (data.status === 'success' ? 'Tamam' : 'Hata');
+            msgEl.style.color = data.status === 'success' ? 'var(--accent-green)' : 'var(--accent-red)';
+        }
+        if (data.status === 'success' && el('lt-symbol')) el('lt-symbol').value = '';
+        fetchLiveTerminal();
+    } catch (e) {
+        if (msgEl) { msgEl.innerText = 'Bağlantı hatası'; msgEl.style.color = 'var(--accent-red)'; }
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-cart-plus"></i> AL'; }
+        setTimeout(() => { if (msgEl) msgEl.innerText = ''; }, 8000);
+    }
+}
+
+async function ltClosePosition(id) {
+    if (!confirm('Bu pozisyonu güncel fiyattan SATmak istediğinize emin misiniz?')) return;
+    try {
+        const res = await fetch('/api/simulation/terminal/close', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({id: id})
+        });
+        const data = await res.json();
+        alert(data.message || (data.status === 'success' ? 'Kapatıldı' : 'Hata'));
+        fetchLiveTerminal();
+    } catch (e) {
+        alert('Bağlantı hatası');
+    }
+}
+
+// Simülasyon sekmesi görünürken 30 sn'de bir canlı güncelle
+setInterval(() => {
+    const wrapper = document.getElementById('simulation-wrapper');
+    if (wrapper && wrapper.style.display !== 'none') {
+        fetchLiveTerminal();
+    }
+}, 30000);
 
 function renderEquityCurveChart(equityData) {
     const ctx = document.getElementById('equityCurveChart');

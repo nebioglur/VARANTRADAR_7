@@ -180,6 +180,14 @@ def _background_scanner_impl():
         regime_engine = None
     # ----------------------
 
+    # --- CANLI İŞLEM TERMİNALİ (Akıllı TP/SL izleyici) ---
+    try:
+        from services.live_trade_monitor import run_monitor_loop
+        run_monitor_loop(interval=45)
+    except Exception as e:
+        print(f"[LIVE MONITOR INIT ERROR] {e}")
+    # ----------------------------------------------------
+
     """Arka planda çalışıp periyodik olarak TÜM BIST fırsatlarını tarar ve belleğe alır."""
     global GLOBAL_DASHBOARD_CACHE
     pipeline = DataPipeline()
@@ -1244,6 +1252,48 @@ def api_simulation_live_orders():
             "date": date_str,
             "orders": sanitize_for_json(sorted(orders, key=lambda x: x["score"], reverse=True))
         })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/simulation/terminal', methods=['GET'])
+def api_simulation_terminal():
+    """Anlik islem terminali durumu: acik pozisyonlar, son islemler, bakiye."""
+    try:
+        from services.live_trade_monitor import get_terminal_state
+        return jsonify({"status": "success", "terminal": sanitize_for_json(get_terminal_state())})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/simulation/terminal/open', methods=['POST'])
+def api_simulation_terminal_open():
+    """Manuel anlik alim (canlı pozisyon aç)."""
+    try:
+        from services.live_trade_monitor import open_position
+        data = request.get_json(force=True, silent=True) or {}
+        symbol = data.get('symbol', '')
+        ok, msg = open_position(
+            symbol,
+            allocation=data.get('allocation', 2000.0),
+            tp_pct=data.get('tp_pct', 5.0),
+            sl_pct=data.get('sl_pct', 3.0),
+            trailing=bool(data.get('trailing', True)),
+            source='MANUAL'
+        )
+        return jsonify({"status": "success" if ok else "error", "message": msg}), (200 if ok else 400)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/simulation/terminal/close', methods=['POST'])
+def api_simulation_terminal_close():
+    """Manuel anlik satis (acik pozisyonu kapat)."""
+    try:
+        from services.live_trade_monitor import close_position
+        data = request.get_json(force=True, silent=True) or {}
+        pos_id = data.get('id')
+        if not pos_id:
+            return jsonify({"status": "error", "message": "Pozisyon id gerekli"}), 400
+        ok, msg = close_position(int(pos_id), reason="MANUEL KAPATMA (Kullanıcı)")
+        return jsonify({"status": "success" if ok else "error", "message": msg}), (200 if ok else 400)
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
