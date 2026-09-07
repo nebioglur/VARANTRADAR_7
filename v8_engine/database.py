@@ -3,11 +3,18 @@ import json
 import os
 from datetime import datetime
 
+import sys
+import os as _os
+sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+from services import pg_store as _pg_store
+
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "v8_signals.db")
 
 class V8Database:
     @staticmethod
     def get_connection():
+        if _pg_store.IS_PG:
+            return _pg_store.connect()
         os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row

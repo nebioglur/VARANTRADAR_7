@@ -4,9 +4,15 @@ import os
 from datetime import datetime
 from typing import List, Dict, Any
 
+from services import pg_store
+
+# DATABASE_URL tanimliysa PostgreSQL (Supabase), degilse yerel SQLite
+IS_PG = pg_store.IS_PG
 DB_PATH = os.path.join("data", "trading_engine.db")
 
 def get_connection():
+    if IS_PG:
+        return pg_store.connect()
     os.makedirs("data", exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
