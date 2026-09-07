@@ -357,24 +357,34 @@ class UniversalScanner:
         # --- V8 OUTCOME REGISTRATION ---
         try:
             if v8_exec.get('entry_status') in ['ENTER', 'WAIT_PULLBACK']:
-                from v8_engine.learning import OutcomeEngine
-                from datetime import datetime
-                
-                if not hasattr(self, 'registered_v8_signals'):
-                    self.registered_v8_signals = {}
-                    self.registered_v8_date = datetime.now().date()
-                    
-                if self.registered_v8_date != datetime.now().date():
-                    self.registered_v8_signals = {}
-                    self.registered_v8_date = datetime.now().date()
-                    
-                # Sinyal daha once kaydedilmediyse kaydet
-                if symbol not in self.registered_v8_signals:
-                    oe = OutcomeEngine()
-                    price = float(df['close'].iloc[-1] if 'close' in df.columns else df['Close'].iloc[-1])
-                    sig_id = oe.register_signal(symbol, price, v8_breakout, v8_exec, regime)
-                    self.registered_v8_signals[symbol] = sig_id
-                    print(f"[V8 LEARNING] Registered Signal for {symbol}: {v8_exec.get('entry_status')}")
+                # Borsa kapaliyken sinyal kaydetme (BIST: hafta ici 10:00-18:10)
+                from datetime import datetime as _dt, time as _dtime
+                try:
+                    from zoneinfo import ZoneInfo
+                    _now = _dt.now(ZoneInfo("Europe/Istanbul"))
+                except Exception:
+                    _now = _dt.now()
+                _market_open = _now.weekday() < 5 and _dtime(10, 0) <= _now.time() <= _dtime(18, 10)
+
+                if _market_open:
+                    from v8_engine.learning import OutcomeEngine
+                    from datetime import datetime
+
+                    if not hasattr(self, 'registered_v8_signals'):
+                        self.registered_v8_signals = {}
+                        self.registered_v8_date = datetime.now().date()
+
+                    if self.registered_v8_date != datetime.now().date():
+                        self.registered_v8_signals = {}
+                        self.registered_v8_date = datetime.now().date()
+
+                    # Sinyal daha once kaydedilmediyse kaydet
+                    if symbol not in self.registered_v8_signals:
+                        oe = OutcomeEngine()
+                        price = float(df['close'].iloc[-1] if 'close' in df.columns else df['Close'].iloc[-1])
+                        sig_id = oe.register_signal(symbol, price, v8_breakout, v8_exec, regime)
+                        self.registered_v8_signals[symbol] = sig_id
+                        print(f"[V8 LEARNING] Registered Signal for {symbol}: {v8_exec.get('entry_status')}")
         except Exception as e:
             print(f"[V8 LEARNING ERROR] {e}")
         # -------------------------------

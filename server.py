@@ -247,8 +247,11 @@ def _background_scanner_impl():
             fast_results = scanner.scan_pool_bulk(BIST50_SYMBOLS)
             from datetime import datetime
             fast_results["cache_date"] = datetime.now().strftime("%Y-%m-%d")
-            
+
+            _prev_regime = GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else None
             GLOBAL_DASHBOARD_CACHE = sanitize_for_json(fast_results)
+            if _prev_regime:
+                GLOBAL_DASHBOARD_CACHE["v8_market_regime"] = _prev_regime
             save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
             print("[BACKGROUND] Hızlı Başlangıç Faz 1 tamamlandı - Günlük veriler HAZIR!")
             
@@ -319,7 +322,9 @@ def _background_scanner_impl():
                     results["stay_away_1h"] = GLOBAL_DASHBOARD_CACHE["stay_away_1h"]
                 if "signals_5m" in GLOBAL_DASHBOARD_CACHE:
                     results["signals_5m"] = GLOBAL_DASHBOARD_CACHE["signals_5m"]
-                
+                if "v8_market_regime" in GLOBAL_DASHBOARD_CACHE:
+                    results["v8_market_regime"] = GLOBAL_DASHBOARD_CACHE["v8_market_regime"]
+
                 GLOBAL_DASHBOARD_CACHE = sanitize_for_json(results)
                 save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
                 print("[BACKGROUND] Günlük veriler güncellendi. 1h taraması başlıyor...")
@@ -341,6 +346,11 @@ def _background_scanner_impl():
                 print(f"[BACKGROUND] Yfinance hatası veya boş veri! results length: {len(results.get('all_symbols_stats', {})) if isinstance(results, dict) else 0}. Cache korunuyor.")
                 # Eger cache hic yoksa, en azindan bos listelerle dolsun ki UI patlamasin.
                 if not GLOBAL_DASHBOARD_CACHE:
+                    if isinstance(results, dict) and "v8_market_regime" not in results:
+                        try:
+                            results["v8_market_regime"] = regime_engine.determine_regime() if regime_engine else {"regime": "NEUTRAL", "score": 50.0, "xu100_trend": 0.0}
+                        except Exception:
+                            pass
                     GLOBAL_DASHBOARD_CACHE = results
                 results = GLOBAL_DASHBOARD_CACHE
                 
