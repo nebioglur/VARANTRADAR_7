@@ -6,7 +6,34 @@
  *
  * Kullanim: window.VerdentAuthKit (Promise) -> { supabase, auth, session }
  */
+window.__vrAuthBooted = true;
+
 import { createVerdentAuth } from './vendor/verdent-auth/index.js';
+
+function showAuthError(msg) {
+    const box = document.getElementById('auth-error-box');
+    if (box) {
+        box.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + msg;
+        box.style.display = 'block';
+    }
+}
+
+/** Gizli/ozel pencerede localStorage engellenirse bellek-ici depoya duser. */
+function safeLocalStorage() {
+    try {
+        const t = '__vr_storage_test__';
+        window.localStorage.setItem(t, '1');
+        window.localStorage.removeItem(t);
+        return window.localStorage;
+    } catch (e) {
+        const mem = {};
+        return {
+            getItem: (k) => (k in mem ? mem[k] : null),
+            setItem: (k, v) => { mem[k] = String(v); },
+            removeItem: (k) => { delete mem[k]; },
+        };
+    }
+}
 
 async function loadAuthConfig() {
     const res = await fetch('/api/auth_config');
@@ -21,6 +48,7 @@ const kitPromise = (async () => {
             persistSession: true,
             autoRefreshToken: true,
             detectSessionInUrl: true,
+            storage: safeLocalStorage(),
         },
     });
     const auth = createVerdentAuth({ supabase });
@@ -59,6 +87,36 @@ async function openAuthModal(extraOptions) {
     }, extraOptions || {}));
 }
 
+/**
+ * Giris butonlarini KIT HAZIR OLMADAN hemen baglar:
+ * mobilde yavas baglanti/ozel pencere durumunda butonlar oluk Olmaz;
+ * tiklamada "Yukleniyor" gosterilir, hata olursa sayfada gorunur mesaj cikar.
+ */
+function bindAuthButtons() {
+    const bind = (id, opts) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('click', async () => {
+            const original = el.innerHTML;
+            try {
+                el.disabled = true;
+                el.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Yükleniyor...';
+                await openAuthModal(opts);
+            } catch (e) {
+                console.error('[Auth] Modal acilamadi', e);
+                showAuthError('Giriş ekranı açılamadı. İnternet bağlantınızı kontrol edip sayfayı yenileyin. ' +
+                    '(Hata: ' + (e && e.message ? e.message : 'bilinmiyor') + ')');
+            } finally {
+                el.disabled = false;
+                el.innerHTML = original;
+            }
+        });
+    };
+    bind('btn-open-signin', {});
+    bind('btn-open-signup', { initialView: 'signUp' });
+    bind('btn-open-forgot', { initialView: 'forgotPassword' });
+}
+
 function wireLoginPage(supabase, auth, session) {
     if (session) {
         // Zaten oturum var -> cookie oturumunu tazele, sonra ana uygulamaya gec.
@@ -67,13 +125,6 @@ function wireLoginPage(supabase, auth, session) {
         syncServerSession(supabase).then(() => window.location.replace('/'));
         return;
     }
-    const bind = (id, opts) => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener('click', () => openAuthModal(opts));
-    };
-    bind('btn-open-signin', {});
-    bind('btn-open-signup', { initialView: 'signUp' });
-    bind('btn-open-forgot', { initialView: 'forgotPassword' });
 }
 
 function wireMainApp(supabase, auth, session) {
@@ -90,6 +141,11 @@ function wireMainApp(supabase, auth, session) {
             window.location.href = '/logout';
         });
     }
+}
+
+// Butonlari modul yuklenir yuklenmez bagla (login sayfasinda)
+if (document.getElementById('auth-login-card')) {
+    bindAuthButtons();
 }
 
 kitPromise.then(async ({ supabase, auth }) => {
@@ -110,4 +166,8 @@ kitPromise.then(async ({ supabase, auth }) => {
     });
 }).catch((e) => {
     console.error('[Auth] Baslatma hatasi', e);
+    if (document.getElementById('auth-login-card')) {
+        showAuthError('Oturum sistemi başlatılamadı: ' + (e && e.message ? e.message : e) +
+            '<br>Sayfayı yenileyip tekrar deneyin.');
+    }
 });

@@ -260,7 +260,8 @@
                 <div class="logo-subtitle">FİNTECH TERMİNALİ</div>
             </div>
 
-            <!-- ERROR_PLACEHOLDER -->
+            <!-- Hata kutusu (JS tarafindan doldurulur) -->
+            <div class="error-msg" id="auth-error-box" style="display:none;"></div>
 
             <button type="button" id="btn-open-signin" class="btn-login">
                 SİSTEME GİRİŞ YAP <i class="fa-solid fa-arrow-right-to-bracket"></i>
@@ -276,7 +277,7 @@
 
             <div class="auth-note">
                 <i class="fa-solid fa-shield-halved"></i>
-                <span>Google veya e-posta ile güvenli giriş</span>
+                <span>Butona basınca açılan giriş ekranında e-posta/şifre veya Google ile giriş yapılır</span>
             </div>
         </div>
 
@@ -288,5 +289,19 @@
 
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js"></script>
+    <script>
+        // Eski tarayici / modul yukleme hatasi yakalayici:
+        // app-auth.js modulu hic calismadiysa kullaniciya gorunur mesaj ver.
+        setTimeout(function () {
+            if (!window.__vrAuthBooted) {
+                var box = document.getElementById('auth-error-box');
+                if (box && box.style.display === 'none') {
+                    box.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' +
+                        'Giriş sistemi yüklenemedi. Tarayıcınız eski olabilir; güncel Chrome veya Safari kullanıp sayfayı yenileyin.';
+                    box.style.display = 'block';
+                }
+            }
+        }, 8000);
+    </script>
 </body>
 </html>
