@@ -131,7 +131,7 @@ class SimulationEngine:
             except (ValueError, TypeError):
                 continue # Dönüşüm hatası
                     
-            if score >= 92 and phase in ["Erken Kopuş (Phase 1)", "İvmelenme (Phase 2)", "Kilitleme Baskısı (Phase 3)"]:
+            if score >= 80 and phase in ["Erken Kopuş (Phase 1)", "İvmelenme (Phase 2)", "Kilitleme Baskısı (Phase 3)"]:
                 valid_signals.append(s)
                 
         valid_signals.sort(key=lambda x: float(x.get('score', 0)), reverse=True)

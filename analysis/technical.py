@@ -603,7 +603,11 @@ class TechnicalEngine(BaseEngine):
         current_high = float(high.iloc[-1])
         current_low = float(low.iloc[-1])
         current_vol = float(volume.iloc[-1])
-        
+
+        # EMA50 / EMA200 (1h serisi uzerinden) - Sim motoru ve raporlamada kullanilir
+        ema50 = close.ewm(span=50, adjust=False).mean()
+        ema200 = close.ewm(span=200, adjust=False).mean()
+
         score = 0
         details = []
         
