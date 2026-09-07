@@ -684,6 +684,26 @@ def login_post():
         return jsonify({"status": "success"})
     return jsonify({"status": "error", "message": "Kullanıcı adı veya şifre hatalı"}), 401
 
+@app.route('/api/me', methods=['GET'])
+def api_me():
+    """Oturum sahibinin gorunen adi + owner anahtari (cikis chip'i icin)."""
+    if not session.get('logged_in'):
+        return jsonify({"status": "error", "message": "Oturum yok"}), 401
+    owner = get_owner_key()
+    name = session.get('username')
+    if not name:
+        try:
+            from services.trade_database import get_connection
+            conn = get_connection()
+            c = conn.cursor()
+            c.execute("SELECT COALESCE(email, display_name) AS n FROM app_users WHERE owner_key=?", (owner,))
+            row = c.fetchone()
+            conn.close()
+            name = row["n"] if row and row["n"] else "Hesabım"
+        except Exception:
+            name = "Hesabım"
+    return jsonify({"status": "success", "name": name, "owner": owner})
+
 @app.route('/logout')
 def logout():
     session.pop('logged_in', None)

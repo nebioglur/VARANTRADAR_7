@@ -1062,8 +1062,12 @@ body {
 
 .super-green-row {
     border-left: 4px solid var(--accent-green) !important;
-    animation: pulse-green 1.5s infinite;
     transition: all 0.3s ease;
+}
+/* Yanip sonme SADECE sembol hucrede (tum satirda degil) */
+.super-green-row td:first-child {
+    animation: pulse-green 1.5s infinite;
+    border-radius: 6px;
 }
 .super-green-row:hover {
     transform: scale(1.015);

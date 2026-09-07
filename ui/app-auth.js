@@ -128,12 +128,17 @@ function wireLoginPage(supabase, auth, session) {
 }
 
 function wireMainApp(supabase, auth, session) {
-    if (session?.user) {
-        const emailEl = document.getElementById('user-chip-email');
-        if (emailEl) emailEl.textContent = session.user.email || 'Hesap';
-        const chip = document.getElementById('user-chip');
-        if (chip) chip.style.display = 'flex';
+    // Chip adi: Supabase oturumunda e-posta, klasik giriste /api/me
+    const emailEl = document.getElementById('user-chip-email');
+    if (session?.user?.email && emailEl) {
+        emailEl.textContent = session.user.email;
+    } else if (emailEl) {
+        fetch('/api/me').then(r => r.json()).then(d => {
+            if (d.status === 'success' && d.name) emailEl.textContent = d.name;
+        }).catch(() => {});
     }
+    const chip = document.getElementById('user-chip');
+    if (chip) chip.style.display = 'flex';
     const btn = document.getElementById('btn-signout');
     if (btn) {
         btn.addEventListener('click', async () => {
