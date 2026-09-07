@@ -275,6 +275,38 @@
                 Şifremi unuttum
             </button>
 
+            <div style="display:flex; align-items:center; gap:0.8rem; margin-top:1.4rem;">
+                <div style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></div>
+                <span style="font-size:0.68rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px;">veya</span>
+                <div style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></div>
+            </div>
+
+            <button type="button" id="btn-classic-toggle" class="btn-recovery" style="margin-top:1rem;">
+                <i class="fa-solid fa-user-shield"></i> Kullanıcı adı / şifre ile giriş
+            </button>
+
+            <form id="classic-login" style="display:none; margin-top:1.2rem;" autocomplete="on">
+                <div class="form-group">
+                    <label for="classic-user">Kullanıcı Adı</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-user"></i>
+                        <input type="text" id="classic-user" name="username" class="form-control"
+                               autocomplete="username" placeholder="Kullanıcı adınız" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="classic-pass">Şifre</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" id="classic-pass" name="password" class="form-control"
+                               autocomplete="current-password" placeholder="Şifreniz" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-login" style="margin-top:0.4rem;">
+                    GİRİŞ YAP <i class="fa-solid fa-right-to-bracket"></i>
+                </button>
+            </form>
+
             <div class="auth-note">
                 <i class="fa-solid fa-shield-halved"></i>
                 <span>Butona basınca açılan giriş ekranında e-posta/şifre veya Google ile giriş yapılır</span>
@@ -290,6 +322,58 @@
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js"></script>
     <script>
+        // Klasik kullanici adi / sifre girisi (modul JS gerekmez, her tarayicida calisir)
+        (function () {
+            function showClassicError(msg) {
+                var box = document.getElementById('auth-error-box');
+                if (box) {
+                    box.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + msg;
+                    box.style.display = 'block';
+                }
+            }
+
+            var toggle = document.getElementById('btn-classic-toggle');
+            var form = document.getElementById('classic-login');
+            if (!toggle || !form) return;
+
+            toggle.addEventListener('click', function () {
+                form.style.display = (form.style.display === 'none') ? 'block' : 'none';
+                if (form.style.display === 'block') {
+                    var u = document.getElementById('classic-user');
+                    if (u) u.focus();
+                }
+            });
+
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                var btn = form.querySelector('button[type=submit]');
+                var original = btn.innerHTML;
+                var username = document.getElementById('classic-user').value;
+                var password = document.getElementById('classic-pass').value;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Kontrol ediliyor...';
+                fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username, password: password })
+                }).then(function (res) {
+                    return res.json().then(function (j) { return { ok: res.ok, body: j }; });
+                }).then(function (r) {
+                    if (r.ok && r.body.status === 'success') {
+                        window.location.replace('/');
+                    } else {
+                        showClassicError((r.body && r.body.message) || 'Giriş başarısız. Tekrar deneyin.');
+                        btn.disabled = false;
+                        btn.innerHTML = original;
+                    }
+                }).catch(function () {
+                    showClassicError('Sunucuya ulaşılamadı. Bağlantınızı kontrol edip tekrar deneyin.');
+                    btn.disabled = false;
+                    btn.innerHTML = original;
+                });
+            });
+        })();
+
         // Eski tarayici / modul yukleme hatasi yakalayici:
         // app-auth.js modulu hic calismadiysa kullaniciya gorunur mesaj ver.
         setTimeout(function () {
@@ -297,7 +381,7 @@
                 var box = document.getElementById('auth-error-box');
                 if (box && box.style.display === 'none') {
                     box.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' +
-                        'Giriş sistemi yüklenemedi. Tarayıcınız eski olabilir; güncel Chrome veya Safari kullanıp sayfayı yenileyin.';
+                        'Giriş sistemi yüklenemedi. Tarayıcınız eski olabilir; güncel Chrome veya Safari kullanıp sayfayı yenileyin ya da aşağıdaki kullanıcı adı/şifre girişini kullanın.';
                     box.style.display = 'block';
                 }
             }

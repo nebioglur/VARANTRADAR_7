@@ -603,6 +603,22 @@ def login():
     except:
         return "login.html bulunamadi", 404
 
+@app.route('/login', methods=['POST'])
+def login_post():
+    """Klasik kullanici adi / sifre girisi (yedek giris yolu).
+
+    ADMIN_USER / ADMIN_PASS ortam degiskenleriyle override edilebilir.
+    """
+    data = request.get_json(silent=True) or request.form
+    username = (data.get('username') or '').strip()
+    password = data.get('password') or ''
+    valid_user = os.environ.get('ADMIN_USER', 'nebioglur')
+    valid_pass = os.environ.get('ADMIN_PASS', '123')
+    if username == valid_user and password == valid_pass:
+        session['logged_in'] = True
+        return jsonify({"status": "success"})
+    return jsonify({"status": "error", "message": "Kullanıcı adı veya şifre hatalı"}), 401
+
 @app.route('/logout')
 def logout():
     session.pop('logged_in', None)
