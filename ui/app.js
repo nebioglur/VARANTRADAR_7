@@ -4040,28 +4040,49 @@ function ltOnSymbolInput() {
     // Fiyat (yazmayi biraktiktan 450ms sonra)
     _ltQuoteTimer = setTimeout(() => ltFetchQuote(q), 450);
 
-    // Otomatik doldurma listesi
+    // Otomatik doldurma listesi (temiz: hisselerOnce, varantlar ayri baslikla)
     _ltAcTimer = setTimeout(async () => {
         try {
-            const res = await fetch('/api/autocomplete?q=' + encodeURIComponent(q));
-            const matches = await res.json();
+            const res = await fetch('/api/autocomplete?grouped=1&q=' + encodeURIComponent(q));
+            const data = await res.json();
             if (!dd) return;
             dd.innerHTML = '';
-            if (!matches.length) { dd.style.display = 'none'; return; }
-            matches.forEach(m => {
+            const stocks = Array.isArray(data) ? data : (data.stocks || []);
+            const warrants = Array.isArray(data) ? [] : (data.warrants || []);
+            if (!stocks.length && !warrants.length) { dd.style.display = 'none'; return; }
+
+            const mkItem = (title, sub, sym) => {
                 const item = document.createElement('div');
-                item.textContent = m;
-                item.style.cssText = 'padding:7px 12px; cursor:pointer; font-size:0.85rem; color:var(--text-main); border-bottom:1px solid rgba(255,255,255,0.04);';
+                item.style.cssText = 'padding:7px 12px; cursor:pointer; font-size:0.88rem; color:var(--text-main); display:flex; justify-content:space-between; align-items:center; gap:10px; border-bottom:1px solid rgba(255,255,255,0.04);';
                 item.onmouseenter = () => item.style.background = 'rgba(255,255,255,0.06)';
                 item.onmouseleave = () => item.style.background = 'transparent';
                 item.onclick = () => {
-                    input.value = m;
+                    input.value = sym;
                     dd.style.display = 'none';
-                    ltFetchQuote(m);
+                    ltFetchQuote(sym);
                     input.focus();
                 };
+                const t = document.createElement('span');
+                t.textContent = title;
+                t.style.fontWeight = '600';
+                item.appendChild(t);
+                if (sub) {
+                    const sEl = document.createElement('span');
+                    sEl.textContent = sub;
+                    sEl.style.cssText = 'font-size:0.7rem; color:var(--accent-purple); border:1px solid rgba(168,85,247,0.4); border-radius:4px; padding:1px 6px;';
+                    item.appendChild(sEl);
+                }
                 dd.appendChild(item);
-            });
+            };
+
+            stocks.forEach(s => mkItem(s, '', s));
+            if (warrants.length) {
+                const head = document.createElement('div');
+                head.textContent = 'VARANTLAR';
+                head.style.cssText = 'padding:5px 12px 3px; font-size:0.65rem; letter-spacing:1px; color:var(--text-muted); background:rgba(0,0,0,0.3);';
+                dd.appendChild(head);
+                warrants.forEach(w => mkItem(w.label, 'VARANT', w.symbol));
+            }
             dd.style.display = 'block';
         } catch (e) { if (dd) dd.style.display = 'none'; }
     }, 180);

@@ -914,10 +914,29 @@ def api_analyze():
 
 @app.route('/api/autocomplete', methods=['GET'])
 def api_autocomplete():
-    """Hisse veya Varant sembolünün ilk harflerine göre eşleşen listesini döndürür."""
+    """Hisse veya Varant sembolünün ilk harflerine göre eşleşen listesini döndürür.
+    grouped=1 ise {stocks:[], warrants:[{symbol,label}]} dondurur (temiz liste)."""
     q = request.args.get('q', '').upper()
     if len(q) < 1:
-        return jsonify([])
+        return jsonify([]) if request.args.get('grouped') != '1' else jsonify({"stocks": [], "warrants": []})
+
+    if request.args.get('grouped') == '1':
+        stocks = [s for s in ALL_SYMBOLS if s.startswith(q) and '-' not in s][:8]
+        warrants = []
+        for s in ALL_SYMBOLS:
+            if s.startswith(q) and '-' in s:
+                try:
+                    parts = s.split('-')
+                    base = parts[0]
+                    opt = 'CALL' if parts[2].upper() == 'C' else 'PUT'
+                    strike = parts[3] if len(parts) > 3 else ''
+                    warrants.append({"symbol": s, "label": f"{base} {opt} {strike}"})
+                except Exception:
+                    warrants.append({"symbol": s, "label": s})
+            if len(warrants) >= 6:
+                break
+        return jsonify({"stocks": stocks, "warrants": warrants})
+
     matches = [s for s in ALL_SYMBOLS if s.startswith(q)][:15]
     return jsonify(matches)
 
