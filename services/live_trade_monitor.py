@@ -40,6 +40,24 @@ def _set_setting(key, value):
     conn.close()
 
 
+STARTING_CASH = 100000.0
+DEFAULT_OWNER = "local:nebioglur"  # owner belirtilmezse (dogrudan cagrilar icin)
+
+
+def _cash_key(owner):
+    return f"live_cash:{owner or DEFAULT_OWNER}"
+
+
+def _get_cash(owner):
+    """Hesabin bakiyesini okur; kayit yoksa 100.000 TL ile olusturur."""
+    key = _cash_key(owner)
+    val = _get_setting(key)
+    if val is None:
+        _set_setting(key, STARTING_CASH)
+        return STARTING_CASH
+    return float(val)
+
+
 def _get_live_price(symbol):
     """Guncel fiyat: once dashboard cache, sonra yfinance."""
     clean = symbol.replace(".IS", "").replace(".is", "").upper().strip()
@@ -104,8 +122,8 @@ def _bulk_prices(symbols):
     return result
 
 
-def open_position(symbol, allocation=2000.0, tp_pct=5.0, sl_pct=3.0, trailing=True, source="MANUAL"):
-    """Yeni pozisyon acar. (success, message) dondurur."""
+def open_position(symbol, allocation=2000.0, tp_pct=5.0, sl_pct=3.0, trailing=True, source="MANUAL", owner=None):
+    """Yeni pozisyon acar (owner'a özel). (success, message) dondurur."""
     clean = symbol.replace(".IS", "").replace(".is", "").upper().strip()
     if not clean:
         return False, "Sembol gerekli"
@@ -127,7 +145,7 @@ def open_position(symbol, allocation=2000.0, tp_pct=5.0, sl_pct=3.0, trailing=Tr
     if not price or price <= 0:
         return False, f"{clean} icin guncel fiyat alinamadi"
 
-    cash = float(_get_setting("live_cash", "100000.0") or 0)
+    cash = _get_cash(owner)
     if allocation > cash:
         return False, f"Yetersiz bakiye (Kullanilabilir: {cash:.2f} TL)"
 
@@ -148,16 +166,18 @@ def open_position(symbol, allocation=2000.0, tp_pct=5.0, sl_pct=3.0, trailing=Tr
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     d_str = now[:10]
     c.execute("""INSERT INTO live_positions
-                 (date_str, symbol, entry_time, entry_price, shares, cost_val,
+                 (owner, date_str, symbol, entry_time, entry_price, shares, cost_val,
                   stop_price, tp_price, trail_pct, high_water, trailing_active,
                   status, source, last_price, last_update)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'OPEN', ?, ?, ?)""",
-              (d_str, clean, now, entry_price, shares, cost,
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'OPEN', ?, ?, ?)""",
+              (owner or DEFAULT_OWNER, d_str, clean, now, entry_price, shares, cost,
                round(entry_price * (1 - sl_pct / 100.0), 2),
                round(entry_price * (1 + tp_pct / 100.0), 2),
                DEFAULT_TRAIL_PCT if trailing else 0,
                entry_price, source, price, now))
-    c.execute("UPDATE live_settings SET value=? WHERE key='live_cash'", (str(round(cash - cost, 2)),))
+    c.execute("UPDATE live_settings SET value=? WHERE key=?", (str(round(cash - cost, 2)), _cash_key(owner)))
+    if c.rowcount == 0:
+        _set_setting(_cash_key(owner), round(cash - cost, 2))
     conn.commit()
     conn.close()
 
@@ -171,8 +191,9 @@ def open_position(symbol, allocation=2000.0, tp_pct=5.0, sl_pct=3.0, trailing=Tr
                   f"(TP %{tp_pct:.1f} / SL -%{sl_pct:.1f})")
 
 
-def close_position(pos_id, price=None, reason="MANUEL KAPATMA"):
-    """Pozisyonu kapatir, PnL gerceklestirir."""
+def close_position(pos_id, price=None, reason="MANUEL KAPATMA", owner=None):
+    """Pozisyonu kapatir, PnL gerceklestirir (pozisyon sahibine islenir).
+    owner verilirse pozisyonun sahibiyle eslesmesi kontrol edilir."""
     conn = get_connection()
     c = conn.cursor()
     c.execute("SELECT * FROM live_positions WHERE id=? AND status='OPEN'", (pos_id,))
@@ -182,6 +203,10 @@ def close_position(pos_id, price=None, reason="MANUEL KAPATMA"):
         return False, "Pozisyon bulunamadi (zaten kapali olabilir)"
 
     symbol = row["symbol"]
+    row_owner = row["owner"] or DEFAULT_OWNER
+    if owner is not None and row_owner != owner:
+        conn.close()
+        return False, "Bu pozisyon baska bir hesaba ait"
     conn.close()
 
     if price is None:
@@ -198,8 +223,8 @@ def close_position(pos_id, price=None, reason="MANUEL KAPATMA"):
     pnl_val = (shares * (price - entry)) - commission
     pnl_pct = (pnl_val / (shares * entry)) * 100 if entry > 0 else 0
 
-    cash = float(_get_setting("live_cash", "0") or 0)
-    _set_setting("live_cash", round(cash + sell_volume - commission, 2))
+    cash = _get_cash(row_owner)
+    _set_setting(_cash_key(row_owner), round(cash + sell_volume - commission, 2))
 
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     conn = get_connection()
@@ -296,19 +321,18 @@ def monitor_once():
     return {"checked": len(open_positions), "closed": closed}
 
 
-def get_terminal_state():
-    """UI icin acik pozisyonlar + son islemler + bakiye."""
+def get_terminal_state(owner=None):
+    """UI icin acik pozisyonlar + son islemler + bakiye (owner'a ozel)."""
+    owner = owner or DEFAULT_OWNER
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT * FROM live_positions WHERE status='OPEN' ORDER BY entry_time DESC")
+    c.execute("SELECT * FROM live_positions WHERE status='OPEN' AND owner=? ORDER BY entry_time DESC", (owner,))
     open_rows = [dict(r) for r in c.fetchall()]
-    c.execute("SELECT * FROM live_positions WHERE status='CLOSED' ORDER BY exit_time DESC LIMIT 10")
+    c.execute("SELECT * FROM live_positions WHERE status='CLOSED' AND owner=? ORDER BY exit_time DESC LIMIT 10", (owner,))
     closed_rows = [dict(r) for r in c.fetchall()]
-    c.execute("SELECT value FROM live_settings WHERE key='live_cash'")
-    cash_row = c.fetchone()
     conn.close()
 
-    cash = float(cash_row["value"]) if cash_row else 0.0
+    cash = _get_cash(owner)
     invested = sum((r["cost_val"] or 0) for r in open_rows)
     open_pnl = 0.0
     for r in open_rows:
@@ -319,6 +343,7 @@ def get_terminal_state():
     realized = sum((r["pnl_val"] or 0) for r in closed_rows)
 
     return {
+        "owner": owner,
         "cash": round(cash, 2),
         "invested": round(invested, 2),
         "open_pnl": round(open_pnl, 2),
@@ -327,6 +352,21 @@ def get_terminal_state():
         "open": open_rows,
         "closed": closed_rows,
     }
+
+
+def reset_portfolio(owner):
+    """Hesabin portfoyunu tamamen sifirlar:
+    tum pozisyonlar silinir, bakiye 100.000 TL yapilir,
+    sim islem gecmisi ve equity zinciri temizlenir."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("DELETE FROM live_positions WHERE owner=?", (owner,))
+    c.execute("DELETE FROM trades WHERE owner=?", (owner,))
+    c.execute("DELETE FROM equity_log WHERE owner=?", (owner,))
+    conn.commit()
+    conn.close()
+    _set_setting(_cash_key(owner), STARTING_CASH)
+    return True
 
 
 def run_monitor_loop(interval=45):

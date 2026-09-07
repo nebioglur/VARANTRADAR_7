@@ -369,17 +369,31 @@ def _background_scanner_impl():
                             MarketDataManager.record_signals(d_str, tavan_candidates)
                             MarketDataManager.fetch_and_store_intraday(d_str)
                             
-                            # Günlük simülasyonu çalıştır
-                            sim = SimulationEngine()
-                            sim.run_daily_simulation(d_str)
-                            
+                            # Günlük simülasyonu çalıştır (kayıtlı her hesap için ayrı)
+                            try:
+                                from services.trade_database import get_connection as _get_conn
+                                with _get_conn() as _uc:
+                                    _cur = _uc.cursor()
+                                    _cur.execute("SELECT owner_key FROM app_users")
+                                    _owners = [r["owner_key"] for r in _cur.fetchall()]
+                            except Exception:
+                                _owners = []
+                            if not _owners:
+                                _owners = ["local:nebioglur"]
+                            for _owner in _owners:
+                                try:
+                                    sim = SimulationEngine(owner=_owner)
+                                    sim.run_daily_simulation(d_str)
+                                except Exception as _sim_err:
+                                    print(f"[BACKGROUND] Sim hatasi ({_owner}): {_sim_err}")
+
                             # Gün Sonu Simülasyon Telegram Raporu (18:10 Sonrası)
                             now_time = datetime.now()
                             if now_time.hour == 18 and now_time.minute >= 10:
                                 try:
                                     import json, os
                                     from services.telegram_bot import send_simulation_report
-                                    
+
                                     report_cache = "data/sent_sim_report.json"
                                     sent_today = False
                                     if os.path.exists(report_cache):
@@ -387,14 +401,15 @@ def _background_scanner_impl():
                                             cd = json.load(f)
                                             if cd.get("date") == d_str:
                                                 sent_today = True
-                                                
+
                                     if not sent_today:
                                         from services.trade_database import get_connection
                                         trades = []
                                         try:
                                             with get_connection() as conn:
                                                 c = conn.cursor()
-                                                c.execute("SELECT * FROM trades WHERE date_str=?", (d_str,))
+                                                _report_owner = os.environ.get('ADMIN_OWNER', 'local:nebioglur')
+                                                c.execute("SELECT * FROM trades WHERE date_str=? AND owner=?", (d_str, _report_owner))
                                                 trades = [dict(row) for row in c.fetchall()]
                                         except Exception as db_err:
                                             print(f"[SIM DB HATA] {db_err}")
@@ -555,6 +570,43 @@ def api_auth_config():
         "locale": "tr"
     })
 
+# ========== HESAP BAZLI PORTFOY (OWNER) YONETIMI ==========
+def get_owner_key():
+    """Oturum sahibinin portfoy anahtarini dondurur:
+    Supabase -> sb:<user_id>, klasik giris -> local:<username>."""
+    uid = session.get('supabase_user_id')
+    if uid:
+        return f"sb:{uid}"
+    uname = session.get('username')
+    if uname:
+        return f"local:{uname}"
+    return "local:nebioglur"
+
+
+def is_admin_owner(owner=None):
+    return (owner or get_owner_key()) == os.environ.get('ADMIN_OWNER', 'local:nebioglur')
+
+
+def upsert_app_user(owner_key, email=None, display_name=None):
+    """Giris yapan hesabi app_users tablosuna kaydeder/gunceller."""
+    try:
+        from services.trade_database import get_connection
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("""INSERT INTO app_users (owner_key, email, display_name, created_at, last_login)
+                     VALUES (?, ?, ?, ?, ?)
+                     ON CONFLICT(owner_key) DO UPDATE SET
+                         email=COALESCE(excluded.email, app_users.email),
+                         display_name=COALESCE(excluded.display_name, app_users.display_name),
+                         last_login=excluded.last_login""",
+                  (owner_key, email, display_name, now, now))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"[AUTH] app_users upsert hatasi: {e}")
+
+
 @app.route('/api/auth/session', methods=['POST'])
 def api_auth_session():
     """Supabase oturumunu Flask cookie oturumuna senkronize eder."""
@@ -565,6 +617,17 @@ def api_auth_session():
     user_id = verify_supabase_token(token)
     if not user_id:
         return jsonify({"status": "error", "message": "Invalid or expired token"}), 401
+    # E-postayi JWT payload'indan oku (token zaten dogrulandi)
+    email = None
+    try:
+        import base64
+        payload_b64 = token.split('.')[1]
+        payload_b64 += '=' * (-len(payload_b64) % 4)
+        email = json.loads(base64.urlsafe_b64decode(payload_b64)).get('email')
+    except Exception:
+        pass
+    owner = f"sb:{user_id}"
+    upsert_app_user(owner, email=email, display_name=email)
     session['logged_in'] = True
     session['supabase_user_id'] = user_id
     return jsonify({"status": "success", "user_id": user_id})
@@ -616,6 +679,8 @@ def login_post():
     valid_pass = os.environ.get('ADMIN_PASS', '123')
     if username == valid_user and password == valid_pass:
         session['logged_in'] = True
+        session['username'] = username
+        upsert_app_user(f"local:{username}", display_name=username)
         return jsonify({"status": "success"})
     return jsonify({"status": "error", "message": "Kullanıcı adı veya şifre hatalı"}), 401
 
@@ -623,6 +688,7 @@ def login_post():
 def logout():
     session.pop('logged_in', None)
     session.pop('supabase_user_id', None)
+    session.pop('username', None)
     return redirect('/login')
 # =================================================
 
@@ -1273,10 +1339,10 @@ def api_simulation_live_orders():
 
 @app.route('/api/simulation/terminal', methods=['GET'])
 def api_simulation_terminal():
-    """Anlik islem terminali durumu: acik pozisyonlar, son islemler, bakiye."""
+    """Anlik islem terminali durumu: acik pozisyonlar, son islemler, bakiye (hesaba ozel)."""
     try:
         from services.live_trade_monitor import get_terminal_state
-        return jsonify({"status": "success", "terminal": sanitize_for_json(get_terminal_state())})
+        return jsonify({"status": "success", "terminal": sanitize_for_json(get_terminal_state(get_owner_key()))})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -1293,7 +1359,8 @@ def api_simulation_terminal_open():
             tp_pct=data.get('tp_pct', 5.0),
             sl_pct=data.get('sl_pct', 3.0),
             trailing=bool(data.get('trailing', True)),
-            source='MANUAL'
+            source='MANUAL',
+            owner=get_owner_key()
         )
         return jsonify({"status": "success" if ok else "error", "message": msg}), (200 if ok else 400)
     except Exception as e:
@@ -1308,8 +1375,102 @@ def api_simulation_terminal_close():
         pos_id = data.get('id')
         if not pos_id:
             return jsonify({"status": "error", "message": "Pozisyon id gerekli"}), 400
-        ok, msg = close_position(int(pos_id), reason="MANUEL KAPATMA (Kullanıcı)")
+        ok, msg = close_position(int(pos_id), reason="MANUEL KAPATMA (Kullanıcı)", owner=get_owner_key())
         return jsonify({"status": "success" if ok else "error", "message": msg}), (200 if ok else 400)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/portfolio/reset_request', methods=['POST'])
+def api_portfolio_reset_request():
+    """Kullanici portfoy sifirlama talebi olusturur; yoneticiye Telegram bildirilir."""
+    try:
+        from services.trade_database import get_connection
+        owner = get_owner_key()
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("SELECT id FROM reset_requests WHERE owner_key=? AND status='PENDING'", (owner,))
+        if c.fetchone():
+            conn.close()
+            return jsonify({"status": "error", "message": "Zaten bekleyen bir sıfırlama talebiniz var."}), 400
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        c.execute("INSERT INTO reset_requests (owner_key, status, created_at) VALUES (?, 'PENDING', ?)", (owner, now))
+        conn.commit()
+        conn.close()
+        # Yoneticiye Telegram bildirimi
+        try:
+            from services.telegram_bot import send_telegram_message
+            send_telegram_message(f"🔄 <b>Portföy Sıfırlama Talebi</b>\n👤 {owner}\n🕒 {now}\n\nOnay için uygulamadaki yönetici panelini kullanın.")
+        except Exception:
+            pass
+        return jsonify({"status": "success", "message": "Sıfırlama talebiniz yöneticiye iletildi."})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/portfolio/reset_status', methods=['GET'])
+def api_portfolio_reset_status():
+    """Kullanıcının son sıfırlama talebinin durumunu dondurur."""
+    try:
+        from services.trade_database import get_connection
+        owner = get_owner_key()
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("SELECT status FROM reset_requests WHERE owner_key=? ORDER BY id DESC LIMIT 1", (owner,))
+        row = c.fetchone()
+        conn.close()
+        return jsonify({"status": "success", "last_request": row["status"] if row else None})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/admin/reset_requests', methods=['GET'])
+def api_admin_reset_requests():
+    """Yonetici: bekleyen sifirlama taleplerini listeler."""
+    if not is_admin_owner():
+        return jsonify({"status": "error", "message": "Bu endpoint yalnızca yönetici içindir."}), 403
+    try:
+        from services.trade_database import get_connection
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("""SELECT r.id, r.owner_key, r.status, r.created_at, u.email, u.display_name
+                     FROM reset_requests r LEFT JOIN app_users u ON u.owner_key = r.owner_key
+                     WHERE r.status='PENDING' ORDER BY r.created_at ASC""")
+        reqs = [dict(r) for r in c.fetchall()]
+        conn.close()
+        return jsonify({"status": "success", "requests": reqs})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/admin/reset_requests/decide', methods=['POST'])
+def api_admin_reset_decide():
+    """Yonetici: sifirlama talebini onaylar veya reddeder."""
+    if not is_admin_owner():
+        return jsonify({"status": "error", "message": "Bu endpoint yalnızca yönetici içindir."}), 403
+    try:
+        from services.trade_database import get_connection
+        from services.live_trade_monitor import reset_portfolio
+        data = request.get_json(force=True, silent=True) or {}
+        req_id = data.get('id')
+        action = (data.get('action') or '').lower()
+        if not req_id or action not in ('approve', 'reject'):
+            return jsonify({"status": "error", "message": "id ve action (approve/reject) gerekli"}), 400
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("SELECT * FROM reset_requests WHERE id=? AND status='PENDING'", (req_id,))
+        row = c.fetchone()
+        if row is None:
+            conn.close()
+            return jsonify({"status": "error", "message": "Talep bulunamadı (zaten işlenmiş olabilir)"}), 404
+        owner = row["owner_key"]
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        if action == 'approve':
+            reset_portfolio(owner)
+            c.execute("UPDATE reset_requests SET status='APPROVED', processed_at=? WHERE id=?", (now, req_id))
+            msg = "Portföy sıfırlandı."
+        else:
+            c.execute("UPDATE reset_requests SET status='REJECTED', processed_at=? WHERE id=?", (now, req_id))
+            msg = "Talep reddedildi."
+        conn.commit()
+        conn.close()
+        return jsonify({"status": "success", "message": msg})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -1362,16 +1523,17 @@ def api_simulation_daily_pnl():
         with get_connection() as conn:
             conn.row_factory = sqlite3.Row
             c = conn.cursor()
-            # Fetch daily equity log
-            c.execute("SELECT * FROM equity_log ORDER BY date_str ASC")
+            owner = get_owner_key()
+            # Fetch daily equity log (hesaba ozel)
+            c.execute("SELECT * FROM equity_log WHERE owner=? ORDER BY date_str ASC", (owner,))
             equity_rows = c.fetchall()
             equity_curve = [dict(row) for row in equity_rows]
             if not equity_curve:
                 from datetime import datetime
                 equity_curve = [{"date_str": datetime.now().strftime("%Y-%m-%d"), "start_equity": 100000.0, "end_equity": 100000.0, "total_pnl": 0.0}]
-            
-            # Fetch closed trades
-            c.execute("SELECT * FROM trades ORDER BY entry_time DESC LIMIT 100")
+
+            # Fetch closed trades (hesaba ozel)
+            c.execute("SELECT * FROM trades WHERE owner=? ORDER BY entry_time DESC LIMIT 100", (owner,))
             trade_rows = c.fetchall()
             trades = [dict(row) for row in trade_rows]
             

@@ -1338,6 +1338,29 @@
                     </table>
                 </div>
             </details>
+
+            <!-- Portföy sıfırlama talebi -->
+            <div style="margin-top:1rem; display:flex; justify-content:flex-end;">
+                <button id="lt-reset-btn" onclick="ltResetRequest()"
+                        style="background:rgba(255,193,7,0.08); border:1px solid var(--accent-yellow); color:var(--accent-yellow); border-radius:8px; padding:8px 16px; cursor:pointer; font-size:0.82rem; font-weight:600;">
+                    <i class="fa-solid fa-rotate-left"></i> Portföyü Sıfırla
+                </button>
+            </div>
+
+            <!-- Yönetici: sıfırlama talepleri (yalnızca yönetici girişte görünür) -->
+            <div id="lt-admin-panel" style="display:none; margin-top:1rem; border:1px solid rgba(168,85,247,0.35); border-radius:10px; padding:0.9rem; background:rgba(168,85,247,0.05);">
+                <div style="font-weight:700; color:var(--accent-purple); margin-bottom:0.5rem; font-size:0.9rem;">
+                    <i class="fa-solid fa-user-shield"></i> Yönetici: Portföy Sıfırlama Talepleri
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="data-table" style="width:100%; font-size:0.8rem;">
+                        <thead><tr><th>Hesap</th><th>Owner</th><th>Talep Zamanı</th><th>İşlem</th></tr></thead>
+                        <tbody id="lt-admin-tbody">
+                            <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Yükleniyor...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <!-- Live Orders Card -->

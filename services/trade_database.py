@@ -12,10 +12,14 @@ def get_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+def _table_columns(cursor, table):
+    cursor.execute(f"PRAGMA table_info({table})")
+    return [row[1] for row in cursor.fetchall()]
+
 def init_db():
     conn = get_connection()
     cursor = conn.cursor()
-    
+
     # 1. Signals Table (Sabah üretilen adaylar)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS signals (
@@ -30,7 +34,7 @@ def init_db():
             UNIQUE(date_str, symbol)
         )
     """)
-    
+
     # 2. MarketData Table (Sinyal üretilen hisselerin 5 dakikalık OHLC logu)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS market_data (
@@ -46,11 +50,14 @@ def init_db():
             UNIQUE(timestamp, symbol)
         )
     """)
-    
-    # 3. Trades Table (Simülasyon sonuçları)
+
+    # 3. Trades Table (Simülasyon sonuçları - hesap bazlı)
+    # Yeni sart: UNIQUE(owner, date_str, symbol, entry_time).
+    # Eski ortak tablo dusurulur (sifirdan baslangic tercihi).
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS trades (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            owner TEXT NOT NULL,
             date_str TEXT NOT NULL,
             symbol TEXT NOT NULL,
             entry_time TEXT NOT NULL,
@@ -61,23 +68,59 @@ def init_db():
             pnl_val REAL,
             pnl_pct REAL,
             exit_reason TEXT,
-            UNIQUE(date_str, symbol, entry_time)
+            UNIQUE(owner, date_str, symbol, entry_time)
         )
     """)
-    
-    # 4. Simulation Equity Log (Günlük bakiye değişimi)
+    if 'owner' not in _table_columns(cursor, 'trades'):
+        cursor.execute("DROP TABLE trades")
+        cursor.execute("""
+            CREATE TABLE trades (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                owner TEXT NOT NULL,
+                date_str TEXT NOT NULL,
+                symbol TEXT NOT NULL,
+                entry_time TEXT NOT NULL,
+                entry_price REAL NOT NULL,
+                exit_time TEXT,
+                exit_price REAL,
+                shares INTEGER,
+                pnl_val REAL,
+                pnl_pct REAL,
+                exit_reason TEXT,
+                UNIQUE(owner, date_str, symbol, entry_time)
+            )
+        """)
+
+    # 4. Simulation Equity Log (Günlük bakiye değişimi - hesap bazlı)
+    # Yeni sart: (owner, date_str) PK. Eski ortak tablo dusurulur (sifirdan baslangic).
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS equity_log (
-            date_str TEXT PRIMARY KEY,
+            owner TEXT NOT NULL,
+            date_str TEXT NOT NULL,
             start_equity REAL,
             end_equity REAL,
             daily_pnl REAL,
             total_trades INTEGER,
-            win_trades INTEGER
+            win_trades INTEGER,
+            PRIMARY KEY (owner, date_str)
         )
     """)
+    if 'owner' not in _table_columns(cursor, 'equity_log'):
+        cursor.execute("DROP TABLE equity_log")
+        cursor.execute("""
+            CREATE TABLE equity_log (
+                owner TEXT NOT NULL,
+                date_str TEXT NOT NULL,
+                start_equity REAL,
+                end_equity REAL,
+                daily_pnl REAL,
+                total_trades INTEGER,
+                win_trades INTEGER,
+                PRIMARY KEY (owner, date_str)
+            )
+        """)
 
-    # 5. Live Positions (Anlık işlem terminali - manuel + akıllı TP/SL motoru)
+    # 5. Live Positions (Anlık işlem terminali - manuel + akıllı TP/SL motoru, hesap bazlı)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS live_positions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -103,22 +146,38 @@ def init_db():
             last_update TEXT
         )
     """)
+    if 'owner' not in _table_columns(cursor, 'live_positions'):
+        cursor.execute("ALTER TABLE live_positions ADD COLUMN owner TEXT")
 
-    # 6. Live Settings (Canlı hesap bakiyesi vb.)
+    # 6. Live Settings (Hesap bazlı bakiye: live_cash:<owner>)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS live_settings (
             key TEXT PRIMARY KEY,
             value TEXT
         )
     """)
+
+    # 7. App Users (Kayitli hesaplar - owner kaydi)
     cursor.execute("""
-        INSERT OR IGNORE INTO live_settings (key, value) VALUES ('live_cash', '100000.0')
+        CREATE TABLE IF NOT EXISTS app_users (
+            owner_key TEXT PRIMARY KEY,
+            email TEXT,
+            display_name TEXT,
+            created_at TEXT,
+            last_login TEXT
+        )
     """)
-    # Tek seferlik migrasyon: mevcut bakiyeyi 100.000 TL'ye yukselt (her deploy'da sifirlanmasin)
-    cursor.execute("SELECT value FROM live_settings WHERE key='live_cash_migrated_100k'")
-    if cursor.fetchone() is None:
-        cursor.execute("UPDATE live_settings SET value='100000.0' WHERE key='live_cash'")
-        cursor.execute("INSERT OR IGNORE INTO live_settings (key, value) VALUES ('live_cash_migrated_100k', '1')")
+
+    # 8. Reset Requests (Portfoy sifirlama talepleri)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS reset_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            owner_key TEXT NOT NULL,
+            status TEXT DEFAULT 'PENDING',
+            created_at TEXT,
+            processed_at TEXT
+        )
+    """)
 
     conn.commit()
     conn.close()

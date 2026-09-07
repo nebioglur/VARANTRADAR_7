@@ -3731,6 +3731,8 @@ async function fetchSimulationData() {
             globalSimData = data;
             fetchLiveOrders();
             fetchLiveTerminal();
+            ltRefreshResetUI();
+            fetchAdminResetRequests();
             
             // Calculate KPIs
             const equityCurve = data.equity_curve || [];
@@ -3967,8 +3969,91 @@ setInterval(() => {
     const wrapper = document.getElementById('simulation-wrapper');
     if (wrapper && wrapper.style.display !== 'none') {
         fetchLiveTerminal();
+        ltRefreshResetUI();
+        fetchAdminResetRequests();
     }
 }, 30000);
+
+// ========== PORTFÖY SIFIRLAMA TALEBİ + YÖNETİCİ PANELİ ==========
+async function ltResetRequest() {
+    if (!confirm('Portföy sıfırlama talebi yöneticiye gönderilecek.\n\nOnaylanırsa: tüm pozisyonlarınız ve işlem geçmişiniz silinir, bakiyeniz 100.000 ₺ olur.\n\nDevam edilsin mi?')) return;
+    try {
+        const res = await fetch('/api/portfolio/reset_request', {method: 'POST'});
+        const data = await res.json();
+        alert(data.message || (data.status === 'success' ? 'Talep gönderildi' : 'Hata'));
+        ltRefreshResetUI();
+    } catch (e) {
+        alert('Bağlantı hatası');
+    }
+}
+
+async function ltRefreshResetUI() {
+    try {
+        const res = await fetch('/api/portfolio/reset_status?t=' + Date.now());
+        const data = await res.json();
+        const btn = document.getElementById('lt-reset-btn');
+        if (!btn) return;
+        if (data.last_request === 'PENDING') {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-hourglass-half"></i> Talep beklemede';
+        } else {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-rotate-left"></i> Portföyü Sıfırla';
+        }
+    } catch (e) { /* sessiz */ }
+}
+
+async function fetchAdminResetRequests() {
+    const wrap = document.getElementById('lt-admin-panel');
+    if (!wrap) return;
+    try {
+        const res = await fetch('/api/admin/reset_requests?t=' + Date.now());
+        if (res.status === 403) { wrap.style.display = 'none'; return; }
+        const data = await res.json();
+        if (data.status !== 'success') { wrap.style.display = 'none'; return; }
+        wrap.style.display = 'block';
+        const tbody = document.getElementById('lt-admin-tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        const reqs = data.requests || [];
+        if (reqs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Bekleyen talep yok.</td></tr>';
+        } else {
+            reqs.forEach(r => {
+                const tr = document.createElement('tr');
+                const who = r.email || r.display_name || r.owner_key;
+                tr.innerHTML = `
+                    <td style="font-weight:bold; color:var(--text-light);">${who}</td>
+                    <td style="font-size:0.75rem; color:var(--text-muted);">${r.owner_key}</td>
+                    <td>${(r.created_at || '').slice(5, 16)}</td>
+                    <td>
+                        <button onclick="ltAdminDecide(${r.id}, 'approve')" style="background:rgba(16,185,129,0.15); border:1px solid var(--accent-green); color:var(--accent-green); border-radius:6px; padding:4px 10px; cursor:pointer; font-size:0.78rem; font-weight:bold;">Onayla</button>
+                        <button onclick="ltAdminDecide(${r.id}, 'reject')" style="background:rgba(225,29,72,0.15); border:1px solid var(--accent-red); color:var(--accent-red); border-radius:6px; padding:4px 10px; cursor:pointer; font-size:0.78rem; font-weight:bold;">Reddet</button>
+                    </td>`;
+                tbody.appendChild(tr);
+            });
+        }
+    } catch (e) { /* sessiz */ }
+}
+
+async function ltAdminDecide(id, action) {
+    if (!confirm(action === 'approve'
+        ? 'Bu kullanıcının portföyü TAMAMEN SIFIRLANACAK (pozisyonlar, işlem geçmişi; bakiye 100.000 ₺). Onaylıyor musunuz?'
+        : 'Bu sıfırlama talebi reddedilsin mi?')) return;
+    try {
+        const res = await fetch('/api/admin/reset_requests/decide', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({id: id, action: action})
+        });
+        const data = await res.json();
+        alert(data.message || (data.status === 'success' ? 'Tamam' : 'Hata'));
+        fetchAdminResetRequests();
+        fetchLiveTerminal();
+    } catch (e) {
+        alert('Bağlantı hatası');
+    }
+}
 
 function renderEquityCurveChart(equityData) {
     const ctx = document.getElementById('equityCurveChart');

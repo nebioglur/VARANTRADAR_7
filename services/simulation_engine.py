@@ -13,38 +13,39 @@ class SimulationEngine:
     - Trade geçmişini ve Equity curve'ü veritabanına yazar.
     """
     
-    def __init__(self, daily_budget=10000.0, max_positions=15):
+    def __init__(self, daily_budget=100000.0, max_positions=15, owner=None):
         self.daily_budget = daily_budget
         self.max_positions = max_positions
-        
+        self.owner = owner or "local:nebioglur"
+
     def _save_trades(self, date_str: str, trades: list):
         conn = get_connection()
         cursor = conn.cursor()
         for t in trades:
             try:
                 cursor.execute("""
-                    INSERT INTO trades (date_str, symbol, entry_time, entry_price, exit_time, exit_price, shares, pnl_val, pnl_pct, exit_reason)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(date_str, symbol, entry_time) DO UPDATE SET
+                    INSERT INTO trades (owner, date_str, symbol, entry_time, entry_price, exit_time, exit_price, shares, pnl_val, pnl_pct, exit_reason)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(owner, date_str, symbol, entry_time) DO UPDATE SET
                         exit_time=excluded.exit_time,
                         exit_price=excluded.exit_price,
                         pnl_val=excluded.pnl_val,
                         pnl_pct=excluded.pnl_pct,
                         exit_reason=excluded.exit_reason
                 """, (
-                    date_str, t['symbol'], t['entry_time'], t['entry_price'], 
+                    self.owner, date_str, t['symbol'], t['entry_time'], t['entry_price'],
                     t.get('exit_time'), t.get('exit_price'), t.get('shares'),
                     t.get('pnl_val'), t.get('pnl_pct'), t.get('exit_reason')
                 ))
             except Exception as e:
                 print(f"[SimEngine] Trade save err {t['symbol']}: {e}")
-                
-        # Equity Log
+
+        # Equity Log (hesap bazli)
         total_pnl = sum(t.get('pnl_val', 0) for t in trades if t.get('exit_time'))
         win_trades = sum(1 for t in trades if t.get('pnl_val', 0) > 0)
-        
+
         try:
-            cursor.execute("SELECT end_equity FROM equity_log ORDER BY date_str DESC LIMIT 1")
+            cursor.execute("SELECT end_equity FROM equity_log WHERE owner=? ORDER BY date_str DESC LIMIT 1", (self.owner,))
             prev = cursor.fetchone()
             start_eq = float(prev['end_equity']) if prev else self.daily_budget
         except Exception as e:
@@ -52,20 +53,20 @@ class SimulationEngine:
 
         try:
             cursor.execute("""
-                INSERT INTO equity_log (date_str, start_equity, end_equity, daily_pnl, total_trades, win_trades)
-                VALUES (?, ?, ?, ?, ?, ?)
-                ON CONFLICT(date_str) DO UPDATE SET
+                INSERT INTO equity_log (owner, date_str, start_equity, end_equity, daily_pnl, total_trades, win_trades)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(owner, date_str) DO UPDATE SET
                     end_equity=excluded.end_equity,
                     daily_pnl=excluded.daily_pnl,
                     total_trades=excluded.total_trades,
                     win_trades=excluded.win_trades
             """, (
-                date_str, start_eq, start_eq + total_pnl, 
+                self.owner, date_str, start_eq, start_eq + total_pnl,
                 total_pnl, len(trades), win_trades
             ))
         except Exception as e:
             print(f"[SimEngine] Equity save err: {e}")
-            
+
         conn.commit()
         conn.close()
 
