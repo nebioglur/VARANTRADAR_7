@@ -1428,7 +1428,7 @@ function bindDataToDashboard(report) {
     
     // AVERAGE COST AND EXITS
     setElText('pos-avg', entry.Average_Cost || "-");
-    const dashAtrEl = document.getElementById('dash-atr');
+    const dashAtrEl = document.getElementById('op-atr') || document.getElementById('dash-atr');
     if (dashAtrEl) {
         dashAtrEl.textContent = ops.Dynamic_ATR ? "₺" + ops.Dynamic_ATR : "-";
     }
@@ -1504,13 +1504,17 @@ function bindDataToDashboard(report) {
     if (fcBody) {
         fcBody.innerHTML = "";
         const fc = safeGet(report, "Section_17_Forecast", {});
+        const fcLabels = { "1d": "1 Gün", "1w": "1 Hafta", "1m": "1 Ay", "3m": "3 Ay", "6m": "6 Ay", "12m": "12 Ay" };
         ["1d", "1w", "1m", "3m", "6m", "12m"].forEach(p => {
             if(fc[p]) {
                 let tr = document.createElement('tr');
-                tr.innerHTML = `<td>${p}</td><td class="text-blue">${fc[p]}</td>`;
+                tr.innerHTML = `<td>${fcLabels[p] || p}</td><td class="text-blue">${fc[p]}</td>`;
                 fcBody.appendChild(tr);
             }
         });
+        if (!fcBody.children.length) {
+            fcBody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:var(--text-muted);">Tahmin verisi bulunamadı</td></tr>';
+        }
     }
 
     setElText('sc-bull', safeGet(report, "Section_16_Scenario.Bull.Price"));
@@ -3269,7 +3273,7 @@ function renderStatsMode() {
 
 async function fetchStatsTabData() {
     const dailyTbody = document.getElementById('stats-history-tbody');
-    
+
     if (dailyTbody) {
         dailyTbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Performans arşivi yükleniyor...</td></tr>`;
     }
@@ -3282,39 +3286,93 @@ async function fetchStatsTabData() {
         if (data.status === 'success' || data.summary) {
             renderStatsMode();
             const history = data.daily_breakdown || data.history || [];
-            // Popüle Et: Daily History Tablosu
-            if (dailyTbody) {
-                dailyTbody.innerHTML = '';
-                if (history.length === 0) {
-                    dailyTbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;">Henüz kaydedilmiş seans bulunmuyor.</td></tr>`;
-                } else {
-                    history.forEach(h => {
-                        const tr = document.createElement('tr');
-                        const avgMax = h.avg_max_gain_pct || 0;
-                        const avgClose = h.avg_closing_gain_pct || 0;
-                        const closeColor = avgClose >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-                        const closeSign = avgClose >= 0 ? '+' : '';
-                        tr.style.cursor = 'pointer';
-                        tr.onclick = () => openStatsDetailModal('daily_all', h.date);
-                        tr.title = `${h.date} Tarihli Hisseleri Görmek İçin Tıklayın`;
-                        tr.innerHTML = `
-                            <td><i class="fa-regular fa-calendar" style="color:var(--text-muted);"></i> ${h.date}</td>
-                            <td style="color:var(--accent-blue); font-weight:bold;">${h.total_candidates || h.total_signals || 0}</td>
-                            <td style="color:var(--accent-green); font-weight:bold;">${h.hit_ceiling_count || h.hit_ceiling || 0} Tavan (%${h.hit_ceiling_pct || h.tavan_rate || 0})</td>
-                            <td style="color:var(--accent-blue); font-weight:bold;">${h.hit_plus5_count || h.hit_plus5 || 0} Adet (%${h.hit_plus5_pct || h.plus5_rate || 0})</td>
-                            <td style="color:var(--accent-yellow); font-weight:bold;">+%${avgMax.toFixed(2)}</td>
-                            <td style="color:${closeColor}; font-weight:bold;">${closeSign}%${avgClose.toFixed(2)}</td>
-                        `;
-                        dailyTbody.appendChild(tr);
-                    });
-                }
-            }
+            populateStatsWeekSelect(history);
+            renderStatsHistoryTable(history);
         } else {
             if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="6" class="text-red text-center" style="padding:2rem;">Veri alınamadı: ${data.message || 'Bilinmeyen hata'}</td></tr>`;
         }
     } catch (e) {
         if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="6" class="text-red text-center" style="padding:2rem;">Baglanti hatasi: ${e.message}</td></tr>`;
     }
+}
+
+function populateStatsWeekSelect(history) {
+    const select = document.getElementById('stats-tab-week-select');
+    if (!select || select.dataset.populated === '1') return;
+    const dates = history.map(h => h.date).filter(Boolean).sort().reverse();
+    if (dates.length === 0) return;
+    const weeks = new Set();
+    dates.forEach(dStr => {
+        const d = new Date(dStr + 'T12:00:00');
+        // ISO hafta numarasi
+        const target = new Date(d.valueOf());
+        const dayNr = (d.getDay() + 6) % 7;
+        target.setDate(target.getDate() - dayNr + 3);
+        const firstThursday = new Date(target.getFullYear(), 0, 4);
+        const fDayNr = (firstThursday.getDay() + 6) % 7;
+        const week1 = new Date(firstThursday.getFullYear(), 0, 4 + (7 - fDayNr));
+        const weekNum = 1 + Math.round((target - week1) / (7 * 24 * 3600 * 1000));
+        weeks.add(`${target.getFullYear()}-W${String(weekNum).padStart(2, '0')}`);
+    });
+    const sortedWeeks = Array.from(weeks).sort().reverse();
+    sortedWeeks.forEach(w => {
+        const opt = document.createElement('option');
+        opt.value = w;
+        opt.textContent = w + ' Haftası';
+        select.appendChild(opt);
+    });
+    select.dataset.populated = '1';
+}
+
+function applyStatsWeekFilter() {
+    const weekVal = document.getElementById('stats-tab-week-select')?.value || '';
+    const history = (global_stats_data && (global_stats_data.daily_breakdown || global_stats_data.history)) || [];
+    if (!weekVal) {
+        renderStatsHistoryTable(history);
+        return;
+    }
+    const [year, weekStr] = weekVal.split('-W');
+    const simple = new Date(year, 0, 1 + (weekStr - 1) * 7);
+    const dow = simple.getDay();
+    const ISOweekStart = new Date(simple);
+    if (dow <= 4)
+        ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
+    else
+        ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
+    const startISO = ISOweekStart.toISOString().slice(0, 10);
+    const endD = new Date(ISOweekStart);
+    endD.setDate(endD.getDate() + 4);
+    const endISO = endD.toISOString().slice(0, 10);
+    renderStatsHistoryTable(history.filter(h => h.date >= startISO && h.date <= endISO));
+}
+
+function renderStatsHistoryTable(history) {
+    const dailyTbody = document.getElementById('stats-history-tbody');
+    if (!dailyTbody) return;
+    dailyTbody.innerHTML = '';
+    if (history.length === 0) {
+        dailyTbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;">Henüz kaydedilmiş seans bulunmuyor.</td></tr>`;
+        return;
+    }
+    history.forEach(h => {
+        const tr = document.createElement('tr');
+        const avgMax = h.avg_max_gain_pct || 0;
+        const avgClose = h.avg_closing_gain_pct || 0;
+        const closeColor = avgClose >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+        const closeSign = avgClose >= 0 ? '+' : '';
+        tr.style.cursor = 'pointer';
+        tr.onclick = () => openStatsDetailModal('daily_all', h.date);
+        tr.title = `${h.date} Tarihli Hisseleri Görmek İçin Tıklayın`;
+        tr.innerHTML = `
+            <td><i class="fa-regular fa-calendar" style="color:var(--text-muted);"></i> ${h.date}</td>
+            <td style="color:var(--accent-blue); font-weight:bold;">${h.total_candidates || h.total_signals || 0}</td>
+            <td style="color:var(--accent-green); font-weight:bold;">${h.hit_ceiling_count || h.hit_ceiling || 0} Tavan (%${h.hit_ceiling_pct || h.tavan_rate || 0})</td>
+            <td style="color:var(--accent-blue); font-weight:bold;">${h.hit_plus5_count || h.hit_plus5 || 0} Adet (%${h.hit_plus5_pct || h.plus5_rate || 0})</td>
+            <td style="color:var(--accent-yellow); font-weight:bold;">+%${avgMax.toFixed(2)}</td>
+            <td style="color:${closeColor}; font-weight:bold;">${closeSign}%${avgClose.toFixed(2)}</td>
+        `;
+        dailyTbody.appendChild(tr);
+    });
 }
 
 // ============================================================

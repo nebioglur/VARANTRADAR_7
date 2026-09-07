@@ -831,6 +831,18 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <div class="card mb-3">
+                        <h3 class="card-title"><i class="fa-solid fa-crystal-ball text-blue"></i> AI Fiyat Tahmin Tablosu (Forecast)</h3>
+                        <table class="data-table">
+                            <thead>
+                                <tr><th>Vade</th><th>Tahmini Fiyat</th></tr>
+                            </thead>
+                            <tbody id="fc-body">
+                                <tr><td colspan="2" style="text-align:center; color:var(--text-muted);">Veri yükleniyor...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                     
                     <div class="grid-2-col mt-3">
                         <div class="card" style="border-left: 4px solid var(--accent-blue);">
@@ -1148,7 +1160,12 @@
 
             <!-- Stats Table for Daily History -->
             <div class="card" style="border:1px solid var(--border-color); background: var(--bg-card); box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-                <h3 class="card-title" style="margin-bottom: 1.5rem; font-size: 1.2rem;"><i class="fa-solid fa-calendar-check text-green"></i> Geçmiş Günlerin Karnesi</h3>
+                <h3 class="card-title" style="margin-bottom: 1.5rem; font-size: 1.2rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem;">
+                    <span><i class="fa-solid fa-calendar-check text-green"></i> Geçmiş Günlerin Karnesi</span>
+                    <select id="stats-tab-week-select" onchange="applyStatsWeekFilter()" style="background:var(--bg-base); color:var(--text-light); border:1px solid var(--border-color); border-radius:6px; padding:5px 10px; font-size:0.85rem; cursor:pointer;">
+                        <option value="">Tüm Kayıtlar</option>
+                    </select>
+                </h3>
                 <div class="table-scroll-wrapper" style="max-height: 400px; overflow-y: auto;">
                     <table class="data-table" style="width:100%; border-collapse: separate; border-spacing: 0;">
                         <thead>
