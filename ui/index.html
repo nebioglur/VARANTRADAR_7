@@ -33,6 +33,7 @@
         </div>
         <div class="nav-actions">
             <button class="nav-btn active" onclick="switchMainTab('home', this)"><i class="fa-solid fa-house"></i> GİRİŞ</button>
+            <button class="nav-btn" onclick="switchMainTab('detective', this)" style="color:#f97316; border:1px solid rgba(249,115,22,0.4);"><i class="fa-solid fa-user-secret"></i> PİYASA DEDEKTİFİ</button>
             <button class="nav-btn" onclick="switchMainTab('portfolio', this)" style="color:var(--accent-green);"><i class="fa-solid fa-wallet"></i> PORTFÖYÜM</button>
             <button class="nav-btn" onclick="switchMainTab('leaderboard', this)" style="color:var(--accent-yellow);"><i class="fa-solid fa-ranking-star"></i> SIRALAMA</button>
             <button class="nav-btn" onclick="switchMainTab('radar', this)"><i class="fa-solid fa-tower-broadcast"></i> RADAR</button>
@@ -1282,6 +1283,63 @@
                 Toplam varlık = nakit + açık pozisyon maliyeti + anlık açık kâr/zarar. Güncellemek için sekmeyi yeniden açın.
             </div>
         </div>
+    </div>
+
+    <div id="detective-wrapper" class="main-wrapper" style="display: none;">
+        <div class="card" style="border:1px solid rgba(249,115,22,0.45); background: rgba(249,115,22,0.04); margin-bottom:1.5rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;">
+                <h3 class="card-title" style="color:#f97316; font-size:1.3rem; margin:0;"><i class="fa-solid fa-user-secret"></i> 🕵️ PİYASA DEDEKTİFİ <span style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">(davranışsal analiz: indikatör değil, davranış)</span></h3>
+                <span id="dt-updated" style="font-size:0.75rem; color:var(--text-muted);">-</span>
+            </div>
+
+            <div id="dt-boxes" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:0.6rem; margin-bottom:1rem;"></div>
+
+            <div style="display:flex; flex-wrap:wrap; gap:0.4rem; margin-bottom:0.8rem; align-items:center;">
+                <span style="font-size:0.78rem; color:var(--text-muted); margin-right:0.3rem;">FİLTRE:</span>
+                <button class="dt-filter active" data-f="all" onclick="dtSetFilter('all', this)">TÜMÜ</button>
+                <button class="dt-filter" data-f="anomaly" onclick="dtSetFilter('anomaly', this)">ANOMALİ</button>
+                <button class="dt-filter" data-f="quiet" onclick="dtSetFilter('quiet', this)">SESSİZ</button>
+                <button class="dt-filter" data-f="energy" onclick="dtSetFilter('energy', this)">PATLAMA</button>
+                <button class="dt-filter" data-f="delayed" onclick="dtSetFilter('delayed', this)">GECİKEN</button>
+                <button class="dt-filter" data-f="leader" onclick="dtSetFilter('leader', this)">LİDER</button>
+                <button class="dt-filter" data-f="trap" onclick="dtSetFilter('trap', this)">TUZAK</button>
+                <button class="dt-filter" data-f="breakout" onclick="dtSetFilter('breakout', this)">KIRILIM</button>
+            </div>
+
+            <div style="display:flex; gap:0.5rem; margin-bottom:1rem; flex-wrap:wrap;">
+                <input id="dt-search" type="text" placeholder='🔎 NE ARIYORSUN?  örn: "sessiz ama patlamaya hazırlanan" veya "kalabalığı düşük, hareketi yeni başlamış"' style="flex:1; min-width:260px; background:var(--bg-lighter); border:1px solid var(--border-color); border-radius:8px; padding:0.55rem 0.8rem; color:var(--text-light, #f8fafc); font-size:0.85rem;" onkeydown="if(event.key==='Enter') dtApplySearch()">
+                <button onclick="dtApplySearch()" style="background:#f97316; color:#fff; border:none; border-radius:8px; padding:0.55rem 1rem; cursor:pointer; font-weight:600;">TARA</button>
+                <button onclick="dtClearSearch()" style="background:transparent; color:var(--text-muted); border:1px solid var(--border-color); border-radius:8px; padding:0.55rem 0.8rem; cursor:pointer;">Temizle</button>
+            </div>
+            <div id="dt-search-note" style="display:none; font-size:0.75rem; color:#f97316; margin:-0.5rem 0 0.8rem 0;"></div>
+
+            <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse; font-size:0.82rem; min-width:900px;">
+                    <thead><tr style="color:var(--text-muted); border-bottom:1px solid var(--border-color); text-align:left;">
+                        <th style="padding:0.5rem 0.4rem;">HİSSE</th>
+                        <th style="padding:0.5rem 0.4rem;">FİYAT / %</th>
+                        <th style="padding:0.5rem 0.4rem;">DURUM</th>
+                        <th style="padding:0.5rem 0.4rem;" title="Normal davranıştan sapma">ANOMALİ</th>
+                        <th style="padding:0.5rem 0.4rem;" title="Hareketin başlayalı geçen süre">YAŞ</th>
+                        <th style="padding:0.5rem 0.4rem;" title="Kırılım için gerekli şartların oluşma oranı">ENERJİ</th>
+                        <th style="padding:0.5rem 0.4rem;" title="Sektör/emsal hareket etti, hisse geride">GECİKME</th>
+                        <th style="padding:0.5rem 0.4rem;" title="Yöne yığılma / geç giriş riski">KALABALIK</th>
+                        <th style="padding:0.5rem 0.4rem;" title="Birleşik tuzak riski">TUZAK</th>
+                        <th style="padding:0.5rem 0.4rem;">ROL</th>
+                        <th style="padding:0.5rem 0.4rem;" title="Bugünkü davranış parmak izi (F H V M S L)">İZİ</th>
+                        <th style="padding:0.5rem 0.4rem;" title="Birleşik fırsat skoru">FIRSAT</th>
+                    </tr></thead>
+                    <tbody id="dt-tbody">
+                        <tr><td colspan="12" style="text-align:center; color:var(--text-muted); padding:1.5rem;">Dedektif verisi hazırlanıyor...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top:0.7rem; font-size:0.72rem; color:var(--text-muted);">
+                Satıra tıklayınca dedektif paneli açılır: hareketin hikâyesi, benzer geçmiş günler, hisse karakteri ve hareket zinciri. Veri her 10 dakikada bir tazelenir.
+            </div>
+        </div>
+
+        <div id="dt-panel" style="display:none; margin-bottom:2rem;"></div>
     </div>
 
     <div id="portfolio-wrapper" class="main-wrapper" style="display: none;">

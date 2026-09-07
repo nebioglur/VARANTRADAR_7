@@ -231,6 +231,8 @@ function switchMainTab(tabName, btnElement) {
     if (loadingEl && tabName !== 'dashboard') loadingEl.style.display = 'none';
 
     document.getElementById('home-wrapper').style.display = tabName === 'home' ? 'block' : 'none';
+    const dtWrapper = document.getElementById('detective-wrapper');
+    if (dtWrapper) dtWrapper.style.display = tabName === 'detective' ? 'block' : 'none';
     document.getElementById('dashboard-wrapper').style.display = tabName === 'dashboard' ? 'block' : 'none';
     document.getElementById('radar-wrapper').style.display = tabName === 'radar' ? 'block' : 'none';
     document.getElementById('news-wrapper').style.display = tabName === 'news' ? 'block' : 'none';
@@ -268,6 +270,9 @@ function switchMainTab(tabName, btnElement) {
         bottomBar.style.display = (tabName === 'dashboard' || tabName === 'radar' || tabName === 'stats' || tabName === 'simulation' || tabName === 'varant') ? 'flex' : 'none';
     }
 
+    if (tabName === 'detective') {
+        fetchDetective();
+    }
     if (tabName === 'radar') {
         startRadar('all');
     }
@@ -306,10 +311,10 @@ function cancelLoadingAndGoBack() {
     let targetTab = lastActiveTab || 'home';
     let navBtns = document.querySelectorAll('.nav-btn');
     let targetBtn = navBtns[0]; // GİRİŞ
-    if (targetTab === 'radar' && navBtns.length > 3) {
-        targetBtn = navBtns[3];
-    } else if (targetTab === 'news' && navBtns.length > 4) {
+    if (targetTab === 'radar' && navBtns.length > 4) {
         targetBtn = navBtns[4];
+    } else if (targetTab === 'news' && navBtns.length > 5) {
+        targetBtn = navBtns[5];
     }
     switchMainTab(targetTab, targetBtn);
 }
@@ -562,7 +567,7 @@ async function analyzeSymbol() {
     analysisAbortController = new AbortController();
 
     // Switch to dashboard view
-    switchMainTab('dashboard', document.querySelectorAll('.nav-btn')[1]);
+    switchMainTab('dashboard', document.querySelectorAll('.nav-btn')[2]);
     document.getElementById('dashboard-wrapper').style.display = 'none';
     document.getElementById('home-wrapper').style.display = 'none';
     document.getElementById('radar-wrapper').style.display = 'none';
@@ -4930,3 +4935,304 @@ if (typeof originalSwitchMainTab === 'function' && !window.v8Hooked) {
     };
 }
 // ==========================================
+
+// ========== PİYASA DEDEKTİFİ ==========
+let _dtRows = [];
+let _dtSummary = {};
+let _dtFilter = 'all';
+let _dtSearchTerm = '';
+let _dtPollTimer = null;
+let _dtOpenSymbol = null;
+
+function fetchDetective() {
+    fetch('/api/detective').then(r => r.json()).then(d => {
+        if (d.status === 'error') {
+            document.getElementById('dt-tbody').innerHTML =
+                `<tr><td colspan="12" style="text-align:center; color:#ef4444; padding:1.5rem;">Hata: ${d.message || 'bilinmeyen'}</td></tr>`;
+            return;
+        }
+        if (d.status === 'building') {
+            document.getElementById('dt-tbody').innerHTML =
+                `<tr><td colspan="12" style="text-align:center; color:#f97316; padding:1.5rem;">
+                    <i class="fa-solid fa-magnifying-glass fa-spin"></i> Dedektif ilk raporunu hazırlıyor (60 gunluk 5 dakikalık veri taranıyor, ~1 dk)...</td></tr>`;
+            document.getElementById('dt-updated').textContent = 'ilk tarama sürüyor...';
+            if (!_dtPollTimer) _dtPollTimer = setInterval(() => {
+                fetch('/api/detective').then(r => r.json()).then(dd => {
+                    if (dd.status === 'ok') {
+                        clearInterval(_dtPollTimer); _dtPollTimer = null;
+                        _dtApplyData(dd);
+                    }
+                }).catch(() => {});
+            }, 5000);
+            return;
+        }
+        _dtApplyData(d);
+    }).catch(e => {
+        const tb = document.getElementById('dt-tbody');
+        if (tb) tb.innerHTML = `<tr><td colspan="12" style="text-align:center; color:#ef4444; padding:1.5rem;">Bağlantı hatası</td></tr>`;
+    });
+}
+
+function _dtApplyData(d) {
+    _dtRows = d.rows || [];
+    _dtSummary = d.summary || {};
+    document.getElementById('dt-updated').textContent =
+        `Son tarama: ${d.built_at || '-'} (10 dk'da bir otomatik)`;
+    _dtRenderBoxes();
+    _dtRenderTable();
+    if (_dtOpenSymbol) dtOpenDetail(_dtOpenSymbol, false);
+}
+
+function _dtRenderBoxes() {
+    const box = document.getElementById('dt-boxes');
+    if (!box) return;
+    const s = _dtSummary;
+    const defs = [
+        { key: 'anomaly', label: '🔥 ANOMALİ', color: '#ef4444', val: s.anomaly || 0 },
+        { key: 'energy', label: '🧨 PATLAMA ENERJİSİ', color: '#f97316', val: s.energy || 0 },
+        { key: 'quiet', label: '🐦 SESSİZ HAREKET', color: '#22c55e', val: s.quiet || 0 },
+        { key: 'delayed', label: '🕰️ GECİKENLER', color: '#eab308', val: s.delayed || 0 },
+        { key: 'trap', label: '🪤 TUZAK RİSKİ', color: '#a855f7', val: s.trap || 0 },
+        { key: 'leader', label: '👑 LİDER', color: '#0ea5e9', val: s.leader || 0 },
+        { key: 'breakout', label: '🔵 KIRILIM', color: '#3b82f6', val: s.breakout || 0 },
+    ];
+    box.innerHTML = defs.map(b => `
+        <div onclick="dtSetFilter('${b.key}', document.querySelector('.dt-filter[data-f=\\'${b.key}\\']'))"
+             style="cursor:pointer; background:var(--bg-lighter); border:1px solid ${b.color}55; border-radius:10px; padding:0.6rem 0.7rem; text-align:center; transition:all .15s;"
+             onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+            <div style="font-size:0.68rem; color:${b.color}; font-weight:700;">${b.label}</div>
+            <div style="font-size:1.5rem; font-weight:800; color:${b.color};">${b.val} <span style="font-size:0.7rem; color:var(--text-muted);">hisse</span></div>
+        </div>`).join('');
+}
+
+function dtSetFilter(f, btn) {
+    _dtFilter = f;
+    document.querySelectorAll('.dt-filter').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    _dtRenderTable();
+}
+
+function dtApplySearch() {
+    const inp = document.getElementById('dt-search');
+    _dtSearchTerm = (inp ? inp.value : '').trim().toLowerCase();
+    const note = document.getElementById('dt-search-note');
+    if (_dtSearchTerm) {
+        const n = _dtFilteredRows().length;
+        note.style.display = 'block';
+        note.textContent = `"${_dtSearchTerm}" → ${n} hisse bulundu`;
+    } else {
+        note.style.display = 'none';
+    }
+    _dtRenderTable();
+}
+
+function dtClearSearch() {
+    _dtSearchTerm = '';
+    const inp = document.getElementById('dt-search');
+    if (inp) inp.value = '';
+    const note = document.getElementById('dt-search-note');
+    if (note) note.style.display = 'none';
+    _dtRenderTable();
+}
+
+function _dtMatchSearch(r, term) {
+    // Dogal dil anahtar kelime esleme
+    const rules = [
+        { kw: ['sessiz ama', 'sessiz hazırl', 'patlamaya hazırl'], f: r2 => (r2.status === 'Hazırlık' || (r2.change_pct < 1.5 && r2.anomaly >= 55)) },
+        { kw: ['kalabalığı düşük', 'kalabalik dusuk'], f: r2 => r2.crowd < 30 },
+        { kw: ['yeni başlamış', 'yeni baslamis', 'hareket yaşı', 'taze'], f: r2 => r2.move_age !== null && r2.move_age <= 30 },
+        { kw: ['sessiz'], f: r2 => r2.status === 'Sessiz' },
+        { kw: ['hazırlık', 'hazirlik'], f: r2 => r2.status === 'Hazırlık' },
+        { kw: ['kırılım', 'kirilim', 'kırılmış'], f: r2 => r2.status === 'Kırılım' || r2.confirm >= 66 },
+        { kw: ['anomal'], f: r2 => r2.anomaly >= 60 },
+        { kw: ['geciken', 'gecikme'], f: r2 => r2.delay >= 55 },
+        { kw: ['lider'], f: r2 => r2.role === 'Lider' },
+        { kw: ['uydu'], f: r2 => r2.role === 'Uydu' },
+        { kw: ['tuzak'], f: r2 => r2.trap >= 55 },
+        { kw: ['ucuz risk', 'düşük risk', 'dusuk risk'], f: r2 => r2.trap < 30 },
+        { kw: ['fırsat', 'firsat'], f: r2 => r2.opportunity >= 70 },
+    ];
+    for (const rule of rules) {
+        if (rule.kw.some(k => term.includes(k))) {
+            if (!rule.f(r)) return false;
+        }
+    }
+    // serbest metin: sembol/sektor/rol adı
+    const free = term.replace(/sessiz|anomal[^\s]*|geciken|gecikme|lider|uydu|tuzak|kırılı[mn]|kirilim|kalabalığı düşük|kalabalik dusuk|yeni başlamış|yeni baslamis|patlamaya hazırl|sessiz ama|hazırlık|hazirlik|fırsat|firsat|düşük risk|dusuk risk|taze|hareket yaşı/g, '').trim();
+    if (free) {
+        const hay = `${r.symbol} ${r.sector} ${r.role} ${r.status}`.toLowerCase();
+        if (!hay.includes(free)) return false;
+    }
+    return true;
+}
+
+function _dtFilteredRows() {
+    let rows = _dtRows;
+    const f = _dtFilter;
+    if (f === 'anomaly') rows = rows.filter(r => r.anomaly >= 70);
+    else if (f === 'energy') rows = rows.filter(r => r.energy >= 70 && r.confirm < 66);
+    else if (f === 'quiet') rows = rows.filter(r => r.status === 'Hazırlık' || (r.change_pct < 1 && r.anomaly >= 60));
+    else if (f === 'delayed') rows = rows.filter(r => r.delay >= 60);
+    else if (f === 'trap') rows = rows.filter(r => r.trap >= 60);
+    else if (f === 'leader') rows = rows.filter(r => r.role === 'Lider');
+    else if (f === 'breakout') rows = rows.filter(r => r.status === 'Kırılım');
+    if (_dtSearchTerm) rows = rows.filter(r => _dtMatchSearch(r, _dtSearchTerm));
+    return rows;
+}
+
+function _dtBar(v, color) {
+    const c = v >= 70 ? color : (v >= 40 ? '#eab308' : '#475569');
+    return `<div style="display:flex; align-items:center; gap:4px;">
+        <span style="min-width:24px; font-weight:700; color:${v >= 70 ? c : 'var(--text-light, #f8fafc)'};">${v}</span>
+        <div style="flex:1; height:5px; background:#1e293b; border-radius:3px; overflow:hidden;">
+            <div style="width:${Math.min(100, v)}%; height:100%; background:${c};"></div>
+        </div></div>`;
+}
+
+const _dtStatusColors = {
+    'Sessiz': '#64748b', 'Anormal': '#ef4444', 'Hazırlık': '#22c55e', 'Hareket': '#3b82f6',
+    'Kırılım': '#0ea5e9', 'Hızlanıyor': '#f97316', 'Aşırı': '#dc2626', 'Dağılım': '#a855f7', 'Tuzak': '#a855f7'
+};
+
+function _dtRenderTable() {
+    const tb = document.getElementById('dt-tbody');
+    if (!tb) return;
+    const rows = _dtFilteredRows();
+    if (!rows.length) {
+        tb.innerHTML = `<tr><td colspan="12" style="text-align:center; color:var(--text-muted); padding:1.5rem;">Bu filtrede hisse yok.</td></tr>`;
+        return;
+    }
+    tb.innerHTML = rows.map(r => {
+        const sc = _dtStatusColors[r.status] || '#94a3b8';
+        const chg = r.change_pct >= 0 ? `+${r.change_pct}` : r.change_pct;
+        const chgColor = r.change_pct >= 0 ? '#22c55e' : '#ef4444';
+        const age = r.move_age !== null && r.move_age !== undefined ? `${r.move_age} dk` : '—';
+        const fp = (r.fingerprint || '').split('').map(ch =>
+            `<span style="color:${ch === '↑' ? '#22c55e' : ch === '↓' ? '#ef4444' : '#64748b'}; font-weight:700;">${ch}</span>`).join(' ');
+        return `<tr onclick="dtOpenDetail('${r.symbol}', true)" style="border-bottom:1px solid rgba(30,41,59,0.6); cursor:pointer;"
+                 onmouseover="this.style.background='rgba(249,115,22,0.06)'" onmouseout="this.style.background='none'">
+            <td style="padding:0.55rem 0.4rem; font-weight:700;">${r.symbol} <span style="font-size:0.68rem; color:var(--text-muted);">${r.sector !== 'GENEL' ? r.sector : ''}</span></td>
+            <td style="padding:0.55rem 0.4rem;">${r.price} <span style="color:${chgColor}; font-weight:600;">%${chg}</span></td>
+            <td style="padding:0.55rem 0.4rem;"><span style="background:${sc}22; color:${sc}; border:1px solid ${sc}66; padding:2px 8px; border-radius:10px; font-size:0.72rem; font-weight:700;">${r.status}</span></td>
+            <td style="padding:0.55rem 0.4rem;">${_dtBar(r.anomaly, '#ef4444')}</td>
+            <td style="padding:0.55rem 0.4rem;">${age}</td>
+            <td style="padding:0.55rem 0.4rem;">${_dtBar(r.energy, '#f97316')}</td>
+            <td style="padding:0.55rem 0.4rem;">${_dtBar(r.delay, '#eab308')}</td>
+            <td style="padding:0.55rem 0.4rem;">${_dtBar(r.crowd, '#38bdf8')}</td>
+            <td style="padding:0.55rem 0.4rem;">${_dtBar(r.trap, '#a855f7')}</td>
+            <td style="padding:0.55rem 0.4rem; font-size:0.75rem;">${r.role}</td>
+            <td style="padding:0.55rem 0.4rem; font-size:0.85rem;">${fp}</td>
+            <td style="padding:0.55rem 0.4rem; font-weight:800; font-size:1.05rem; color:${r.opportunity >= 85 ? '#22c55e' : r.opportunity >= 70 ? '#f97316' : r.opportunity < 55 ? '#ef4444' : 'var(--text-light, #f8fafc)'};">${r.opportunity_tag} ${r.opportunity}</td>
+        </tr>`;
+    }).join('');
+}
+
+function dtOpenDetail(symbol, scroll) {
+    _dtOpenSymbol = symbol;
+    const panel = document.getElementById('dt-panel');
+    if (!panel) return;
+    panel.style.display = 'block';
+    panel.innerHTML = `<div class="card" style="border:1px solid rgba(249,115,22,0.35); padding:1.2rem;">
+        <div style="color:var(--text-muted); padding:1rem; text-align:center;"><i class="fa-solid fa-magnifying-glass fa-spin"></i> ${symbol} dedektif dosyası açılıyor...</div></div>`;
+    if (scroll) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    fetch(`/api/detective/detail/${encodeURIComponent(symbol)}`).then(r => r.json()).then(d => {
+        if (d.status !== 'success') {
+            panel.innerHTML = `<div class="card" style="border:1px solid rgba(239,68,68,0.4); padding:1rem; color:#ef4444;">
+                ${d.message || 'Panel verisi alınamadı'} <button onclick="dtCloseDetail()" style="margin-left:1rem; background:none; border:none; color:var(--text-muted); cursor:pointer;">kapat</button></div>`;
+            return;
+        }
+        _dtRenderDetail(panel, d.detail);
+    }).catch(() => {
+        panel.innerHTML = `<div class="card" style="padding:1rem; color:#ef4444;">Bağlantı hatası</div>`;
+    });
+}
+
+function dtCloseDetail() {
+    _dtOpenSymbol = null;
+    const panel = document.getElementById('dt-panel');
+    if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
+}
+
+function _dtRenderDetail(panel, d) {
+    const r = d.row || {};
+    const tl = (d.timeline || []).map(e =>
+        `<div style="display:flex; gap:0.6rem; padding:0.25rem 0; font-size:0.8rem;">
+            <span style="color:#f97316; font-weight:700; min-width:48px;">${e.time}</span>
+            <span>${e.kind} ${e.text}</span></div>`).join('') || '<div style="color:var(--text-muted); font-size:0.8rem;">Bugün kayda değer olay zinciri yok.</div>';
+
+    const why = (d.why || []).map(w => `<div style="padding:0.2rem 0; font-size:0.82rem;">${w[0]} ${w[1]}</div>`).join('');
+
+    const sim = (d.similar || []);
+    const simHtml = sim.length
+        ? `<table style="width:100%; border-collapse:collapse; font-size:0.8rem;">
+            <thead><tr style="color:var(--text-muted); border-bottom:1px solid var(--border-color);">
+            <th style="text-align:left; padding:0.3rem;">TARİH</th><th style="text-align:left; padding:0.3rem;">BENZERLİK</th><th style="text-align:left; padding:0.3rem;">SONRAKİ DÖNEM</th></tr></thead>
+            <tbody>${sim.map(s => {
+                const oc = s.outcome >= 0 ? '#22c55e' : '#ef4444';
+                return `<tr style="border-bottom:1px solid rgba(30,41,59,0.5);">
+                    <td style="padding:0.3rem;">${s.date}</td>
+                    <td style="padding:0.3rem; font-weight:700;">%${s.sim}</td>
+                    <td style="padding:0.3rem; color:${oc}; font-weight:700;">${s.label}: ${s.outcome >= 0 ? '+' : ''}%${s.outcome}</td></tr>`;
+            }).join('')}</tbody></table>
+          <div style="margin-top:0.5rem; font-size:0.82rem; font-weight:700; color:${d.bias && d.bias.startsWith('Pozitif') ? '#22c55e' : '#ef4444'};">
+            📌 Geçmiş benzerlik sonucu: ${d.bias || 'Belirsiz'}</div>`
+        : '<div style="color:var(--text-muted); font-size:0.8rem;">Bu davranışa benzeyen geçmiş gün bulunamadı — bugün benzersiz bir davranış.</div>';
+
+    const ch = d.character;
+    const chHtml = ch ? `
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:0.5rem;">
+            ${[['🚀 Hızlı hareket', ch.hizli], ['💣 Ani patlama', ch.ani_patlama], ['🪤 Sahte kırılım', ch.sahte_kirilim],
+               ['🔄 Retest eğilimi', ch.retest], ['📈 Trend devamı', ch.trend_devam], ['🌊 Volatilite', ch.volatilite]]
+              .map(x => `<div style="background:var(--bg-lighter); border-radius:8px; padding:0.5rem 0.6rem;">
+                    <div style="font-size:0.7rem; color:var(--text-muted);">${x[0]}</div>
+                    <div style="font-weight:800; font-size:1.1rem; color:${x[1] >= 70 ? '#ef4444' : x[1] >= 40 ? '#eab308' : '#22c55e'};">${x[1]}</div>
+                </div>`).join('')}
+        </div>` : '<div style="color:var(--text-muted); font-size:0.8rem;">Karakter analizi için yeterli geçmiş yok.</div>';
+
+    const chain = d.chain || {};
+    const mem = (chain.members || []);
+    const chainHtml = mem.length
+        ? `<div style="font-size:0.82rem;">${mem.map(m => {
+            const oc = m.change_pct >= 0 ? '#22c55e' : '#ef4444';
+            return `<div style="display:flex; justify-content:space-between; padding:0.25rem 0; border-bottom:1px solid rgba(30,41,59,0.4);">
+                <span><b>${m.symbol}</b> <span style="color:var(--text-muted); font-size:0.72rem;">${m.status}</span></span>
+                <span style="color:${oc}; font-weight:700;">%${m.change_pct >= 0 ? '+' : ''}${m.change_pct}</span></div>`;
+          }).join('')}</div>
+          ${chain.next && chain.next.length ? `<div style="margin-top:0.5rem; font-size:0.82rem; color:#22c55e;">👀 <b>Sırada olabilir:</b> ${chain.next.join(', ')}</div>` : ''}`
+        : '<div style="color:var(--text-muted); font-size:0.8rem;">Bu sektörde taranan başka hisse yok.</div>';
+
+    const startPt = d.start_point ? `<span style="color:#f97316; font-weight:700;">Hareketin muhtemel başlangıcı: ${d.start_point}</span>` : '';
+
+    panel.innerHTML = `
+    <div class="card" style="border:1px solid rgba(249,115,22,0.35);">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.8rem;">
+            <h3 class="card-title" style="color:#f97316; margin:0;">🔬 ${r.symbol} — DEDEKTİF PANELİ
+                <span style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">${r.price} TL · %${r.change_pct >= 0 ? '+' : ''}${r.change_pct} · ${r.sector} · Parmak izi: ${r.fingerprint}</span></h3>
+            <button onclick="dtCloseDetail()" style="background:transparent; border:1px solid var(--border-color); color:var(--text-muted); border-radius:8px; padding:0.3rem 0.7rem; cursor:pointer;">✕ Kapat</button>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1rem;">
+            <div>
+                <div style="font-weight:700; margin-bottom:0.4rem; color:#f97316;">🕰️ Hareketin Hikâyesi</div>
+                ${tl}
+                <div style="margin-top:0.4rem;">${startPt}</div>
+            </div>
+            <div>
+                <div style="font-weight:700; margin-bottom:0.4rem; color:#f97316;">🧩 Neden Dikkat Çekiyor?</div>
+                ${why}
+            </div>
+            <div>
+                <div style="font-weight:700; margin-bottom:0.4rem; color:#f97316;">🕵️ Aynı Geçmiş</div>
+                ${simHtml}
+            </div>
+            <div>
+                <div style="font-weight:700; margin-bottom:0.4rem; color:#f97316;">🧬 Hisse Karakteri</div>
+                ${chHtml}
+            </div>
+            <div>
+                <div style="font-weight:700; margin-bottom:0.4rem; color:#f97316;">🌊 ${chain.sector || 'Sektör'} — Hareket Zinciri</div>
+                ${chainHtml}
+            </div>
+        </div>
+    </div>`;
+}
+// ========== /PİYASA DEDEKTİFİ ==========

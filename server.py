@@ -1880,6 +1880,34 @@ def api_logs():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@app.route('/api/detective', methods=['GET'])
+def api_detective():
+    """PIYASA DEDEKTIFI: tum hisseler icin davranissal metrik satirlari."""
+    try:
+        from services.detective_engine import get_rows
+        data = get_rows()
+        return jsonify({"status": data.get("status", "ok"),
+                        "rows": data.get("rows", []),
+                        "summary": data.get("summary", {}),
+                        "built_at": data.get("built_at"),
+                        "error": data.get("error")})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/detective/detail/<symbol>', methods=['GET'])
+def api_detective_detail(symbol):
+    """Dedektif paneli: olay zinciri, ayni gecmis, karakter, hareket zinciri."""
+    try:
+        from services.detective_engine import get_detail
+        d = get_detail(symbol)
+        if not d:
+            return jsonify({"status": "error", "message": "Veri henüz hazır değil ya da sembol kapsamda değil."}), 404
+        return jsonify({"status": "success", "detail": sanitize_for_json(d)})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 if __name__ == "__main__":
 
     print("[SYSTEM] VarantRadar Pro Web Server Baslatiliyor...")
@@ -1893,6 +1921,11 @@ if __name__ == "__main__":
             daemon=True
         )
         t.start()
+        try:
+            from services.detective_engine import start_background_loop
+            start_background_loop()
+        except Exception as e:
+            print(f"[DEDEKTIF] Arka plan baslatilamadi: {e}")
 
     render_url = os.getenv("RENDER_EXTERNAL_URL")
 
