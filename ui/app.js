@@ -4033,6 +4033,8 @@ let _ltQuoteTimer = null;
 let _ltAcTimer = null;
 let _ltCurrentQuote = null;
 
+let _ltSyncing = false;
+
 function ltUpdateQty() {
     const q = _ltCurrentQuote;
     const box = document.getElementById('lt-quote-box');
@@ -4045,6 +4047,20 @@ function ltUpdateQty() {
     if (est) est.textContent = lot > 0
         ? `≈ ${(lot * q.price).toLocaleString('tr-TR', {maximumFractionDigits: 2})} ₺`
         : 'Tutar bu fiyata 1 lot bile etmiyor';
+    // ADET alanini da senkronize et (donguye girmeyecek)
+    const qtyInput = document.getElementById('lt-qty');
+    if (qtyInput && document.activeElement !== qtyInput) qtyInput.value = lot > 0 ? lot : '';
+}
+
+function ltOnQtyInput() {
+    const q = _ltCurrentQuote;
+    if (!q || !q.price || _ltSyncing) return;
+    _ltSyncing = true;
+    const qty = parseInt(document.getElementById('lt-qty').value, 10);
+    const allocInput = document.getElementById('lt-allocation');
+    if (qty > 0 && allocInput) allocInput.value = Math.round(qty * q.price * 100) / 100;
+    ltUpdateQty();
+    _ltSyncing = false;
 }
 
 async function ltFetchQuote(sym) {
@@ -4143,7 +4159,14 @@ function ltOnSymbolInput() {
         }, 200);
     });
     const alloc = document.getElementById('lt-allocation');
-    if (alloc) alloc.addEventListener('input', ltUpdateQty);
+    if (alloc) alloc.addEventListener('input', () => {
+        if (_ltSyncing) return;
+        _ltSyncing = true;
+        ltUpdateQty();
+        _ltSyncing = false;
+    });
+    const qtyInput = document.getElementById('lt-qty');
+    if (qtyInput) qtyInput.addEventListener('input', ltOnQtyInput);
 })();
 
 // ========== PORTFÖY SIFIRLAMA TALEBİ + YÖNETİCİ PANELİ ==========
