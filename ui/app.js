@@ -244,6 +244,9 @@ function switchMainTab(tabName, btnElement) {
     const simWrapper = document.getElementById('simulation-wrapper');
     if (simWrapper) simWrapper.style.display = tabName === 'simulation' ? 'block' : 'none';
 
+    const pfWrapper = document.getElementById('portfolio-wrapper');
+    if (pfWrapper) pfWrapper.style.display = tabName === 'portfolio' ? 'block' : 'none';
+
     const logsWrapper = document.getElementById('logs-wrapper');
     if (logsWrapper) logsWrapper.style.display = tabName === 'logs' ? 'block' : 'none';
 
@@ -274,6 +277,11 @@ function switchMainTab(tabName, btnElement) {
     if (tabName === 'simulation') {
         fetchSimulationData();
     }
+    if (tabName === 'portfolio') {
+        fetchLiveTerminal();
+        ltRefreshResetUI();
+        fetchAdminResetRequests();
+    }
     if (tabName === 'logs') {
         fetchLogs();
     }
@@ -292,10 +300,10 @@ function cancelLoadingAndGoBack() {
     let targetTab = lastActiveTab || 'home';
     let navBtns = document.querySelectorAll('.nav-btn');
     let targetBtn = navBtns[0]; // GİRİŞ
-    if (targetTab === 'radar' && navBtns.length > 1) {
-        targetBtn = navBtns[1];
-    } else if (targetTab === 'news' && navBtns.length > 2) {
+    if (targetTab === 'radar' && navBtns.length > 2) {
         targetBtn = navBtns[2];
+    } else if (targetTab === 'news' && navBtns.length > 3) {
+        targetBtn = navBtns[3];
     }
     switchMainTab(targetTab, targetBtn);
 }
@@ -3964,10 +3972,13 @@ async function ltClosePosition(id) {
     }
 }
 
-// Simülasyon sekmesi görünürken 30 sn'de bir canlı güncelle
+// Simülasyon veya Portföy sekmesi görünürken 30 sn'de bir canlı güncelle
 setInterval(() => {
     const wrapper = document.getElementById('simulation-wrapper');
-    if (wrapper && wrapper.style.display !== 'none') {
+    const pfWrapper = document.getElementById('portfolio-wrapper');
+    const simVisible = wrapper && wrapper.style.display !== 'none';
+    const pfVisible = pfWrapper && pfWrapper.style.display !== 'none';
+    if (simVisible || pfVisible) {
         fetchLiveTerminal();
         ltRefreshResetUI();
         fetchAdminResetRequests();

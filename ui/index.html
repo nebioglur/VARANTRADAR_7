@@ -33,6 +33,7 @@
         </div>
         <div class="nav-actions">
             <button class="nav-btn active" onclick="switchMainTab('home', this)"><i class="fa-solid fa-house"></i> GİRİŞ</button>
+            <button class="nav-btn" onclick="switchMainTab('portfolio', this)" style="color:var(--accent-green);"><i class="fa-solid fa-wallet"></i> PORTFÖYÜM</button>
             <button class="nav-btn" onclick="switchMainTab('radar', this)"><i class="fa-solid fa-tower-broadcast"></i> RADAR</button>
             <button class="nav-btn" onclick="switchMainTab('stats', this)"><i class="fa-solid fa-chart-pie"></i> İSTATİSTİKLER</button>
             <button class="nav-btn" onclick="switchMainTab('news', this)"><i class="fa-solid fa-newspaper"></i> HABERLER (KAP)</button>
@@ -1258,7 +1259,7 @@
         </div>
     </div> <!-- END VARANT-WRAPPER -->
 
-    <div id="simulation-wrapper" class="main-wrapper" style="display: none;">
+    <div id="portfolio-wrapper" class="main-wrapper" style="display: none;">
 
         <!-- ANLIK İŞLEM TERMİNALİ (Manuel Al/Sat + Akıllı TP/SL) -->
         <div class="card" style="border:1px solid var(--accent-green); background: rgba(16,185,129,0.04); margin-bottom:2rem;">
@@ -1362,6 +1363,9 @@
                 </div>
             </div>
         </div>
+    </div> <!-- END PORTFOLIO-WRAPPER -->
+
+    <div id="simulation-wrapper" class="main-wrapper" style="display: none;">
 
         <!-- Live Orders Card -->
         <div class="card" style="border:1px solid var(--accent-yellow); background: rgba(255,193,7,0.05); margin-bottom:2rem;">
