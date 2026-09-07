@@ -21,9 +21,17 @@ class OutcomeEngine:
         Yeni bir sinyali veritabanına DNA (Snapshot) ile birlikte kaydeder.
         """
         from v8_engine.database import V8Database
-        
+
         signal_id = str(uuid.uuid4())
-        
+
+        # Sunucu TZ'sinden bagimsiz olarak Istanbul naive zaman damgasi
+        # (Render UTC calisir; bar index'leri Istanbul oldugu icin tutarli olmali)
+        try:
+            from zoneinfo import ZoneInfo
+            _now = datetime.now(ZoneInfo("Europe/Istanbul")).replace(tzinfo=None)
+        except Exception:
+            _now = datetime.now()
+
         # DNA Snapshot (Makine Öğrenmesi için kullanılacak Feature'lar)
         features = {
             "breakout_score": breakout_data.get("breakout_score", 0),
@@ -32,11 +40,11 @@ class OutcomeEngine:
             "relative_volume": breakout_data.get("metrics", {}).get("relative_volume", 1),
             "entry_status": execution_data.get("entry_status", "UNKNOWN"),
         }
-        
+
         signal_data = {
             "signal_id": signal_id,
             "symbol": symbol,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": _now.isoformat(),
             "strategy": "V8_BREAKOUT",
             "market_regime": regime,
             "score": breakout_data.get("breakout_score", 0),
@@ -79,7 +87,14 @@ class OutcomeEngine:
                     cursor = conn.cursor()
                     
                     # Sadece son 2 gun icindeki ACTIVE sinyalleri cek
-                    cursor.execute("SELECT * FROM v8_signals WHERE status='ACTIVE' AND timestamp >= datetime('now', '-2 day')")
+                    # (Istanbul simdi'sine gore kes; sunucu TZ'sinden bagimsiz)
+                    try:
+                        from zoneinfo import ZoneInfo
+                        now = datetime.now(ZoneInfo("Europe/Istanbul")).replace(tzinfo=None)
+                    except Exception:
+                        now = datetime.now()
+                    cutoff = (now - pd.Timedelta(days=2)).isoformat()
+                    cursor.execute("SELECT * FROM v8_signals WHERE status='ACTIVE' AND timestamp >= ?", (cutoff,))
                     active_signals = cursor.fetchall()
                     
                     if not active_signals:
@@ -90,8 +105,8 @@ class OutcomeEngine:
                     # İlgili hisselerin anlik fiyatlarini cek
                     symbols = list(set([s['symbol'] for s in active_signals]))
                     data = yf.download(symbols, period="5d", interval="1m", group_by='ticker', progress=False)
-                    
-                    now = datetime.now()
+
+                    # 'now' zaten ustte Istanbul saatine gore ayarlandi (UTC ezmesin)
                     
                     for sig in active_signals:
                         sig_id = sig['signal_id']
