@@ -299,7 +299,9 @@ def _background_scanner_impl():
             from datetime import datetime
             today_str = datetime.now().strftime("%Y-%m-%d")
             
-            if results and isinstance(results, dict) and len(results.get("all_symbols_stats", {})) > 50:
+            stats_count = len(results.get("all_symbols_stats", {})) if isinstance(results, dict) else 0
+            
+            if results and isinstance(results, dict) and stats_count > 50:
                 # Mevcut 1h, tavan ve 5m verilerini KORU!
                 if "opportunities_1h" in GLOBAL_DASHBOARD_CACHE:
                     results["opportunities_1h"] = GLOBAL_DASHBOARD_CACHE["opportunities_1h"]
@@ -313,6 +315,20 @@ def _background_scanner_impl():
                 GLOBAL_DASHBOARD_CACHE = sanitize_for_json(results)
                 save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
                 print("[BACKGROUND] Günlük veriler güncellendi. 1h taraması başlıyor...")
+            elif results and isinstance(results, dict) and stats_count > 0:
+                # Kısmi veri geldi: Sembol istatistiklerini mevcut cache ile birleştir,
+                # kapsama alanı sonraki döngülerde kademeli olarak büyüsün.
+                if not isinstance(GLOBAL_DASHBOARD_CACHE, dict):
+                    GLOBAL_DASHBOARD_CACHE = {}
+                existing_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
+                if not isinstance(existing_stats, dict):
+                    existing_stats = {}
+                existing_stats.update(sanitize_for_json(results.get("all_symbols_stats", {})))
+                GLOBAL_DASHBOARD_CACHE["all_symbols_stats"] = existing_stats
+                GLOBAL_DASHBOARD_CACHE["cache_date"] = today_str
+                save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
+                print(f"[BACKGROUND] Kısmi veri geldi ({stats_count} hisse). Mevcut cache ile birleştirildi (toplam {len(existing_stats)} hisse).")
+                results = GLOBAL_DASHBOARD_CACHE
             else:
                 print(f"[BACKGROUND] Yfinance hatası veya boş veri! results length: {len(results.get('all_symbols_stats', {})) if isinstance(results, dict) else 0}. Cache korunuyor.")
                 # Eger cache hic yoksa, en azindan bos listelerle dolsun ki UI patlamasin.
@@ -459,7 +475,7 @@ ADMIN_PASS = os.environ.get('ADMIN_PASS', 'radar123')
 def require_auth():
     if request.method == 'OPTIONS': return
     
-    allowed = ['/login', '/logout']
+    allowed = ['/login', '/logout', '/api/ping']
     if request.path in allowed: return
     
     # Allow static assets for login page
@@ -883,6 +899,11 @@ def api_scan_crypto():
         return jsonify({"status": "success", "count": len(results), "results": sanitize_for_json(results)})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/ping', methods=['GET'])
+def api_ping():
+    """Keep-alive ucu: hicbir harici veri cagrisi yapmaz, Render uyumasini engeller."""
+    return jsonify({"status": "alive", "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
 
 @app.route('/api/health', methods=['GET'])
 def api_health():

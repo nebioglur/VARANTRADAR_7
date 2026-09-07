@@ -138,8 +138,8 @@ class SimulationEngine:
         selected = valid_signals[:5]
         if not selected:
             return
-            
-                current_cash = self.daily_budget
+
+        current_cash = self.daily_budget
         # ENDEKS KALKANI (Market Regime)
         try:
             from server import get_xu100_change

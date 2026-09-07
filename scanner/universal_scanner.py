@@ -1,4 +1,5 @@
 import concurrent.futures
+import time
 from typing import List, Dict, Any
 import yfinance as yf
 import pandas as pd
@@ -67,31 +68,61 @@ class UniversalScanner:
         tech_result = self.tech_engine.analyze(symbol, df)
         return tech_result
 
+    def _bulk_download_chunked(self, symbols: List[str], period: str, interval: str, chunk_size: int = 100) -> Dict[str, pd.DataFrame]:
+        """
+        Toplu indirmeyi kucuk paketlere boler ve hata alinan paketi yeniden dener.
+        Buyuk havuzlarin (orn. 642 BIST hissesi) tek HTTP isteginde Yahoo hiz
+        limitine takilip tamamen bos donmesini engeller.
+        """
+        result = {}
+        total_chunks = (len(symbols) + chunk_size - 1) // chunk_size
+        for idx, start in enumerate(range(0, len(symbols), chunk_size)):
+            chunk = symbols[start:start + chunk_size]
+            data = None
+            for attempt in range(1, 4):
+                try:
+                    data = yf.download(chunk, period=period, interval=interval,
+                                       group_by='ticker', threads=False, progress=False)
+                    if data is not None and not data.empty:
+                        break
+                except Exception as e:
+                    print(f"[SCANNER] Paket {idx+1}/{total_chunks} deneme {attempt} hatasi: {e}")
+                    data = None
+                time.sleep(3 * attempt)
+            if data is None or data.empty:
+                print(f"[SCANNER] Paket {idx+1}/{total_chunks} tamamen basarisiz, atlandi.")
+                continue
+            if len(chunk) == 1:
+                result[chunk[0]] = data
+            elif hasattr(data.columns, 'levels'):
+                for sym in chunk:
+                    if sym in data.columns.levels[0]:
+                        result[sym] = data[sym]
+            else:
+                result[chunk[0]] = data
+            print(f"[SCANNER] Paket {idx+1}/{total_chunks} indirildi ({len(result)}/{len(symbols)} hisse hazir).")
+        return result
+
     def scan_pool_bulk(self, symbols: List[str]) -> Dict[str, List[Dict]]:
         """
         YFinance Bulk Download (Toplu İndirme) ile tüm sembolleri tek HTTP isteğinde çeker.
         IP Ban riskini sıfırlar ve Yükselen/Düşen/Hacimli/Sığ/Favori kategorilerini üretir.
         """
         EventBus.publish("SCAN_STARTED", {"total": len(symbols), "mode": "bulk"})
-        print(f"[SCANNER] {len(symbols)} hisse tek seferde indiriliyor (Bulk Download)...")
+        print(f"[SCANNER] {len(symbols)} hisse paketler halinde indiriliyor (Bulk Download)...")
         
         # Toplu indirme: EMA200 hesaplayabilmek için en az 1y (1 yıl) veri çekiyoruz
-        data = yf.download(symbols, period="1y", interval="1d", group_by='ticker', threads=False, progress=False)
+        bulk_data = self._bulk_download_chunked(symbols, period="1y", interval="1d")
         
         all_results = []
         
-        if len(symbols) == 1:
-            sym = symbols[0]
-            df = data.dropna(how='all').copy()
+        for sym in symbols:
+            raw = bulk_data.get(sym)
+            if raw is None:
+                continue
+            df = raw.dropna(how='all').copy()
             res = self._process_bulk_df(sym, df)
             if res: all_results.append(res)
-        else:
-            for sym in symbols:
-                # yfinance 0.2.x ve sonrasında MultiIndex yapısı
-                if hasattr(data.columns, 'levels') and sym in data.columns.levels[0]:
-                    df = data[sym].dropna(how='all').copy()
-                    res = self._process_bulk_df(sym, df)
-                    if res: all_results.append(res)
                     
         # Şimdi sonuçları kategorize edelim:
         
@@ -118,7 +149,6 @@ class UniversalScanner:
             d_close = r.get("Daily_Close", 0)
             e50 = r.get("Daily_EMA50", 0)
             e200 = r.get("Daily_EMA200", 0)
-            rsi = r.get("Indicators", {}).get("RSI_14", 50)
             change = r.get("Change_Pct", 0)
             
             money_vol = r.get("Money_Volume") or 0
@@ -127,7 +157,11 @@ class UniversalScanner:
             vol_sma10 = r.get("Vol_SMA10") or 0
             atr = r.get("ATR") or 0
             vol_today = r.get("Volume") or 0
-            rsi = r.get("Indicators", {}).get("RSI_14") or 50
+            # RSI_14 veri yetersizse "N/A" stringi olabilir; sayiya cevir, olmazsa 50 (notr)
+            try:
+                rsi = float(r.get("Indicators", {}).get("RSI_14") or 50)
+            except (TypeError, ValueError):
+                rsi = 50.0
             
             gap_pct = r.get("Gap_Pct", 0)
             is_squeeze = r.get("Short_Squeeze_Candidate", False)
@@ -377,24 +411,18 @@ class UniversalScanner:
             print("[SCANNER 1H] EMA filtresini geçen hisse bulunamadı.")
             return {"opportunities_1h": [], "tavan_adaylari": []}
 
-        print(f"[SCANNER 1H] {len(symbols)} hisse 1 saatlik periyotta indiriliyor...")
-        data = yf.download(symbols, period="1mo", interval="1h", group_by='ticker', threads=False, progress=False)
+        print(f"[SCANNER 1H] {len(symbols)} hisse 1 saatlik periyotta paketler halinde indiriliyor...")
+        bulk_data = self._bulk_download_chunked(symbols, period="1mo", interval="1h")
         
         opportunities = []
         tavan_adaylari = []
         stay_away_1h = []
         vip_candidates = []
         
-        symbols_to_process = [symbols[0]] if len(symbols) == 1 else symbols
-        
-        for sym in symbols_to_process:
-            if len(symbols) == 1:
-                df_raw = data.copy()
-            else:
-                if hasattr(data.columns, 'levels') and sym in data.columns.levels[0]:
-                    df_raw = data[sym].copy()
-                else:
-                    continue
+        for sym in symbols:
+            df_raw = bulk_data.get(sym)
+            if df_raw is None:
+                continue
                     
             df = df_raw.dropna(how='all').copy()
             if df.empty or len(df) < 30:
