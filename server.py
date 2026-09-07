@@ -900,6 +900,64 @@ def api_scan_crypto():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/api/varant_simulator', methods=['GET'])
+def api_varant_simulator():
+    try:
+        symbol = request.args.get('symbol', '').replace('.IS', '').replace('.is', '').upper().strip()
+        issuer = request.args.get('issuer', 'ALL')
+        target = request.args.get('target')
+        price = request.args.get('price')
+
+        if not symbol:
+            return jsonify({"status": "error", "message": "Symbol required"}), 400
+
+        # Spot fiyat: once parametreden, sonra dashboard cache'inden, sonra yfinance
+        spot = None
+        if price:
+            try:
+                spot = float(price)
+            except (TypeError, ValueError):
+                spot = None
+
+        if not spot or spot <= 0:
+            stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
+            info = stats.get(symbol) or stats.get(symbol + ".IS")
+            if isinstance(info, dict):
+                try:
+                    spot = float(info.get("Price") or info.get("Daily_Close") or 0)
+                except (TypeError, ValueError):
+                    spot = None
+
+        if not spot or spot <= 0:
+            try:
+                import yfinance as yf
+                hist = yf.Ticker(symbol + ".IS").history(period="5d")
+                if hist is not None and not hist.empty:
+                    spot = float(hist["Close"].iloc[-1])
+            except Exception:
+                pass
+
+        if not spot or spot <= 0:
+            return jsonify({"status": "error", "message": f"{symbol} icin guncel fiyat bulunamadi"}), 404
+
+        try:
+            target_val = float(target) if target else float(spot) * 1.099
+        except (TypeError, ValueError):
+            target_val = float(spot) * 1.099
+
+        from services.varant_simulator import VarantSimulator
+        warrants = VarantSimulator.get_warrants_for_symbol(symbol, float(spot), target_val, issuer or "ALL")
+
+        return jsonify({
+            "status": "success",
+            "symbol": symbol,
+            "spot_price": round(float(spot), 2),
+            "target_price": round(float(target_val), 2),
+            "warrants": sanitize_for_json(warrants)
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 @app.route('/api/ping', methods=['GET'])
 def api_ping():
     """Keep-alive ucu: hicbir harici veri cagrisi yapmaz, Render uyumasini engeller."""
