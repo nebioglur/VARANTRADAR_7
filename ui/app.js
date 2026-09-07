@@ -4069,9 +4069,13 @@ async function ltFetchQuote(sym) {
     if (!sym) { box.style.display = 'none'; _ltCurrentQuote = null; return; }
     try {
         const res = await fetch('/api/quote?symbol=' + encodeURIComponent(sym));
-        if (!res.ok) { box.style.display = 'flex'; document.getElementById('lq-symbol').textContent = sym; document.getElementById('lq-price').textContent = '—'; document.getElementById('lq-change').textContent = 'veri yok'; return; }
-        const q = await res.json();
-        if (q.status !== 'success') return;
+        const q = await res.json().catch(() => ({}));
+        if (!res.ok || q.status !== 'success') {
+            // Gecersiz/eksik sembol: karisiklik olusturmamak icin kutuyu gizle
+            box.style.display = 'none';
+            _ltCurrentQuote = null;
+            return;
+        }
         _ltCurrentQuote = q;
         box.style.display = 'flex';
         document.getElementById('lq-symbol').textContent = q.symbol;
@@ -4081,7 +4085,10 @@ async function ltFetchQuote(sym) {
         chEl.textContent = (up ? '+' : '') + q.change_pct.toFixed(2) + '%';
         chEl.style.color = up ? 'var(--accent-green)' : 'var(--accent-red)';
         ltUpdateQty();
-    } catch (e) { /* sessiz */ }
+    } catch (e) {
+        box.style.display = 'none';
+        _ltCurrentQuote = null;
+    }
 }
 
 function ltOnSymbolInput() {
