@@ -1290,9 +1290,10 @@
 
             <!-- Manuel AL formu -->
             <div style="display:flex; flex-wrap:wrap; gap:0.6rem; align-items:flex-end; background:rgba(0,0,0,0.25); border-radius:8px; padding:0.8rem; margin-bottom:1.2rem;">
-                <div style="flex:1 1 140px;">
+                <div style="flex:1 1 140px; position:relative;">
                     <label style="font-size:0.7rem; color:var(--text-muted); display:block; margin-bottom:3px;">SEMBOL</label>
-                    <input id="lt-symbol" placeholder="THYAO" style="width:100%; background:var(--bg-base); border:1px solid var(--border-color); color:var(--text-main); border-radius:6px; padding:7px 10px; font-size:0.9rem; text-transform:uppercase;">
+                    <input id="lt-symbol" placeholder="THYAO" autocomplete="off" style="width:100%; background:var(--bg-base); border:1px solid var(--border-color); color:var(--text-main); border-radius:6px; padding:7px 10px; font-size:0.9rem; text-transform:uppercase;">
+                    <div id="lt-ac-dropdown" style="display:none; position:absolute; top:100%; left:0; right:0; z-index:50; background:var(--bg-lighter); border:1px solid var(--border-color); border-radius:6px; max-height:220px; overflow-y:auto; box-shadow:0 8px 20px rgba(0,0,0,0.5);"></div>
                 </div>
                 <div style="flex:1 1 110px;">
                     <label style="font-size:0.7rem; color:var(--text-muted); display:block; margin-bottom:3px;">TUTAR (₺)</label>
@@ -1312,6 +1313,15 @@
                 </div>
                 <button id="lt-buy-btn" onclick="ltOpenPosition()" style="background:linear-gradient(135deg, var(--accent-green), #059669); border:none; color:#fff; font-weight:800; border-radius:6px; padding:9px 18px; cursor:pointer; font-size:0.9rem;"><i class="fa-solid fa-cart-plus"></i> AL</button>
                 <span id="lt-msg" style="font-size:0.8rem; font-weight:600; align-self:center;"></span>
+            </div>
+
+            <!-- Anlik fiyat / degisim / miktar bilgisi -->
+            <div id="lt-quote-box" style="display:none; align-items:center; flex-wrap:wrap; gap:1.4rem; background:rgba(0,0,0,0.2); border:1px solid var(--border-color); border-radius:8px; padding:0.55rem 0.9rem; margin:-0.7rem 0 1.2rem; font-size:0.85rem;">
+                <span style="font-weight:800; color:var(--text-light);" id="lq-symbol">—</span>
+                <span>Anlık: <b id="lq-price" style="color:var(--text-light);">—</b> ₺</span>
+                <span>Değişim: <b id="lq-change">—</b></span>
+                <span>Miktar: <b id="lq-qty" style="color:var(--accent-green);">—</b> lot</span>
+                <span style="color:var(--text-muted); font-size:0.75rem;" id="lq-est">—</span>
             </div>
 
             <!-- Açık pozisyonlar -->

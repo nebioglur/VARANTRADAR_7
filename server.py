@@ -921,6 +921,54 @@ def api_autocomplete():
     matches = [s for s in ALL_SYMBOLS if s.startswith(q)][:15]
     return jsonify(matches)
 
+@app.route('/api/quote', methods=['GET'])
+def api_quote():
+    """Tek sembol icin anlik fiyat + gunluk %degisim (terminal sembol kutusu icin)."""
+    sym = (request.args.get('symbol') or '').upper().strip()
+    if not sym or len(sym) > 12:
+        return jsonify({"status": "error", "message": "Gecersiz sembol"}), 400
+    clean = sym.replace(".IS", "").upper()
+    price = None
+    prev_close = None
+    # 1) Dashboard cache
+    try:
+        stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {}) if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else {}
+        info = stats.get(clean) or stats.get(clean + ".IS")
+        if isinstance(info, dict):
+            p = info.get("Price") or info.get("Daily_Close")
+            pc = info.get("Prev_Close") or info.get("Previous_Close")
+            if p:
+                price = float(p)
+            if pc:
+                prev_close = float(pc)
+    except Exception:
+        pass
+    # 2) yfinance (5m intraday + 5d daily)
+    if price is None or prev_close is None:
+        try:
+            import yfinance as yf
+            if price is None:
+                h = yf.Ticker(clean + ".IS").history(period="1d", interval="5m")
+                if h is not None and not h.empty:
+                    price = float(h["Close"].iloc[-1])
+            hd = yf.Ticker(clean + ".IS").history(period="5d", interval="1d")
+            if hd is not None and len(hd) >= 1:
+                closes = [float(x) for x in hd["Close"].tolist()]
+                if price is None:
+                    price = closes[-1]
+                if len(closes) >= 2:
+                    prev_close = closes[-2]
+        except Exception:
+            pass
+    if price is None:
+        return jsonify({"status": "error", "message": "Fiyat bulunamadi"}), 404
+    pct = 0.0
+    if prev_close and prev_close > 0:
+        pct = (price - prev_close) / prev_close * 100.0
+    return jsonify({"status": "success", "symbol": clean, "price": round(price, 2),
+                    "prev_close": round(prev_close, 2) if prev_close else None,
+                    "change_pct": round(pct, 2)})
+
 @app.route('/api/dashboard_init', methods=['GET'])
 def api_dashboard_init():
     """Ön yüz ilk açıldığında gösterilecek Fırsatları ve Sayaçları döner."""

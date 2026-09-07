@@ -3985,6 +3985,103 @@ setInterval(() => {
     }
 }, 30000);
 
+// ========== SEMBOL OTOMATİK DOLDURMA + ANLIK FİYAT (Portföy Terminali) ==========
+let _ltQuoteTimer = null;
+let _ltAcTimer = null;
+let _ltCurrentQuote = null;
+
+function ltUpdateQty() {
+    const q = _ltCurrentQuote;
+    const box = document.getElementById('lt-quote-box');
+    if (!box || box.style.display === 'none' || !q || !q.price) return;
+    const alloc = parseFloat(document.getElementById('lt-allocation').value) || 0;
+    const lot = Math.floor(alloc / q.price);
+    const el = document.getElementById('lq-qty');
+    const est = document.getElementById('lq-est');
+    if (el) el.textContent = lot > 0 ? lot.toLocaleString('tr-TR') : '0';
+    if (est) est.textContent = lot > 0
+        ? `≈ ${(lot * q.price).toLocaleString('tr-TR', {maximumFractionDigits: 2})} ₺`
+        : 'Tutar bu fiyata 1 lot bile etmiyor';
+}
+
+async function ltFetchQuote(sym) {
+    const box = document.getElementById('lt-quote-box');
+    if (!box) return;
+    if (!sym) { box.style.display = 'none'; _ltCurrentQuote = null; return; }
+    try {
+        const res = await fetch('/api/quote?symbol=' + encodeURIComponent(sym));
+        if (!res.ok) { box.style.display = 'flex'; document.getElementById('lq-symbol').textContent = sym; document.getElementById('lq-price').textContent = '—'; document.getElementById('lq-change').textContent = 'veri yok'; return; }
+        const q = await res.json();
+        if (q.status !== 'success') return;
+        _ltCurrentQuote = q;
+        box.style.display = 'flex';
+        document.getElementById('lq-symbol').textContent = q.symbol;
+        document.getElementById('lq-price').textContent = q.price.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        const chEl = document.getElementById('lq-change');
+        const up = q.change_pct >= 0;
+        chEl.textContent = (up ? '+' : '') + q.change_pct.toFixed(2) + '%';
+        chEl.style.color = up ? 'var(--accent-green)' : 'var(--accent-red)';
+        ltUpdateQty();
+    } catch (e) { /* sessiz */ }
+}
+
+function ltOnSymbolInput() {
+    const input = document.getElementById('lt-symbol');
+    const dd = document.getElementById('lt-ac-dropdown');
+    const q = input.value.trim().toUpperCase();
+    clearTimeout(_ltAcTimer);
+    clearTimeout(_ltQuoteTimer);
+
+    // Kullanici yazarken Onceki quote'u gecersiz kil
+    _ltCurrentQuote = null;
+
+    if (!q) { if (dd) dd.style.display = 'none'; return; }
+
+    // Fiyat (yazmayi biraktiktan 450ms sonra)
+    _ltQuoteTimer = setTimeout(() => ltFetchQuote(q), 450);
+
+    // Otomatik doldurma listesi
+    _ltAcTimer = setTimeout(async () => {
+        try {
+            const res = await fetch('/api/autocomplete?q=' + encodeURIComponent(q));
+            const matches = await res.json();
+            if (!dd) return;
+            dd.innerHTML = '';
+            if (!matches.length) { dd.style.display = 'none'; return; }
+            matches.forEach(m => {
+                const item = document.createElement('div');
+                item.textContent = m;
+                item.style.cssText = 'padding:7px 12px; cursor:pointer; font-size:0.85rem; color:var(--text-main); border-bottom:1px solid rgba(255,255,255,0.04);';
+                item.onmouseenter = () => item.style.background = 'rgba(255,255,255,0.06)';
+                item.onmouseleave = () => item.style.background = 'transparent';
+                item.onclick = () => {
+                    input.value = m;
+                    dd.style.display = 'none';
+                    ltFetchQuote(m);
+                    input.focus();
+                };
+                dd.appendChild(item);
+            });
+            dd.style.display = 'block';
+        } catch (e) { if (dd) dd.style.display = 'none'; }
+    }, 180);
+}
+
+// Sembol kutusunu bagla (Portfoy sekmesinde varsa)
+(function () {
+    const input = document.getElementById('lt-symbol');
+    if (!input) return;
+    input.addEventListener('input', ltOnSymbolInput);
+    input.addEventListener('blur', () => {
+        setTimeout(() => {
+            const dd = document.getElementById('lt-ac-dropdown');
+            if (dd) dd.style.display = 'none';
+        }, 200);
+    });
+    const alloc = document.getElementById('lt-allocation');
+    if (alloc) alloc.addEventListener('input', ltUpdateQty);
+})();
+
 // ========== PORTFÖY SIFIRLAMA TALEBİ + YÖNETİCİ PANELİ ==========
 async function ltResetRequest() {
     if (!confirm('Portföy sıfırlama talebi yöneticiye gönderilecek.\n\nOnaylanırsa: tüm pozisyonlarınız ve işlem geçmişiniz silinir, bakiyeniz 100.000 ₺ olur.\n\nDevam edilsin mi?')) return;
