@@ -13,6 +13,7 @@ import threading
 from datetime import datetime, time as dtime
 
 from services.trade_database import get_connection
+from services.telegram_bot import notify_buy, notify_sell
 
 COMMISSION = 0.0004
 TRAIL_ACTIVATION = 3.0   # +3% kazancta izleyen stop devreye girer
@@ -126,7 +127,7 @@ def open_position(symbol, allocation=2000.0, tp_pct=5.0, sl_pct=3.0, trailing=Tr
     if not price or price <= 0:
         return False, f"{clean} icin guncel fiyat alinamadi"
 
-    cash = float(_get_setting("live_cash", "10000.0") or 0)
+    cash = float(_get_setting("live_cash", "100000.0") or 0)
     if allocation > cash:
         return False, f"Yetersiz bakiye (Kullanilabilir: {cash:.2f} TL)"
 
@@ -159,6 +160,13 @@ def open_position(symbol, allocation=2000.0, tp_pct=5.0, sl_pct=3.0, trailing=Tr
     c.execute("UPDATE live_settings SET value=? WHERE key='live_cash'", (str(round(cash - cost, 2)),))
     conn.commit()
     conn.close()
+
+    # Telegram sesli AL uyarisi (hata islemi bloklamaz)
+    try:
+        notify_buy(clean, entry_price, shares, source)
+    except Exception:
+        pass
+
     return True, (f"ALINDI: {shares} lot {clean} @ {entry_price:.2f} TL "
                   f"(TP %{tp_pct:.1f} / SL -%{sl_pct:.1f})")
 
@@ -203,6 +211,13 @@ def close_position(pos_id, price=None, reason="MANUEL KAPATMA"):
                                  round(pnl_pct, 2), reason, round(price, 2), now, pos_id))
     conn.commit()
     conn.close()
+
+    # Telegram sesli SAT uyarisi (hata islemi bloklamaz)
+    try:
+        notify_sell(symbol, price, pnl_val, pnl_pct, reason)
+    except Exception:
+        pass
+
     return True, (f"KAPANDI: {symbol} {pnl_val:+.2f} TL ({pnl_pct:+.2f}%) - {reason}")
 
 

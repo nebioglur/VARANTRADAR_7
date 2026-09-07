@@ -112,8 +112,13 @@ def init_db():
         )
     """)
     cursor.execute("""
-        INSERT OR IGNORE INTO live_settings (key, value) VALUES ('live_cash', '10000.0')
+        INSERT OR IGNORE INTO live_settings (key, value) VALUES ('live_cash', '100000.0')
     """)
+    # Tek seferlik migrasyon: mevcut bakiyeyi 100.000 TL'ye yukselt (her deploy'da sifirlanmasin)
+    cursor.execute("SELECT value FROM live_settings WHERE key='live_cash_migrated_100k'")
+    if cursor.fetchone() is None:
+        cursor.execute("UPDATE live_settings SET value='100000.0' WHERE key='live_cash'")
+        cursor.execute("INSERT OR IGNORE INTO live_settings (key, value) VALUES ('live_cash_migrated_100k', '1')")
 
     conn.commit()
     conn.close()

@@ -133,3 +133,61 @@ def send_simulation_report(total_trades: int, total_profit: float, return_pct: f
     text += f"<i>Sistem yarın için tekrar taranmaya hazır.</i>"
     
     return send_telegram_message(text)
+
+
+# ========== SESLİ AL/SAT UYARILARI ==========
+import os as _os
+
+_ASSETS_DIR = _os.path.join(_os.path.dirname(__file__), "assets")
+
+
+def send_voice_alert(alert_type: str, caption: str) -> bool:
+    """Sesli uyarı gönderir: buy_alert / sell_alert mp3 + mesaj.
+    Ses dosyası yoksa düz mesaj fallback."""
+    file_map = {
+        "buy": _os.path.join(_ASSETS_DIR, "buy_alert.mp3"),
+        "sell": _os.path.join(_ASSETS_DIR, "sell_alert.mp3"),
+    }
+    path = file_map.get(alert_type)
+    if not path or not _os.path.exists(path):
+        return send_telegram_message(caption)
+
+    try:
+        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendAudio"
+        with open(path, "rb") as f:
+            response = requests.post(
+                url,
+                data={"chat_id": CHAT_ID, "caption": caption, "parse_mode": "HTML"},
+                files={"audio": (_os.path.basename(path), f, "audio/mpeg")},
+                timeout=20,
+            )
+        data = response.json()
+        if response.status_code == 200 and data.get("ok"):
+            logger.info(f"Telegram sesli uyari gonderildi ({alert_type}): {caption[:50]}")
+            return True
+        logger.error(f"Telegram sesli uyari hatasi: {data}")
+        return False
+    except Exception as e:
+        logger.error(f"Telegram sesli uyari exception: {e}")
+        return False
+
+
+def notify_buy(symbol: str, price: float, qty: int, source: str = "") -> bool:
+    """AL işlemi için sesli uyarı ('AL sinyali' sesi)."""
+    text = (f"🟢 <b>AL SİNYALİ</b>\n"
+            f"📈 {symbol} — {qty} lot @ {price:.2f} TL\n"
+            f"💰 Tutar: {qty * price:.2f} TL")
+    if source:
+        text += f"\n🔎 Kaynak: {source}"
+    return send_voice_alert("buy", text)
+
+
+def notify_sell(symbol: str, price: float, pnl_val: float, pnl_pct: float, reason: str = "") -> bool:
+    """SAT işlemi için sesli uyarı ('SAT sinyali' sesi)."""
+    emoji = "✅" if pnl_val >= 0 else "🔻"
+    text = (f"🔴 <b>SAT SİNYALİ</b>\n"
+            f"📉 {symbol} — {price:.2f} TL\n"
+            f"{emoji} K/Z: {pnl_val:+.2f} TL ({pnl_pct:+.2f}%)")
+    if reason:
+        text += f"\nℹ️ {reason}"
+    return send_voice_alert("sell", text)
