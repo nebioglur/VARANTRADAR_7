@@ -1679,6 +1679,16 @@
 
     </div>
 
+<div id="logs-wrapper" class="main-wrapper" style="display:none; max-width:1200px; margin:0 auto; padding:1rem;">
+    <div class="card" style="background:var(--bg-light, rgba(255,255,255,0.02)); border:1px solid var(--border-color, rgba(255,255,255,0.08)); border-radius:12px; padding:1rem;">
+        <h3 class="card-title" style="display:flex; align-items:center; justify-content:space-between; margin-top:0; margin-bottom:0.8rem;">
+            <span><i class="fa-solid fa-terminal" style="color:var(--accent-green);"></i> Sistem Log Kaydı (Canlı)</span>
+            <button class="btn-primary" onclick="fetchLogs()" style="padding:6px 12px; font-size:0.8rem;"><i class="fa-solid fa-rotate-right"></i> Yenile</button>
+        </h3>
+        <pre id="log-container" style="background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:1rem; max-height:65vh; overflow-y:auto; font-size:0.72rem; line-height:1.5; color:#94a3b8; white-space:pre-wrap; word-break:break-all; margin:0;">Yükleniyor...</pre>
+    </div>
+</div>
+
 <div id="guide-wrapper" class="main-wrapper" style="display:none; max-width:900px; margin:0 auto; padding:2rem; color:var(--text-light, #f8fafc);">
         <h2 style="color:var(--accent-yellow); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-top:0;"><i class="fa-solid fa-book-open"></i> VarantRadar Pro v7 - Kullanım Kılavuzu</h2>
         

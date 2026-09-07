@@ -243,7 +243,10 @@ function switchMainTab(tabName, btnElement) {
     
     const simWrapper = document.getElementById('simulation-wrapper');
     if (simWrapper) simWrapper.style.display = tabName === 'simulation' ? 'block' : 'none';
-    
+
+    const logsWrapper = document.getElementById('logs-wrapper');
+    if (logsWrapper) logsWrapper.style.display = tabName === 'logs' ? 'block' : 'none';
+
     const guideWrapper = document.getElementById('guide-wrapper');
     if (guideWrapper) guideWrapper.style.display = tabName === 'guide' ? 'block' : 'none';
     
@@ -270,6 +273,9 @@ function switchMainTab(tabName, btnElement) {
     }
     if (tabName === 'simulation') {
         fetchSimulationData();
+    }
+    if (tabName === 'logs') {
+        fetchLogs();
     }
 }
 
