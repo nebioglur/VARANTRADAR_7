@@ -16,12 +16,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Uygulama kodlarını kopyala
 COPY . .
 
-# Portları aç (8501: Streamlit Frontend, 8000: FastAPI Backend)
-EXPOSE 8501
-EXPOSE 8000
+# Flask sunucusu enjekte edilen PORT'u dinler (Render/Verdent override eder)
+ENV PORT=8080
+EXPOSE 8080
 
 # Sağlık kontrolü
-HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health || exit 1
+HEALTHCHECK CMD curl --fail http://localhost:8080/api/ping || exit 1
 
-# Başlangıç komutu (Şimdilik sadece Streamlit. İleride gunicorn ile API ayağa kalkacak)
+# Başlangıç komutu
 CMD ["python", "server.py"]

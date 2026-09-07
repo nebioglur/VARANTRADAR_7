@@ -166,6 +166,55 @@
             transform: translateY(0);
         }
 
+        .btn-secondary {
+            width: 100%;
+            padding: 0.8rem;
+            background: rgba(59, 130, 246, 0.08);
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            border-radius: 8px;
+            color: var(--accent-blue);
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.8rem;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(59, 130, 246, 0.15);
+            border-color: var(--accent-blue);
+        }
+
+        .btn-recovery {
+            width: 100%;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            cursor: pointer;
+            margin-top: 1.2rem;
+            transition: color 0.2s ease;
+        }
+
+        .btn-recovery:hover {
+            color: var(--accent-blue);
+        }
+
+        .auth-note {
+            text-align: center;
+            font-size: 0.72rem;
+            color: rgba(148, 163, 184, 0.6);
+            margin-top: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+
         .error-msg {
             background: rgba(239, 68, 68, 0.1);
             border: 1px solid rgba(239, 68, 68, 0.3);
@@ -202,9 +251,9 @@
 <body>
 
     <div class="login-container">
-        <div class="login-card">
+        <div class="login-card" id="auth-login-card">
             <div class="glow-orb"></div>
-            
+
             <div class="logo-area">
                 <i class="fa-solid fa-layer-group"></i>
                 <div class="logo-title">VARANTRADAR PRO</div>
@@ -213,34 +262,31 @@
 
             <!-- ERROR_PLACEHOLDER -->
 
-            <form action="/login" method="POST">
-                <div class="form-group">
-                    <label>Kullanıcı Adı</label>
-                    <div class="input-wrapper">
-                        <i class="fa-solid fa-user"></i>
-                        <input type="text" name="username" class="form-control" placeholder="admin" required autocomplete="off">
-                    </div>
-                </div>
+            <button type="button" id="btn-open-signin" class="btn-login">
+                SİSTEME GİRİŞ YAP <i class="fa-solid fa-arrow-right-to-bracket"></i>
+            </button>
 
-                <div class="form-group">
-                    <label>Parola</label>
-                    <div class="input-wrapper">
-                        <i class="fa-solid fa-lock"></i>
-                        <input type="password" name="password" class="form-control" placeholder="••••••••" required>
-                    </div>
-                </div>
+            <button type="button" id="btn-open-signup" class="btn-secondary">
+                <i class="fa-solid fa-user-plus"></i> Hesap Oluştur
+            </button>
 
-                <button type="submit" class="btn-login">
-                    SİSTEME GİRİŞ YAP <i class="fa-solid fa-arrow-right-to-bracket"></i>
-                </button>
-            </form>
+            <button type="button" id="btn-open-forgot" class="btn-recovery">
+                Şifremi unuttum
+            </button>
+
+            <div class="auth-note">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span>Google veya e-posta ile güvenli giriş</span>
+            </div>
         </div>
-        
+
         <div class="footer-text">
             &copy; 2026 VarantRadar Pro. Tüm hakları gizlidir.<br>
             Yetkisiz erişim kayıt altına alınmaktadır.
         </div>
     </div>
 
+    <script src="/vendor/supabase.umd.js"></script>
+    <script type="module" src="/app-auth.js"></script>
 </body>
 </html>

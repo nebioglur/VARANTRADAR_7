@@ -1,6 +1,7 @@
 import pandas as pd
 import yfinance as yf
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import uuid
 import threading
 import time
@@ -95,10 +96,16 @@ class OutcomeEngine:
                         sig_id = sig['signal_id']
                         sym = sig['symbol']
                         sig_time = datetime.fromisoformat(sig['timestamp'])
+                        # DB'den gelen zaman tz-aware olabilir; bar index'i ile kiyas icin naive Istanbul zamanina cevir
+                        if sig_time.tzinfo is not None:
+                            try:
+                                sig_time = sig_time.astimezone(ZoneInfo("Europe/Istanbul")).replace(tzinfo=None)
+                            except Exception:
+                                sig_time = sig_time.replace(tzinfo=None)
                         entry_price = float(sig['entry_price'])
-                        
+
                         elapsed_mins = (now - sig_time).total_seconds() / 60.0
-                        
+
                         try:
                             if len(symbols) == 1:
                                 df = data.dropna(how='all').copy()
@@ -106,33 +113,73 @@ class OutcomeEngine:
                                 if hasattr(data.columns, 'levels') and sym in data.columns.levels[0]:
                                     df = data[sym].dropna(how='all').copy()
                                 else:
-                                    continue
-                                    
+                                    # Bulk veri yoksa tek sembol fallback dene
+                                    try:
+                                        df = yf.Ticker(sym).history(period="1d", interval="1m").dropna(how='all').copy()
+                                    except Exception:
+                                        continue
+
                             if df.empty: continue
-                            
+
+                            # Index'i datetime'a cevir ve sirala
+                            try:
+                                df.index = pd.to_datetime(df.index, utc=True).tz_convert('Europe/Istanbul').tz_localize(None)
+                            except Exception:
+                                try:
+                                    df.index = pd.to_datetime(df.index).tz_localize(None)
+                                except Exception:
+                                    pass
+                            df = df.sort_index()
+
                             current_price = float(df['Close'].iloc[-1])
-                            
+
                             cursor.execute("SELECT * FROM v8_outcomes WHERE signal_id=?", (sig_id,))
                             outcome = cursor.fetchone()
-                            
-                            t5 = outcome['t_5m_price'] if (outcome is not None and outcome['t_5m_price'] is not None) else (current_price if 5 <= elapsed_mins < 15 else None)
-                            t15 = outcome['t_15m_price'] if (outcome is not None and outcome['t_15m_price'] is not None) else (current_price if 15 <= elapsed_mins < 30 else None)
-                            t30 = outcome['t_30m_price'] if (outcome is not None and outcome['t_30m_price'] is not None) else (current_price if 30 <= elapsed_mins < 60 else None)
-                            t60 = outcome['t_60m_price'] if (outcome is not None and outcome['t_60m_price'] is not None) else (current_price if 60 <= elapsed_mins < 120 else None)
-                            
+
+                            def _price_at(mins_after):
+                                """Hedef andan itibaren ilk mevcut barin close'u (backfill)."""
+                                target_ts = sig_time + pd.Timedelta(minutes=mins_after)
+                                sub = df[df.index >= target_ts]
+                                if sub.empty: return None
+                                return float(sub['Close'].iloc[0])
+
+                            old_t5 = outcome['t_5m_price'] if (outcome is not None and outcome['t_5m_price'] is not None) else None
+                            old_t15 = outcome['t_15m_price'] if (outcome is not None and outcome['t_15m_price'] is not None) else None
+                            old_t30 = outcome['t_30m_price'] if (outcome is not None and outcome['t_30m_price'] is not None) else None
+                            old_t60 = outcome['t_60m_price'] if (outcome is not None and outcome['t_60m_price'] is not None) else None
+
+                            t5 = old_t5 if old_t5 is not None else (_price_at(5) if elapsed_mins >= 5 else None)
+                            t15 = old_t15 if old_t15 is not None else (_price_at(15) if elapsed_mins >= 15 else None)
+                            t30 = old_t30 if old_t30 is not None else (_price_at(30) if elapsed_mins >= 30 else None)
+                            t60 = old_t60 if old_t60 is not None else (_price_at(60) if elapsed_mins >= 60 else None)
+
                             mfe = outcome['max_favorable_excursion'] if (outcome is not None and outcome['max_favorable_excursion'] is not None) else 0.0
                             mae = outcome['max_adverse_excursion'] if (outcome is not None and outcome['max_adverse_excursion'] is not None) else 0.0
-                            
-                            # Fiyat değişimi
-                            pct_change = ((current_price - entry_price) / entry_price) * 100
-                            if pct_change > mfe: mfe = pct_change
-                            if pct_change < mae: mae = pct_change
-                            
+
+                            # MFE/MAE: giristen bugunku tum barlar uzerinden (koseli parantezli erisim tz-uyumsuzlugunu onler)
+                            try:
+                                entry_ts = sig_time
+                                bars = df.loc[df.index >= entry_ts, 'Close']
+                                if bars.empty:
+                                    bars = df['Close']
+                                pcts = ((bars - entry_price) / entry_price) * 100.0
+                                if not pcts.empty:
+                                    day_max = float(pcts.max())
+                                    day_min = float(pcts.min())
+                                    mfe = max(mfe, day_max)
+                                    mae = min(mae, day_min)
+                            except Exception:
+                                pct_change = ((current_price - entry_price) / entry_price) * 100
+                                if pct_change > mfe: mfe = pct_change
+                                if pct_change < mae: mae = pct_change
+
                             status_update = "ACTIVE"
-                            # Sinyal yaşlandıkça kapat (örn: 4 saat)
-                            if elapsed_mins > 240: 
+                            # Sinyal gun sonunda kapanir (seans bitisi ~18:15) ya da 6 saat
+                            now_time = now.time()
+                            market_closed = now_time.hour >= 18 and now_time.minute >= 15
+                            if elapsed_mins > 360 or market_closed:
                                 status_update = "CLOSED"
-                            
+
                             # Outcome kaydet/güncelle
                             # Not: SQLite3 ON CONFLICT UPSERT yontemi
                             cursor.execute('''
@@ -147,10 +194,14 @@ class OutcomeEngine:
                                 max_adverse_excursion=excluded.max_adverse_excursion,
                                 final_result=excluded.final_result
                             ''', (sig_id, t5, t15, t30, t60, mfe, mae, status_update))
-                            
+
                             if status_update == "CLOSED":
+                                # Kapanista net degisime gore kesin sonuc etiketle
+                                net_pct = ((current_price - entry_price) / entry_price) * 100
+                                final = "WIN" if net_pct > 0.5 else ("LOSS" if net_pct < -0.5 else "NEUTRAL")
                                 cursor.execute("UPDATE v8_signals SET status='CLOSED' WHERE signal_id=?", (sig_id,))
-                                
+                                cursor.execute("UPDATE v8_outcomes SET final_result=? WHERE signal_id=?", (final, sig_id))
+
                             conn.commit()
                         except Exception as e_inner:
                             print(f"[Outcome Engine] Error processing symbol {sym}: {e_inner}")

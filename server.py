@@ -468,14 +468,104 @@ import os
 from flask import request, Response, session, redirect, jsonify, render_template_string
 
 app.secret_key = os.environ.get('SECRET_KEY', 'varant_pro_ultra_secret_2026_xyz')
-ADMIN_USER = os.environ.get('ADMIN_USER', 'admin')
-ADMIN_PASS = os.environ.get('ADMIN_PASS', 'radar123')
+
+# --- Verdent-Managed Supabase Auth (public browser config) ---
+SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://supabase-api-prod.verdent.ai/p/p4c2618bf93ce4a2f45f8')
+SUPABASE_PUBLISHABLE_KEY = os.environ.get('SUPABASE_PUBLISHABLE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoyMTA0NDA3NTczLCJpYXQiOjE3ODg3ODgzNzMsImlzcyI6InN1cGFiYXNlIiwicHJvamVjdF9yZWYiOiJwNGMyNjE4YmY5M2NlNGEyZjQ1ZjgiLCJyb2xlIjoiYW5vbiJ9.u-E7X433Llwcg-5jF8IDiHwiHqaBN_xtjuvkuEA7Llo')
+
+_jwks_client = None
+
+def _get_jwks_client():
+    global _jwks_client
+    if _jwks_client is None:
+        import jwt
+        _jwks_client = jwt.PyJWKClient(
+            f"{SUPABASE_URL}/auth/v1/.well-known/jwks.json",
+            cache_keys=True,
+            lifespan=3600
+        )
+    return _jwks_client
+
+_user_token_cache = {}
+
+def verify_supabase_token(token: str):
+    """Supabase access token'ini dogrular; gecerliyse user_id (sub) dondurur.
+    1) JWKS ile yerel imza dogrulamasi (anahtar mevcutsa)
+    2) Fallback: Supabase /auth/v1/user ucu (JWKS bos veya ES256 uyumsuzsa)
+    """
+    # 1) Yerel JWKS dogrulamasi
+    try:
+        import jwt
+        signing_key = _get_jwks_client().get_signing_key_from_jwt(token)
+        payload = jwt.decode(
+            token,
+            signing_key.key,
+            algorithms=["ES256", "RS256"],
+            audience="authenticated",
+            leeway=30,
+        )
+        return payload.get("sub")
+    except Exception:
+        pass
+
+    # 2) Supabase auth ucu ile dogrulama (sonuc kisa sure cache'lenir)
+    import hashlib
+    import time as _time
+    token_hash = hashlib.sha256(token.encode('utf-8')).hexdigest()
+    now = _time.time()
+    cached = _user_token_cache.get(token_hash)
+    if cached and cached[1] > now:
+        return cached[0]
+    try:
+        import requests
+        resp = requests.get(
+            f"{SUPABASE_URL}/auth/v1/user",
+            params={"apikey": SUPABASE_PUBLISHABLE_KEY},
+            headers={
+                "Authorization": f"Bearer {token}",
+                "apikey": SUPABASE_PUBLISHABLE_KEY,
+            },
+            timeout=10,
+        )
+        if resp.status_code == 200:
+            user = resp.json()
+            user_id = user.get("id") or user.get("sub")
+            if user_id:
+                _user_token_cache[token_hash] = (user_id, now + 120)
+                return user_id
+    except Exception as e:
+        print(f"[AUTH] Supabase user endpoint dogrulamasi basarisiz: {e}")
+    return None
+
+@app.route('/api/auth_config', methods=['GET'])
+def api_auth_config():
+    """Tarayici icin genel (public) auth yapilandirmasi."""
+    return jsonify({
+        "status": "success",
+        "supabase_url": SUPABASE_URL,
+        "publishable_key": SUPABASE_PUBLISHABLE_KEY,
+        "locale": "tr"
+    })
+
+@app.route('/api/auth/session', methods=['POST'])
+def api_auth_session():
+    """Supabase oturumunu Flask cookie oturumuna senkronize eder."""
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return jsonify({"status": "error", "message": "Missing bearer token"}), 401
+    token = auth_header[7:].strip()
+    user_id = verify_supabase_token(token)
+    if not user_id:
+        return jsonify({"status": "error", "message": "Invalid or expired token"}), 401
+    session['logged_in'] = True
+    session['supabase_user_id'] = user_id
+    return jsonify({"status": "success", "user_id": user_id})
 
 @app.before_request
 def require_auth():
     if request.method == 'OPTIONS': return
     
-    allowed = ['/login', '/logout', '/api/ping']
+    allowed = ['/login', '/logout', '/api/ping', '/api/auth_config', '/api/auth/session']
     if request.path in allowed: return
     
     # Allow static assets for login page
@@ -483,33 +573,32 @@ def require_auth():
         return
 
     if not session.get('logged_in'):
+        # Dogrudan Bearer token ile gelen API istekleri (script/araclar icin)
+        auth_header = request.headers.get('Authorization', '')
+        if request.path.startswith('/api/') and auth_header.startswith('Bearer '):
+            user_id = verify_supabase_token(auth_header[7:].strip())
+            if user_id:
+                session['logged_in'] = True
+                session['supabase_user_id'] = user_id
+                return
         if request.path.startswith('/api/'):
             return jsonify({"status": "error", "message": "Unauthorized"}), 401
         return redirect('/login')
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods=['GET'])
 def login():
-    error = None
-    if request.method == 'POST':
-        if request.form.get('username') == ADMIN_USER and request.form.get('password') == ADMIN_PASS:
-            session['logged_in'] = True
-            return redirect('/')
-        else:
-            error = "Hatalı kullanıcı adı veya şifre!"
-            
-    # Send login.html but inject error if any
+    # Giris artık tarayici tarafinda Verdent-managed Supabase Auth ile yapilir
+    # (@verdent/auth-js builtin UI). Sunucu tarafinda form login yoktur.
     try:
         with open('ui/login.html', 'r', encoding='utf-8') as f:
-            html = f.read()
-            if error:
-                html = html.replace('<!-- ERROR_PLACEHOLDER -->', f'<div class="error-msg">{error}</div>')
-            return html
+            return f.read()
     except:
         return "login.html bulunamadi", 404
 
 @app.route('/logout')
 def logout():
     session.pop('logged_in', None)
+    session.pop('supabase_user_id', None)
     return redirect('/login')
 # =================================================
 

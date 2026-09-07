@@ -1,0 +1,700 @@
+[2026-09-07 15:12:59] [INFO] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.14:5000
+[2026-09-07 15:12:59] [INFO] [33mPress CTRL+C to quit[0m
+[2026-09-07 15:13:54] [INFO] Telegram mesajı başarıyla gönderildi: 🚨 <b>YENİ VIP SİNYALLERİ TESPİT EDİLDİ!</b> 🚨
+
+🏆 <...
+[2026-09-07 15:13:54] [INFO] Telegram mesajı başarıyla gönderildi: 🚨 <b>YENİ VIP SİNYALLERİ TESPİT EDİLDİ!</b> 🚨
+
+🏆 <...
+[2026-09-07 15:14:07] [INFO] Telegram bildirimi başarıyla iletildi (Chat ID: 6105241519)
+[2026-09-07 15:14:07] [INFO] Telegram bildirimi başarıyla iletildi (Chat ID: 6105241519)
+[2026-09-07 15:14:24] [ERROR] HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: AKBET.IS"}}}
+[2026-09-07 15:14:24] [ERROR] HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: AKBET.IS"}}}
+[2026-09-07 15:14:25] [ERROR] $AKBET.IS: No data found, symbol may be delisted
+[2026-09-07 15:14:25] [ERROR] $AKBET.IS: No data found, symbol may be delisted
+[2026-09-07 15:14:34] [ERROR] HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: BELEN.IS"}}}
+[2026-09-07 15:14:34] [ERROR] HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: BELEN.IS"}}}
+[2026-09-07 15:14:35] [ERROR] $BELEN.IS: No data found, symbol may be delisted
+[2026-09-07 15:14:35] [ERROR] $BELEN.IS: No data found, symbol may be delisted
+[2026-09-07 15:14:45] [ERROR] $AMSY.IS: No data found, symbol may be delisted
+[2026-09-07 15:14:45] [ERROR] $AMSY.IS: No data found, symbol may be delisted
+[2026-09-07 15:14:49] [ERROR] $ALTINS1.IS: No data found, symbol may be delisted
+[2026-09-07 15:14:49] [ERROR] $ALTINS1.IS: No data found, symbol may be delisted
+[2026-09-07 15:14:51] [ERROR] 
+4 Failed downloads:
+[2026-09-07 15:14:51] [ERROR] 
+4 Failed downloads:
+[2026-09-07 15:14:51] [ERROR] ['AKBET.IS', 'BELEN.IS', 'AMSY.IS', 'ALTINS1.IS']: No data found, symbol may be delisted
+[2026-09-07 15:14:51] [ERROR] ['AKBET.IS', 'BELEN.IS', 'AMSY.IS', 'ALTINS1.IS']: No data found, symbol may be delisted
+[2026-09-07 15:14:55] [ERROR] $BNATR.IS: No data found, symbol may be delisted
+[2026-09-07 15:14:55] [ERROR] $BNATR.IS: No data found, symbol may be delisted
+[2026-09-07 15:14:57] [ERROR] $DAFNE.IS: No data found, symbol may be delisted
+[2026-09-07 15:14:57] [ERROR] $DAFNE.IS: No data found, symbol may be delisted
+[2026-09-07 15:14:59] [ERROR] $BLKGN.IS: No data found, symbol may be delisted
+[2026-09-07 15:14:59] [ERROR] $BLKGN.IS: No data found, symbol may be delisted
+[2026-09-07 15:15:05] [ERROR] $DUPNT.IS: No data found, symbol may be delisted
+[2026-09-07 15:15:05] [ERROR] $DUPNT.IS: No data found, symbol may be delisted
+[2026-09-07 15:15:08] [ERROR] $CEYLN.IS: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:15:08] [ERROR] $CEYLN.IS: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:15:22] [ERROR] $DEFNE.IS: No data found, symbol may be delisted
+[2026-09-07 15:15:22] [ERROR] $DEFNE.IS: No data found, symbol may be delisted
+[2026-09-07 15:15:26] [ERROR] $COKLU.IS: No data found, symbol may be delisted
+[2026-09-07 15:15:26] [ERROR] $COKLU.IS: No data found, symbol may be delisted
+[2026-09-07 15:15:28] [ERROR] 
+7 Failed downloads:
+[2026-09-07 15:15:28] [ERROR] 
+7 Failed downloads:
+[2026-09-07 15:15:28] [ERROR] ['BNATR.IS', 'DAFNE.IS', 'BLKGN.IS', 'DUPNT.IS', 'DEFNE.IS', 'COKLU.IS']: No data found, symbol may be delisted
+[2026-09-07 15:15:28] [ERROR] ['BNATR.IS', 'DAFNE.IS', 'BLKGN.IS', 'DUPNT.IS', 'DEFNE.IS', 'COKLU.IS']: No data found, symbol may be delisted
+[2026-09-07 15:15:28] [ERROR] ['CEYLN.IS']: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:15:28] [ERROR] ['CEYLN.IS']: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:15:33] [ERROR] $HAFSA.IS: No data found, symbol may be delisted
+[2026-09-07 15:15:33] [ERROR] $HAFSA.IS: No data found, symbol may be delisted
+[2026-09-07 15:15:36] [ERROR] $ENRVT.IS: No data found, symbol may be delisted
+[2026-09-07 15:15:36] [ERROR] $ENRVT.IS: No data found, symbol may be delisted
+[2026-09-07 15:15:38] [ERROR] $GORBN.IS: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:15:38] [ERROR] $GORBN.IS: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:15:45] [ERROR] $FMPLAST.IS: No data found, symbol may be delisted
+[2026-09-07 15:15:45] [ERROR] $FMPLAST.IS: No data found, symbol may be delisted
+[2026-09-07 15:15:46] [ERROR] $GADIS.IS: No data found, symbol may be delisted
+[2026-09-07 15:15:46] [ERROR] $GADIS.IS: No data found, symbol may be delisted
+[2026-09-07 15:15:51] [ERROR] $ELTEK.IS: No data found, symbol may be delisted
+[2026-09-07 15:15:51] [ERROR] $ELTEK.IS: No data found, symbol may be delisted
+[2026-09-07 15:16:04] [ERROR] $FHEAL.IS: No data found, symbol may be delisted
+[2026-09-07 15:16:04] [ERROR] $FHEAL.IS: No data found, symbol may be delisted
+[2026-09-07 15:16:05] [ERROR] $HZNDR.IS: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:16:05] [ERROR] $HZNDR.IS: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:16:05] [ERROR] 
+8 Failed downloads:
+[2026-09-07 15:16:05] [ERROR] 
+8 Failed downloads:
+[2026-09-07 15:16:05] [ERROR] ['HAFSA.IS', 'ENRVT.IS', 'FMPLAST.IS', 'GADIS.IS', 'ELTEK.IS', 'FHEAL.IS']: No data found, symbol may be delisted
+[2026-09-07 15:16:05] [ERROR] ['HAFSA.IS', 'ENRVT.IS', 'FMPLAST.IS', 'GADIS.IS', 'ELTEK.IS', 'FHEAL.IS']: No data found, symbol may be delisted
+[2026-09-07 15:16:05] [ERROR] ['GORBN.IS', 'HZNDR.IS']: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:16:05] [ERROR] ['GORBN.IS', 'HZNDR.IS']: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:16:24] [ERROR] $KRVAK.IS: No data found, symbol may be delisted
+[2026-09-07 15:16:24] [ERROR] $KRVAK.IS: No data found, symbol may be delisted
+[2026-09-07 15:16:35] [ERROR] 
+1 Failed download:
+[2026-09-07 15:16:35] [ERROR] 
+1 Failed download:
+[2026-09-07 15:16:35] [ERROR] ['KRVAK.IS']: No data found, symbol may be delisted
+[2026-09-07 15:16:35] [ERROR] ['KRVAK.IS']: No data found, symbol may be delisted
+[2026-09-07 15:16:42] [ERROR] $PLTFM.IS: No data found, symbol may be delisted
+[2026-09-07 15:16:42] [ERROR] $PLTFM.IS: No data found, symbol may be delisted
+[2026-09-07 15:16:48] [ERROR] $OYLMP.IS: No data found, symbol may be delisted
+[2026-09-07 15:16:48] [ERROR] $OYLMP.IS: No data found, symbol may be delisted
+[2026-09-07 15:16:50] [ERROR] $NINSA.IS: No data found, symbol may be delisted
+[2026-09-07 15:16:50] [ERROR] $NINSA.IS: No data found, symbol may be delisted
+[2026-09-07 15:16:55] [ERROR] $PGOLD.IS: No data found, symbol may be delisted
+[2026-09-07 15:16:55] [ERROR] $PGOLD.IS: No data found, symbol may be delisted
+[2026-09-07 15:17:10] [ERROR] 
+4 Failed downloads:
+[2026-09-07 15:17:10] [ERROR] 
+4 Failed downloads:
+[2026-09-07 15:17:10] [ERROR] ['PLTFM.IS', 'OYLMP.IS', 'NINSA.IS', 'PGOLD.IS']: No data found, symbol may be delisted
+[2026-09-07 15:17:10] [ERROR] ['PLTFM.IS', 'OYLMP.IS', 'NINSA.IS', 'PGOLD.IS']: No data found, symbol may be delisted
+[2026-09-07 15:17:20] [ERROR] $TRNSK.IS: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:17:20] [ERROR] $TRNSK.IS: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:17:22] [ERROR] $SEYHO.IS: No data found, symbol may be delisted
+[2026-09-07 15:17:22] [ERROR] $SEYHO.IS: No data found, symbol may be delisted
+[2026-09-07 15:17:27] [ERROR] $SUNPL.IS: No data found, symbol may be delisted
+[2026-09-07 15:17:27] [ERROR] $SUNPL.IS: No data found, symbol may be delisted
+[2026-09-07 15:17:34] [ERROR] $TURNT.IS: No data found, symbol may be delisted
+[2026-09-07 15:17:34] [ERROR] $TURNT.IS: No data found, symbol may be delisted
+[2026-09-07 15:17:39] [ERROR] $TKURU.IS: No data found, symbol may be delisted
+[2026-09-07 15:17:39] [ERROR] $TKURU.IS: No data found, symbol may be delisted
+[2026-09-07 15:17:44] [ERROR] $TABAK.IS: No data found, symbol may be delisted
+[2026-09-07 15:17:44] [ERROR] $TABAK.IS: No data found, symbol may be delisted
+[2026-09-07 15:17:50] [ERROR] 
+6 Failed downloads:
+[2026-09-07 15:17:50] [ERROR] 
+6 Failed downloads:
+[2026-09-07 15:17:50] [ERROR] ['TRNSK.IS']: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:17:50] [ERROR] ['TRNSK.IS']: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:17:50] [ERROR] ['SEYHO.IS', 'SUNPL.IS', 'TURNT.IS', 'TKURU.IS', 'TABAK.IS']: No data found, symbol may be delisted
+[2026-09-07 15:17:50] [ERROR] ['SEYHO.IS', 'SUNPL.IS', 'TURNT.IS', 'TKURU.IS', 'TABAK.IS']: No data found, symbol may be delisted
+[2026-09-07 15:18:05] [ERROR] $ZTCNR.IS: No data found, symbol may be delisted
+[2026-09-07 15:18:05] [ERROR] $ZTCNR.IS: No data found, symbol may be delisted
+[2026-09-07 15:18:06] [ERROR] 
+1 Failed download:
+[2026-09-07 15:18:06] [ERROR] 
+1 Failed download:
+[2026-09-07 15:18:06] [ERROR] ['ZTCNR.IS']: No data found, symbol may be delisted
+[2026-09-07 15:18:06] [ERROR] ['ZTCNR.IS']: No data found, symbol may be delisted
+[2026-09-07 15:20:17] [ERROR] $BNATR.IS: No data found, symbol may be delisted
+[2026-09-07 15:20:17] [ERROR] $BNATR.IS: No data found, symbol may be delisted
+[2026-09-07 15:20:20] [ERROR] $BLKGN.IS: No data found, symbol may be delisted
+[2026-09-07 15:20:20] [ERROR] $BLKGN.IS: No data found, symbol may be delisted
+[2026-09-07 15:20:24] [ERROR] $AKBET.IS: No data found, symbol may be delisted
+[2026-09-07 15:20:24] [ERROR] $AKBET.IS: No data found, symbol may be delisted
+[2026-09-07 15:20:33] [ERROR] $BELEN.IS: No data found, symbol may be delisted
+[2026-09-07 15:20:33] [ERROR] $BELEN.IS: No data found, symbol may be delisted
+[2026-09-07 15:20:43] [ERROR] $AMSY.IS: No data found, symbol may be delisted
+[2026-09-07 15:20:43] [ERROR] $AMSY.IS: No data found, symbol may be delisted
+[2026-09-07 15:20:46] [ERROR] $ALTINS1.IS: No data found, symbol may be delisted
+[2026-09-07 15:20:46] [ERROR] $ALTINS1.IS: No data found, symbol may be delisted
+[2026-09-07 15:20:49] [ERROR] 
+6 Failed downloads:
+[2026-09-07 15:20:49] [ERROR] 
+6 Failed downloads:
+[2026-09-07 15:20:49] [ERROR] ['BNATR.IS', 'BLKGN.IS', 'AKBET.IS', 'BELEN.IS', 'AMSY.IS', 'ALTINS1.IS']: No data found, symbol may be delisted
+[2026-09-07 15:20:49] [ERROR] ['BNATR.IS', 'BLKGN.IS', 'AKBET.IS', 'BELEN.IS', 'AMSY.IS', 'ALTINS1.IS']: No data found, symbol may be delisted
+[2026-09-07 15:20:51] [ERROR] $DAFNE.IS: No data found, symbol may be delisted
+[2026-09-07 15:20:51] [ERROR] $DAFNE.IS: No data found, symbol may be delisted
+[2026-09-07 15:20:55] [ERROR] $ENRVT.IS: No data found, symbol may be delisted
+[2026-09-07 15:20:55] [ERROR] $ENRVT.IS: No data found, symbol may be delisted
+[2026-09-07 15:20:57] [ERROR] $DUPNT.IS: No data found, symbol may be delisted
+[2026-09-07 15:20:57] [ERROR] $DUPNT.IS: No data found, symbol may be delisted
+[2026-09-07 15:21:02] [ERROR] $CEYLN.IS: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:21:02] [ERROR] $CEYLN.IS: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:21:07] [ERROR] $FMPLAST.IS: No data found, symbol may be delisted
+[2026-09-07 15:21:07] [ERROR] $FMPLAST.IS: No data found, symbol may be delisted
+[2026-09-07 15:21:08] [ERROR] $GADIS.IS: No data found, symbol may be delisted
+[2026-09-07 15:21:08] [ERROR] $GADIS.IS: No data found, symbol may be delisted
+[2026-09-07 15:21:12] [ERROR] $ELTEK.IS: No data found, symbol may be delisted
+[2026-09-07 15:21:12] [ERROR] $ELTEK.IS: No data found, symbol may be delisted
+[2026-09-07 15:21:19] [ERROR] $DEFNE.IS: No data found, symbol may be delisted
+[2026-09-07 15:21:19] [ERROR] $DEFNE.IS: No data found, symbol may be delisted
+[2026-09-07 15:21:23] [ERROR] $FHEAL.IS: No data found, symbol may be delisted
+[2026-09-07 15:21:23] [ERROR] $FHEAL.IS: No data found, symbol may be delisted
+[2026-09-07 15:21:24] [ERROR] $COKLU.IS: No data found, symbol may be delisted
+[2026-09-07 15:21:24] [ERROR] $COKLU.IS: No data found, symbol may be delisted
+[2026-09-07 15:21:26] [ERROR] 
+10 Failed downloads:
+[2026-09-07 15:21:26] [ERROR] 
+10 Failed downloads:
+[2026-09-07 15:21:26] [ERROR] ['DAFNE.IS', 'ENRVT.IS', 'DUPNT.IS', 'FMPLAST.IS', 'GADIS.IS', 'ELTEK.IS', 'DEFNE.IS', 'FHEAL.IS', 'COKLU.IS']: No data found, symbol may be delisted
+[2026-09-07 15:21:26] [ERROR] ['DAFNE.IS', 'ENRVT.IS', 'DUPNT.IS', 'FMPLAST.IS', 'GADIS.IS', 'ELTEK.IS', 'DEFNE.IS', 'FHEAL.IS', 'COKLU.IS']: No data found, symbol may be delisted
+[2026-09-07 15:21:26] [ERROR] ['CEYLN.IS']: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:21:26] [ERROR] ['CEYLN.IS']: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:21:29] [ERROR] $HAFSA.IS: No data found, symbol may be delisted
+[2026-09-07 15:21:29] [ERROR] $HAFSA.IS: No data found, symbol may be delisted
+[2026-09-07 15:21:35] [ERROR] $GORBN.IS: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:21:35] [ERROR] $GORBN.IS: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:21:46] [ERROR] $KRVAK.IS: No data found, symbol may be delisted
+[2026-09-07 15:21:46] [ERROR] $KRVAK.IS: No data found, symbol may be delisted
+[2026-09-07 15:21:48] [ERROR] $ISKUR.IS: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:21:48] [ERROR] $ISKUR.IS: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:21:59] [ERROR] $HZNDR.IS: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:21:59] [ERROR] $HZNDR.IS: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:21:59] [ERROR] 
+5 Failed downloads:
+[2026-09-07 15:21:59] [ERROR] 
+5 Failed downloads:
+[2026-09-07 15:21:59] [ERROR] ['HAFSA.IS', 'KRVAK.IS']: No data found, symbol may be delisted
+[2026-09-07 15:21:59] [ERROR] ['HAFSA.IS', 'KRVAK.IS']: No data found, symbol may be delisted
+[2026-09-07 15:21:59] [ERROR] ['GORBN.IS', 'ISKUR.IS', 'HZNDR.IS']: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:21:59] [ERROR] ['GORBN.IS', 'ISKUR.IS', 'HZNDR.IS']: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:22:07] [ERROR] $PLTFM.IS: No data found, symbol may be delisted
+[2026-09-07 15:22:07] [ERROR] $PLTFM.IS: No data found, symbol may be delisted
+[2026-09-07 15:22:12] [ERROR] $SEYHO.IS: No data found, symbol may be delisted
+[2026-09-07 15:22:12] [ERROR] $SEYHO.IS: No data found, symbol may be delisted
+[2026-09-07 15:22:13] [ERROR] $OYLMP.IS: No data found, symbol may be delisted
+[2026-09-07 15:22:13] [ERROR] $OYLMP.IS: No data found, symbol may be delisted
+[2026-09-07 15:22:15] [ERROR] $NINSA.IS: No data found, symbol may be delisted
+[2026-09-07 15:22:15] [ERROR] $NINSA.IS: No data found, symbol may be delisted
+[2026-09-07 15:22:15] [ERROR] $SUNPL.IS: No data found, symbol may be delisted
+[2026-09-07 15:22:15] [ERROR] $SUNPL.IS: No data found, symbol may be delisted
+[2026-09-07 15:22:21] [ERROR] $PGOLD.IS: No data found, symbol may be delisted
+[2026-09-07 15:22:21] [ERROR] $PGOLD.IS: No data found, symbol may be delisted
+[2026-09-07 15:22:32] [ERROR] $TABAK.IS: No data found, symbol may be delisted
+[2026-09-07 15:22:32] [ERROR] $TABAK.IS: No data found, symbol may be delisted
+[2026-09-07 15:22:35] [ERROR] 
+7 Failed downloads:
+[2026-09-07 15:22:35] [ERROR] 
+7 Failed downloads:
+[2026-09-07 15:22:35] [ERROR] ['PLTFM.IS', 'SEYHO.IS', 'OYLMP.IS', 'NINSA.IS', 'SUNPL.IS', 'PGOLD.IS', 'TABAK.IS']: No data found, symbol may be delisted
+[2026-09-07 15:22:35] [ERROR] ['PLTFM.IS', 'SEYHO.IS', 'OYLMP.IS', 'NINSA.IS', 'SUNPL.IS', 'PGOLD.IS', 'TABAK.IS']: No data found, symbol may be delisted
+[2026-09-07 15:22:38] [ERROR] $TKURU.IS: No data found, symbol may be delisted
+[2026-09-07 15:22:38] [ERROR] $TKURU.IS: No data found, symbol may be delisted
+[2026-09-07 15:22:44] [ERROR] $TURNT.IS: No data found, symbol may be delisted
+[2026-09-07 15:22:44] [ERROR] $TURNT.IS: No data found, symbol may be delisted
+[2026-09-07 15:22:50] [ERROR] $ZTCNR.IS: No data found, symbol may be delisted
+[2026-09-07 15:22:50] [ERROR] $ZTCNR.IS: No data found, symbol may be delisted
+[2026-09-07 15:22:52] [ERROR] $TRNSK.IS: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:22:52] [ERROR] $TRNSK.IS: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:22:53] [ERROR] 
+4 Failed downloads:
+[2026-09-07 15:22:53] [ERROR] 
+4 Failed downloads:
+[2026-09-07 15:22:53] [ERROR] ['TKURU.IS', 'TURNT.IS', 'ZTCNR.IS']: No data found, symbol may be delisted
+[2026-09-07 15:22:53] [ERROR] ['TKURU.IS', 'TURNT.IS', 'ZTCNR.IS']: No data found, symbol may be delisted
+[2026-09-07 15:22:53] [ERROR] ['TRNSK.IS']: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:22:53] [ERROR] ['TRNSK.IS']: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:23:26] [INFO] 127.0.0.1 - - [07/Sep/2026 15:23:26] "GET /api/ping HTTP/1.1" 200 -
+[2026-09-07 15:23:26] [INFO] 127.0.0.1 - - [07/Sep/2026 15:23:26] "GET /api/ping HTTP/1.1" 200 -
+[2026-09-07 15:23:59] [INFO] Telegram mesajı başarıyla gönderildi: 🚨 <b>YENİ VIP SİNYALLERİ TESPİT EDİLDİ!</b> 🚨
+
+🏆 <...
+[2026-09-07 15:23:59] [INFO] Telegram mesajı başarıyla gönderildi: 🚨 <b>YENİ VIP SİNYALLERİ TESPİT EDİLDİ!</b> 🚨
+
+🏆 <...
+[2026-09-07 15:24:52] [INFO] Telegram bildirimi başarıyla iletildi (Chat ID: 6105241519)
+[2026-09-07 15:24:52] [INFO] Telegram bildirimi başarıyla iletildi (Chat ID: 6105241519)
+[2026-09-07 15:24:54] [INFO] Telegram bildirimi başarıyla iletildi (Chat ID: 6105241519)
+[2026-09-07 15:24:54] [INFO] Telegram bildirimi başarıyla iletildi (Chat ID: 6105241519)
+[2026-09-07 15:24:56] [INFO] Telegram bildirimi başarıyla iletildi (Chat ID: 6105241519)
+[2026-09-07 15:24:56] [INFO] Telegram bildirimi başarıyla iletildi (Chat ID: 6105241519)
+[2026-09-07 15:24:58] [INFO] Telegram bildirimi başarıyla iletildi (Chat ID: 6105241519)
+[2026-09-07 15:24:58] [INFO] Telegram bildirimi başarıyla iletildi (Chat ID: 6105241519)
+[2026-09-07 15:25:08] [ERROR] $BNATR.IS: No data found, symbol may be delisted
+[2026-09-07 15:25:08] [ERROR] $BNATR.IS: No data found, symbol may be delisted
+[2026-09-07 15:25:09] [ERROR] $DAFNE.IS: No data found, symbol may be delisted
+[2026-09-07 15:25:09] [ERROR] $DAFNE.IS: No data found, symbol may be delisted
+[2026-09-07 15:25:11] [ERROR] $BLKGN.IS: No data found, symbol may be delisted
+[2026-09-07 15:25:11] [ERROR] $BLKGN.IS: No data found, symbol may be delisted
+[2026-09-07 15:25:15] [ERROR] $AKBET.IS: No data found, symbol may be delisted
+[2026-09-07 15:25:15] [ERROR] $AKBET.IS: No data found, symbol may be delisted
+[2026-09-07 15:25:18] [ERROR] $DUPNT.IS: No data found, symbol may be delisted
+[2026-09-07 15:25:18] [ERROR] $DUPNT.IS: No data found, symbol may be delisted
+[2026-09-07 15:25:21] [ERROR] $CEYLN.IS: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:25:21] [ERROR] $CEYLN.IS: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:25:23] [ERROR] $BELEN.IS: No data found, symbol may be delisted
+[2026-09-07 15:25:23] [ERROR] $BELEN.IS: No data found, symbol may be delisted
+[2026-09-07 15:25:35] [ERROR] $AMSY.IS: No data found, symbol may be delisted
+[2026-09-07 15:25:35] [ERROR] $AMSY.IS: No data found, symbol may be delisted
+[2026-09-07 15:25:36] [ERROR] $DEFNE.IS: No data found, symbol may be delisted
+[2026-09-07 15:25:36] [ERROR] $DEFNE.IS: No data found, symbol may be delisted
+[2026-09-07 15:25:39] [ERROR] $ALTINS1.IS: No data found, symbol may be delisted
+[2026-09-07 15:25:39] [ERROR] $ALTINS1.IS: No data found, symbol may be delisted
+[2026-09-07 15:26:16] [INFO] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.14:5000
+[2026-09-07 15:26:16] [INFO] [33mPress CTRL+C to quit[0m
+[2026-09-07 15:26:48] [INFO] 127.0.0.1 - - [07/Sep/2026 15:26:48] "POST /login HTTP/1.1" 200 -
+[2026-09-07 15:26:48] [INFO] 127.0.0.1 - - [07/Sep/2026 15:26:48] "POST /login HTTP/1.1" 200 -
+[2026-09-07 15:26:48] [INFO] 127.0.0.1 - - [07/Sep/2026 15:26:48] "[31m[1mGET /api/varant_simulator?symbol=ASELS&issuer=ALL HTTP/1.1[0m" 401 -
+[2026-09-07 15:26:48] [INFO] 127.0.0.1 - - [07/Sep/2026 15:26:48] "[31m[1mGET /api/varant_simulator?symbol=ASELS&issuer=ALL HTTP/1.1[0m" 401 -
+[2026-09-07 15:27:32] [INFO] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.14:5000
+[2026-09-07 15:27:32] [INFO] [33mPress CTRL+C to quit[0m
+[2026-09-07 15:27:52] [INFO] 127.0.0.1 - - [07/Sep/2026 15:27:52] "[32mPOST /login HTTP/1.1[0m" 302 -
+[2026-09-07 15:27:52] [INFO] 127.0.0.1 - - [07/Sep/2026 15:27:52] "[32mPOST /login HTTP/1.1[0m" 302 -
+[2026-09-07 15:27:53] [INFO] 127.0.0.1 - - [07/Sep/2026 15:27:53] "GET /api/varant_simulator?symbol=ASELS&issuer=ALL HTTP/1.1" 200 -
+[2026-09-07 15:27:53] [INFO] 127.0.0.1 - - [07/Sep/2026 15:27:53] "GET /api/varant_simulator?symbol=ASELS&issuer=ALL HTTP/1.1" 200 -
+[2026-09-07 15:29:03] [ERROR] HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: AMSY.IS"}}}
+[2026-09-07 15:29:03] [ERROR] HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: AMSY.IS"}}}
+[2026-09-07 15:29:04] [ERROR] $AMSY.IS: No data found, symbol may be delisted
+[2026-09-07 15:29:04] [ERROR] $AMSY.IS: No data found, symbol may be delisted
+[2026-09-07 15:29:07] [ERROR] HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: AKBET.IS"}}}
+[2026-09-07 15:29:07] [ERROR] HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: AKBET.IS"}}}
+[2026-09-07 15:29:08] [ERROR] $AKBET.IS: No data found, symbol may be delisted
+[2026-09-07 15:29:08] [ERROR] $AKBET.IS: No data found, symbol may be delisted
+[2026-09-07 15:29:15] [ERROR] $BELEN.IS: No data found, symbol may be delisted
+[2026-09-07 15:29:15] [ERROR] $BELEN.IS: No data found, symbol may be delisted
+[2026-09-07 15:29:21] [ERROR] $ALTINS1.IS: No data found, symbol may be delisted
+[2026-09-07 15:29:21] [ERROR] $ALTINS1.IS: No data found, symbol may be delisted
+[2026-09-07 15:29:28] [ERROR] 
+4 Failed downloads:
+[2026-09-07 15:29:28] [ERROR] 
+4 Failed downloads:
+[2026-09-07 15:29:28] [ERROR] ['AMSY.IS', 'AKBET.IS', 'BELEN.IS', 'ALTINS1.IS']: No data found, symbol may be delisted
+[2026-09-07 15:29:28] [ERROR] ['AMSY.IS', 'AKBET.IS', 'BELEN.IS', 'ALTINS1.IS']: No data found, symbol may be delisted
+[2026-09-07 15:29:33] [ERROR] $DEFNE.IS: No data found, symbol may be delisted
+[2026-09-07 15:29:33] [ERROR] $DEFNE.IS: No data found, symbol may be delisted
+[2026-09-07 15:29:34] [ERROR] $CEYLN.IS: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:29:34] [ERROR] $CEYLN.IS: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:29:37] [ERROR] $BNATR.IS: No data found, symbol may be delisted
+[2026-09-07 15:29:37] [ERROR] $BNATR.IS: No data found, symbol may be delisted
+[2026-09-07 15:29:43] [ERROR] $DUPNT.IS: No data found, symbol may be delisted
+[2026-09-07 15:29:43] [ERROR] $DUPNT.IS: No data found, symbol may be delisted
+[2026-09-07 15:29:46] [ERROR] $COKLU.IS: No data found, symbol may be delisted
+[2026-09-07 15:29:46] [ERROR] $COKLU.IS: No data found, symbol may be delisted
+[2026-09-07 15:29:52] [ERROR] $DAFNE.IS: No data found, symbol may be delisted
+[2026-09-07 15:29:52] [ERROR] $DAFNE.IS: No data found, symbol may be delisted
+[2026-09-07 15:29:56] [ERROR] $BLKGN.IS: No data found, symbol may be delisted
+[2026-09-07 15:29:56] [ERROR] $BLKGN.IS: No data found, symbol may be delisted
+[2026-09-07 15:30:03] [ERROR] 
+7 Failed downloads:
+[2026-09-07 15:30:03] [ERROR] 
+7 Failed downloads:
+[2026-09-07 15:30:03] [ERROR] ['DEFNE.IS', 'BNATR.IS', 'DUPNT.IS', 'COKLU.IS', 'DAFNE.IS', 'BLKGN.IS']: No data found, symbol may be delisted
+[2026-09-07 15:30:03] [ERROR] ['DEFNE.IS', 'BNATR.IS', 'DUPNT.IS', 'COKLU.IS', 'DAFNE.IS', 'BLKGN.IS']: No data found, symbol may be delisted
+[2026-09-07 15:30:03] [ERROR] ['CEYLN.IS']: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:30:03] [ERROR] ['CEYLN.IS']: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:30:11] [ERROR] $FMPLAST.IS: No data found, symbol may be delisted
+[2026-09-07 15:30:11] [ERROR] $FMPLAST.IS: No data found, symbol may be delisted
+[2026-09-07 15:30:11] [ERROR] $GORBN.IS: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:30:11] [ERROR] $GORBN.IS: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:30:12] [ERROR] $HZNDR.IS: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:30:12] [ERROR] $HZNDR.IS: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:30:16] [ERROR] $GADIS.IS: No data found, symbol may be delisted
+[2026-09-07 15:30:16] [ERROR] $GADIS.IS: No data found, symbol may be delisted
+[2026-09-07 15:30:23] [ERROR] $ELTEK.IS: No data found, symbol may be delisted
+[2026-09-07 15:30:23] [ERROR] $ELTEK.IS: No data found, symbol may be delisted
+[2026-09-07 15:30:24] [ERROR] $ENRVT.IS: No data found, symbol may be delisted
+[2026-09-07 15:30:24] [ERROR] $ENRVT.IS: No data found, symbol may be delisted
+[2026-09-07 15:30:26] [ERROR] $HAFSA.IS: No data found, symbol may be delisted
+[2026-09-07 15:30:26] [ERROR] $HAFSA.IS: No data found, symbol may be delisted
+[2026-09-07 15:30:28] [ERROR] $FHEAL.IS: No data found, symbol may be delisted
+[2026-09-07 15:30:28] [ERROR] $FHEAL.IS: No data found, symbol may be delisted
+[2026-09-07 15:30:37] [ERROR] 
+8 Failed downloads:
+[2026-09-07 15:30:37] [ERROR] 
+8 Failed downloads:
+[2026-09-07 15:30:37] [ERROR] ['FMPLAST.IS', 'GADIS.IS', 'ELTEK.IS', 'ENRVT.IS', 'HAFSA.IS', 'FHEAL.IS']: No data found, symbol may be delisted
+[2026-09-07 15:30:37] [ERROR] ['FMPLAST.IS', 'GADIS.IS', 'ELTEK.IS', 'ENRVT.IS', 'HAFSA.IS', 'FHEAL.IS']: No data found, symbol may be delisted
+[2026-09-07 15:30:37] [ERROR] ['GORBN.IS', 'HZNDR.IS']: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:30:37] [ERROR] ['GORBN.IS', 'HZNDR.IS']: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:31:06] [ERROR] $KRVAK.IS: No data found, symbol may be delisted
+[2026-09-07 15:31:06] [ERROR] $KRVAK.IS: No data found, symbol may be delisted
+[2026-09-07 15:31:08] [ERROR] 
+1 Failed download:
+[2026-09-07 15:31:08] [ERROR] 
+1 Failed download:
+[2026-09-07 15:31:08] [ERROR] ['KRVAK.IS']: No data found, symbol may be delisted
+[2026-09-07 15:31:08] [ERROR] ['KRVAK.IS']: No data found, symbol may be delisted
+[2026-09-07 15:31:18] [ERROR] $OYLMP.IS: No data found, symbol may be delisted
+[2026-09-07 15:31:18] [ERROR] $OYLMP.IS: No data found, symbol may be delisted
+[2026-09-07 15:31:22] [ERROR] $PLTFM.IS: No data found, symbol may be delisted
+[2026-09-07 15:31:22] [ERROR] $PLTFM.IS: No data found, symbol may be delisted
+[2026-09-07 15:31:25] [ERROR] $PGOLD.IS: No data found, symbol may be delisted
+[2026-09-07 15:31:25] [ERROR] $PGOLD.IS: No data found, symbol may be delisted
+[2026-09-07 15:31:37] [ERROR] $NINSA.IS: No data found, symbol may be delisted
+[2026-09-07 15:31:37] [ERROR] $NINSA.IS: No data found, symbol may be delisted
+[2026-09-07 15:31:40] [ERROR] 
+4 Failed downloads:
+[2026-09-07 15:31:40] [ERROR] 
+4 Failed downloads:
+[2026-09-07 15:31:40] [ERROR] ['OYLMP.IS', 'PLTFM.IS', 'PGOLD.IS', 'NINSA.IS']: No data found, symbol may be delisted
+[2026-09-07 15:31:40] [ERROR] ['OYLMP.IS', 'PLTFM.IS', 'PGOLD.IS', 'NINSA.IS']: No data found, symbol may be delisted
+[2026-09-07 15:31:42] [ERROR] $SUNPL.IS: No data found, symbol may be delisted
+[2026-09-07 15:31:42] [ERROR] $SUNPL.IS: No data found, symbol may be delisted
+[2026-09-07 15:31:45] [ERROR] $TRNSK.IS: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:31:45] [ERROR] $TRNSK.IS: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:31:47] [ERROR] $TURNT.IS: No data found, symbol may be delisted
+[2026-09-07 15:31:47] [ERROR] $TURNT.IS: No data found, symbol may be delisted
+[2026-09-07 15:31:49] [ERROR] $SEYHO.IS: No data found, symbol may be delisted
+[2026-09-07 15:31:49] [ERROR] $SEYHO.IS: No data found, symbol may be delisted
+[2026-09-07 15:31:53] [ERROR] $TABAK.IS: No data found, symbol may be delisted
+[2026-09-07 15:31:53] [ERROR] $TABAK.IS: No data found, symbol may be delisted
+[2026-09-07 15:31:54] [ERROR] $TKURU.IS: No data found, symbol may be delisted
+[2026-09-07 15:31:54] [ERROR] $TKURU.IS: No data found, symbol may be delisted
+[2026-09-07 15:32:13] [ERROR] 
+6 Failed downloads:
+[2026-09-07 15:32:13] [ERROR] 
+6 Failed downloads:
+[2026-09-07 15:32:13] [ERROR] ['SUNPL.IS', 'TURNT.IS', 'SEYHO.IS', 'TABAK.IS', 'TKURU.IS']: No data found, symbol may be delisted
+[2026-09-07 15:32:13] [ERROR] ['SUNPL.IS', 'TURNT.IS', 'SEYHO.IS', 'TABAK.IS', 'TKURU.IS']: No data found, symbol may be delisted
+[2026-09-07 15:32:13] [ERROR] ['TRNSK.IS']: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:32:13] [ERROR] ['TRNSK.IS']: possibly delisted; no price data found  (period=1y)
+[2026-09-07 15:32:15] [ERROR] $ZTCNR.IS: No data found, symbol may be delisted
+[2026-09-07 15:32:15] [ERROR] $ZTCNR.IS: No data found, symbol may be delisted
+[2026-09-07 15:32:27] [ERROR] 
+1 Failed download:
+[2026-09-07 15:32:27] [ERROR] 
+1 Failed download:
+[2026-09-07 15:32:27] [ERROR] ['ZTCNR.IS']: No data found, symbol may be delisted
+[2026-09-07 15:32:27] [ERROR] ['ZTCNR.IS']: No data found, symbol may be delisted
+[2026-09-07 15:34:23] [ERROR] $BNATR.IS: No data found, symbol may be delisted
+[2026-09-07 15:34:23] [ERROR] $BNATR.IS: No data found, symbol may be delisted
+[2026-09-07 15:34:34] [ERROR] $AMSY.IS: No data found, symbol may be delisted
+[2026-09-07 15:34:34] [ERROR] $AMSY.IS: No data found, symbol may be delisted
+[2026-09-07 15:34:37] [ERROR] $AKBET.IS: No data found, symbol may be delisted
+[2026-09-07 15:34:37] [ERROR] $AKBET.IS: No data found, symbol may be delisted
+[2026-09-07 15:34:46] [ERROR] $BELEN.IS: No data found, symbol may be delisted
+[2026-09-07 15:34:46] [ERROR] $BELEN.IS: No data found, symbol may be delisted
+[2026-09-07 15:34:52] [ERROR] $ALTINS1.IS: No data found, symbol may be delisted
+[2026-09-07 15:34:52] [ERROR] $ALTINS1.IS: No data found, symbol may be delisted
+[2026-09-07 15:34:57] [ERROR] $BLKGN.IS: No data found, symbol may be delisted
+[2026-09-07 15:34:57] [ERROR] $BLKGN.IS: No data found, symbol may be delisted
+[2026-09-07 15:35:01] [ERROR] 
+6 Failed downloads:
+[2026-09-07 15:35:01] [ERROR] 
+6 Failed downloads:
+[2026-09-07 15:35:01] [ERROR] ['BNATR.IS', 'AMSY.IS', 'AKBET.IS', 'BELEN.IS', 'ALTINS1.IS', 'BLKGN.IS']: No data found, symbol may be delisted
+[2026-09-07 15:35:01] [ERROR] ['BNATR.IS', 'AMSY.IS', 'AKBET.IS', 'BELEN.IS', 'ALTINS1.IS', 'BLKGN.IS']: No data found, symbol may be delisted
+[2026-09-07 15:35:05] [ERROR] $DEFNE.IS: No data found, symbol may be delisted
+[2026-09-07 15:35:05] [ERROR] $DEFNE.IS: No data found, symbol may be delisted
+[2026-09-07 15:35:07] [ERROR] $CEYLN.IS: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:35:07] [ERROR] $CEYLN.IS: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:35:10] [ERROR] $FMPLAST.IS: No data found, symbol may be delisted
+[2026-09-07 15:35:10] [ERROR] $FMPLAST.IS: No data found, symbol may be delisted
+[2026-09-07 15:35:13] [ERROR] $GADIS.IS: No data found, symbol may be delisted
+[2026-09-07 15:35:13] [ERROR] $GADIS.IS: No data found, symbol may be delisted
+[2026-09-07 15:35:16] [ERROR] $DUPNT.IS: No data found, symbol may be delisted
+[2026-09-07 15:35:16] [ERROR] $DUPNT.IS: No data found, symbol may be delisted
+[2026-09-07 15:35:18] [ERROR] $COKLU.IS: No data found, symbol may be delisted
+[2026-09-07 15:35:18] [ERROR] $COKLU.IS: No data found, symbol may be delisted
+[2026-09-07 15:35:20] [ERROR] $ELTEK.IS: No data found, symbol may be delisted
+[2026-09-07 15:35:20] [ERROR] $ELTEK.IS: No data found, symbol may be delisted
+[2026-09-07 15:35:22] [ERROR] $DAFNE.IS: No data found, symbol may be delisted
+[2026-09-07 15:35:22] [ERROR] $DAFNE.IS: No data found, symbol may be delisted
+[2026-09-07 15:35:22] [ERROR] $ENRVT.IS: No data found, symbol may be delisted
+[2026-09-07 15:35:22] [ERROR] $ENRVT.IS: No data found, symbol may be delisted
+[2026-09-07 15:35:24] [ERROR] $FHEAL.IS: No data found, symbol may be delisted
+[2026-09-07 15:35:24] [ERROR] $FHEAL.IS: No data found, symbol may be delisted
+[2026-09-07 15:35:35] [ERROR] 
+10 Failed downloads:
+[2026-09-07 15:35:35] [ERROR] 
+10 Failed downloads:
+[2026-09-07 15:35:35] [ERROR] ['DEFNE.IS', 'FMPLAST.IS', 'GADIS.IS', 'DUPNT.IS', 'COKLU.IS', 'ELTEK.IS', 'DAFNE.IS', 'ENRVT.IS', 'FHEAL.IS']: No data found, symbol may be delisted
+[2026-09-07 15:35:35] [ERROR] ['DEFNE.IS', 'FMPLAST.IS', 'GADIS.IS', 'DUPNT.IS', 'COKLU.IS', 'ELTEK.IS', 'DAFNE.IS', 'ENRVT.IS', 'FHEAL.IS']: No data found, symbol may be delisted
+[2026-09-07 15:35:35] [ERROR] ['CEYLN.IS']: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:35:35] [ERROR] ['CEYLN.IS']: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:35:44] [ERROR] $GORBN.IS: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:35:44] [ERROR] $GORBN.IS: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:35:44] [ERROR] $HZNDR.IS: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:35:44] [ERROR] $HZNDR.IS: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:35:56] [ERROR] $HAFSA.IS: No data found, symbol may be delisted
+[2026-09-07 15:35:56] [ERROR] $HAFSA.IS: No data found, symbol may be delisted
+[2026-09-07 15:36:02] [ERROR] $ISKUR.IS: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:36:02] [ERROR] $ISKUR.IS: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:36:04] [ERROR] $KRVAK.IS: No data found, symbol may be delisted
+[2026-09-07 15:36:04] [ERROR] $KRVAK.IS: No data found, symbol may be delisted
+[2026-09-07 15:36:07] [ERROR] 
+5 Failed downloads:
+[2026-09-07 15:36:07] [ERROR] 
+5 Failed downloads:
+[2026-09-07 15:36:07] [ERROR] ['GORBN.IS', 'HZNDR.IS', 'ISKUR.IS']: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:36:07] [ERROR] ['GORBN.IS', 'HZNDR.IS', 'ISKUR.IS']: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:36:07] [ERROR] ['HAFSA.IS', 'KRVAK.IS']: No data found, symbol may be delisted
+[2026-09-07 15:36:07] [ERROR] ['HAFSA.IS', 'KRVAK.IS']: No data found, symbol may be delisted
+[2026-09-07 15:36:09] [ERROR] $SUNPL.IS: No data found, symbol may be delisted
+[2026-09-07 15:36:09] [ERROR] $SUNPL.IS: No data found, symbol may be delisted
+[2026-09-07 15:36:16] [ERROR] $SEYHO.IS: No data found, symbol may be delisted
+[2026-09-07 15:36:16] [ERROR] $SEYHO.IS: No data found, symbol may be delisted
+[2026-09-07 15:36:17] [ERROR] $OYLMP.IS: No data found, symbol may be delisted
+[2026-09-07 15:36:17] [ERROR] $OYLMP.IS: No data found, symbol may be delisted
+[2026-09-07 15:36:19] [ERROR] $TABAK.IS: No data found, symbol may be delisted
+[2026-09-07 15:36:19] [ERROR] $TABAK.IS: No data found, symbol may be delisted
+[2026-09-07 15:36:22] [ERROR] $PLTFM.IS: No data found, symbol may be delisted
+[2026-09-07 15:36:22] [ERROR] $PLTFM.IS: No data found, symbol may be delisted
+[2026-09-07 15:36:25] [ERROR] $PGOLD.IS: No data found, symbol may be delisted
+[2026-09-07 15:36:25] [ERROR] $PGOLD.IS: No data found, symbol may be delisted
+[2026-09-07 15:36:38] [ERROR] $NINSA.IS: No data found, symbol may be delisted
+[2026-09-07 15:36:38] [ERROR] $NINSA.IS: No data found, symbol may be delisted
+[2026-09-07 15:36:41] [ERROR] 
+7 Failed downloads:
+[2026-09-07 15:36:41] [ERROR] 
+7 Failed downloads:
+[2026-09-07 15:36:41] [ERROR] ['SUNPL.IS', 'SEYHO.IS', 'OYLMP.IS', 'TABAK.IS', 'PLTFM.IS', 'PGOLD.IS', 'NINSA.IS']: No data found, symbol may be delisted
+[2026-09-07 15:36:41] [ERROR] ['SUNPL.IS', 'SEYHO.IS', 'OYLMP.IS', 'TABAK.IS', 'PLTFM.IS', 'PGOLD.IS', 'NINSA.IS']: No data found, symbol may be delisted
+[2026-09-07 15:36:43] [ERROR] $ZTCNR.IS: No data found, symbol may be delisted
+[2026-09-07 15:36:43] [ERROR] $ZTCNR.IS: No data found, symbol may be delisted
+[2026-09-07 15:36:45] [ERROR] $TKURU.IS: No data found, symbol may be delisted
+[2026-09-07 15:36:45] [ERROR] $TKURU.IS: No data found, symbol may be delisted
+[2026-09-07 15:36:48] [ERROR] $TRNSK.IS: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:36:48] [ERROR] $TRNSK.IS: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:36:49] [ERROR] $TURNT.IS: No data found, symbol may be delisted
+[2026-09-07 15:36:49] [ERROR] $TURNT.IS: No data found, symbol may be delisted
+[2026-09-07 15:36:58] [ERROR] 
+4 Failed downloads:
+[2026-09-07 15:36:58] [ERROR] 
+4 Failed downloads:
+[2026-09-07 15:36:58] [ERROR] ['ZTCNR.IS', 'TKURU.IS', 'TURNT.IS']: No data found, symbol may be delisted
+[2026-09-07 15:36:58] [ERROR] ['ZTCNR.IS', 'TKURU.IS', 'TURNT.IS']: No data found, symbol may be delisted
+[2026-09-07 15:36:58] [ERROR] ['TRNSK.IS']: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:36:58] [ERROR] ['TRNSK.IS']: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:38:02] [INFO] Telegram mesajı başarıyla gönderildi: 🚨 <b>YENİ VIP SİNYALLERİ TESPİT EDİLDİ!</b> 🚨
+
+🏆 <...
+[2026-09-07 15:38:02] [INFO] Telegram mesajı başarıyla gönderildi: 🚨 <b>YENİ VIP SİNYALLERİ TESPİT EDİLDİ!</b> 🚨
+
+🏆 <...
+[2026-09-07 15:39:11] [INFO] Telegram bildirimi başarıyla iletildi (Chat ID: 6105241519)
+[2026-09-07 15:39:11] [INFO] Telegram bildirimi başarıyla iletildi (Chat ID: 6105241519)
+[2026-09-07 15:39:14] [INFO] Telegram bildirimi başarıyla iletildi (Chat ID: 6105241519)
+[2026-09-07 15:39:14] [INFO] Telegram bildirimi başarıyla iletildi (Chat ID: 6105241519)
+[2026-09-07 15:39:16] [INFO] Telegram bildirimi başarıyla iletildi (Chat ID: 6105241519)
+[2026-09-07 15:39:16] [INFO] Telegram bildirimi başarıyla iletildi (Chat ID: 6105241519)
+[2026-09-07 15:39:18] [INFO] Telegram bildirimi başarıyla iletildi (Chat ID: 6105241519)
+[2026-09-07 15:39:18] [INFO] Telegram bildirimi başarıyla iletildi (Chat ID: 6105241519)
+[2026-09-07 15:39:32] [ERROR] $DEFNE.IS: No data found, symbol may be delisted
+[2026-09-07 15:39:32] [ERROR] $DEFNE.IS: No data found, symbol may be delisted
+[2026-09-07 15:39:32] [ERROR] $CEYLN.IS: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:39:32] [ERROR] $CEYLN.IS: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:39:37] [ERROR] $BNATR.IS: No data found, symbol may be delisted
+[2026-09-07 15:39:37] [ERROR] $BNATR.IS: No data found, symbol may be delisted
+[2026-09-07 15:39:39] [ERROR] $AMSY.IS: No data found, symbol may be delisted
+[2026-09-07 15:39:39] [ERROR] $AMSY.IS: No data found, symbol may be delisted
+[2026-09-07 15:39:41] [ERROR] $AKBET.IS: No data found, symbol may be delisted
+[2026-09-07 15:39:41] [ERROR] $AKBET.IS: No data found, symbol may be delisted
+[2026-09-07 15:39:42] [ERROR] $DUPNT.IS: No data found, symbol may be delisted
+[2026-09-07 15:39:42] [ERROR] $DUPNT.IS: No data found, symbol may be delisted
+[2026-09-07 15:39:46] [ERROR] $COKLU.IS: No data found, symbol may be delisted
+[2026-09-07 15:39:46] [ERROR] $COKLU.IS: No data found, symbol may be delisted
+[2026-09-07 15:39:51] [ERROR] $BELEN.IS: No data found, symbol may be delisted
+[2026-09-07 15:39:51] [ERROR] $BELEN.IS: No data found, symbol may be delisted
+[2026-09-07 15:39:53] [ERROR] $DAFNE.IS: No data found, symbol may be delisted
+[2026-09-07 15:39:53] [ERROR] $DAFNE.IS: No data found, symbol may be delisted
+[2026-09-07 15:39:56] [ERROR] $ALTINS1.IS: No data found, symbol may be delisted
+[2026-09-07 15:39:56] [ERROR] $ALTINS1.IS: No data found, symbol may be delisted
+[2026-09-07 15:39:59] [ERROR] $BLKGN.IS: No data found, symbol may be delisted
+[2026-09-07 15:39:59] [ERROR] $BLKGN.IS: No data found, symbol may be delisted
+[2026-09-07 15:40:05] [ERROR] 
+11 Failed downloads:
+[2026-09-07 15:40:05] [ERROR] 
+11 Failed downloads:
+[2026-09-07 15:40:05] [ERROR] ['DEFNE.IS', 'BNATR.IS', 'AMSY.IS', 'AKBET.IS', 'DUPNT.IS', 'COKLU.IS', 'BELEN.IS', 'DAFNE.IS', 'ALTINS1.IS', 'BLKGN.IS']: No data found, symbol may be delisted
+[2026-09-07 15:40:05] [ERROR] ['DEFNE.IS', 'BNATR.IS', 'AMSY.IS', 'AKBET.IS', 'DUPNT.IS', 'COKLU.IS', 'BELEN.IS', 'DAFNE.IS', 'ALTINS1.IS', 'BLKGN.IS']: No data found, symbol may be delisted
+[2026-09-07 15:40:05] [ERROR] ['CEYLN.IS']: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:40:05] [ERROR] ['CEYLN.IS']: possibly delisted; no price data found  (period=1mo)
+[2026-09-07 15:55:00] [INFO] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.14:5000
+[2026-09-07 15:55:00] [INFO] [33mPress CTRL+C to quit[0m
+[2026-09-07 15:55:21] [INFO] 127.0.0.1 - - [07/Sep/2026 15:55:21] "[32mPOST /login HTTP/1.1[0m" 302 -
+[2026-09-07 15:55:22] [INFO] 127.0.0.1 - - [07/Sep/2026 15:55:22] "GET /api/varant_simulator?symbol=THYAO&issuer=ALL HTTP/1.1" 200 -
+[2026-09-07 15:55:22] [INFO] 127.0.0.1 - - [07/Sep/2026 15:55:22] "GET /api/varant_simulator?symbol=THYAO&issuer=ALL HTTP/1.1" 200 -
+[2026-09-07 15:55:23] [INFO] 127.0.0.1 - - [07/Sep/2026 15:55:23] "GET /api/tavan_history HTTP/1.1" 200 -
+[2026-09-07 15:55:23] [INFO] 127.0.0.1 - - [07/Sep/2026 15:55:23] "GET /api/tavan_history HTTP/1.1" 200 -
+[2026-09-07 15:55:23] [INFO] 127.0.0.1 - - [07/Sep/2026 15:55:23] "GET /api/logs HTTP/1.1" 200 -
+[2026-09-07 15:55:23] [INFO] 127.0.0.1 - - [07/Sep/2026 15:55:23] "GET /api/logs HTTP/1.1" 200 -
+[2026-09-07 15:57:06] [INFO] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.14:5000
+[2026-09-07 15:57:06] [INFO] [33mPress CTRL+C to quit[0m
+[2026-09-07 15:57:17] [INFO] 127.0.0.1 - - [07/Sep/2026 15:57:17] "[32mPOST /login HTTP/1.1[0m" 302 -
+[2026-09-07 15:57:17] [INFO] 127.0.0.1 - - [07/Sep/2026 15:57:17] "GET /api/varant_simulator?symbol=THYAO&price=294.5&target=323.63&issuer=Is HTTP/1.1" 200 -
+[2026-09-07 15:58:38] [INFO] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.14:5000
+[2026-09-07 15:58:38] [INFO] [33mPress CTRL+C to quit[0m
+[2026-09-07 15:59:06] [INFO] 127.0.0.1 - - [07/Sep/2026 15:59:06] "[32mPOST /login HTTP/1.1[0m" 302 -
+[2026-09-07 15:59:06] [INFO] 127.0.0.1 - - [07/Sep/2026 15:59:06] "[32mPOST /login HTTP/1.1[0m" 302 -
+[2026-09-07 15:59:06] [INFO] 127.0.0.1 - - [07/Sep/2026 15:59:06] "GET /api/varant_simulator?symbol=THYAO&price=294.5&target=323.63&issuer=Is HTTP/1.1" 200 -
+[2026-09-07 15:59:06] [INFO] 127.0.0.1 - - [07/Sep/2026 15:59:06] "GET /api/varant_simulator?symbol=THYAO&price=294.5&target=323.63&issuer=Is HTTP/1.1" 200 -
+[2026-09-07 16:25:59] [ERROR] HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: TESTSIGNAL.IS"}}}
+[2026-09-07 16:25:59] [ERROR] $TESTSIGNAL.IS: possibly delisted; no timezone found
+[2026-09-07 16:25:59] [ERROR] 
+1 Failed download:
+[2026-09-07 16:25:59] [ERROR] ['TESTSIGNAL.IS']: possibly delisted; no timezone found
+[2026-09-07 16:58:20] [INFO] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8080
+ * Running on http://192.168.0.14:8080
+[2026-09-07 16:58:20] [INFO] [33mPress CTRL+C to quit[0m
+[2026-09-07 16:58:20] [INFO] [33mPress CTRL+C to quit[0m
+[2026-09-07 16:58:21] [INFO] 127.0.0.1 - - [07/Sep/2026 16:58:21] "GET /api/ping HTTP/1.1" 200 -
+[2026-09-07 16:58:21] [INFO] 127.0.0.1 - - [07/Sep/2026 16:58:21] "GET /login HTTP/1.1" 200 -
+[2026-09-07 16:58:21] [INFO] 127.0.0.1 - - [07/Sep/2026 16:58:21] "[32mGET / HTTP/1.1[0m" 302 -
+[2026-09-07 16:58:21] [INFO] 127.0.0.1 - - [07/Sep/2026 16:58:21] "[31m[1mGET /api/dashboard_init HTTP/1.1[0m" 401 -
+[2026-09-07 16:58:22] [INFO] 127.0.0.1 - - [07/Sep/2026 16:58:22] "GET /api/auth_config HTTP/1.1" 200 -
+[2026-09-07 16:58:24] [INFO] 127.0.0.1 - - [07/Sep/2026 16:58:24] "GET /api/auth_config HTTP/1.1" 200 -
+[2026-09-07 16:58:25] [INFO] 127.0.0.1 - - [07/Sep/2026 16:58:25] "GET /login HTTP/1.1" 200 -
+[2026-09-07 16:58:27] [INFO] 127.0.0.1 - - [07/Sep/2026 16:58:27] "[31m[1mPOST /api/auth/session HTTP/1.1[0m" 401 -
+[2026-09-07 16:58:28] [INFO] 127.0.0.1 - - [07/Sep/2026 16:58:28] "GET /vendor/supabase.umd.js HTTP/1.1" 200 -
+[2026-09-07 16:58:28] [INFO] 127.0.0.1 - - [07/Sep/2026 16:58:28] "GET /vendor/verdent-auth/index.js HTTP/1.1" 200 -
+[2026-09-07 16:58:28] [INFO] 127.0.0.1 - - [07/Sep/2026 16:58:28] "GET /app-auth.js HTTP/1.1" 200 -
+[2026-09-07 16:58:28] [INFO] 127.0.0.1 - - [07/Sep/2026 16:58:28] "GET /vendor/verdent-auth/i18n.js HTTP/1.1" 200 -
+[2026-09-07 16:58:40] [INFO] 127.0.0.1 - - [07/Sep/2026 16:58:40] "GET /api/ping HTTP/1.1" 200 -
+[2026-09-07 16:58:40] [INFO] 127.0.0.1 - - [07/Sep/2026 16:58:40] "GET /login HTTP/1.1" 200 -
+[2026-09-07 16:58:40] [INFO] 127.0.0.1 - - [07/Sep/2026 16:58:40] "[32mGET / HTTP/1.1[0m" 302 -
+[2026-09-07 16:58:40] [INFO] 127.0.0.1 - - [07/Sep/2026 16:58:40] "[32mGET / HTTP/1.1[0m" 302 -
+[2026-09-07 16:58:41] [INFO] 127.0.0.1 - - [07/Sep/2026 16:58:41] "[31m[1mGET /api/dashboard_init HTTP/1.1[0m" 401 -
+[2026-09-07 16:58:41] [INFO] 127.0.0.1 - - [07/Sep/2026 16:58:41] "[31m[1mGET /api/dashboard_init HTTP/1.1[0m" 401 -
+[2026-09-07 16:59:00] [INFO] 127.0.0.1 - - [07/Sep/2026 16:59:00] "GET /login HTTP/1.1" 200 -
+[2026-09-07 16:59:00] [INFO] 127.0.0.1 - - [07/Sep/2026 16:59:00] "GET /login HTTP/1.1" 200 -
+[2026-09-07 16:59:01] [INFO] 127.0.0.1 - - [07/Sep/2026 16:59:01] "[32mGET / HTTP/1.1[0m" 302 -
+[2026-09-07 16:59:01] [INFO] 127.0.0.1 - - [07/Sep/2026 16:59:01] "[32mGET / HTTP/1.1[0m" 302 -
+[2026-09-07 16:59:01] [INFO] 127.0.0.1 - - [07/Sep/2026 16:59:01] "[32mGET / HTTP/1.1[0m" 302 -
+[2026-09-07 16:59:01] [INFO] 127.0.0.1 - - [07/Sep/2026 16:59:01] "[32mGET / HTTP/1.1[0m" 302 -
+[2026-09-07 16:59:04] [INFO] 127.0.0.1 - - [07/Sep/2026 16:59:04] "GET /app-auth.js HTTP/1.1" 200 -
+[2026-09-07 16:59:04] [INFO] 127.0.0.1 - - [07/Sep/2026 16:59:04] "GET /app-auth.js HTTP/1.1" 200 -
+[2026-09-07 16:59:04] [INFO] 127.0.0.1 - - [07/Sep/2026 16:59:04] "GET /vendor/supabase.umd.js HTTP/1.1" 200 -
+[2026-09-07 16:59:04] [INFO] 127.0.0.1 - - [07/Sep/2026 16:59:04] "GET /vendor/supabase.umd.js HTTP/1.1" 200 -
+[2026-09-07 16:59:05] [INFO] 127.0.0.1 - - [07/Sep/2026 16:59:05] "GET /vendor/verdent-auth/index.js HTTP/1.1" 200 -
+[2026-09-07 16:59:05] [INFO] 127.0.0.1 - - [07/Sep/2026 16:59:05] "GET /vendor/verdent-auth/index.js HTTP/1.1" 200 -
+[2026-09-07 16:59:21] [INFO] 127.0.0.1 - - [07/Sep/2026 16:59:21] "[31m[1mPOST /api/auth/session HTTP/1.1[0m" 401 -
+[2026-09-07 16:59:21] [INFO] 127.0.0.1 - - [07/Sep/2026 16:59:21] "[31m[1mPOST /api/auth/session HTTP/1.1[0m" 401 -
+[2026-09-07 17:00:06] [ERROR] HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: AMSY.IS"}}}
+[2026-09-07 17:00:06] [ERROR] HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: AMSY.IS"}}}
+[2026-09-07 17:00:08] [ERROR] $AMSY.IS: No data found, symbol may be delisted
+[2026-09-07 17:00:08] [ERROR] $AMSY.IS: No data found, symbol may be delisted
+[2026-09-07 17:00:32] [ERROR] HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: AKBET.IS"}}}
+[2026-09-07 17:00:32] [ERROR] HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: AKBET.IS"}}}
+[2026-09-07 17:00:33] [ERROR] $AKBET.IS: No data found, symbol may be delisted
+[2026-09-07 17:00:33] [ERROR] $AKBET.IS: No data found, symbol may be delisted
+[2026-09-07 17:00:34] [ERROR] $ALTINS1.IS: No data found, symbol may be delisted
+[2026-09-07 17:00:34] [ERROR] $ALTINS1.IS: No data found, symbol may be delisted
+[2026-09-07 17:00:39] [ERROR] $BELEN.IS: No data found, symbol may be delisted
+[2026-09-07 17:00:39] [ERROR] $BELEN.IS: No data found, symbol may be delisted
+[2026-09-07 17:00:44] [ERROR] 
+4 Failed downloads:
+[2026-09-07 17:00:44] [ERROR] 
+4 Failed downloads:
+[2026-09-07 17:00:44] [ERROR] ['AMSY.IS', 'AKBET.IS', 'ALTINS1.IS', 'BELEN.IS']: No data found, symbol may be delisted
+[2026-09-07 17:00:44] [ERROR] ['AMSY.IS', 'AKBET.IS', 'ALTINS1.IS', 'BELEN.IS']: No data found, symbol may be delisted
+[2026-09-07 17:00:50] [ERROR] $BLKGN.IS: No data found, symbol may be delisted
+[2026-09-07 17:00:50] [ERROR] $BLKGN.IS: No data found, symbol may be delisted
+[2026-09-07 17:00:53] [ERROR] $DEFNE.IS: No data found, symbol may be delisted
+[2026-09-07 17:00:53] [ERROR] $DEFNE.IS: No data found, symbol may be delisted
+[2026-09-07 17:00:59] [ERROR] $DUPNT.IS: No data found, symbol may be delisted
+[2026-09-07 17:00:59] [ERROR] $DUPNT.IS: No data found, symbol may be delisted
+[2026-09-07 17:01:04] [ERROR] $DAFNE.IS: No data found, symbol may be delisted
+[2026-09-07 17:01:04] [ERROR] $DAFNE.IS: No data found, symbol may be delisted
+[2026-09-07 17:01:08] [ERROR] $COKLU.IS: No data found, symbol may be delisted
+[2026-09-07 17:01:08] [ERROR] $COKLU.IS: No data found, symbol may be delisted
+[2026-09-07 17:01:14] [ERROR] $BNATR.IS: No data found, symbol may be delisted
+[2026-09-07 17:01:14] [ERROR] $BNATR.IS: No data found, symbol may be delisted
+[2026-09-07 17:01:17] [ERROR] $CEYLN.IS: possibly delisted; no price data found  (period=1y)
+[2026-09-07 17:01:17] [ERROR] $CEYLN.IS: possibly delisted; no price data found  (period=1y)
+[2026-09-07 17:01:20] [ERROR] 
+7 Failed downloads:
+[2026-09-07 17:01:20] [ERROR] 
+7 Failed downloads:
+[2026-09-07 17:01:20] [ERROR] ['BLKGN.IS', 'DEFNE.IS', 'DUPNT.IS', 'DAFNE.IS', 'COKLU.IS', 'BNATR.IS']: No data found, symbol may be delisted
+[2026-09-07 17:01:20] [ERROR] ['BLKGN.IS', 'DEFNE.IS', 'DUPNT.IS', 'DAFNE.IS', 'COKLU.IS', 'BNATR.IS']: No data found, symbol may be delisted
+[2026-09-07 17:01:20] [ERROR] ['CEYLN.IS']: possibly delisted; no price data found  (period=1y)
+[2026-09-07 17:01:20] [ERROR] ['CEYLN.IS']: possibly delisted; no price data found  (period=1y)
+[2026-09-07 17:01:25] [ERROR] $ELTEK.IS: No data found, symbol may be delisted
+[2026-09-07 17:01:25] [ERROR] $ELTEK.IS: No data found, symbol may be delisted
+[2026-09-07 17:01:27] [ERROR] $GORBN.IS: possibly delisted; no price data found  (period=1y)
+[2026-09-07 17:01:27] [ERROR] $GORBN.IS: possibly delisted; no price data found  (period=1y)
+[2026-09-07 17:01:33] [ERROR] $HAFSA.IS: No data found, symbol may be delisted
+[2026-09-07 17:01:33] [ERROR] $HAFSA.IS: No data found, symbol may be delisted
+[2026-09-07 17:01:48] [ERROR] $GADIS.IS: No data found, symbol may be delisted
+[2026-09-07 17:01:48] [ERROR] $GADIS.IS: No data found, symbol may be delisted
+[2026-09-07 17:01:52] [ERROR] $FMPLAST.IS: No data found, symbol may be delisted
+[2026-09-07 17:01:52] [ERROR] $FMPLAST.IS: No data found, symbol may be delisted
+[2026-09-07 17:01:52] [ERROR] $HZNDR.IS: possibly delisted; no price data found  (period=1y)
+[2026-09-07 17:01:52] [ERROR] $HZNDR.IS: possibly delisted; no price data found  (period=1y)
+[2026-09-07 17:01:56] [ERROR] $ENRVT.IS: No data found, symbol may be delisted
+[2026-09-07 17:01:56] [ERROR] $ENRVT.IS: No data found, symbol may be delisted
+[2026-09-07 17:01:57] [ERROR] $FHEAL.IS: No data found, symbol may be delisted
+[2026-09-07 17:01:57] [ERROR] $FHEAL.IS: No data found, symbol may be delisted
+[2026-09-07 17:02:01] [ERROR] 
+8 Failed downloads:
+[2026-09-07 17:02:01] [ERROR] 
+8 Failed downloads:
+[2026-09-07 17:02:01] [ERROR] ['ELTEK.IS', 'HAFSA.IS', 'GADIS.IS', 'FMPLAST.IS', 'ENRVT.IS', 'FHEAL.IS']: No data found, symbol may be delisted
+[2026-09-07 17:02:01] [ERROR] ['ELTEK.IS', 'HAFSA.IS', 'GADIS.IS', 'FMPLAST.IS', 'ENRVT.IS', 'FHEAL.IS']: No data found, symbol may be delisted
+[2026-09-07 17:02:01] [ERROR] ['GORBN.IS', 'HZNDR.IS']: possibly delisted; no price data found  (period=1y)
+[2026-09-07 17:02:01] [ERROR] ['GORBN.IS', 'HZNDR.IS']: possibly delisted; no price data found  (period=1y)
+[2026-09-07 17:02:21] [ERROR] $IHEVA.IS: possibly delisted; no price data found  (period=1y)
+[2026-09-07 17:02:21] [ERROR] $IHEVA.IS: possibly delisted; no price data found  (period=1y)
+[2026-09-07 17:02:35] [ERROR] $KRVAK.IS: No data found, symbol may be delisted
+[2026-09-07 17:02:35] [ERROR] $KRVAK.IS: No data found, symbol may be delisted
+[2026-09-07 17:02:43] [ERROR] 
+2 Failed downloads:
+[2026-09-07 17:02:43] [ERROR] 
+2 Failed downloads:
+[2026-09-07 17:02:43] [ERROR] ['IHEVA.IS']: possibly delisted; no price data found  (period=1y)
+[2026-09-07 17:02:43] [ERROR] ['IHEVA.IS']: possibly delisted; no price data found  (period=1y)
+[2026-09-07 17:02:43] [ERROR] ['KRVAK.IS']: No data found, symbol may be delisted
+[2026-09-07 17:02:43] [ERROR] ['KRVAK.IS']: No data found, symbol may be delisted
+[2026-09-07 17:02:46] [ERROR] $OYLMP.IS: No data found, symbol may be delisted
+[2026-09-07 17:02:46] [ERROR] $OYLMP.IS: No data found, symbol may be delisted
+[2026-09-07 17:02:48] [ERROR] $NINSA.IS: No data found, symbol may be delisted
+[2026-09-07 17:02:48] [ERROR] $NINSA.IS: No data found, symbol may be delisted
+[2026-09-07 17:03:08] [ERROR] $PGOLD.IS: No data found, symbol may be delisted
+[2026-09-07 17:03:08] [ERROR] $PGOLD.IS: No data found, symbol may be delisted
+[2026-09-07 17:03:14] [ERROR] $PLTFM.IS: No data found, symbol may be delisted
+[2026-09-07 17:03:14] [ERROR] $PLTFM.IS: No data found, symbol may be delisted
+[2026-09-07 17:03:17] [ERROR] 
+4 Failed downloads:
+[2026-09-07 17:03:17] [ERROR] 
+4 Failed downloads:
+[2026-09-07 17:03:17] [ERROR] ['OYLMP.IS', 'NINSA.IS', 'PGOLD.IS', 'PLTFM.IS']: No data found, symbol may be delisted
+[2026-09-07 17:03:17] [ERROR] ['OYLMP.IS', 'NINSA.IS', 'PGOLD.IS', 'PLTFM.IS']: No data found, symbol may be delisted

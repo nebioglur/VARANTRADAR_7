@@ -13,13 +13,10 @@ class MarketRegimeEngine:
         
     def determine_regime(self) -> Dict[str, Any]:
         try:
-            # Gunluk veri uzerinden genel trend analizi (1mo daha hizli oldugu icin yeterli)
-            data = yf.download(self.index_symbol, period="1mo", interval="1d", progress=False)
-            if data.empty:
-                return self._default_regime("DATA_INSUFFICIENT")
-                
-            df = data.copy()
-            
+            df = self._fetch_index_df()
+            if df is None or df.empty:
+                return self._last_known_regime("DATA_INSUFFICIENT")
+
             # yfinance MultiIndex check
             if hasattr(df.columns, 'nlevels') and df.columns.nlevels > 1:
                 df.columns = df.columns.droplevel(1)
@@ -95,7 +92,45 @@ class MarketRegimeEngine:
             
         except Exception as e:
             print(f"[V8 Regime Engine] Error: {e}")
-            return self._default_regime("ERROR")
+            return self._last_known_regime("ERROR")
+
+    def _fetch_index_df(self):
+        """XU100 gunluk verisini ceker: once bulk download, basarisizsa Ticker fallback."""
+        try:
+            data = yf.download(self.index_symbol, period="3mo", interval="1d", progress=False)
+            if data is not None and not data.empty:
+                return data.copy()
+        except Exception:
+            pass
+        try:
+            hist = yf.Ticker(self.index_symbol).history(period="3mo", interval="1d")
+            if hist is not None and not hist.empty:
+                return hist.copy()
+        except Exception:
+            pass
+        return None
+
+    def _last_known_regime(self, status="NEUTRAL"):
+        """Yahoo verisi yoksa DB'deki son bilinen rejimi dondurur; yoksa neutral default."""
+        try:
+            from v8_engine.database import V8Database
+            conn = V8Database.get_connection()
+            c = conn.cursor()
+            c.execute("SELECT regime, regime_score, xu100_trend, volatility_state, timestamp FROM v8_market_regimes ORDER BY timestamp DESC LIMIT 1")
+            row = c.fetchone()
+            conn.close()
+            if row is not None:
+                return {
+                    "regime": row["regime"],
+                    "score": row["regime_score"],
+                    "xu100_trend": row["xu100_trend"] or 0.0,
+                    "volatility_state": row["volatility_state"] or "NORMAL",
+                    "timestamp": row["timestamp"],
+                    "stale": True
+                }
+        except Exception as e:
+            print(f"[V8 Regime Engine] Last-known lookup error: {e}")
+        return self._default_regime(status)
 
     def _save_regime_to_db(self, regime_data: dict):
         try:

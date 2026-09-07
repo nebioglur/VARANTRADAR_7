@@ -11,6 +11,7 @@ feedparser
 gnews
 textblob
 cryptography
+pyjwt
 gunicorn
 google-generativeai
 
