@@ -1447,6 +1447,44 @@ def api_simulation_terminal_close():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/api/leaderboard', methods=['GET'])
+def api_leaderboard():
+    """Tum kayitli kullanicilari toplam portfoy degerine (nakit + yatirim + acik K/Z)
+    gore buyukten kucuge siralar."""
+    try:
+        from services.trade_database import get_connection
+        from services.live_trade_monitor import get_terminal_state
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("SELECT owner_key, email, display_name FROM app_users")
+        users = c.fetchall()
+        conn.close()
+
+        rows = []
+        for u in users:
+            owner = u["owner_key"]
+            name = u["display_name"] or u["email"]
+            if not name:
+                name = owner.split(":", 1)[1] if ":" in owner else owner
+            try:
+                t = get_terminal_state(owner)
+            except Exception:
+                t = {"cash": 100000.0, "invested": 0.0, "open_pnl": 0.0, "equity": 100000.0}
+            rows.append({
+                "owner": owner,
+                "name": name,
+                "cash": t["cash"],
+                "invested": t["invested"],
+                "open_pnl": t["open_pnl"],
+                "equity": t["equity"],
+            })
+        rows.sort(key=lambda r: r["equity"], reverse=True)
+        for i, r in enumerate(rows):
+            r["rank"] = i + 1
+        return jsonify({"status": "success", "leaderboard": rows})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 @app.route('/api/portfolio/reset_request', methods=['POST'])
 def api_portfolio_reset_request():
     """Kullanici portfoy sifirlama talebi olusturur; yoneticiye Telegram bildirilir."""

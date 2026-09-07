@@ -34,6 +34,7 @@
         <div class="nav-actions">
             <button class="nav-btn active" onclick="switchMainTab('home', this)"><i class="fa-solid fa-house"></i> GİRİŞ</button>
             <button class="nav-btn" onclick="switchMainTab('portfolio', this)" style="color:var(--accent-green);"><i class="fa-solid fa-wallet"></i> PORTFÖYÜM</button>
+            <button class="nav-btn" onclick="switchMainTab('leaderboard', this)" style="color:var(--accent-yellow);"><i class="fa-solid fa-ranking-star"></i> SIRALAMA</button>
             <button class="nav-btn" onclick="switchMainTab('radar', this)"><i class="fa-solid fa-tower-broadcast"></i> RADAR</button>
             <button class="nav-btn" onclick="switchMainTab('stats', this)"><i class="fa-solid fa-chart-pie"></i> İSTATİSTİKLER</button>
             <button class="nav-btn" onclick="switchMainTab('news', this)"><i class="fa-solid fa-newspaper"></i> HABERLER (KAP)</button>
@@ -1258,6 +1259,30 @@
             </div>
         </div>
     </div> <!-- END VARANT-WRAPPER -->
+
+    <div id="leaderboard-wrapper" class="main-wrapper" style="display: none;">
+        <div class="card" style="border:1px solid var(--accent-yellow); background:rgba(250,204,21,0.03);">
+            <h3 class="card-title" style="color:var(--accent-yellow); font-size:1.3rem; margin:0 0 1rem;"><i class="fa-solid fa-ranking-star"></i> Sıralama — Toplam Mal Varlığı</h3>
+            <div style="overflow-x:auto;">
+                <table class="data-table" style="width:100%; font-size:0.9rem;">
+                    <thead><tr>
+                        <th style="text-align:center;">#</th>
+                        <th>Kullanıcı</th>
+                        <th style="text-align:right;">Toplam Varlık</th>
+                        <th style="text-align:right;">Nakit</th>
+                        <th style="text-align:right;">Yatırımda</th>
+                        <th style="text-align:right;">Açık K/Z</th>
+                    </tr></thead>
+                    <tbody id="lb-tbody">
+                        <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Yükleniyor...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top:0.7rem; font-size:0.75rem; color:var(--text-muted);">
+                Toplam varlık = nakit + açık pozisyon maliyeti + anlık açık kâr/zarar. Güncellemek için sekmeyi yeniden açın.
+            </div>
+        </div>
+    </div>
 
     <div id="portfolio-wrapper" class="main-wrapper" style="display: none;">
 

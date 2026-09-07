@@ -247,6 +247,9 @@ function switchMainTab(tabName, btnElement) {
     const pfWrapper = document.getElementById('portfolio-wrapper');
     if (pfWrapper) pfWrapper.style.display = tabName === 'portfolio' ? 'block' : 'none';
 
+    const lbWrapper = document.getElementById('leaderboard-wrapper');
+    if (lbWrapper) lbWrapper.style.display = tabName === 'leaderboard' ? 'block' : 'none';
+
     const logsWrapper = document.getElementById('logs-wrapper');
     if (logsWrapper) logsWrapper.style.display = tabName === 'logs' ? 'block' : 'none';
 
@@ -282,6 +285,9 @@ function switchMainTab(tabName, btnElement) {
         ltRefreshResetUI();
         fetchAdminResetRequests();
     }
+    if (tabName === 'leaderboard') {
+        fetchLeaderboard();
+    }
     if (tabName === 'logs') {
         fetchLogs();
     }
@@ -300,10 +306,10 @@ function cancelLoadingAndGoBack() {
     let targetTab = lastActiveTab || 'home';
     let navBtns = document.querySelectorAll('.nav-btn');
     let targetBtn = navBtns[0]; // GİRİŞ
-    if (targetTab === 'radar' && navBtns.length > 2) {
-        targetBtn = navBtns[2];
-    } else if (targetTab === 'news' && navBtns.length > 3) {
+    if (targetTab === 'radar' && navBtns.length > 3) {
         targetBtn = navBtns[3];
+    } else if (targetTab === 'news' && navBtns.length > 4) {
+        targetBtn = navBtns[4];
     }
     switchMainTab(targetTab, targetBtn);
 }
@@ -3835,6 +3841,7 @@ async function fetchLiveTerminal() {
         const data = await res.json();
         if (data.status !== 'success') return;
         const t = data.terminal || {};
+        if (t.owner) window.__vrOwnerKey = t.owner;
 
         const el = (id) => document.getElementById(id);
         const fmt = (v) => (v || 0).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ₺';
@@ -3984,6 +3991,42 @@ setInterval(() => {
         fetchAdminResetRequests();
     }
 }, 30000);
+
+// ========== SIRALAMA (LEADERBOARD) ==========
+async function fetchLeaderboard() {
+    const tbody = document.getElementById('lb-tbody');
+    if (!tbody) return;
+    try {
+        const res = await fetch('/api/leaderboard?t=' + Date.now());
+        const data = await res.json();
+        if (data.status !== 'success') {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--accent-red);">Hata: ' + (data.message || '') + '</td></tr>';
+            return;
+        }
+        const rows = data.leaderboard || [];
+        if (!rows.length) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Henüz kayıtlı kullanıcı yok.</td></tr>';
+            return;
+        }
+        const medals = {1: '🥇', 2: '🥈', 3: '🥉'};
+        tbody.innerHTML = '';
+        rows.forEach(r => {
+            const pnlColor = r.open_pnl > 0 ? 'var(--accent-green)' : (r.open_pnl < 0 ? 'var(--accent-red)' : 'var(--text-muted)');
+            const isMe = r.owner === (window.__vrOwnerKey || '');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="text-align:center; font-weight:800; font-size:1rem;">${medals[r.rank] || r.rank}</td>
+                <td style="font-weight:600; color:var(--text-light);">${r.name}${isMe ? ' <span style="font-size:0.65rem; color:var(--accent-yellow); border:1px solid rgba(250,204,21,0.5); border-radius:4px; padding:1px 5px;">SİZ</span>' : ''}</td>
+                <td style="text-align:right; font-weight:800; color:var(--accent-green);">${r.equity.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₺</td>
+                <td style="text-align:right;">${r.cash.toLocaleString('tr-TR', {maximumFractionDigits: 0})} ₺</td>
+                <td style="text-align:right;">${r.invested.toLocaleString('tr-TR', {maximumFractionDigits: 0})} ₺</td>
+                <td style="text-align:right; font-weight:700; color:${pnlColor};">${(r.open_pnl >= 0 ? '+' : '') + r.open_pnl.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₺</td>`;
+            tbody.appendChild(tr);
+        });
+    } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--accent-red);">Bağlantı hatası</td></tr>';
+    }
+}
 
 // ========== SEMBOL OTOMATİK DOLDURMA + ANLIK FİYAT (Portföy Terminali) ==========
 let _ltQuoteTimer = null;
