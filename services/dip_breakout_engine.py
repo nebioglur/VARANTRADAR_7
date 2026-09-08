@@ -80,7 +80,9 @@ def _download_1d(symbols):
         for sym in chunk:
             try:
                 df = data[sym].dropna(subset=["Close"]) if len(chunk) > 1 else data.dropna(subset=["Close"])
-                if df is not None and len(df) > 40:
+                # 5+ bar yeter: yeni listelenen hisseler de gorunsun
+                # (40 bardan az gecmis olanlara minimal satir uretilir)
+                if df is not None and len(df) >= 5:
                     out[sym] = df
             except Exception:
                 continue
@@ -108,6 +110,47 @@ def _swing_lows(lows, w=3):
 def _obv(close, volume):
     direction = np.sign(np.diff(close, prepend=close[0]))
     return np.cumsum(direction * volume)
+
+
+def _swing_highs(highs, w=3):
+    """Yerel tepeler (window w'lik yerel maksimum)."""
+    out = []
+    n = len(highs)
+    for i in range(w, n - w):
+        win = highs[i - w:i + w + 1]
+        if highs[i] == max(win):
+            out.append((i, highs[i]))
+    dedup = []
+    for i, v in out:
+        if dedup and abs(dedup[-1][1] - v) / max(v, .01) < 0.001 and i - dedup[-1][0] <= w:
+            continue
+        dedup.append((i, v))
+    return dedup
+
+
+def _best_sr(price, high, low):
+    """En iyi destek ve cok katmanli direnc.
+
+    Destek: fiyatın altindaki EN YAKIN gecmis swing low (gercekten tepki
+    alınmis bolge); yoksa 30g dip.
+    Yakin direnc: fiyat ustundeki en yakin swing high; yoksa 20g tepe.
+    Ana direnc (major): son 90 gunun en yuksegi.
+    Donus: (support, support_dist_pct, res1, major_res)
+    """
+    hs = _swing_highs(list(high[-90:]), w=3)
+    ls = _swing_lows(list(low[-90:]), w=3)
+    n = len(high)
+
+    below_lows = [v for _, v in ls if v < price * 0.998]
+    support = float(max(below_lows)) if below_lows else float(np.min(low[-30:]))
+    support_dist = (price - support) / max(support, .01) * 100
+
+    above_highs = [v for _, v in hs if v > price * 1.002]
+    high20 = float(np.max(high[max(0, n - 21):n - 1])) if n > 21 else price
+    res1 = float(min(above_highs)) if above_highs else high20
+
+    major = float(np.max(high[-90:]))
+    return round(support, 2), round(support_dist, 2), round(res1, 2), round(major, 2)
 
 
 # ---------------------------------------------------------------- analiz
@@ -291,6 +334,7 @@ def _analyze(sym, df, bench, sector_ret5, bench_ret5_now, bench_ret5_prev):
         opportunity = int(max(0, min(100, opportunity + 10)))
 
     sector = SECTOR_OF.get(sym, "GENEL")
+    support, support_dist, res1, major_res = _best_sr(price, high, low)
     return {
         "symbol": sym.replace(".IS", ""),
         "price": round(price, 2),
@@ -303,15 +347,60 @@ def _analyze(sym, df, bench, sector_ret5, bench_ret5_now, bench_ret5_prev):
         "from_dip_pct": round(from_dip, 2),
         "resistance": round(resistance, 2),
         "dist_to_res_pct": round(dist_to_res, 2),
+        "support": support,
+        "support_dist_pct": support_dist,
+        "major_resistance": major_res,
         "trap_pct": trap,
         "action": action,
         "category": category,
         "threshold_tag": threshold,
         "opportunity": opportunity,
+        "is_new": False,
     }
 
 
 # ---------------------------------------------------------------- insa
+def _analyze_minimal(sym, df, meta):
+    """40 bardan az gecmisi olan yeni hisse icin temel bilgi satiri."""
+    try:
+        if df is None or len(df) < 2:
+            return None
+        d = df.copy()
+        if isinstance(d.columns[0], tuple):
+            return None
+        close = d["Close"].astype(float).values
+        low = d["Low"].astype(float).values
+        high = d["High"].astype(float).values
+        price = float(close[-1])
+        prev_close = float(close[-2])
+        return {
+            "symbol": sym.replace(".IS", ""),
+            "price": round(price, 2),
+            "change_pct": round((price - prev_close) / max(prev_close, .01) * 100, 2),
+            "sector": "YENİ HİSSE",
+            "stage": "YENİ",
+            "dip_pct": None,
+            "dip_checks": {},
+            "dip_price": round(float(np.min(low)), 2),
+            "from_dip_pct": round((price - float(np.min(low))) / max(float(np.min(low)), .01) * 100, 2),
+            "resistance": round(float(np.max(high)), 2),
+            "dist_to_res_pct": round((float(np.max(high)) - price) / price * 100, 2),
+            "support": round(float(np.min(low)), 2),
+            "support_dist_pct": round((price - float(np.min(low))) / max(float(np.min(low)), .01) * 100, 2),
+            "major_resistance": round(float(np.max(high)), 2),
+            "trap_pct": 0,
+            "action": "YENİ LİSTE",
+            "category": "YENI",
+            "threshold_tag": False,
+            "opportunity": 50,
+            "is_new": True,
+            "listed": meta.get("listed"),
+            "age_days": meta.get("age_days"),
+        }
+    except Exception:
+        return None
+
+
 def _build():
     with _build_lock:
         with _lock:
@@ -319,7 +408,15 @@ def _build():
                 return
             _cache["building"] = True
         try:
-            syms = list(SYMBOLS)
+            # yeni hisseleri tarayicidan al (cache'li, 6 saatte bir yenilenir)
+            try:
+                from services.universe_scanner import get_new_listings
+                new_listings, _, _ = get_new_listings()
+            except Exception:
+                new_listings = []
+            new_syms = {v["symbol"]: v for v in new_listings}
+
+            syms = list(SYMBOLS) + [s for s in new_syms if s not in set(SYMBOLS)]
             data = _download_1d(syms + [BENCHMARK])
             bench = data.get(BENCHMARK)
 
@@ -344,8 +441,20 @@ def _build():
             rows = []
             for sym in syms:
                 try:
-                    r = _analyze(sym, data.get(sym), bench, sector_ret5.get(SECTOR_OF.get(sym, "GENEL")),
-                                 bench_ret5_now, bench_ret5_prev)
+                    df = data.get(sym)
+                    meta = new_syms.get(sym)
+                    r = None
+                    if df is not None and len(df) >= 40:
+                        r = _analyze(sym, df, bench, sector_ret5.get(SECTOR_OF.get(sym, "GENEL")),
+                                     bench_ret5_now, bench_ret5_prev)
+                        if r and meta:
+                            r["is_new"] = True
+                            r["listed"] = meta.get("listed")
+                            r["age_days"] = meta.get("age_days")
+                            r["sector"] = "YENİ HİSSE"
+                    elif meta:
+                        # 40 bardan az gecmis: minimal satir (yeni listelenenler gorunsun)
+                        r = _analyze_minimal(sym, df, meta)
                     if r:
                         rows.append(r)
                 except Exception:
@@ -356,6 +465,7 @@ def _build():
                 "erken_dip": sum(1 for r in rows if r["category"] == "ERKEN_DIP"),
                 "dip_kirilim": sum(1 for r in rows if r["category"] == "DIP_KIRILIM"),
                 "momentum": sum(1 for r in rows if r["category"] == "MOMENTUM"),
+                "yeni": sum(1 for r in rows if r.get("is_new")),
                 "total": len(rows),
             }
             with _lock:

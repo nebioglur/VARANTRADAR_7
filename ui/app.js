@@ -4227,11 +4227,11 @@ async function fetchDipBreakout() {
             }
         } else {
             const tbody = document.getElementById('tb-dip-breakout');
-            if (tbody) tbody.innerHTML = '<tr><td colspan="13" class="text-muted text-center">' + (data.error || 'Veri hazırlanıyor, birkaç dakika içinde hazır olacak.') + '</td></tr>';
+            if (tbody) tbody.innerHTML = '<tr><td colspan="14" class="text-muted text-center">' + (data.error || 'Veri hazırlanıyor, birkaç dakika içinde hazır olacak.') + '</td></tr>';
         }
     } catch (e) {
         const tbody = document.getElementById('tb-dip-breakout');
-        if (tbody) tbody.innerHTML = '<tr><td colspan="13" class="text-muted text-center">Bağlantı hatası</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="14" class="text-muted text-center">Bağlantı hatası</td></tr>';
     } finally {
         dipFetching = false;
     }
@@ -4260,37 +4260,50 @@ function renderDipBreakout() {
     let rows = dipRowsCache;
     if (dipCategory !== 'ALL') rows = rows.filter(r => r.category === dipCategory);
     if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="13" class="text-muted text-center">Bu kategoride şu an aday yok.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="14" class="text-muted text-center">Bu kategoride şu an aday yok.</td></tr>';
         return;
     }
-    const catOrder = {'MOMENTUM': 0, 'DIP_KIRILIM': 1, 'ERKEN_DIP': 2, null: 3};
-    rows = [...rows].sort((a, b) => ((catOrder[a.category] ?? 3) - (catOrder[b.category] ?? 3)) || (b.opportunity - a.opportunity));
+    const catOrder = {'MOMENTUM': 0, 'DIP_KIRILIM': 1, 'ERKEN_DIP': 2, 'YENI': 3, null: 4};
+    rows = [...rows].sort((a, b) => ((catOrder[a.category] ?? 4) - (catOrder[b.category] ?? 4)) || (b.opportunity - a.opportunity));
     const catBadge = {
         'ERKEN_DIP': '<span style="font-size:0.68rem; color:var(--accent-green);">🟢 ERKEN DİP</span>',
         'DIP_KIRILIM': '<span style="font-size:0.68rem; color:#f59e0b;">🟡 DİP→KIR</span>',
         'MOMENTUM': '<span style="font-size:0.68rem; color:var(--accent-red);">🔴 MOMENTUM</span>',
+        'YENI': '<span style="font-size:0.68rem; color:#22d3ee;">🆕 YENİ HİSSE</span>',
     };
     tbody.innerHTML = rows.map(r => {
+        const isNew = !!r.is_new;
         const fromDipColor = r.from_dip_pct <= 3 ? 'var(--accent-green)' : (r.from_dip_pct <= 8 ? '#f59e0b' : 'var(--text-muted)');
         const distColor = r.dist_to_res_pct < 0 ? 'var(--accent-red)' : (r.dist_to_res_pct <= 2 ? 'var(--accent-green)' : (r.dist_to_res_pct <= 5 ? '#f59e0b' : 'var(--text-muted)'));
+        const supDistColor = (r.support_dist_pct ?? 0) <= 5 ? 'var(--accent-green)' : ((r.support_dist_pct ?? 0) <= 10 ? '#f59e0b' : 'var(--text-muted)');
         const trapColor = r.trap_pct >= 60 ? 'var(--accent-red)' : (r.trap_pct >= 40 ? '#f59e0b' : 'var(--accent-green)');
         let actionColor = 'var(--text-muted)';
         if (r.action === 'AL') actionColor = 'var(--accent-green)';
         else if (r.action === 'DİP AVI') actionColor = '#22d3ee';
         else if (r.action === 'İZLE') actionColor = '#f59e0b';
         else if (r.action === 'GEÇ KALMIŞ') actionColor = '#fb923c';
+        else if (r.action === 'YENİ LİSTE') actionColor = '#22d3ee';
         else if (r.action.indexOf('BEKLE ⚠') === 0) actionColor = 'var(--accent-red)';
         const thr = r.threshold_tag ? '<div style="font-size:0.68rem; color:var(--accent-green); font-weight:700;">🔥 DİP+KIRILIM EŞİĞİ</div>' : '';
         const chgColor = r.change_pct >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+        const dipCell = (r.dip_pct === null || r.dip_pct === undefined)
+            ? '<span style="font-size:0.75rem; color:var(--text-muted);">—</span>'
+            : _dipScoreBar(r.dip_pct);
+        const symBadge = (catBadge[r.category] || '') +
+            (isNew && r.category !== 'YENI' ? ' <span style="font-size:0.68rem; color:#22d3ee;">🆕</span>' : '') +
+            (isNew && r.listed ? '<br><span style="font-size:0.66rem; color:var(--text-muted);">Liste: ' + r.listed + ' (' + (r.age_days ?? '?') + 'g)</span>' : '');
+        const resCell = '₺' + r.resistance.toFixed(2) +
+            (r.major_resistance ? '<br><span style="font-size:0.66rem; color:var(--text-muted);">Ana: ₺' + r.major_resistance.toFixed(2) + '</span>' : '');
         return '<tr>' +
-            '<td><b>' + r.symbol + '</b><br>' + (catBadge[r.category] || '') + '</td>' +
+            '<td><b>' + r.symbol + '</b><br>' + symBadge + '</td>' +
             '<td>₺' + r.price.toFixed(2) + '<br><span style="font-size:0.72rem; color:' + chgColor + ';">' + (r.change_pct >= 0 ? '+' : '') + r.change_pct.toFixed(2) + '%</span></td>' +
             '<td>' + _dipStageBadge(r.stage) + '</td>' +
-            '<td>' + _dipScoreBar(r.dip_pct) + '</td>' +
+            '<td>' + dipCell + '</td>' +
             '<td>₺' + r.dip_price.toFixed(2) + '</td>' +
             '<td style="color:' + fromDipColor + ';">+' + r.from_dip_pct.toFixed(1) + '%</td>' +
-            '<td>₺' + r.resistance.toFixed(2) + '</td>' +
-            '<td style="color:' + distColor + ';">' + r.dist_to_res_pct.toFixed(2) + '%</td>' +
+            '<td>₺' + (r.support ?? r.dip_price).toFixed(2) + '</td>' +
+            '<td style="color:' + supDistColor + ';">' + (r.support_dist_pct ?? 0).toFixed(1) + '%</td>' +
+            '<td>' + resCell + '</td>' +
             '<td style="color:' + distColor + ';">' + r.dist_to_res_pct.toFixed(2) + '%</td>' +
             '<td style="color:' + trapColor + '; font-weight:700;">%' + r.trap_pct + '</td>' +
             '<td><span style="font-size:0.75rem; font-weight:800; color:' + actionColor + ';">' + r.action + '</span>' + thr + '</td>' +
