@@ -4227,11 +4227,11 @@ async function fetchDipBreakout() {
             }
         } else {
             const tbody = document.getElementById('tb-dip-breakout');
-            if (tbody) tbody.innerHTML = '<tr><td colspan="14" class="text-muted text-center">' + (data.error || 'Veri hazırlanıyor, birkaç dakika içinde hazır olacak.') + '</td></tr>';
+            if (tbody) tbody.innerHTML = '<tr><td colspan="13" class="text-muted text-center">' + (data.error || 'Veri hazırlanıyor, birkaç dakika içinde hazır olacak.') + '</td></tr>';
         }
     } catch (e) {
         const tbody = document.getElementById('tb-dip-breakout');
-        if (tbody) tbody.innerHTML = '<tr><td colspan="14" class="text-muted text-center">Bağlantı hatası</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="13" class="text-muted text-center">Bağlantı hatası</td></tr>';
     } finally {
         dipFetching = false;
     }
@@ -4260,7 +4260,7 @@ function renderDipBreakout() {
     let rows = dipRowsCache;
     if (dipCategory !== 'ALL') rows = rows.filter(r => r.category === dipCategory);
     if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="14" class="text-muted text-center">Bu kategoride şu an aday yok.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="13" class="text-muted text-center">Bu kategoride şu an aday yok.</td></tr>';
         return;
     }
     const catOrder = {'MOMENTUM': 0, 'DIP_KIRILIM': 1, 'ERKEN_DIP': 2, 'YENI': 3, null: 4};
@@ -4271,6 +4271,7 @@ function renderDipBreakout() {
         'MOMENTUM': '<span style="font-size:0.68rem; color:var(--accent-red);">🔴 MOMENTUM</span>',
         'YENI': '<span style="font-size:0.68rem; color:#22d3ee;">🆕 YENİ HİSSE</span>',
     };
+    const trClsMap = { 'YENI': 'dip-cat-yeni', 'MOMENTUM': 'dip-cat-momentum', 'DIP_KIRILIM': 'dip-cat-dipkir', 'ERKEN_DIP': 'dip-cat-erken' };
     tbody.innerHTML = rows.map(r => {
         const isNew = !!r.is_new;
         const fromDipColor = r.from_dip_pct <= 3 ? 'var(--accent-green)' : (r.from_dip_pct <= 8 ? '#f59e0b' : 'var(--text-muted)');
@@ -4294,21 +4295,21 @@ function renderDipBreakout() {
             (isNew && r.listed ? '<br><span style="font-size:0.66rem; color:var(--text-muted);">Liste: ' + r.listed + ' (' + (r.age_days ?? '?') + 'g)</span>' : '');
         const resCell = '₺' + r.resistance.toFixed(2) +
             (r.major_resistance ? '<br><span style="font-size:0.66rem; color:var(--text-muted);">Ana: ₺' + r.major_resistance.toFixed(2) + '</span>' : '');
-        return '<tr>' +
+        const trCls = trClsMap[r.category] || '';
+        return '<tr class="' + trCls + '">' +
             '<td><b>' + r.symbol + '</b><br>' + symBadge + '</td>' +
-            '<td>₺' + r.price.toFixed(2) + '<br><span style="font-size:0.72rem; color:' + chgColor + ';">' + (r.change_pct >= 0 ? '+' : '') + r.change_pct.toFixed(2) + '%</span></td>' +
-            '<td>' + _dipStageBadge(r.stage) + '</td>' +
-            '<td>' + dipCell + '</td>' +
-            '<td>₺' + r.dip_price.toFixed(2) + '</td>' +
-            '<td style="color:' + fromDipColor + ';">+' + r.from_dip_pct.toFixed(1) + '%</td>' +
-            '<td>₺' + (r.support ?? r.dip_price).toFixed(2) + '</td>' +
-            '<td style="color:' + supDistColor + ';">' + (r.support_dist_pct ?? 0).toFixed(1) + '%</td>' +
-            '<td>' + resCell + '</td>' +
-            '<td style="color:' + distColor + ';">' + r.dist_to_res_pct.toFixed(2) + '%</td>' +
-            '<td style="color:' + trapColor + '; font-weight:700;">%' + r.trap_pct + '</td>' +
-            '<td><span style="font-size:0.75rem; font-weight:800; color:' + actionColor + ';">' + r.action + '</span>' + thr + '</td>' +
-            '<td><b style="color:' + (r.opportunity >= 70 ? 'var(--accent-green)' : r.opportunity >= 50 ? '#f59e0b' : 'var(--text-muted)') + ';">' + r.opportunity + '</b></td>' +
-            '<td><button type="button" style="padding:3px 8px; font-size:0.72rem; border-radius:6px; border:none; cursor:pointer; color:white; background:linear-gradient(135deg,#3b82f6,#1d4ed8);" onclick="document.getElementById(\'symbol-input\').value=\'' + r.symbol + '\'; analyzeSymbol(\'' + r.symbol + '\');">İncele</button></td>' +
+            '<td data-label="Fiyat">₺' + r.price.toFixed(2) + ' <span style="font-size:0.72rem; color:' + chgColor + ';">' + (r.change_pct >= 0 ? '+' : '') + r.change_pct.toFixed(2) + '%</span></td>' +
+            '<td data-label="Aşama">' + _dipStageBadge(r.stage) + '</td>' +
+            '<td data-label="Dip Oluşumu">' + dipCell + '</td>' +
+            '<td class="dip-secondary" data-label="Dip">₺' + r.dip_price.toFixed(2) + '</td>' +
+            '<td class="dip-secondary" data-label="Dipten" style="color:' + fromDipColor + ';">+' + r.from_dip_pct.toFixed(1) + '%</td>' +
+            '<td data-label="Destek">₺' + (r.support ?? r.dip_price).toFixed(2) + ' <span style="font-size:0.7rem; color:' + supDistColor + ';">-' + (r.support_dist_pct ?? 0).toFixed(1) + '%</span></td>' +
+            '<td data-label="Direnç">' + resCell + '</td>' +
+            '<td data-label="Dirence" style="color:' + distColor + ';">' + r.dist_to_res_pct.toFixed(2) + '%</td>' +
+            '<td data-label="Tuzak" style="color:' + trapColor + '; font-weight:700;">%' + r.trap_pct + '</td>' +
+            '<td data-label="İşlem"><span style="font-size:0.75rem; font-weight:800; color:' + actionColor + ';">' + r.action + '</span>' + thr + '</td>' +
+            '<td data-label="Fırsat"><b style="color:' + (r.opportunity >= 70 ? 'var(--accent-green)' : r.opportunity >= 50 ? '#f59e0b' : 'var(--text-muted)') + ';">' + r.opportunity + '</b></td>' +
+            '<td><button type="button" class="dip-btn" style="padding:3px 8px; font-size:0.72rem; border-radius:6px; border:none; cursor:pointer; color:white; background:linear-gradient(135deg,#3b82f6,#1d4ed8);" onclick="document.getElementById(\'symbol-input\').value=\'' + r.symbol + '\'; analyzeSymbol(\'' + r.symbol + '\');">🔍 İncele</button></td>' +
             '</tr>';
     }).join('');
 }

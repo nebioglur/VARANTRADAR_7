@@ -1079,3 +1079,105 @@ body {
 .dt-filter { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 20px; padding: 0.3rem 0.85rem; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all .15s; }
 .dt-filter:hover { color: #f97316; border-color: #f9731666; }
 .dt-filter.active { background: #f97316; color: #fff; border-color: #f97316; }
+
+/* ============================================================
+   PROFESYONEL TABLO SISTEMI (PC + MOBIL)
+   ============================================================ */
+
+/* ---- PC: her tabloya sabit baslik, zebra, hizali sayilar ---- */
+.table-scroll-wrapper { position: relative; }
+
+.data-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--card-bg, #111827);
+    border-bottom: 2px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.data-table tbody tr:nth-child(even) td { background: rgba(255, 255, 255, 0.015); }
+.data-table tbody tr:hover td { background: rgba(59, 130, 246, 0.06); }
+
+.data-table td, .data-table th {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+    vertical-align: middle;
+}
+
+/* DIP & KIRILIM radar: PC'de sik professional gorunum */
+#dip-breakout-card .data-table { font-size: 0.82rem; min-width: 860px; }
+#dip-breakout-card .data-table th { font-size: 0.68rem; padding: 0.55rem 0.45rem; }
+#dip-breakout-card .data-table td { padding: 0.5rem 0.45rem; }
+#dip-breakout-card .data-table tbody tr { border-left: 3px solid transparent; }
+#dip-breakout-card .data-table tbody tr:has(.dip-cat-yeni) { border-left-color: #22d3ee; }
+#dip-breakout-card .data-table tbody tr:has(.dip-cat-momentum) { border-left-color: var(--accent-red, #ef4444); }
+#dip-breakout-card .data-table tbody tr:has(.dip-cat-dipkir) { border-left-color: #f59e0b; }
+#dip-breakout-card .data-table tbody tr:has(.dip-cat-erken) { border-left-color: var(--accent-green, #10b981); }
+
+/* ---- MOBIL (<=850px): genis tablolar karta donusur ---- */
+@media (max-width: 850px) {
+    /* data-cards ozelligi verilen tablolar dikey karta acilir */
+    .data-table.mobile-cards { min-width: 0 !important; width: 100% !important; }
+    .data-table.mobile-cards thead { display: none; }
+    .data-table.mobile-cards tbody { display: block; }
+    .data-table.mobile-cards tbody tr {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.35rem 0.8rem;
+        padding: 0.7rem 0.8rem;
+        margin-bottom: 0.6rem;
+        border: 1px solid var(--border-color);
+        border-left: 3px solid var(--border-color);
+        border-radius: 10px;
+        background: var(--card-bg, #111827);
+    }
+    .data-table.mobile-cards tbody tr:nth-child(even) td { background: transparent; }
+    .data-table.mobile-cards tbody tr:hover td { background: transparent; }
+
+    .data-table.mobile-cards td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.15rem 0 !important;
+        border-bottom: none !important;
+        white-space: normal;
+        font-size: 0.78rem !important;
+    }
+    /* Ilk hucre (sembol) kart basligi: tam genislik */
+    .data-table.mobile-cards td:first-child {
+        grid-column: 1 / -1;
+        justify-content: flex-start;
+        padding-bottom: 0.35rem !important;
+        border-bottom: 1px dashed var(--border-color) !important;
+        margin-bottom: 0.15rem;
+        position: static !important;
+        box-shadow: none !important;
+    }
+    /* Son hucre (incele btn) tam genislik */
+    .data-table.mobile-cards td:last-child {
+        grid-column: 1 / -1;
+        padding-top: 0.35rem !important;
+    }
+    .data-table.mobile-cards td::before {
+        content: attr(data-label);
+        color: var(--text-muted);
+        font-size: 0.66rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        flex-shrink: 0;
+    }
+    .data-table.mobile-cards td:first-child::before { display: none; }
+    .data-table.mobile-cards td:last-child::before { display: none; }
+
+    /* Mobilde dip radarinda kolon yigitimi: en onemli 6 alan kartta one cikar */
+    .data-table.mobile-cards td.dip-secondary { display: none; }
+    .data-table.mobile-cards .dip-btn {
+        width: 100%;
+        padding: 0.55rem !important;
+        font-size: 0.8rem !important;
+        min-height: 40px;
+    }
+}

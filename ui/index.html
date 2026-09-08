@@ -6,7 +6,7 @@
     <title>VARANTRADAR PRO | FINTECH TERMINAL</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=20260815_v19_final_fix">
+    <link rel="stylesheet" href="style.css?v=20260908_pro_tables">
     <!-- ApexCharts -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     
@@ -345,15 +345,15 @@
                         </div>
                     </div>
                     <p style="font-size:0.78rem; color:var(--text-muted); margin:0 0 0.6rem 0;">Dip: 10 kriter (satış baskısı, higher-low, hacim, para akışı, volatilite, destek tepkisi...). Kırılım: 1️⃣ Yaklaşıyor → 2️⃣ Deneme → 3️⃣ Onaylandı. Destek = geçmişte tepki alınmış en yakın swing bölgesi; Direnç altında ana direnç (90g tepe) yazar. Tuzak riski yüksekse skor ne kadar iyi olursa olsun <b>BEKLE</b>.</p>
-                    <div class="table-scroll-wrapper" style="max-height:480px; min-height:180px; overflow:auto;">
-                    <table class="data-table" style="width: 100%; min-width:920px;">
+                    <div class="table-scroll-wrapper" style="max-height:520px; min-height:180px; overflow:auto;">
+                    <table class="data-table mobile-cards" id="dip-breakout-table" style="width: 100%; min-width:920px;">
                         <thead><tr>
                             <th>Sembol</th><th>Fiyat</th><th>Aşama</th><th>Dip Oluşumu</th>
-                            <th>Dip</th><th>Dipten</th><th>Destek</th><th>Desteke</th>
+                            <th>Dip</th><th>Dipten</th><th>Destek</th>
                             <th>Direnç</th><th>Dirence</th>
                             <th>🪤 Tuzak</th><th>İşlem</th><th>Fırsat</th><th style="width:60px;"></th>
                         </tr></thead>
-                        <tbody id="tb-dip-breakout"><tr><td colspan="14" class="text-muted text-center">Taranıyor...</td></tr></tbody>
+                        <tbody id="tb-dip-breakout"><tr><td colspan="13" class="text-muted text-center">Taranıyor...</td></tr></tbody>
                     </table>
                     </div>
                 </div>
@@ -2158,7 +2158,7 @@
 
 
 
-    <script src="app.js?v=20260908_sr_newlistings"></script>
+    <script src="app.js?v=20260908_pro_tables"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js"></script>
 </body>
