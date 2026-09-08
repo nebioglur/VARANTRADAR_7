@@ -2035,11 +2035,26 @@ def api_dip_breakout():
         from services.dip_breakout_engine import get_rows, start_background_loop
         start_background_loop()
         d = get_rows()
+        # tani: yeni hisse tarayici durumu (0 donerse nedenini gormek icin)
+        diag = {}
+        try:
+            import yfinance
+            from services.universe_scanner import _cache as _usc
+            diag = {
+                "yfinance_version": getattr(yfinance, "__version__", "?"),
+                "scanner_built_at": str(_usc.get("built_at")),
+                "scanner_error": _usc.get("error"),
+                "scanner_count": len(_usc.get("new_listings") or []),
+                "scanner_universe": _usc.get("total_universe"),
+            }
+        except Exception as de:
+            diag = {"diag_error": str(de)}
         safe = sanitize_for_json(d)
         return jsonify({"status": "ok" if safe.get("rows") else "empty",
                         "rows": safe.get("rows", []),
                         "summary": safe.get("summary", {}),
                         "built_at": safe.get("built_at"),
+                        "diag": diag,
                         "error": safe.get("error")})
     except Exception as e:
         import traceback
