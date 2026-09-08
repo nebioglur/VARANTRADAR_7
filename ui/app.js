@@ -110,7 +110,7 @@ let analysisAbortController = null;
 let logInterval = null;
 
 // ============================================================
-// 🟢 ONLİNE KULLANICI SAYACI (Heartbeat)
+// <span style="color:#22c55e">●</span> ONLİNE KULLANICI SAYACI (Heartbeat)
 // ============================================================
 let _heartbeatSid = localStorage.getItem('varant-sid') || '';
 
@@ -2160,7 +2160,7 @@ function renderAllDashboardTables() {
                 
                 // 1. Hedef ve Zarar Kes
                 if (p_val > 0) {
-                    featuresHtml += `<div style="margin-bottom:3px;"><span style="color:var(--accent-green)">🟢 Hedef:</span> ${(p_val * 1.05).toFixed(2)} | <span style="color:var(--accent-red)">🔴 Stop:</span> ${(p_val * 0.97).toFixed(2)}</div>`;
+                    featuresHtml += `<div style="margin-bottom:3px;"><span style="color:var(--accent-green)"><span style="color:#22c55e">●</span> Hedef:</span> ${(p_val * 1.05).toFixed(2)} | <span style="color:var(--accent-red)"><span style="color:#ef4444">●</span> Stop:</span> ${(p_val * 0.97).toFixed(2)}</div>`;
                 }
                 
                 // 2. Kısa Yorum (Dinamik)
@@ -4994,7 +4994,7 @@ function _dtRenderBoxes() {
         { key: 'delayed', label: '🕰️ GECİKENLER', color: '#eab308', val: s.delayed || 0 },
         { key: 'trap', label: '🪤 TUZAK RİSKİ', color: '#a855f7', val: s.trap || 0 },
         { key: 'leader', label: '👑 LİDER', color: '#0ea5e9', val: s.leader || 0 },
-        { key: 'breakout', label: '🔵 KIRILIM', color: '#3b82f6', val: s.breakout || 0 },
+        { key: 'breakout', label: '<span style="color:#0ea5e9">●</span> KIRILIM', color: '#3b82f6', val: s.breakout || 0 },
     ];
     box.innerHTML = defs.map(b => `
         <div onclick="dtSetFilter('${b.key}', document.querySelector('.dt-filter[data-f=\\'${b.key}\\']'))"
