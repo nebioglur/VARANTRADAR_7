@@ -1,10 +1,13 @@
 import pandas as pd
+import os
 from datetime import datetime, time, timedelta
 import json
 from services.trade_database import get_connection
 from services.market_data import MarketDataManager
 
 class SimulationEngine:
+    _daily_trend_cache = None
+
     """
     Backtest Motoru:
     - Sinyalleri okur.
@@ -24,18 +27,30 @@ class SimulationEngine:
         for t in trades:
             try:
                 cursor.execute("""
-                    INSERT INTO trades (owner, date_str, symbol, entry_time, entry_price, exit_time, exit_price, shares, pnl_val, pnl_pct, exit_reason)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO trades (
+                        owner, date_str, symbol, entry_time, entry_price, exit_time,
+                        exit_price, shares, pnl_val, pnl_pct, exit_reason, strategy_name,
+                        entry_score, entry_checks, atr_value, risk_amount, market_regime
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(owner, date_str, symbol, entry_time) DO UPDATE SET
                         exit_time=excluded.exit_time,
                         exit_price=excluded.exit_price,
                         pnl_val=excluded.pnl_val,
                         pnl_pct=excluded.pnl_pct,
-                        exit_reason=excluded.exit_reason
+                        exit_reason=excluded.exit_reason,
+                        strategy_name=excluded.strategy_name,
+                        entry_score=excluded.entry_score,
+                        entry_checks=excluded.entry_checks,
+                        atr_value=excluded.atr_value,
+                        risk_amount=excluded.risk_amount,
+                        market_regime=excluded.market_regime
                 """, (
                     self.owner, date_str, t['symbol'], t['entry_time'], t['entry_price'],
                     t.get('exit_time'), t.get('exit_price'), t.get('shares'),
-                    t.get('pnl_val'), t.get('pnl_pct'), t.get('exit_reason')
+                    t.get('pnl_val'), t.get('pnl_pct'), t.get('exit_reason'),
+                    t.get('strategy_name'), t.get('entry_score'), t.get('entry_checks'),
+                    t.get('atr_value'), t.get('risk_amount'), t.get('market_regime')
                 ))
             except Exception as e:
                 print(f"[SimEngine] Trade save err {t['symbol']}: {e}")
@@ -92,10 +107,96 @@ class SimulationEngine:
             
         return False, ""
 
+    def _entry_setup(self, sub_df, entry_price):
+        if len(sub_df) < 22:
+            return None
+
+        close = pd.to_numeric(sub_df['Close'], errors='coerce').dropna()
+        high = pd.to_numeric(sub_df['High'], errors='coerce').reindex(close.index)
+        low = pd.to_numeric(sub_df['Low'], errors='coerce').reindex(close.index)
+        if len(close) < 22 or high.isna().any() or low.isna().any():
+            return None
+
+        ema9 = close.ewm(span=9, adjust=False).mean()
+        ema21 = close.ewm(span=21, adjust=False).mean()
+        ema_confirmed = (
+            ema9.iloc[-1] > ema21.iloc[-1]
+            and ema9.iloc[-1] > ema9.iloc[-2]
+            and close.iloc[-1] >= ema9.iloc[-1]
+        )
+        if not ema_confirmed:
+            return None
+
+        prev_close = close.shift(1)
+        true_range = pd.concat([
+            high - low,
+            (high - prev_close).abs(),
+            (low - prev_close).abs()
+        ], axis=1).max(axis=1)
+        atr = float(true_range.rolling(14, min_periods=5).mean().iloc[-1])
+        if not pd.notna(atr) or atr <= 0:
+            return None
+
+        stop_pct = min(0.045, max(0.015, (atr / entry_price) * 1.6))
+        stop_price = entry_price * (1 - stop_pct)
+        return {
+            'atr_value': atr,
+            'stop_pct': stop_pct,
+            'stop_price': stop_price,
+            'ema9': float(ema9.iloc[-1]),
+            'ema21': float(ema21.iloc[-1])
+        }
+
+    @classmethod
+    def _daily_trend_values(cls, meta, symbol):
+        indicators = meta.get('Indicators', {}) if isinstance(meta, dict) else {}
+        ema50 = meta.get('Daily_EMA50') or indicators.get('EMA_50')
+        ema200 = meta.get('Daily_EMA200') or indicators.get('EMA_200')
+        if ema50 and ema200:
+            return float(ema50), float(ema200)
+
+        if cls._daily_trend_cache is None:
+            cls._daily_trend_cache = {}
+            try:
+                with open('dashboard_cache.json', encoding='utf-8') as cache_file:
+                    cached = json.load(cache_file)
+                cls._daily_trend_cache = cached.get('all_symbols_stats', {})
+            except Exception:
+                pass
+
+        cached = cls._daily_trend_cache.get(symbol) or cls._daily_trend_cache.get(symbol.replace('.IS', ''))
+        if not isinstance(cached, dict):
+            return None, None
+        ema50 = cached.get('Daily_EMA50')
+        ema200 = cached.get('Daily_EMA200')
+        if not ema50 or not ema200:
+            return None, None
+        return float(ema50), float(ema200)
+
+    def _position_allocation(self, current_cash, entry_price, stop_price, is_bear):
+        risk_per_share = entry_price - stop_price
+        if risk_per_share <= 0:
+            return 0.0, 0.0
+
+        risk_budget = self.daily_budget * (0.0035 if is_bear else 0.0075)
+        max_notional = self.daily_budget * (0.10 if is_bear else 0.20)
+        risk_limited_notional = risk_budget * entry_price / risk_per_share
+        allocation = min(current_cash, max_notional, risk_limited_notional)
+        return allocation, min(risk_budget, allocation * risk_per_share / entry_price)
+
     def run_daily_simulation(self, date_str: str):
         signals = MarketDataManager.get_signals(date_str)
         if not signals:
             return
+
+        try:
+            from server import get_xu100_change
+            xu100_change = float(get_xu100_change())
+        except Exception:
+            xu100_change = 0.0
+        is_bear = xu100_change < -0.5
+        market_regime = "AYI" if is_bear else ("GÜÇLÜ POZİTİF" if xu100_change > 0.5 else "NÖTR")
+        minimum_score = 90 if is_bear else 85
 
         valid_signals = []
         import json
@@ -114,14 +215,7 @@ class SimulationEngine:
             
             price = float(meta.get('Price') or meta.get('Daily_Close') or s.get('morning_price', 0))
             
-            # EMA değerlerini birden fazla olası anahtardan ara
-            ema50 = meta.get('Daily_EMA50')
-            ema200 = meta.get('Daily_EMA200')
-            
-            if ema50 is None or ema200 is None:
-                indicators = meta.get('Indicators', {})
-                ema50 = ema50 or indicators.get('EMA_50') or indicators.get('EMA_50')
-                ema200 = ema200 or indicators.get('EMA_200') or indicators.get('EMA_200')
+            ema50, ema200 = self._daily_trend_values(meta, s['symbol'])
                     
             # EMA Filtresi ZORUNLU
             if not ema50 or not ema200 or not price:
@@ -132,36 +226,52 @@ class SimulationEngine:
             except (ValueError, TypeError):
                 continue # Dönüşüm hatası
                     
-            if score >= 80 and phase in ["Erken Kopuş (Phase 1)", "İvmelenme (Phase 2)", "Kilitleme Baskısı (Phase 3)"]:
-                # Kalite filtresi: eksik/hacimsiz ve aşırı şişmiş sinyallerde işlem açma.
+            if score >= minimum_score and phase in ["Erken Kopuş (Phase 1)", "İvmelenme (Phase 2)", "Kilitleme Baskısı (Phase 3)"]:
                 indicators = meta.get('Indicators', {}) if isinstance(meta, dict) else {}
                 rsi = float(indicators.get('RSI') or indicators.get('RSI_14') or meta.get('RSI') or 50)
-                volume_ratio = float(meta.get('Volume_Ratio') or indicators.get('Volume_Ratio') or 0)
-                if rsi >= 72 or rsi <= 28:
+                volume_multiplier = float(meta.get('Vol_Multiplier') or meta.get('Volume_Ratio') or indicators.get('Volume_Ratio') or 0)
+                details = [str(detail) for detail in meta.get('Details', [])]
+                detail_text = " ".join(details).upper()
+                macd_value = indicators.get('MACD_Positive')
+                macd_ok = bool(macd_value) if macd_value is not None else "MACD" in detail_text
+                vwap = meta.get('VWAP')
+                vwap_ok = bool(vwap) and price >= float(vwap)
+                fomo_score = float(meta.get('FOMO_Score') or 0)
+                no_trap = not bool(meta.get('Trap_Risk'))
+                fomo_ok = fomo_score < 90 or (
+                    volume_multiplier >= 2.0
+                    and ("Giriş" in str(meta.get("Smart_Money", "")) or "Akümülasyon" in str(meta.get("Smart_Money", "")))
+                )
+                sector_ok = bool(meta.get('Domino_Sector')) or "SEKTÖR GÜCÜ" in detail_text
+                volume_ok = volume_multiplier >= 1.0 or "HACİMLİ" in detail_text
+                checks = {
+                    "Ana trend": True,
+                    "RSI dengeli": 32 <= rsi <= 82,
+                    "Hacim teyidi": volume_ok,
+                    "MACD yönü": macd_ok,
+                    "VWAP üstü": vwap_ok,
+                    "Tuzak/FOMO temiz": no_trap,
+                    "Sektör desteği": sector_ok,
+                    "FOMO kontrollü": fomo_ok
+                }
+                if sum(checks.values()) < 5 or not checks["RSI dengeli"] or not checks["Hacim teyidi"] or not checks["Tuzak/FOMO temiz"]:
                     continue
-                if volume_ratio and volume_ratio < 0.85:
-                    continue
+                s['_entry_checks'] = ", ".join(name for name, passed in checks.items() if passed)
+                s['_entry_quality'] = sum(checks.values())
+                s['_metadata'] = meta
                 valid_signals.append(s)
                 
         valid_signals.sort(key=lambda x: float(x.get('score', 0)), reverse=True)
-        selected = valid_signals[:5]
+        selected = valid_signals[:min(5, self.max_positions)]
         if not selected:
             return
 
         current_cash = self.daily_budget
-        # ENDEKS KALKANI (Market Regime)
-        try:
-            from server import get_xu100_change
-            is_bear = (get_xu100_change() < -0.5)
-        except:
-            is_bear = False
-        # Bakiyeye oranli dinamik boyutlandirma: bogada islem basina %10, ayida %5
-        # (100k bakiyede bogada 10.000 TL/islem; bakiye buyudukce pozisyonlar da buyur)
-        ideal_allocation = self.daily_budget * (0.05 if is_bear else 0.10)
         
         active_trades = []
         completed_trades = []
         stopped_out_symbols = set()
+        stop_times = {}
         
         pending_signals = []
         dfs = {}
@@ -261,7 +371,13 @@ class SimulationEngine:
                             'exit_price': scale_out_price,
                             'pnl_val': net_profit,
                             'pnl_pct': (net_profit / buy_vol) * 100,
-                            'exit_reason': "⚖️ ÇELİK TP1 (YARISI SATILDI)"
+                            'exit_reason': "⚖️ ÇELİK TP1 (YARISI SATILDI)",
+                            'strategy_name': trade.get('strategy_name'),
+                            'entry_score': trade.get('entry_score'),
+                            'entry_checks': trade.get('entry_checks'),
+                            'atr_value': trade.get('atr_value'),
+                            'risk_amount': trade.get('risk_amount'),
+                            'market_regime': trade.get('market_regime')
                         })
                             
                 if sell_price is not None:
@@ -284,6 +400,7 @@ class SimulationEngine:
                     
                     if "STOP" in reason:
                         stopped_out_symbols.add(sym)
+                        stop_times[sym] = current_time
                         
                     current_cash += sell_volume - commission
                     
@@ -296,55 +413,64 @@ class SimulationEngine:
                 dt_ps = dt_ps.tz_localize(None) if dt_ps.tzinfo else dt_ps
                 dt_current = current_time.tz_localize(None) if current_time.tzinfo else current_time
                 
-                if dt_current >= dt_ps:
+                if dt_current < dt_ps:
+                    continue
+                if dt_current.time() >= time(17, 50):
                     to_remove.append(s)
-                    if s['symbol'] in open_symbols:
-                        continue
-                        
-                    # "Squaze (yukarı ok) + Güçlü Giriş + Pozitif Alpha" Kontrolü
-                    alpha_str = str(s.get("Alpha_Str", ""))
-                    sqz_str = str(s.get("Short_Squeeze", ""))
-                    sm_str = str(s.get("Smart_Money", ""))
-                    
-                    is_super_green = (
-                        "Pozitif" in alpha_str and 
-                        ("Giriş" in sm_str or "Akümülasyon" in sm_str) and 
-                        ("Yükseliyor" in sqz_str or "Patlatma" in sqz_str)
-                    )
-                    
-                    if is_super_green:
-                        allocation = ideal_allocation # Tam sermaye (Maksimum Giriş)
-                    else:
-                        allocation = min(current_cash, ideal_allocation)
-                        
-                    if allocation >= 1000:
-                        sym = s['symbol']
-                        df = dfs.get(sym)
-                        if df is not None and current_time in df.index:
-                            raw_entry = float(df.loc[current_time, 'Close'])
-                            ceiling = float(s['ceiling_target'])
-                            prev_close = ceiling / 1.10
-                            
-                            if raw_entry >= prev_close * 1.095:
-                                continue
-                                
-                            entry_price = raw_entry * 1.0015
-                            shares = int(allocation // entry_price)
-                            if shares > 0:
-                                current_cash -= (shares * entry_price) * 1.0004 
-                                active_trades.append({
-                                    'symbol': sym,
-                                    'entry_time': str(current_time),
-                                    'entry_price': entry_price,
-                                    'ceiling_target': ceiling,
-                                    'stop_price': entry_price * 0.97, # Çelik Kural: -%3 Zarar Kes
-                                    'tp1_price': entry_price * 1.05,  # Çelik Kural: +%5 Kâr Al (Yarısı)
-                                    'tp2_price': ceiling,             # Çelik Kural: Tavan Kâr Al
-                                    'shares': shares,
-                                    'status': 'OPEN',
-                                    'scaled_out': False,
-                                    'is_reentry': False
-                                })
+                    continue
+                if s['symbol'] in open_symbols or len(open_symbols) >= self.max_positions:
+                    continue
+
+                sym = s['symbol']
+                df = dfs.get(sym)
+                if df is None or current_time not in df.index:
+                    continue
+
+                raw_entry = float(df.loc[current_time, 'Close'])
+                ceiling = float(s['ceiling_target'])
+                prev_close = ceiling / 1.10
+                if raw_entry >= prev_close * 1.095:
+                    to_remove.append(s)
+                    continue
+
+                entry_price = raw_entry * 1.0015
+                setup = self._entry_setup(df.loc[:current_time], entry_price)
+                if not setup:
+                    continue
+
+                tp1_price = min(ceiling * 0.997, entry_price + max(setup['atr_value'] * 1.8, entry_price * 0.025))
+                if tp1_price <= entry_price:
+                    to_remove.append(s)
+                    continue
+                allocation, risk_amount = self._position_allocation(
+                    current_cash, entry_price, setup['stop_price'], is_bear
+                )
+                shares = int(allocation // entry_price)
+                if shares <= 0:
+                    to_remove.append(s)
+                    continue
+
+                current_cash -= (shares * entry_price) * 1.0004
+                active_trades.append({
+                    'symbol': sym,
+                    'entry_time': str(current_time),
+                    'entry_price': entry_price,
+                    'ceiling_target': ceiling,
+                    'stop_price': setup['stop_price'],
+                    'tp1_price': tp1_price,
+                    'tp2_price': ceiling,
+                    'shares': shares,
+                    'status': 'OPEN',
+                    'scaled_out': False,
+                    'is_reentry': False,
+                    'strategy_name': 'EMA 9/21 + Kalite Kapısı',
+                    'entry_score': float(s.get('score', 0)),
+                    'entry_checks': s.get('_entry_checks', ''),
+                    'atr_value': setup['atr_value'],
+                    'risk_amount': risk_amount,
+                    'market_regime': market_regime
+                })
+                to_remove.append(s)
             for s in to_remove:
                 if s in pending_signals:
                     pending_signals.remove(s)
@@ -356,55 +482,47 @@ class SimulationEngine:
             for sym in list(stopped_out_symbols):
                 if sym not in open_symbols:
                     sig = next((x for x in selected if x['symbol'] == sym), None)
-                    is_super_green = False
-                    if sig:
-                        alpha_str = str(sig.get("Alpha_Str", ""))
-                        sqz_str = str(sig.get("Short_Squeeze", ""))
-                        sm_str = str(sig.get("Smart_Money", ""))
-                        is_super_green = (
-                            "Pozitif" in alpha_str and 
-                            ("Giriş" in sm_str or "Akümülasyon" in sm_str) and 
-                            ("Yükseliyor" in sqz_str or "Patlatma" in sqz_str)
-                        )
-                        
-                    if is_super_green:
-                        allocation = ideal_allocation
-                    else:
-                        allocation = min(current_cash, ideal_allocation)
-                        
-                    if allocation >= 1000:
-                        df = dfs.get(sym)
-                        if df is not None and current_time in df.index:
-                            sub_df = df.loc[:current_time]
-                            if len(sub_df) >= 21:
-                                close_series = sub_df['Close']
-                                ema8 = close_series.ewm(span=8, adjust=False).mean()
-                                ema21 = close_series.ewm(span=21, adjust=False).mean()
-                                c_ema8 = float(ema8.iloc[-1])
-                                c_ema21 = float(ema21.iloc[-1])
-                                p_ema8 = float(ema8.iloc[-2])
-                                p_ema21 = float(ema21.iloc[-2])
-                                
-                                if p_ema8 <= p_ema21 and c_ema8 > c_ema21:
-                                    raw_entry = float(close_series.iloc[-1])
-                                    entry_price = raw_entry * 1.0015
-                                    shares = int(allocation // entry_price)
-                                    if shares > 0:
-                                        current_cash -= (shares * entry_price) * 1.0004
-                                        active_trades.append({
-                                            'symbol': sym,
-                                            'entry_time': str(current_time),
-                                            'entry_price': entry_price,
-                                            'ceiling_target': entry_price * 1.10, 
-                                            'stop_price': entry_price * 0.97,
-                                            'tp1_price': entry_price * 1.05,
-                                            'tp2_price': entry_price * 1.10,
-                                            'shares': shares,
-                                            'status': 'OPEN',
-                                            'scaled_out': False,
-                                            'is_reentry': True
-                                        })
-                                        stopped_out_symbols.remove(sym)
+                    stopped_at = stop_times.get(sym)
+                    if not sig or not stopped_at or dt_current - stopped_at < timedelta(minutes=60):
+                        continue
+                    if dt_current.time() >= time(17, 0):
+                        continue
+                    df = dfs.get(sym)
+                    if df is None or current_time not in df.index:
+                        continue
+                    sub_df = df.loc[:current_time]
+                    raw_entry = float(sub_df['Close'].iloc[-1])
+                    entry_price = raw_entry * 1.0015
+                    setup = self._entry_setup(sub_df, entry_price)
+                    if not setup:
+                        continue
+                    allocation, risk_amount = self._position_allocation(
+                        current_cash, entry_price, setup['stop_price'], is_bear
+                    )
+                    shares = int(allocation // entry_price)
+                    if shares <= 0:
+                        continue
+                    current_cash -= (shares * entry_price) * 1.0004
+                    active_trades.append({
+                        'symbol': sym,
+                        'entry_time': str(current_time),
+                        'entry_price': entry_price,
+                        'ceiling_target': entry_price * 1.10,
+                        'stop_price': setup['stop_price'],
+                        'tp1_price': entry_price + max(setup['atr_value'] * 1.8, entry_price * 0.025),
+                        'tp2_price': entry_price * 1.10,
+                        'shares': shares,
+                        'status': 'OPEN',
+                        'scaled_out': False,
+                        'is_reentry': True,
+                        'strategy_name': 'EMA 9/21 Yeniden Giriş',
+                        'entry_score': float(sig.get('score', 0)),
+                        'entry_checks': sig.get('_entry_checks', ''),
+                        'atr_value': setup['atr_value'],
+                        'risk_amount': risk_amount,
+                        'market_regime': market_regime
+                    })
+                    stopped_out_symbols.remove(sym)
 
         for trade in [t for t in active_trades if t['status'] == 'OPEN']:
             sym = trade['symbol']
@@ -421,10 +539,7 @@ class SimulationEngine:
                 gross_pnl = trade['shares'] * (close - trade['entry_price'])
                 trade['pnl_val'] = gross_pnl - commission
                 trade['pnl_pct'] = (trade['pnl_val'] / buy_volume) * 100
-                if last_time.time() < time(18, 0):
-                    trade['exit_reason'] = "⏳ SEANS BEKLENİYOR"
-                else:
-                    trade['exit_reason'] = "⏱️ GÜN SONU KAPANAN"
+                trade['exit_reason'] = "⏱️ SEANS SONU NAKİTE GEÇİŞ"
                 completed_trades.append(trade)
 
         self._save_trades(date_str, completed_trades)

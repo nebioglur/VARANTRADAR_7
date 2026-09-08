@@ -74,6 +74,12 @@ def init_db():
             pnl_val REAL,
             pnl_pct REAL,
             exit_reason TEXT,
+            strategy_name TEXT,
+            entry_score REAL,
+            entry_checks TEXT,
+            atr_value REAL,
+            risk_amount REAL,
+            market_regime TEXT,
             UNIQUE(owner, date_str, symbol, entry_time)
         )
     """)
@@ -93,9 +99,25 @@ def init_db():
                 pnl_val REAL,
                 pnl_pct REAL,
                 exit_reason TEXT,
+                strategy_name TEXT,
+                entry_score REAL,
+                entry_checks TEXT,
+                atr_value REAL,
+                risk_amount REAL,
+                market_regime TEXT,
                 UNIQUE(owner, date_str, symbol, entry_time)
             )
         """)
+    for column, definition in [
+        ('strategy_name', 'TEXT'),
+        ('entry_score', 'REAL'),
+        ('entry_checks', 'TEXT'),
+        ('atr_value', 'REAL'),
+        ('risk_amount', 'REAL'),
+        ('market_regime', 'TEXT'),
+    ]:
+        if column not in _table_columns(cursor, 'trades'):
+            cursor.execute(f"ALTER TABLE trades ADD COLUMN {column} {definition}")
 
     # 4. Simulation Equity Log (Günlük bakiye değişimi - hesap bazlı)
     # Yeni sart: (owner, date_str) PK. Eski ortak tablo dusurulur (sifirdan baslangic).

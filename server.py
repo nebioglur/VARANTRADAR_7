@@ -1694,8 +1694,14 @@ def api_tavan_history():
 def api_winrate_stats():
     try:
         from services.win_rate_engine import WinRateEngine
+        from services.statistics_engine import StatisticsEngine
         stats = WinRateEngine.get_performance_stats()
-        return jsonify({"status": "success", "stats": sanitize_for_json(stats)})
+        trade_performance = StatisticsEngine.get_trade_performance(get_owner_key())
+        return jsonify({
+            "status": "success",
+            "stats": sanitize_for_json(stats),
+            "trade_performance": sanitize_for_json(trade_performance)
+        })
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
@@ -1735,10 +1741,13 @@ def api_simulation_daily_pnl():
             trade_rows = c.fetchall()
             trades = [dict(row) for row in trade_rows]
             
+            from services.statistics_engine import StatisticsEngine
+            performance = StatisticsEngine.get_trade_performance(owner)
             return jsonify({
                 "status": "success",
                 "equity_curve": sanitize_for_json(equity_curve),
-        "trades": sanitize_for_json(trades)
+                "trades": sanitize_for_json(trades),
+                "performance": sanitize_for_json(performance)
             })
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})

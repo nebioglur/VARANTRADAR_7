@@ -2634,6 +2634,7 @@ async function fetchWinRateScorecard() {
         const data = await res.json();
         if (data.status === 'success' && data.stats) {
             const s = data.stats.summary;
+            renderSimulationPerformance(data.trade_performance || {}, 'scorecard-trade-performance');
             setElText('stat-winrate', `%${s.win_rate_pct}`);
             setElText('stat-avgprofit', `+%${s.avg_profit_pct}`);
             setElText('stat-pfactor', s.profit_factor);
@@ -3799,7 +3800,10 @@ async function fetchSimulationData() {
                         const exitPriceStr = isClosed ? `₺${t.exit_price.toFixed(2)}` : '-';
                         const pnlValStr = isClosed ? `${pnlSign}₺${(t.pnl_val || 0).toFixed(2)}` : '-';
                         const pnlPctStr = isClosed ? `${pnlSign}${(t.pnl_pct || 0).toFixed(2)}%` : '-';
-                        const statusStr = isClosed ? (t.exit_reason || 'Kapandı') : '<span style="color:var(--accent-yellow); font-weight:bold;"><i class="fa-solid fa-spinner fa-spin"></i> AÇIK POZİSYON</span>';
+                        const strategyStr = t.strategy_name
+                            ? `<div style="margin-top:0.25rem; color:var(--accent-blue); font-size:0.7rem;" title="${t.entry_checks || ''}">${t.strategy_name}${t.risk_amount ? ` · Risk: ₺${Number(t.risk_amount).toFixed(0)}` : ''}</div>`
+                            : '';
+                        const statusStr = (isClosed ? (t.exit_reason || 'Kapandı') : '<span style="color:var(--accent-yellow); font-weight:bold;"><i class="fa-solid fa-spinner fa-spin"></i> AÇIK POZİSYON</span>') + strategyStr;
 
                         const formatDt = (iso) => {
                             if (!iso) return '-';
@@ -3834,6 +3838,27 @@ async function fetchSimulationData() {
     } catch (e) {
         if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-red text-center" style="padding:2rem;">Bağlantı hatası: ' + e.message + '</td></tr>';
     }
+}
+
+function renderSimulationPerformance(performance, targetId = 'sim-performance-summary') {
+    const container = document.getElementById(targetId);
+    if (!container) return;
+    const total = Number(performance.total_trades || 0);
+    if (!total) {
+        container.style.display = 'block';
+        container.innerHTML = '<span style="color:var(--text-muted); font-size:.85rem;">Strateji performansı, kapatılmış ilk işlemlerden sonra burada oluşur.</span>';
+        return;
+    }
+    const metric = (label, value, color) => `<div style="min-width:120px;"><div style="font-size:.7rem; color:var(--text-muted); text-transform:uppercase;">${label}</div><strong style="font-size:1rem; color:${color};">${value}</strong></div>`;
+    const pf = performance.profit_factor === null || performance.profit_factor === undefined ? '—' : performance.profit_factor.toFixed(2);
+    const rows = (performance.strategies || []).map(item => {
+        const state = item.ready ? 'Ölçümlü' : `Yetersiz örnek (${item.trades}/${performance.minimum_samples})`;
+        const color = item.net_pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+        const itemPf = item.profit_factor === null || item.profit_factor === undefined ? '—' : item.profit_factor.toFixed(2);
+        return `<div style="display:grid; grid-template-columns:minmax(150px,2fr) repeat(4,minmax(76px,1fr)); gap:.55rem; padding:.65rem 0; border-top:1px solid var(--border-color); font-size:.82rem; align-items:center;"><strong>${item.strategy_name}</strong><span>${item.trades} işlem</span><span>%${item.win_rate.toFixed(1)} başarı</span><span>PF ${itemPf}</span><span style="color:${color}; font-weight:700;">${item.net_pnl >= 0 ? '+' : ''}₺${item.net_pnl.toFixed(2)} · ${state}</span></div>`;
+    }).join('');
+    container.style.display = 'block';
+    container.innerHTML = `<div style="display:flex; gap:1.25rem; justify-content:space-between; flex-wrap:wrap; margin-bottom:.8rem;"><h3 class="card-title" style="margin:0; font-size:1rem;"><i class="fa-solid fa-chart-simple text-green"></i> Strateji Karnesi</h3><div style="display:flex; gap:1.25rem; flex-wrap:wrap;">${metric('Kazanma oranı', '%' + Number(performance.win_rate || 0).toFixed(1), 'var(--accent-green)')}${metric('Net PnL', (performance.net_pnl >= 0 ? '+' : '') + '₺' + Number(performance.net_pnl || 0).toFixed(2), performance.net_pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)')}${metric('Profit factor', pf, 'var(--accent-blue)')}${metric('Maks. düşüş', '₺' + Number(performance.max_drawdown_tl || 0).toFixed(2), 'var(--accent-yellow)')}</div></div>${rows}`;
 }
 
 let _knownTradeEvents = new Set();
