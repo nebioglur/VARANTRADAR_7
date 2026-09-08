@@ -1709,12 +1709,7 @@ async function startRadar(type) {
                 <td><span style="color:${scoreColor}; font-weight:800; font-size:0.9rem; background:rgba(255,255,255,0.04); border:1px solid ${scoreColor}40; padding:2px 8px; border-radius:6px;">${scoreValue} / 100</span></td>
                 <td><span style="color:${trendColor}; font-weight:700; font-size:0.85rem;"><i class="fa-solid ${trendIcon}" style="margin-right:4px;"></i> ${t(trendVal)}</span></td>
                 <td>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <span style="background:${actionBg}; color:${actionColor}; padding:3px 8px; border-radius:4px; font-weight:700; font-size:0.75rem;">${t(actionText)}</span>
-                        <button type="button" class="btn-primary" style="padding:0.25rem 0.5rem; font-size:0.75rem; border-radius:5px; display:inline-flex; align-items:center; gap:4px; cursor:pointer;" onclick="document.getElementById('symbol-input').value='${res.Symbol}'; analyzeSymbol();" title="Detaylı AI Analizi Yap">
-                            <i class="fa-solid fa-chart-line"></i> İncele
-                        </button>
-                    </div>
+                    <span style="background:${actionBg}; color:${actionColor}; padding:3px 8px; border-radius:4px; font-weight:700; font-size:0.75rem;">${t(actionText)}</span>
                 </td>
             `;
             tbodyEl.appendChild(tr);
@@ -1729,6 +1724,28 @@ async function startRadar(type) {
 
 // ========== FAZ 6: BULK DASHBOARD & INITIALIZATION ==========
 let globalDashboardData = {};
+
+// ===== DESTEK / DIRENC HUCRESI (dip radar verisinden) =====
+function _srLookup(symbol) {
+    if (!symbol) return null;
+    const bare = String(symbol).replace('.IS', '');
+    return (dipRowsCache || []).find(r => r.symbol === bare) || null;
+}
+
+function srCellHtml(symbol, price) {
+    const r = _srLookup(symbol);
+    if (!r || !r.support) return '<span style="color:var(--text-muted); font-size:0.75rem;">—</span>';
+    const p = parseFloat(price) || r.price;
+    const supPct = ((p - r.support) / r.support * 100).toFixed(1);
+    const resPct = ((r.resistance - p) / p * 100).toFixed(1);
+    const supColor = Math.abs(supPct) <= 3 ? 'var(--accent-green)' : 'var(--text-muted)';
+    const resColor = Math.abs(resPct) <= 3 ? 'var(--accent-green)' : (Math.abs(resPct) <= 8 ? '#f59e0b' : 'var(--text-muted)');
+    return `<div style="font-size:0.72rem; line-height:1.5; white-space:nowrap;">
+        <span style="color:var(--text-muted);">Ş</span> <b>₺${p.toFixed(2)}</b><br>
+        <span title="Destek (altında tepki alınmış bölge)" style="color:${supColor};">🟢 D: ₺${r.support.toFixed(2)} (-${supPct}%)</span><br>
+        <span title="Direnç (üstünde tepe bölgesi)" style="color:${resColor};">🔴 Y: ₺${r.resistance.toFixed(2)} (+${resPct}%)</span>
+    </div>`;
+}
 
 let dashboardPollInterval = null;
 
@@ -2057,9 +2074,7 @@ function renderAllDashboardTables() {
                     <td>${smEl}</td>
                     <td>${domEl}</td>
                     <td>${pScoreStr}</td>
-                    <td>
-                        <button class="btn btn-sm" onclick="openGraphicTab('${res.Symbol}')" title="Detaylı Analiz"><i class="fa-solid fa-chart-line"></i></button>
-                    </td>
+                    <td>${srCellHtml(res.Symbol, res.Price)}</td>
                 `;
                 tbody.appendChild(tr);
                 return; // Skip the rest of the loop for this row
@@ -2128,7 +2143,7 @@ function renderAllDashboardTables() {
                     hacimStr += `<div style="font-size:0.68rem; color:#94a3b8; margin-top:2px;" title="Sektörel Domino Kardeş Hisseleri"><i class="fa-solid fa-chess-knight"></i> ${res.Domino_Sector}: ${pStr}</div>`;
                 }
                 
-                // YENİ: Sinyal Motoru ve FOMO
+                // SADE GORUNUM: hukum + tek satir rozetler + hedef/stop
                 let sigQ = res.Signal_Quality || `${scoreValue}/100`;
                 let sigColor = scoreColor;
                 if (res.Signal_Quality) {
@@ -2138,107 +2153,55 @@ function renderAllDashboardTables() {
                     else if (res.Signal_Quality.includes("ZAYIF")) sigColor = "var(--accent-orange)";
                     else if (res.Signal_Quality.includes("UZAK DUR")) sigColor = "var(--accent-red)";
                 }
-                
-                let scoreStr = `<div style="font-weight:800; color:${sigColor}; font-size:1.0rem;">${sigQ}</div>`;
-                
-                if (res.FOMO_Level) {
-                    scoreStr += `<div style="font-size:0.7rem; color:${res.FOMO_Color}; font-weight:700; margin-top:4px;" title="FOMO İndikatörü: ${res.FOMO_Score.toFixed(1)}"><i class="fa-solid fa-fire-flame-curved"></i> FOMO: ${res.FOMO_Level}</div>`;
-                }
 
-                if (res.Teyit_Score) {
-                    let tcColor = res.Teyit_Score >= 80 ? '#10b981' : (res.Teyit_Score >= 60 ? '#facc15' : '#ef4444');
-                    scoreStr += `<div style="font-size:0.68rem; color:${tcColor}; font-weight:700; margin-top:2px;" title="Kurumsal Para ve Mum Teyit Skoru"><i class="fa-solid fa-shield-check"></i> %${res.Teyit_Score} Teyit</div>`;
-                }
-                
+                let scoreStr = `<div style="font-weight:800; color:${sigColor}; font-size:1.05rem;">${sigQ}</div>`;
 
-                
-                
-                // YENİ: 5 ADET EKRAN ÖZELLİĞİ (DİNAMİK)
-                let featuresHtml = `<div style="font-size:0.7rem; color:var(--text-muted); margin-top:6px; line-height:1.35; padding:6px; border:1px solid rgba(255,255,255,0.05); border-radius:6px; background:rgba(0,0,0,0.2);">`;
-                
-                let p_val = parseFloat(res.Price || 0);
-                
-                // 1. Hedef ve Zarar Kes
-                if (p_val > 0) {
-                    featuresHtml += `<div style="margin-bottom:3px;"><span style="color:var(--accent-green)"><span style="color:#22c55e">●</span> Hedef:</span> ${(p_val * 1.05).toFixed(2)} | <span style="color:var(--accent-red)"><span style="color:#ef4444">●</span> Stop:</span> ${(p_val * 0.97).toFixed(2)}</div>`;
-                }
-                
-                // 2. Kısa Yorum (Dinamik)
-                let ai_comment = "Yatay seyir izleniyor.";
+                // risk seviyesi (RSI bazli)
                 let risk_level = "Orta";
                 let risk_color = "#f59e0b";
                 let smart_money = "Nötr";
                 let sm_color = "var(--text-muted)";
-                
                 if (res.Indicators && res.Indicators.RSI) {
                     let rsi = res.Indicators.RSI;
-                    if (rsi > 65) {
-                        ai_comment = "RSI aşırı alım bölgesinde, kâr satışına dikkat.";
-                        risk_level = "Yüksek";
-                        risk_color = "var(--accent-red)";
-                    } else if (rsi < 40) {
-                        ai_comment = "Aşırı satım bölgesinden tepki potansiyeli.";
-                        risk_level = "Düşük";
-                        risk_color = "var(--accent-green)";
-                    } else if (rsi >= 50 && rsi <= 55) {
-                        ai_comment = "RSI 55 seviyesine yaklaşıyor, ivme artabilir.";
-                    } else if (rsi > 55 && rsi <= 65) {
-                        ai_comment = "RSI pozitif bölgede, yükseliş trendi teyitli.";
-                    }
-                    
+                    if (rsi > 65) { risk_level = "Yüksek"; risk_color = "var(--accent-red)"; }
+                    else if (rsi < 40) { risk_level = "Düşük"; risk_color = "var(--accent-green)"; }
                     if (res.Indicators.MACD_Positive && rsi < 65) {
-                        smart_money = "Giriş (Alım)";
-                        sm_color = "var(--accent-green)";
-                        if (rsi >= 50 && rsi <= 55) ai_comment += " (MACD pozitif kesişim)";
+                        smart_money = "▲ Giriş"; sm_color = "var(--accent-green)";
                     } else if (!res.Indicators.MACD_Positive) {
-                        smart_money = "Çıkış (Satış)";
-                        sm_color = "var(--accent-red)";
+                        smart_money = "▼ Çıkış"; sm_color = "var(--accent-red)";
                     }
                 }
-                
                 if (res.Teyit_Score >= 80) {
-                    smart_money = "Güçlü Giriş (Alım)";
-                    sm_color = "var(--accent-green)";
+                    smart_money = "▲ Giriş"; sm_color = "var(--accent-green)";
                 }
-                
-                featuresHtml += `<div style="margin-bottom:3px; color:#e2e8f0;"><i>"${ai_comment}"</i></div>`;
-                
-                // 3. Risk / Ödül
-                featuresHtml += `<div style="margin-bottom:3px;">🛡️ Risk: <span style="color:${risk_color}">${risk_level}</span> | ⚖️ R/R: 1:2.5</div>`;
-                
-                // 4. Görsel Güç Barı
-                let p = Math.min(100, Math.max(0, res.Teyit_Score || 50));
-                let bar_color = p >= 70 ? '#10b981' : (p >= 40 ? '#f59e0b' : '#ef4444');
-                featuresHtml += `<div style="margin-bottom:3px; display:flex; align-items:center;">Güç: <div style="flex:1; height:4px; background:#333; border-radius:2px; margin-left:5px; overflow:hidden;"><div style="width:${p}%; height:100%; background:linear-gradient(90deg, transparent, ${bar_color});"></div></div></div>`;
-                
-                // 5. Smart Money Yönü
-                featuresHtml += `<div>🐋 Kurumsal Para: <span style="color:${sm_color}">${smart_money}</span></div>`;
-                
-                featuresHtml += `</div>`;
-                scoreStr += featuresHtml;
+
+                let chips = [];
+                if (res.Teyit_Score) {
+                    let tc = res.Teyit_Score >= 80 ? '#10b981' : (res.Teyit_Score >= 60 ? '#facc15' : '#ef4444');
+                    chips.push(`<span title="Kurumsal para + mum teyit skoru" style="border:1px solid ${tc}; color:${tc}; padding:1px 6px; border-radius:4px; font-size:0.7rem; font-weight:700;">Teyit %${res.Teyit_Score}</span>`);
+                }
+                chips.push(`<span title="Risk seviyesi (RSI bazli)" style="color:${risk_color}; font-size:0.72rem; font-weight:700;">Risk: ${risk_level}</span>`);
+                chips.push(`<span title="Kurumsal para yönü" style="color:${sm_color}; font-size:0.72rem; font-weight:700;">🐋 ${smart_money}</span>`);
+                if (res.FOMO_Level) {
+                    chips.push(`<span title="FOMO ${res.FOMO_Score ? res.FOMO_Score.toFixed(1) : ''}" style="color:${res.FOMO_Color || 'var(--text-muted)'}; font-size:0.72rem; font-weight:700;">🔥 ${res.FOMO_Level}</span>`);
+                }
+                scoreStr += `<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:5px;">${chips.join('')}</div>`;
+
+                let p_val_sade = parseFloat(res.Price || 0);
+                if (p_val_sade > 0) {
+                    scoreStr += `<div style="font-size:0.78rem; margin-top:6px; font-family:monospace; white-space:nowrap;" title="Otomatik hedef ve stop (+%5 / -%3)">
+                        <span style="color:#22c55e;">●</span> Hedef <b>₺${(p_val_sade * 1.05).toFixed(2)}</b>
+                        <span style="color:var(--text-muted);"> | </span>
+                        <span style="color:#ef4444;">●</span> Stop <b>₺${(p_val_sade * 0.97).toFixed(2)}</b>
+                    </div>`;
+                }
 
                 if (res.Streak_Score) {
                     scoreStr += `<div style="font-size:0.68rem; color:#38bdf8;" title="Çift Tavan İhtimali"><i class="fa-solid fa-link"></i> %${res.Streak_Score} Seri</div>`;
                 }
                 
-                // YENİ: İndikatör Güçlendirmesi (RSI & MACD)
-                if (res.Indicators && res.Indicators.RSI) {
-                    let rsiVal = res.Indicators.RSI;
-                    let rsiColor = rsiVal >= 70 ? 'var(--accent-red)' : (rsiVal <= 40 ? 'var(--accent-green)' : 'var(--text-muted)');
-                    let macdIcon = res.Indicators.MACD_Positive ? '<i class="fa-solid fa-arrow-trend-up" style="color:var(--accent-green)"></i>' : '<i class="fa-solid fa-arrow-trend-down" style="color:var(--accent-red)"></i>';
-                    scoreStr += `<div style="font-size:0.7rem; color:${rsiColor}; margin-top:4px; display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,0.05); padding:2px 5px; border-radius:4px; border:1px solid rgba(255,255,255,0.1);" title="Anlık RSI ve MACD Trendi"><span>RSI:${rsiVal}</span> ${macdIcon}</div>`;
-                }
-
                 if (res.Warrant_Match) {
                     scoreStr += `<div style="margin-top:2px;"><span style="background:rgba(234, 179, 8, 0.2); color:#facc15; padding:1px 4px; border-radius:3px; font-size:0.68rem; font-weight:700;" title="${res.Warrant_Match.Desc}"><i class="fa-solid fa-crosshairs"></i> Varant: ${res.Warrant_Match.Leverage} (+%${res.Warrant_Match.Potential_Gain_Pct})</span></div>`;
-                }
-                
-                if (res.Position) {
-                    scoreStr += `
-                        <div style="font-size:0.7rem; display:flex; gap:4px; flex-wrap:wrap; margin-top:2px;">
-                            <span style="background:rgba(239, 68, 68, 0.15); color:var(--accent-red); padding:1px 4px; border-radius:3px; font-weight:600;" title="İz Süren Stop"><i class="fa-solid fa-shield-halved"></i> ₺${res.Position.SL}</span>
-                        </div>
-                    `;
                 }
                 
                 tr.innerHTML = `
@@ -2248,11 +2211,7 @@ function renderAllDashboardTables() {
                     <td>${tavanStr}</td>
                     <td>${hacimStr}</td>
                     <td>${scoreStr}</td>
-                    <td>
-                        <button type="button" class="btn-primary" style="padding:0.3rem 0.6rem; font-size:0.75rem; border-radius:6px; border:none; color:white; display:flex; align-items:center; gap:4px; cursor:pointer; background:linear-gradient(135deg, #ef4444, #b91c1c); box-shadow:0 2px 6px rgba(239,68,68,0.3);" onclick="document.getElementById('symbol-input').value='${res.Symbol}'; analyzeSymbol();" title="Tavan Hedefi, Stop Seviyeleri ve Altın Varantları İncele">
-                            <i class="fa-solid fa-rocket"></i> İncele
-                        </button>
-                    </td>
+                    <td>${srCellHtml(res.Symbol, res.Price)}</td>
                 `;
                 tbody.appendChild(tr);
                 return;
@@ -2308,12 +2267,8 @@ function renderAllDashboardTables() {
                 <td style="font-family:monospace; font-weight:600;">${priceStr}</td>
                 <td>${scoreContent}</td>
                 <td>${statusStr}</td>
-                    <td>
-                        <button type="button" class="btn-primary" style="padding:0.3rem 0.6rem; font-size:0.75rem; border-radius:6px; border:none; color:white; display:flex; align-items:center; gap:4px; cursor:pointer; background:linear-gradient(135deg, #3b82f6, #1d4ed8); box-shadow:0 2px 6px rgba(59,130,246,0.3);" onclick="document.getElementById('symbol-input').value='${res.Symbol}'; analyzeSymbol();" title="Detaylı AI Analizi, Varant Getiri Matrisi ve Grafiği Aç">
-                            <i class="fa-solid fa-chart-line"></i> İncele
-                        </button>
-                    </td>
-                `;
+                <td>${srCellHtml(res.Symbol, res.Price)}</td>
+            `;
                 tbody.appendChild(tr);
         });
     }
@@ -2354,7 +2309,7 @@ function renderAllDashboardTables() {
                     <td style="font-family:monospace; font-weight:600;font-size:1.1rem;">${priceStr}</td>
                     <td style="color:${sColor};font-weight:700;font-size:1.1rem;">${s5} / 5</td>
                     <td style="font-size:0.85rem; line-height:1.4;">${details.join('<br>')}</td>
-                    <td><a href="/?symbol=${res.Symbol}&tab=graphic" target="_blank" class="btn btn-sm btn-outline-primary" style="text-decoration:none;" onclick="event.preventDefault(); openGraphicTab('${res.Symbol}'); switchMainTab('home', document.querySelector('.nav-btn.active'));">Grafikte Aç</a></td>
+                    <td>${srCellHtml(res.Symbol, res.Price)}</td>
                 `;
                 opp1hTbody.appendChild(tr);
             });
@@ -4227,11 +4182,11 @@ async function fetchDipBreakout() {
             }
         } else {
             const tbody = document.getElementById('tb-dip-breakout');
-            if (tbody) tbody.innerHTML = '<tr><td colspan="13" class="text-muted text-center">' + (data.error || 'Veri hazırlanıyor, birkaç dakika içinde hazır olacak.') + '</td></tr>';
+            if (tbody) tbody.innerHTML = '<tr><td colspan="12" class="text-muted text-center">' + (data.error || 'Veri hazırlanıyor, birkaç dakika içinde hazır olacak.') + '</td></tr>';
         }
     } catch (e) {
         const tbody = document.getElementById('tb-dip-breakout');
-        if (tbody) tbody.innerHTML = '<tr><td colspan="13" class="text-muted text-center">Bağlantı hatası</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="12" class="text-muted text-center">Bağlantı hatası</td></tr>';
     } finally {
         dipFetching = false;
     }
@@ -4264,7 +4219,7 @@ function renderDipBreakout() {
         rows = rows.filter(r => r.category === dipCategory);
     }
     if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="13" class="text-muted text-center">Bu kategoride şu an aday yok.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="12" class="text-muted text-center">Bu kategoride şu an aday yok.</td></tr>';
         return;
     }
     const catOrder = {'MOMENTUM': 0, 'DIP_KIRILIM': 1, 'ERKEN_DIP': 2, 'YENI': 3, null: 4};
@@ -4313,7 +4268,6 @@ function renderDipBreakout() {
             '<td data-label="Tuzak" style="color:' + trapColor + '; font-weight:700;">%' + r.trap_pct + '</td>' +
             '<td data-label="İşlem"><span style="font-size:0.75rem; font-weight:800; color:' + actionColor + ';">' + r.action + '</span>' + thr + '</td>' +
             '<td data-label="Fırsat"><b style="color:' + (r.opportunity >= 70 ? 'var(--accent-green)' : r.opportunity >= 50 ? '#f59e0b' : 'var(--text-muted)') + ';">' + r.opportunity + '</b></td>' +
-            '<td><button type="button" class="dip-btn" style="padding:3px 8px; font-size:0.72rem; border-radius:6px; border:none; cursor:pointer; color:white; background:linear-gradient(135deg,#3b82f6,#1d4ed8);" onclick="document.getElementById(\'symbol-input\').value=\'' + r.symbol + '\'; analyzeSymbol(\'' + r.symbol + '\');">🔍 İncele</button></td>' +
             '</tr>';
     }).join('');
 }
