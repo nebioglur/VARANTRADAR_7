@@ -331,7 +331,31 @@
                     </table>
                     </div>
                 </div>
-                
+
+                <!-- DIP & KIRILIM RADARI (tam genislik) -->
+                <div class="card" id="dip-breakout-card" style="grid-column: 1 / -1; padding:1rem; border:1px solid rgba(16,185,129,0.35); box-shadow: 0 0 15px rgba(16,185,129,0.10);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.6rem; margin-bottom:0.6rem;">
+                        <h3 class="card-title" style="margin:0; font-size:1.05rem; color:var(--accent-green);"><i class="fa-solid fa-water-arrow-up"></i> 🎯 DİP &amp; KIRILIM RADARI <span id="time-dip-breakout" style="font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-left:8px;"></span></h3>
+                        <div id="dip-filter-btns" style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+                            <button class="dip-filter-btn" data-cat="ALL" onclick="setDipCategory('ALL')" style="padding:0.35rem 0.8rem; border-radius:8px; border:1px solid var(--accent-green); background:rgba(16,185,129,0.2); color:var(--accent-green); cursor:pointer; font-size:0.78rem; font-weight:700;">TÜMÜ</button>
+                            <button class="dip-filter-btn" data-cat="ERKEN_DIP" onclick="setDipCategory('ERKEN_DIP')" style="padding:0.35rem 0.8rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-muted); cursor:pointer; font-size:0.78rem;">🟢 EN ERKEN DİPLER</button>
+                            <button class="dip-filter-btn" data-cat="DIP_KIRILIM" onclick="setDipCategory('DIP_KIRILIM')" style="padding:0.35rem 0.8rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-muted); cursor:pointer; font-size:0.78rem;">🟡 DİP → KIRILIM</button>
+                            <button class="dip-filter-btn" data-cat="MOMENTUM" onclick="setDipCategory('MOMENTUM')" style="padding:0.35rem 0.8rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-muted); cursor:pointer; font-size:0.78rem;">🔴 KIRILIM → MOMENTUM</button>
+                        </div>
+                    </div>
+                    <p style="font-size:0.78rem; color:var(--text-muted); margin:0 0 0.6rem 0;">Dip: 10 kriter (satış baskısı, higher-low, hacim, para akışı, volatilite, destek tepkisi...). Kırılım: 1️⃣ Yaklaşıyor → 2️⃣ Deneme → 3️⃣ Onaylandı. Tuzak riski yüksekse skor ne kadar iyi olursa olsun <b>BEKLE</b>.</p>
+                    <div class="table-scroll-wrapper" style="max-height:480px; min-height:180px; overflow-y:auto;">
+                    <table class="data-table" style="width: 100%;">
+                        <thead><tr>
+                            <th>Sembol</th><th>Fiyat</th><th>Aşama</th><th>Dip Oluşumu</th>
+                            <th>Dip</th><th>Dipten</th><th>Direnç</th><th>Dirence</th><th>Dip→Kır</th>
+                            <th>🪤 Tuzak</th><th>İşlem</th><th>Fırsat</th><th style="width:60px;"></th>
+                        </tr></thead>
+                        <tbody id="tb-dip-breakout"><tr><td colspan="13" class="text-muted text-center">Taranıyor...</td></tr></tbody>
+                    </table>
+                    </div>
+                </div>
+
                             </div>
 
             <!-- Right Side: Live Autonomous AI Committee Macro & Sector Engine -->
@@ -2132,7 +2156,7 @@
 
 
 
-    <script src="app.js?v=20260908_sim_refresh_toggle"></script>
+    <script src="app.js?v=20260908_dip_breakout"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js"></script>
 </body>

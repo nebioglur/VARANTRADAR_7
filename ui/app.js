@@ -4194,6 +4194,119 @@ setInterval(() => {
     }
 }, 10000);
 
+// ========== DİP & KIRILIM RADARI ==========
+let dipCategory = 'ALL';
+let dipRowsCache = [];
+let dipFetching = false;
+
+function setDipCategory(cat) {
+    dipCategory = cat;
+    document.querySelectorAll('.dip-filter-btn').forEach(b => {
+        const active = b.dataset.cat === cat;
+        b.style.border = active ? '1px solid var(--accent-green)' : '1px solid var(--border-color)';
+        b.style.background = active ? 'rgba(16,185,129,0.2)' : 'var(--bg-card)';
+        b.style.color = active ? 'var(--accent-green)' : 'var(--text-muted)';
+        b.style.fontWeight = active ? '700' : '400';
+    });
+    renderDipBreakout();
+}
+
+async function fetchDipBreakout() {
+    if (dipFetching) return;
+    dipFetching = true;
+    try {
+        const res = await fetch('/api/dip_breakout?t=' + Date.now());
+        const data = await res.json();
+        if (data.status === 'ok' || (data.rows && data.rows.length)) {
+            dipRowsCache = data.rows || [];
+            renderDipBreakout();
+            const tEl = document.getElementById('time-dip-breakout');
+            if (tEl && data.built_at) {
+                const d = new Date(data.built_at);
+                tEl.innerText = '(Güncelleme: ' + d.toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'}) + ')';
+            }
+        } else {
+            const tbody = document.getElementById('tb-dip-breakout');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="13" class="text-muted text-center">' + (data.error || 'Veri hazırlanıyor, birkaç dakika içinde hazır olacak.') + '</td></tr>';
+        }
+    } catch (e) {
+        const tbody = document.getElementById('tb-dip-breakout');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="13" class="text-muted text-center">Bağlantı hatası</td></tr>';
+    } finally {
+        dipFetching = false;
+    }
+}
+
+function _dipStageBadge(stage) {
+    const map = {
+        'ONAYLANDI': ['✅ KIRILIM ONAYLANDI', 'var(--accent-green)'],
+        'DENEME': ['🟠 KIRILIM DENEMESİ', '#f59e0b'],
+        'YAKLAŞIYOR': ['🔵 KIRILIMA YAKLAŞIYOR', '#3b82f6'],
+        'UZAK': ['⚪ UZAK', 'var(--text-muted)'],
+    };
+    const m = map[stage] || map['UZAK'];
+    return '<span style="font-size:0.72rem; font-weight:700; color:' + m[1] + ';">' + m[0] + '</span>';
+}
+
+function _dipScoreBar(pct) {
+    const color = pct >= 75 ? 'var(--accent-green)' : (pct >= 55 ? '#f59e0b' : 'var(--text-muted)');
+    return '<div style="min-width:90px;"><div style="font-size:0.75rem; font-weight:700; color:' + color + ';">%' + pct + '</div>' +
+        '<div style="height:4px; background:rgba(255,255,255,0.08); border-radius:2px; margin-top:2px;"><div style="width:' + pct + '%; height:4px; background:' + color + '; border-radius:2px;"></div></div></div>';
+}
+
+function renderDipBreakout() {
+    const tbody = document.getElementById('tb-dip-breakout');
+    if (!tbody) return;
+    let rows = dipRowsCache;
+    if (dipCategory !== 'ALL') rows = rows.filter(r => r.category === dipCategory);
+    if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="13" class="text-muted text-center">Bu kategoride şu an aday yok.</td></tr>';
+        return;
+    }
+    const catOrder = {'MOMENTUM': 0, 'DIP_KIRILIM': 1, 'ERKEN_DIP': 2, null: 3};
+    rows = [...rows].sort((a, b) => ((catOrder[a.category] ?? 3) - (catOrder[b.category] ?? 3)) || (b.opportunity - a.opportunity));
+    const catBadge = {
+        'ERKEN_DIP': '<span style="font-size:0.68rem; color:var(--accent-green);">🟢 ERKEN DİP</span>',
+        'DIP_KIRILIM': '<span style="font-size:0.68rem; color:#f59e0b;">🟡 DİP→KIR</span>',
+        'MOMENTUM': '<span style="font-size:0.68rem; color:var(--accent-red);">🔴 MOMENTUM</span>',
+    };
+    tbody.innerHTML = rows.map(r => {
+        const fromDipColor = r.from_dip_pct <= 3 ? 'var(--accent-green)' : (r.from_dip_pct <= 8 ? '#f59e0b' : 'var(--text-muted)');
+        const distColor = r.dist_to_res_pct < 0 ? 'var(--accent-red)' : (r.dist_to_res_pct <= 2 ? 'var(--accent-green)' : (r.dist_to_res_pct <= 5 ? '#f59e0b' : 'var(--text-muted)'));
+        const trapColor = r.trap_pct >= 60 ? 'var(--accent-red)' : (r.trap_pct >= 40 ? '#f59e0b' : 'var(--accent-green)');
+        let actionColor = 'var(--text-muted)';
+        if (r.action === 'AL') actionColor = 'var(--accent-green)';
+        else if (r.action === 'DİP AVI') actionColor = '#22d3ee';
+        else if (r.action === 'İZLE') actionColor = '#f59e0b';
+        else if (r.action === 'GEÇ KALMIŞ') actionColor = '#fb923c';
+        else if (r.action.indexOf('BEKLE ⚠') === 0) actionColor = 'var(--accent-red)';
+        const thr = r.threshold_tag ? '<div style="font-size:0.68rem; color:var(--accent-green); font-weight:700;">🔥 DİP+KIRILIM EŞİĞİ</div>' : '';
+        const chgColor = r.change_pct >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+        return '<tr>' +
+            '<td><b>' + r.symbol + '</b><br>' + (catBadge[r.category] || '') + '</td>' +
+            '<td>₺' + r.price.toFixed(2) + '<br><span style="font-size:0.72rem; color:' + chgColor + ';">' + (r.change_pct >= 0 ? '+' : '') + r.change_pct.toFixed(2) + '%</span></td>' +
+            '<td>' + _dipStageBadge(r.stage) + '</td>' +
+            '<td>' + _dipScoreBar(r.dip_pct) + '</td>' +
+            '<td>₺' + r.dip_price.toFixed(2) + '</td>' +
+            '<td style="color:' + fromDipColor + ';">+' + r.from_dip_pct.toFixed(1) + '%</td>' +
+            '<td>₺' + r.resistance.toFixed(2) + '</td>' +
+            '<td style="color:' + distColor + ';">' + r.dist_to_res_pct.toFixed(2) + '%</td>' +
+            '<td style="color:' + distColor + ';">' + r.dist_to_res_pct.toFixed(2) + '%</td>' +
+            '<td style="color:' + trapColor + '; font-weight:700;">%' + r.trap_pct + '</td>' +
+            '<td><span style="font-size:0.75rem; font-weight:800; color:' + actionColor + ';">' + r.action + '</span>' + thr + '</td>' +
+            '<td><b style="color:' + (r.opportunity >= 70 ? 'var(--accent-green)' : r.opportunity >= 50 ? '#f59e0b' : 'var(--text-muted)') + ';">' + r.opportunity + '</b></td>' +
+            '<td><button type="button" style="padding:3px 8px; font-size:0.72rem; border-radius:6px; border:none; cursor:pointer; color:white; background:linear-gradient(135deg,#3b82f6,#1d4ed8);" onclick="document.getElementById(\'symbol-input\').value=\'' + r.symbol + '\'; analyzeSymbol(\'' + r.symbol + '\');">İncele</button></td>' +
+            '</tr>';
+    }).join('');
+}
+
+// GİRİŞ görünürken 90 sn'de bir tazele
+setInterval(() => {
+    const w = document.getElementById('dashboard-wrapper');
+    if (w && w.style.display !== 'none') fetchDipBreakout();
+}, 90000);
+setTimeout(fetchDipBreakout, 4000);
+
 // ========== SIRALAMA (LEADERBOARD) ==========
 async function fetchLeaderboard() {
     const tbody = document.getElementById('lb-tbody');

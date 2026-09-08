@@ -2027,6 +2027,25 @@ def api_detective_detail(symbol):
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@app.route('/api/dip_breakout', methods=['GET'])
+def api_dip_breakout():
+    """DIP & KIRILIM RADARI: akilli dip skoru (10 kriter), 3 asamali kirilim,
+    tuzak riski, dip-kirilim mesafesi ve kategori gruplari."""
+    try:
+        from services.dip_breakout_engine import get_rows, start_background_loop
+        start_background_loop()
+        d = get_rows()
+        safe = sanitize_for_json(d)
+        return jsonify({"status": "ok" if safe.get("rows") else "empty",
+                        "rows": safe.get("rows", []),
+                        "summary": safe.get("summary", {}),
+                        "built_at": safe.get("built_at"),
+                        "error": safe.get("error")})
+    except Exception as e:
+        import traceback
+        return jsonify({"status": "error", "message": str(e), "trace": traceback.format_exc()}), 500
+
+
 if __name__ == "__main__":
 
     print("[SYSTEM] VarantRadar Pro Web Server Baslatiliyor...")
