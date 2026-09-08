@@ -3739,6 +3739,26 @@ if (dashWrapper) {
 // ========== SİMÜLASYON MOTORU ==========
 let globalSimData = null;
 
+// Simülasyon sayfası otomatik yenileme: kullanıcı inceleyebilmesi için
+// durdurulabilir. Durdurulunca yalnızca "Şimdi Yenile" ile tazelenir.
+let simAutoRefresh = true;
+
+function toggleSimAutoRefresh() {
+    simAutoRefresh = !simAutoRefresh;
+    const btn = document.getElementById('sim-auto-refresh-toggle');
+    if (btn) {
+        btn.innerHTML = simAutoRefresh
+            ? '<i class="fa-solid fa-pause"></i> Otomatik Yenileme: AÇIK'
+            : '<i class="fa-solid fa-play"></i> Otomatik Yenileme: KAPALI';
+        btn.style.borderColor = simAutoRefresh ? 'var(--border-color)' : 'var(--accent-yellow)';
+        btn.style.color = simAutoRefresh ? 'var(--text-main)' : 'var(--accent-yellow)';
+    }
+}
+
+function refreshSimNow() {
+    fetchSimulationData();
+}
+
 async function fetchSimulationData() {
     const tbody = document.getElementById('sim-trade-log-tbody');
     if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> İşlem Geçmişi Yükleniyor...</td></tr>';
@@ -4160,7 +4180,7 @@ setInterval(() => {
     const pfWrapper = document.getElementById('portfolio-wrapper');
     const simVisible = wrapper && wrapper.style.display !== 'none';
     const pfVisible = pfWrapper && pfWrapper.style.display !== 'none';
-    if (simVisible || pfVisible) {
+    if (pfVisible || (simVisible && simAutoRefresh)) {
         fetchLiveTerminal();
         ltRefreshResetUI();
         fetchAdminResetRequests();
@@ -4169,7 +4189,7 @@ setInterval(() => {
 
 setInterval(() => {
     const wrapper = document.getElementById('simulation-wrapper');
-    if (wrapper && wrapper.style.display !== 'none') {
+    if (wrapper && wrapper.style.display !== 'none' && simAutoRefresh) {
         fetchSimulationData();
     }
 }, 10000);

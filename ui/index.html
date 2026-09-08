@@ -1491,6 +1491,14 @@
             <div style="margin-bottom:2rem; text-align: center;">
                 <h2 style="color:var(--accent-blue); font-size: 1.8rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-flask"></i> Gerçekçi Simülasyon Motoru</h2>
                 <p style="color:var(--text-muted); font-size: 0.95rem;">Tavan adaylarına yatırım yapan ve UZAK DUR sinyaliyle çıkış yapan test motoru.</p>
+                <div style="display:flex; justify-content:center; gap:0.6rem; margin-top:0.8rem; flex-wrap:wrap;">
+                    <button id="sim-auto-refresh-toggle" onclick="toggleSimAutoRefresh()" style="padding:0.45rem 1rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-main); cursor:pointer; font-size:0.85rem;">
+                        <i class="fa-solid fa-pause"></i> Otomatik Yenileme: AÇIK
+                    </button>
+                    <button onclick="refreshSimNow()" style="padding:0.45rem 1rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-main); cursor:pointer; font-size:0.85rem;">
+                        <i class="fa-solid fa-rotate-right"></i> Şimdi Yenile
+                    </button>
+                </div>
             </div>
 
             <!-- 4 KPI Cards row -->
@@ -2124,7 +2132,7 @@
 
 
 
-    <script src="app.js?v=20260908_risk_engine_v6"></script>
+    <script src="app.js?v=20260908_sim_refresh_toggle"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js"></script>
 </body>
