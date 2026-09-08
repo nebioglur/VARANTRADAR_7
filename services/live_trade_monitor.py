@@ -5,7 +5,8 @@ Canlı İşlem Terminali Motoru:
   * Sabit TP (Kâr Al) ve SL (Zarar Kes) seviyeleri
   * +3% kazanctan sonra otomatik IZLEYEN STOP (trailing) devreye girer
   * Tavan hedefine ulasinda tam kâr
-  * Seans sonu (18:10) otomatik pozisyon kapatma (canli terminal)
+  * Seans sonu zorla kapatma YOK: canli portfoyde acik pozisyon gecede acik kalabilir
+    (18:00 nakit kurali yalnizca simulasyonda)
   * (17:50 nakit gecisi YALNIZCA simulasyon motorundadir)
 Komisyon: %0.04 (islem basi, cift yonlu) - sim motoru ile ayni.
 """
@@ -345,9 +346,9 @@ def monitor_once():
 
     now = datetime.now()
     d_str = now.strftime("%Y-%m-%d")
-    # Canli terminalde gun sonu kapanisi 18:10 (eski davranis).
-    # 17:50 nakit gecisi YALNIZCA simulasyon motorunda uygulanir.
-    session_over = now.time() >= dtime(18, 10)
+    # Canli portfoyde acik pozisyonlar gun sonu zorla KAPANMAZ; gecede acik
+    # kalabilir (ertesi gun stop/kar-al izlemeye devam eder).
+    # "En gec 18:00 nakit" kurali YALNIZCA simulasyon motorunda uygulanir.
 
     symbols = list({r["symbol"] for r in open_positions})
     prices = _bulk_prices(symbols)
@@ -371,9 +372,7 @@ def monitor_once():
         hwm = float(row["high_water"] or entry)
         trailing_active = bool(row["trailing_active"])
 
-        if session_over:
-            reason = "⏱ GÜN SONU OTOMATİK KAPANIŞ"
-        elif price <= stop_price:
+        if price <= stop_price:
             if trailing_active:
                 reason = "🔒 İZLEYEN STOP KİLİDİ (Kâr korundu)"
             else:
