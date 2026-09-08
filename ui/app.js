@@ -4153,6 +4153,7 @@ setInterval(() => {
 let dipCategory = 'ALL';
 let dipRowsCache = [];
 let dipFetching = false;
+let dipRetryCount = 0;
 
 function setDipCategory(cat) {
     dipCategory = cat;
@@ -4173,18 +4174,33 @@ async function fetchDipBreakout() {
         const res = await fetch('/api/dip_breakout?t=' + Date.now());
         const data = await res.json();
         if (data.status === 'ok' || (data.rows && data.rows.length)) {
+            dipRetryCount = 0;
             dipRowsCache = data.rows || [];
             renderDipBreakout();
+            // S/R kolonlu diger tablolar dip verisi gelmeden render edildiyse
+            // "—" kalmis olurlar; veri gelince yeniden ciz.
+            if (typeof renderAllDashboardTables === 'function' && globalDashboardData && Object.keys(globalDashboardData).length) {
+                try { renderAllDashboardTables(); } catch (e) { /* sessiz */ }
+            }
             const tEl = document.getElementById('time-dip-breakout');
             if (tEl && data.built_at) {
                 const d = new Date(data.built_at);
                 tEl.innerText = '(Güncelleme: ' + d.toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'}) + ')';
             }
         } else {
+            // Sunucu veriyi henuz insa ediyorsa bir kac kez daha dene
+            if (dipRetryCount < 8) {
+                dipRetryCount++;
+                setTimeout(fetchDipBreakout, 15000);
+            }
             const tbody = document.getElementById('tb-dip-breakout');
             if (tbody) tbody.innerHTML = '<tr><td colspan="12" class="text-muted text-center">' + (data.error || 'Veri hazırlanıyor, birkaç dakika içinde hazır olacak.') + '</td></tr>';
         }
     } catch (e) {
+        if (dipRetryCount < 8) {
+            dipRetryCount++;
+            setTimeout(fetchDipBreakout, 15000);
+        }
         const tbody = document.getElementById('tb-dip-breakout');
         if (tbody) tbody.innerHTML = '<tr><td colspan="12" class="text-muted text-center">Bağlantı hatası</td></tr>';
     } finally {
