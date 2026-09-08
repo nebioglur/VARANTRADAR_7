@@ -670,9 +670,17 @@ def require_auth():
 def login():
     # Giris artık tarayici tarafinda Verdent-managed Supabase Auth ile yapilir
     # (@verdent/auth-js builtin UI). Sunucu tarafinda form login yoktur.
+    # CLASSIC_ONLY=1 ise (bagimsiz yedek site) sadece klasik kullanici/sifre formu gosterilir.
     try:
         with open('ui/login.html', 'r', encoding='utf-8') as f:
-            return f.read()
+            html = f.read()
+        if os.environ.get('CLASSIC_ONLY') == '1':
+            flag = '<script>window.VR_CLASSIC_ONLY=1;</script>'
+            if '<head>' in html:
+                html = html.replace('<head>', '<head>' + flag, 1)
+            else:
+                html = flag + html
+        return html
     except:
         return "login.html bulunamadi", 404
 

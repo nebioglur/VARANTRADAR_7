@@ -320,6 +320,26 @@
         </div>
     </div>
 
+    <script>
+        // BAGIMSIZ YEDEK MODU (CLASSIC_ONLY=1): sadece kullanici adi/sifre girisi.
+        // Supabase (e-posta/Google) butun tum giris yollari gizlenir/iptal edilir.
+        if (window.VR_CLASSIC_ONLY === 1) {
+            document.addEventListener('DOMContentLoaded', function () {
+                ['btn-open-signin', 'btn-open-signup', 'btn-open-forgot', 'btn-classic-toggle'].forEach(function (id) {
+                    var el = document.getElementById(id);
+                    if (el) el.style.display = 'none';
+                });
+                // "veya e-posta / Google ile" ayiriciyi da gizle (div'in ardindaki ilk ayirici)
+                var divs = document.querySelectorAll('.login-card > div[style*="height:1px"]');
+                if (divs.length >= 2) {
+                    var sep = divs[0].parentElement;
+                    if (sep) sep.style.display = 'none';
+                }
+                var note = document.querySelector('.auth-note');
+                if (note) note.innerHTML = '<i class="fa-solid fa-lock"></i> <span>Bu panel yalnızca kullanıcı adı ve şifre ile çalışır</span>';
+            });
+        }
+    </script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js"></script>
     <script>
@@ -377,8 +397,9 @@
 
         // Eski tarayici / modul yukleme hatasi yakalayici:
         // app-auth.js modulu hic calismadiysa kullaniciya gorunur mesaj ver.
+        // (CLASSIC_ONLY modunda klasik form zaten acik, uyari gereksiz)
         setTimeout(function () {
-            if (!window.__vrAuthBooted) {
+            if (!window.__vrAuthBooted && window.VR_CLASSIC_ONLY !== 1) {
                 var box = document.getElementById('auth-error-box');
                 if (box && box.style.display === 'none') {
                     box.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' +
