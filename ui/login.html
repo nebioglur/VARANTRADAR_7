@@ -263,29 +263,8 @@
             <!-- Hata kutusu (JS tarafindan doldurulur) -->
             <div class="error-msg" id="auth-error-box" style="display:none;"></div>
 
-            <button type="button" id="btn-open-signin" class="btn-login">
-                SİSTEME GİRİŞ YAP <i class="fa-solid fa-arrow-right-to-bracket"></i>
-            </button>
-
-            <button type="button" id="btn-open-signup" class="btn-secondary">
-                <i class="fa-solid fa-user-plus"></i> Hesap Oluştur
-            </button>
-
-            <button type="button" id="btn-open-forgot" class="btn-recovery">
-                Şifremi unuttum
-            </button>
-
-            <div style="display:flex; align-items:center; gap:0.8rem; margin-top:1.4rem;">
-                <div style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></div>
-                <span style="font-size:0.68rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px;">veya</span>
-                <div style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></div>
-            </div>
-
-            <button type="button" id="btn-classic-toggle" class="btn-recovery" style="margin-top:1rem;">
-                <i class="fa-solid fa-user-shield"></i> Kullanıcı adı / şifre ile giriş
-            </button>
-
-            <form id="classic-login" style="display:none; margin-top:1.2rem;" autocomplete="on">
+            <!-- Klasik giris: VARSAYILAN ACIK (telefonlarda Supabase modali yerine garantili yol) -->
+            <form id="classic-login" style="display:block; margin-bottom:0.5rem;" autocomplete="on">
                 <div class="form-group">
                     <label for="classic-user">Kullanıcı Adı</label>
                     <div class="input-wrapper">
@@ -307,9 +286,31 @@
                 </button>
             </form>
 
+            <div style="display:flex; align-items:center; gap:0.8rem; margin-top:1.4rem;">
+                <div style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></div>
+                <span style="font-size:0.68rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px;">veya e-posta / Google ile</span>
+                <div style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></div>
+            </div>
+
+            <button type="button" id="btn-open-signin" class="btn-secondary" style="margin-top:1rem;">
+                E-POSTA İLE GİRİŞ <i class="fa-solid fa-arrow-right-to-bracket"></i>
+            </button>
+
+            <button type="button" id="btn-open-signup" class="btn-secondary">
+                <i class="fa-solid fa-user-plus"></i> Hesap Oluştur
+            </button>
+
+            <button type="button" id="btn-open-forgot" class="btn-recovery">
+                Şifremi unuttum
+            </button>
+
+            <button type="button" id="btn-classic-toggle" class="btn-recovery" style="margin-top:1rem;">
+                <i class="fa-solid fa-user-shield"></i> Kullanıcı adı / şifre formunu gizle
+            </button>
+
             <div class="auth-note">
                 <i class="fa-solid fa-shield-halved"></i>
-                <span>Butona basınca açılan giriş ekranında e-posta/şifre veya Google ile giriş yapılır</span>
+                <span>Kullanıcı adı ve şifrenizle girin; alternatif olarak e-posta/Google girişi kullanılabilir</span>
             </div>
         </div>
 
