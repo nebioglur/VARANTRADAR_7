@@ -147,7 +147,9 @@ class SimulationEngine:
             is_bear = (get_xu100_change() < -0.5)
         except:
             is_bear = False
-        ideal_allocation = 1500.0 if is_bear else 3333.0 
+        # Bakiyeye oranli dinamik boyutlandirma: bogada islem basina %10, ayida %5
+        # (100k bakiyede bogada 10.000 TL/islem; bakiye buyudukce pozisyonlar da buyur)
+        ideal_allocation = self.daily_budget * (0.05 if is_bear else 0.10)
         
         active_trades = []
         completed_trades = []
