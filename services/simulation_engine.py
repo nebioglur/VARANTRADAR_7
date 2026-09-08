@@ -24,6 +24,12 @@ class SimulationEngine:
     def _save_trades(self, date_str: str, trades: list):
         conn = get_connection()
         cursor = conn.cursor()
+        # Idempotent yeniden calistirma: ayni gunun eski islemleri temizlenir,
+        # boylece farkli motor surumlerinin kayitlari karismaz.
+        try:
+            cursor.execute("DELETE FROM trades WHERE owner=? AND date_str=?", (self.owner, date_str))
+        except Exception as e:
+            print(f"[SimEngine] Eski trade temizleme hatasi: {e}")
         for t in trades:
             try:
                 cursor.execute("""
@@ -60,7 +66,13 @@ class SimulationEngine:
         win_trades = sum(1 for t in trades if t.get('pnl_val', 0) > 0)
 
         try:
-            cursor.execute("SELECT end_equity FROM equity_log WHERE owner=? ORDER BY date_str DESC LIMIT 1", (self.owner,))
+            # Bakiye zinciri: yalnizca ONCEKI GUNUN bitisi baz alinir.
+            # (Bugunun satiri okunursa ayni gun tekrar calistirmada kar
+            #  uzerine kar eklenir ve zincir sasardi.)
+            cursor.execute(
+                "SELECT end_equity FROM equity_log WHERE owner=? AND date_str<? ORDER BY date_str DESC LIMIT 1",
+                (self.owner, date_str)
+            )
             prev = cursor.fetchone()
             start_eq = float(prev['end_equity']) if prev else self.daily_budget
         except Exception as e:
@@ -71,6 +83,7 @@ class SimulationEngine:
                 INSERT INTO equity_log (owner, date_str, start_equity, end_equity, daily_pnl, total_trades, win_trades)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(owner, date_str) DO UPDATE SET
+                    start_equity=excluded.start_equity,
                     end_equity=excluded.end_equity,
                     daily_pnl=excluded.daily_pnl,
                     total_trades=excluded.total_trades,
@@ -426,6 +439,14 @@ class SimulationEngine:
                 if df is None or current_time not in df.index:
                     continue
 
+                # Verisi erken kesilen hissede islem acma (veri saglayici
+                # bazi sembollerde gunu yari yolda bitiriyor; giris=çikis
+                # ayni dakika kaliyordu). En az 30 dk yonetilebilir veri sart.
+                remaining_bars = int((df.index > current_time).sum())
+                if remaining_bars < 6:
+                    to_remove.append(s)
+                    continue
+
                 raw_entry = float(df.loc[current_time, 'Close'])
                 ceiling = float(s['ceiling_target'])
                 prev_close = ceiling / 1.10
@@ -489,6 +510,9 @@ class SimulationEngine:
                         continue
                     df = dfs.get(sym)
                     if df is None or current_time not in df.index:
+                        continue
+                    # Erken kesilen veride yeniden giris de yapma
+                    if int((df.index > current_time).sum()) < 6:
                         continue
                     sub_df = df.loc[:current_time]
                     raw_entry = float(sub_df['Close'].iloc[-1])
