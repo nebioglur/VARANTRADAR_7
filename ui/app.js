@@ -4258,7 +4258,11 @@ function renderDipBreakout() {
     const tbody = document.getElementById('tb-dip-breakout');
     if (!tbody) return;
     let rows = dipRowsCache;
-    if (dipCategory !== 'ALL') rows = rows.filter(r => r.category === dipCategory);
+    if (dipCategory === 'YENI') {
+        rows = rows.filter(r => r.category === 'YENI' || r.is_new);
+    } else if (dipCategory !== 'ALL') {
+        rows = rows.filter(r => r.category === dipCategory);
+    }
     if (!rows.length) {
         tbody.innerHTML = '<tr><td colspan="13" class="text-muted text-center">Bu kategoride şu an aday yok.</td></tr>';
         return;
