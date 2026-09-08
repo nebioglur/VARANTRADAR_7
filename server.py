@@ -1556,6 +1556,40 @@ def api_portfolio_reset_status():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/api/admin/simulation/run', methods=['POST'])
+def api_admin_simulation_run():
+    """Admin: Belirli tarih için günlük simülasyonu manuel tetikler."""
+    try:
+        owner = get_owner_key()
+        if not is_admin_owner(owner):
+            return jsonify({"status": "error", "message": "Yetkisiz"}), 403
+        data = request.get_json() or {}
+        date_str = data.get('date') or datetime.now().strftime("%Y-%m-%d")
+
+        from services.trade_database import get_connection
+        with get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT owner_key FROM app_users")
+            owners = [r["owner_key"] for r in cur.fetchall()]
+        if not owners:
+            owners = [owner]
+
+        from services.simulation_engine import SimulationEngine
+        results = []
+        for _owner in owners:
+            try:
+                sim = SimulationEngine(owner=_owner)
+                sim.run_daily_simulation(date_str)
+                results.append({"owner": _owner, "status": "ok"})
+            except Exception as _e:
+                results.append({"owner": _owner, "status": "error", "message": str(_e)})
+
+        return jsonify({"status": "success", "date": date_str, "results": results})
+    except Exception as e:
+        import traceback
+        return jsonify({"status": "error", "message": str(e), "trace": traceback.format_exc()}), 500
+
+
 @app.route('/api/admin/reset_requests', methods=['GET'])
 def api_admin_reset_requests():
     """Yonetici: bekleyen sifirlama taleplerini listeler."""
