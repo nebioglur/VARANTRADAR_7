@@ -1884,7 +1884,8 @@ def api_logs():
 def api_detective():
     """PIYASA DEDEKTIFI: tum hisseler icin davranissal metrik satirlari."""
     try:
-        from services.detective_engine import get_rows
+        from services.detective_engine import get_rows, start_background_loop
+        start_background_loop()  # gunicorn worker'larda garanti baslatma
         data = get_rows()
         return jsonify({"status": data.get("status", "ok"),
                         "rows": data.get("rows", []),

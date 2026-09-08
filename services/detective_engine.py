@@ -52,7 +52,7 @@ _data_store = {}   # sembol -> panel icin gereken hazir veriler
 _lock = threading.Lock()
 _build_lock = threading.Lock()
 
-CACHE_TTL = 600  # saniye
+CACHE_TTL = 300  # saniye
 
 
 # ---------------------------------------------------------------- veri
@@ -62,7 +62,7 @@ def _download_5m(symbols):
     for i in range(0, len(symbols), 20):
         chunk = symbols[i:i + 20]
         try:
-            data = yf.download(chunk, period="60d", interval="5m",
+            data = yf.download(chunk, period="20d", interval="5m",
                                group_by="ticker", threads=False, progress=False)
         except Exception:
             continue
@@ -84,7 +84,7 @@ def _download_1d(symbols):
     for i in range(0, len(symbols), 50):
         chunk = symbols[i:i + 50]
         try:
-            data = yf.download(chunk, period="1y", interval="1d",
+            data = yf.download(chunk, period="6mo", interval="1d",
                                group_by="ticker", threads=False, progress=False)
         except Exception:
             continue
@@ -721,7 +721,9 @@ def start_build():
             try:
                 _build()
             except Exception as e:
-                print(f"[DEDEKTIF] HATA: {e}")
+                import traceback
+                err = traceback.format_exc()
+                print(f"[DEDEKTIF] HATA: {e}\n{err}")
                 with _lock:
                     _cache["building"] = False
                     _cache["error"] = str(e)
