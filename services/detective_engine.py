@@ -21,9 +21,16 @@ except ImportError:
 
 from config.bist_symbols import BIST50_SYMBOLS, DOMINO_CLUSTERS
 
-# BIST50 + sektor kume uyelerinin tamami (hareket zinciri icin gerekli)
+# Sembol evreni: BIST30 (hızlı + güvenilir) + sektör kümeleri
+BIST30_SYMBOLS = [
+    "AKBNK.IS", "ALARK.IS", "ASELS.IS", "BIMAS.IS", "EKGYO.IS", "EREGL.IS",
+    "FROTO.IS", "GARAN.IS", "HEKTS.IS", "ISCTR.IS", "KCHOL.IS", "KOZAA.IS",
+    "KOZAL.IS", "KRDMD.IS", "ODAS.IS", "PETKM.IS", "PGSUS.IS", "SAHOL.IS",
+    "SASA.IS", "SISE.IS", "TAVHL.IS", "TCELL.IS", "THYAO.IS", "TKFEN.IS",
+    "TOASO.IS", "TUPRS.IS", "ULKER.IS", "VAKBN.IS", "VESTL.IS", "YKBNK.IS"
+]
 _ALL_CLUSTER = [m for members in DOMINO_CLUSTERS.values() for m in members]
-SYMBOLS = [s for s in dict.fromkeys(BIST50_SYMBOLS + _ALL_CLUSTER) if s != "XU100.IS"]
+SYMBOLS = [s for s in dict.fromkeys(BIST30_SYMBOLS + _ALL_CLUSTER) if s != "XU100.IS"]
 BENCHMARK = "XU100.IS"
 
 SECTOR_OF = {}
@@ -59,11 +66,11 @@ CACHE_TTL = 300  # saniye
 def _download_5m(symbols):
     import yfinance as yf
     out = {}
-    for i in range(0, len(symbols), 20):
-        chunk = symbols[i:i + 20]
+    for i in range(0, len(symbols), 25):
+        chunk = symbols[i:i + 25]
         try:
-            data = yf.download(chunk, period="20d", interval="5m",
-                               group_by="ticker", threads=False, progress=False)
+            data = yf.download(chunk, period="5d", interval="5m",
+                               group_by="ticker", threads=False, progress=False, timeout=25)
         except Exception:
             continue
         if data is None or data.empty:
@@ -84,8 +91,8 @@ def _download_1d(symbols):
     for i in range(0, len(symbols), 50):
         chunk = symbols[i:i + 50]
         try:
-            data = yf.download(chunk, period="6mo", interval="1d",
-                               group_by="ticker", threads=False, progress=False)
+            data = yf.download(chunk, period="3mo", interval="1d",
+                               group_by="ticker", threads=False, progress=False, timeout=25)
         except Exception:
             continue
         if data is None or data.empty:

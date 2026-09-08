@@ -1893,7 +1893,29 @@ def api_detective():
                         "built_at": data.get("built_at"),
                         "error": data.get("error")})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        import traceback
+        return jsonify({"status": "error", "message": str(e), "trace": traceback.format_exc()}), 500
+
+
+@app.route('/api/detective/debug', methods=['GET'])
+def api_detective_debug():
+    """yfinance baglantisini hizlica test et."""
+    try:
+        import yfinance as yf
+        import time
+        t0 = time.time()
+        df = yf.download("THYAO.IS", period="5d", interval="5m", progress=False, timeout=20)
+        elapsed = round(time.time() - t0, 2)
+        return jsonify({
+            "status": "ok",
+            "elapsed_sec": elapsed,
+            "rows": len(df),
+            "columns": list(df.columns.astype(str)) if hasattr(df, 'columns') else None,
+            "sample": str(df.head(1).to_dict()) if len(df) else None,
+        })
+    except Exception as e:
+        import traceback
+        return jsonify({"status": "error", "message": str(e), "trace": traceback.format_exc()}), 500
 
 
 @app.route('/api/detective/detail/<symbol>', methods=['GET'])
