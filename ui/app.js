@@ -5021,15 +5021,20 @@ let _dtSearchTerm = '';
 let _dtPollTimer = null;
 let _dtOpenSymbol = null;
 
-function fetchDetective() {
-    fetch('/api/detective').then(r => r.json()).then(d => {
+function fetchDetective(attempt) {
+    attempt = attempt || 0;
+    const tb = document.getElementById('dt-tbody');
+    fetch('/api/detective').then(r => {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+    }).then(d => {
         if (d.status === 'error') {
-            document.getElementById('dt-tbody').innerHTML =
+            if (tb) tb.innerHTML =
                 `<tr><td colspan="12" style="text-align:center; color:#ef4444; padding:1.5rem;">Hata: ${d.message || 'bilinmeyen'}</td></tr>`;
             return;
         }
         if (d.status === 'building') {
-            document.getElementById('dt-tbody').innerHTML =
+            if (tb) tb.innerHTML =
                 `<tr><td colspan="12" style="text-align:center; color:#f97316; padding:1.5rem;">
                     <i class="fa-solid fa-magnifying-glass fa-spin"></i> Dedektif ilk raporunu hazırlıyor (60 gunluk 5 dakikalık veri taranıyor, ~1 dk)...</td></tr>`;
             document.getElementById('dt-updated').textContent = 'ilk tarama sürüyor...';
@@ -5045,8 +5050,17 @@ function fetchDetective() {
         }
         _dtApplyData(d);
     }).catch(e => {
-        const tb = document.getElementById('dt-tbody');
-        if (tb) tb.innerHTML = `<tr><td colspan="12" style="text-align:center; color:#ef4444; padding:1.5rem;">Bağlantı hatası</td></tr>`;
+        if (!tb) return;
+        if (attempt < 6) {
+            // Ucretsiz ornek uyuma modundan uyanirken baglanti kopabilir -> otomatik tekrar dene
+            tb.innerHTML = `<tr><td colspan="12" style="text-align:center; color:#f97316; padding:1.5rem;">
+                <i class="fa-solid fa-satellite-dish fa-spin"></i> Sunucu uyanıyor, bağlantı yeniden deneniyor (${attempt + 1}/6)...</td></tr>`;
+            setTimeout(() => fetchDetective(attempt + 1), 8000);
+        } else {
+            tb.innerHTML = `<tr><td colspan="12" style="text-align:center; color:#ef4444; padding:1.5rem;">
+                Bağlantı hatası${e && e.message ? ' (' + e.message + ')' : ''} —
+                <a href="#" onclick="fetchDetective(0); return false;" style="color:#f97316; text-decoration:underline;">Tekrar dene</a></td></tr>`;
+        }
     });
 }
 

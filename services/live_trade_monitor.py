@@ -5,7 +5,8 @@ Canlı İşlem Terminali Motoru:
   * Sabit TP (Kâr Al) ve SL (Zarar Kes) seviyeleri
   * +3% kazanctan sonra otomatik IZLEYEN STOP (trailing) devreye girer
   * Tavan hedefine ulasinda tam kâr
-  * Seans sonu (18:10) otomatik pozisyon kapatma
+  * Seans sonu nakit gecisi: 17:50'de tum pozisyonlar kapatilir,
+    boylece 18:00'da (seans kapanisinda) portfoy yalnizca nakit olur
 Komisyon: %0.04 (islem basi, cift yonlu) - sim motoru ile ayni.
 """
 import time
@@ -129,6 +130,10 @@ def open_position(symbol, allocation=2000.0, tp_pct=5.0, sl_pct=3.0, trailing=Tr
     clean = symbol.replace(".IS", "").replace(".is", "").upper().strip()
     if not clean:
         return False, "Sembol gerekli"
+
+    # 18:00'da yalniz nakit kurali: kapanisa yakin yeni pozisyon acilamaz
+    if datetime.now().time() >= dtime(17, 50):
+        return False, "Seans kapanişa yakın (17:50 sonrası yeni pozisyon açılmaz)"
 
     try:
         allocation = float(allocation)
@@ -332,7 +337,8 @@ def monitor_once():
 
     now = datetime.now()
     d_str = now.strftime("%Y-%m-%d")
-    session_over = now.time() >= dtime(18, 10)
+    # 18:00'da yalniz nakit kurali: 17:50'den itibaren hersey kapatilir
+    session_over = now.time() >= dtime(17, 50)
 
     symbols = list({r["symbol"] for r in open_positions})
     prices = _bulk_prices(symbols)
@@ -357,7 +363,7 @@ def monitor_once():
         trailing_active = bool(row["trailing_active"])
 
         if session_over:
-            reason = "⏱ GÜN SONU OTOMATİK KAPANIŞ"
+            reason = "⏱ SEANS SONU: NAKİTE GEÇİŞ (17:50)"
         elif price <= stop_price:
             if trailing_active:
                 reason = "🔒 İZLEYEN STOP KİLİDİ (Kâr korundu)"
