@@ -1457,6 +1457,27 @@ def api_simulation_terminal_open():
             sl_pct=data.get('sl_pct', 3.0),
             trailing=bool(data.get('trailing', True)),
             source='MANUAL',
+            owner=get_owner_key(),
+            tp_price=data.get('tp_price'),
+            sl_price=data.get('sl_price')
+        )
+        return jsonify({"status": "success" if ok else "error", "message": msg}), (200 if ok else 400)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/simulation/terminal/update', methods=['POST'])
+def api_simulation_terminal_update():
+    """Acik pozisyonun Kâr Al / Zarar Kes emirlerini (TL bazli) duzenle."""
+    try:
+        from services.live_trade_monitor import update_position_orders
+        data = request.get_json(force=True, silent=True) or {}
+        pos_id = data.get('id')
+        if not pos_id:
+            return jsonify({"status": "error", "message": "Pozisyon id gerekli"}), 400
+        ok, msg = update_position_orders(
+            int(pos_id),
+            tp_price=data.get('tp_price'),
+            sl_price=data.get('sl_price'),
             owner=get_owner_key()
         )
         return jsonify({"status": "success" if ok else "error", "message": msg}), (200 if ok else 400)

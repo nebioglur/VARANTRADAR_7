@@ -3889,7 +3889,10 @@ async function fetchLiveTerminal() {
                         <td style="color:var(--accent-green);">₺${(p.tp_price || 0).toFixed(2)}</td>
                         <td style="color:var(--accent-red);">₺${(p.stop_price || 0).toFixed(2)}</td>
                         <td>${protectedTxt}</td>
-                        <td><button onclick="ltClosePosition(${p.id})" style="background:rgba(225,29,72,0.15); border:1px solid var(--accent-red); color:var(--accent-red); border-radius:6px; padding:4px 10px; cursor:pointer; font-size:0.78rem; font-weight:bold;">SAT</button></td>
+                        <td style="white-space:nowrap;">
+                            <button onclick="ltEditOrders(${p.id}, ${p.tp_price || 0}, ${p.stop_price || 0}, ${last})" title="Emir Düzenle (TP/SL)" style="background:rgba(59,130,246,0.15); border:1px solid var(--accent-blue); color:var(--accent-blue); border-radius:6px; padding:4px 8px; cursor:pointer; font-size:0.78rem; font-weight:bold; margin-right:4px;">✎</button>
+                            <button onclick="ltClosePosition(${p.id})" style="background:rgba(225,29,72,0.15); border:1px solid var(--accent-red); color:var(--accent-red); border-radius:6px; padding:4px 10px; cursor:pointer; font-size:0.78rem; font-weight:bold;">SAT</button>
+                        </td>
                     `;
                     tbody.appendChild(tr);
                 });
@@ -3930,6 +3933,40 @@ async function fetchLiveTerminal() {
     }
 }
 
+// KAR AL / ZARAR KES: yuzde <-> fiyat senkronu (anlik fiyata gore)
+function _ltQuotePrice() {
+    const q = document.getElementById('lq-price');
+    if (!q) return null;
+    const v = parseFloat((q.textContent || '').replace(/[^\d.,]/g, '').replace(',', '.'));
+    return (v && v > 0) ? v : null;
+}
+
+function ltSyncFromPct(kind) {
+    const el = (id) => document.getElementById(id);
+    const base = _ltQuotePrice();
+    const pctEl = el(kind === 'tp' ? 'lt-tp' : 'lt-sl');
+    const priceEl = el(kind === 'tp' ? 'lt-tp-price' : 'lt-sl-price');
+    if (!pctEl || !priceEl) return;
+    const pct = parseFloat(pctEl.value);
+    if (isNaN(pct) || pct <= 0) return;
+    if (!base) return; // anlik fiyat yoksa fiyati dokme
+    const price = kind === 'tp' ? base * (1 + pct / 100) : base * (1 - pct / 100);
+    if (document.activeElement !== priceEl) priceEl.value = price.toFixed(2);
+}
+
+function ltSyncFromPrice(kind) {
+    const el = (id) => document.getElementById(id);
+    const base = _ltQuotePrice();
+    const pctEl = el(kind === 'tp' ? 'lt-tp' : 'lt-sl');
+    const priceEl = el(kind === 'tp' ? 'lt-tp-price' : 'lt-sl-price');
+    if (!pctEl || !priceEl) return;
+    const price = parseFloat(priceEl.value);
+    if (isNaN(price) || price <= 0 || !base) return;
+    const pct = kind === 'tp' ? (price / base - 1) * 100 : (1 - price / base) * 100;
+    if (pct <= 0) return; // mantiksiz yon
+    if (document.activeElement !== pctEl) pctEl.value = Math.max(0.5, Math.round(pct * 10) / 10);
+}
+
 async function ltOpenPosition() {
     const el = (id) => document.getElementById(id);
     const msgEl = el('lt-msg');
@@ -3941,6 +3978,9 @@ async function ltOpenPosition() {
     const btn = el('lt-buy-btn');
     if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gönderiliyor'; }
 
+    const tpPriceRaw = parseFloat(el('lt-tp-price')?.value);
+    const slPriceRaw = parseFloat(el('lt-sl-price')?.value);
+
     try {
         const res = await fetch('/api/simulation/terminal/open', {
             method: 'POST',
@@ -3950,6 +3990,8 @@ async function ltOpenPosition() {
                 allocation: parseFloat(el('lt-allocation')?.value) || 2000,
                 tp_pct: parseFloat(el('lt-tp')?.value) || 5,
                 sl_pct: parseFloat(el('lt-sl')?.value) || 3,
+                tp_price: (!isNaN(tpPriceRaw) && tpPriceRaw > 0) ? tpPriceRaw : null,
+                sl_price: (!isNaN(slPriceRaw) && slPriceRaw > 0) ? slPriceRaw : null,
                 trailing: el('lt-trailing')?.checked !== false
             })
         });
@@ -3958,13 +4000,48 @@ async function ltOpenPosition() {
             msgEl.innerText = data.message || (data.status === 'success' ? 'Tamam' : 'Hata');
             msgEl.style.color = data.status === 'success' ? 'var(--accent-green)' : 'var(--accent-red)';
         }
-        if (data.status === 'success' && el('lt-symbol')) el('lt-symbol').value = '';
+        if (data.status === 'success') {
+            if (el('lt-symbol')) el('lt-symbol').value = '';
+            if (el('lt-tp-price')) el('lt-tp-price').value = '';
+            if (el('lt-sl-price')) el('lt-sl-price').value = '';
+        }
         fetchLiveTerminal();
     } catch (e) {
         if (msgEl) { msgEl.innerText = 'Bağlantı hatası'; msgEl.style.color = 'var(--accent-red)'; }
     } finally {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-cart-plus"></i> AL'; }
         setTimeout(() => { if (msgEl) msgEl.innerText = ''; }, 8000);
+    }
+}
+
+async function ltEditOrders(id, curTp, curSl, lastPrice) {
+    const tpInp = prompt(
+        'Yeni KÂR AL fiyatı (₺) — anlık: ' + Number(lastPrice).toFixed(2) + ' TL\n' +
+        'Boş bırakırsan değişmez. Mevcut: ' + Number(curTp).toFixed(2), '');
+    if (tpInp === null) return;
+    const slInp = prompt(
+        'Yeni ZARAR KES fiyatı (₺) — anlık: ' + Number(lastPrice).toFixed(2) + ' TL\n' +
+        'Boş bırakırsan değişmez. Mevcut: ' + Number(curSl).toFixed(2), '');
+    if (slInp === null) return;
+
+    const tpV = parseFloat(tpInp);
+    const slV = parseFloat(slInp);
+    const body = { id: id };
+    if (!isNaN(tpV) && tpV > 0) body.tp_price = tpV;
+    if (!isNaN(slV) && slV > 0) body.sl_price = slV;
+    if (body.tp_price === undefined && body.sl_price === undefined) return;
+
+    try {
+        const res = await fetch('/api/simulation/terminal/update', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        alert(data.message || (data.status === 'success' ? 'Güncellendi' : 'Hata'));
+        fetchLiveTerminal();
+    } catch (e) {
+        alert('Bağlantı hatası');
     }
 }
 

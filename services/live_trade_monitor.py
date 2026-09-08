@@ -122,8 +122,10 @@ def _bulk_prices(symbols):
     return result
 
 
-def open_position(symbol, allocation=2000.0, tp_pct=5.0, sl_pct=3.0, trailing=True, source="MANUAL", owner=None):
-    """Yeni pozisyon acar (owner'a özel). (success, message) dondurur."""
+def open_position(symbol, allocation=2000.0, tp_pct=5.0, sl_pct=3.0, trailing=True, source="MANUAL", owner=None,
+                  tp_price=None, sl_price=None):
+    """Yeni pozisyon acar (owner'a ozel). tp_price/sl_price verilirse fiyat bazli emir kullanilir.
+    (success, message) dondurur."""
     clean = symbol.replace(".IS", "").replace(".is", "").upper().strip()
     if not clean:
         return False, "Sembol gerekli"
@@ -141,9 +143,24 @@ def open_position(symbol, allocation=2000.0, tp_pct=5.0, sl_pct=3.0, trailing=Tr
     except (TypeError, ValueError):
         tp_pct, sl_pct = 5.0, 3.0
 
+    # Fiyat bazli emirler (verilirse yuzdeyi ezer)
+    def _f(x):
+        try:
+            v = float(x)
+            return v if v > 0 else None
+        except (TypeError, ValueError):
+            return None
+    tp_price = _f(tp_price)
+    sl_price = _f(sl_price)
+
     price, src = _get_live_price(clean)
     if not price or price <= 0:
         return False, f"{clean} icin guncel fiyat alinamadi"
+
+    if tp_price is not None and tp_price <= price:
+        return False, f"Kâr Al fiyati anlik fiyattan yuksek olmali ({price:.2f} TL uzeri)"
+    if sl_price is not None and sl_price >= price:
+        return False, f"Zarar Kes fiyati anlik fiyattan dusuk olmali ({price:.2f} TL alti)"
 
     cash = _get_cash(owner)
     if allocation > cash:
@@ -165,14 +182,17 @@ def open_position(symbol, allocation=2000.0, tp_pct=5.0, sl_pct=3.0, trailing=Tr
     c = conn.cursor()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     d_str = now[:10]
+    final_tp = round(tp_price, 2) if tp_price else round(entry_price * (1 + tp_pct / 100.0), 2)
+    final_sl = round(sl_price, 2) if sl_price else round(entry_price * (1 - sl_pct / 100.0), 2)
+    disp_tp_pct = tp_pct if not tp_price else (final_tp / entry_price - 1) * 100
+    disp_sl_pct = sl_pct if not sl_price else (1 - final_sl / entry_price) * 100
     c.execute("""INSERT INTO live_positions
                  (owner, date_str, symbol, entry_time, entry_price, shares, cost_val,
                   stop_price, tp_price, trail_pct, high_water, trailing_active,
                   status, source, last_price, last_update)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'OPEN', ?, ?, ?)""",
               (owner or DEFAULT_OWNER, d_str, clean, now, entry_price, shares, cost,
-               round(entry_price * (1 - sl_pct / 100.0), 2),
-               round(entry_price * (1 + tp_pct / 100.0), 2),
+               final_sl, final_tp,
                DEFAULT_TRAIL_PCT if trailing else 0,
                entry_price, source, price, now))
     c.execute("UPDATE live_settings SET value=? WHERE key=?", (str(round(cash - cost, 2)), _cash_key(owner)))
@@ -188,7 +208,60 @@ def open_position(symbol, allocation=2000.0, tp_pct=5.0, sl_pct=3.0, trailing=Tr
         pass
 
     return True, (f"ALINDI: {shares} lot {clean} @ {entry_price:.2f} TL "
-                  f"(TP %{tp_pct:.1f} / SL -%{sl_pct:.1f})")
+                  f"(TP {final_tp:.2f} TL /%{disp_tp_pct:.1f} - SL {final_sl:.2f} TL/-%{disp_sl_pct:.1f})")
+
+
+def update_position_orders(pos_id, tp_price=None, sl_price=None, owner=None):
+    """Acik pozisyonun Kâr Al / Zarar Kes emirlerini (TL bazli) guncelle.
+    None gecen alan degismez. (success, message) dondurur."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM live_positions WHERE id=? AND status='OPEN'", (pos_id,))
+    row = c.fetchone()
+    if row is None:
+        conn.close()
+        return False, "Açık pozisyon bulunamadı"
+    row_owner = row["owner"] or DEFAULT_OWNER
+    if owner is not None and row_owner != owner:
+        conn.close()
+        return False, "Bu pozisyon baska bir hesaba ait"
+
+    entry = float(row["entry_price"])
+    symbol = row["symbol"]
+    last = float(row["last_price"] or entry)
+
+    def _f(x):
+        try:
+            v = float(x)
+            return v if v > 0 else None
+        except (TypeError, ValueError):
+            return None
+
+    new_tp = _f(tp_price)
+    new_sl = _f(sl_price)
+    cur_tp = float(row["tp_price"] or 0)
+    cur_sl = float(row["stop_price"] or 0)
+
+    if new_tp is not None and new_tp <= last:
+        conn.close()
+        return False, f"Kâr Al fiyati anlik fiyattan ({last:.2f} TL) yuksek olmali"
+    if new_sl is not None and new_sl >= last:
+        conn.close()
+        return False, f"Zarar Kes fiyati anlik fiyattan ({last:.2f} TL) dusuk olmali"
+
+    if new_tp is not None:
+        c.execute("UPDATE live_positions SET tp_price=?, last_update=? WHERE id=?",
+                  (round(new_tp, 2), datetime.now().strftime("%Y-%m-%d %H:%M:%S"), pos_id))
+    if new_sl is not None:
+        c.execute("UPDATE live_positions SET stop_price=?, last_update=? WHERE id=?",
+                  (round(new_sl, 2), datetime.now().strftime("%Y-%m-%d %H:%M:%S"), pos_id))
+    conn.commit()
+    conn.close()
+
+    parts = []
+    tp_show = new_tp if new_tp is not None else cur_tp
+    sl_show = new_sl if new_sl is not None else cur_sl
+    return True, f"EMİR GÜNCELLENDİ: {symbol} TP {tp_show:.2f} TL / SL {sl_show:.2f} TL"
 
 
 def close_position(pos_id, price=None, reason="MANUEL KAPATMA", owner=None):

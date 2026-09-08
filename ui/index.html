@@ -1388,11 +1388,19 @@
                 </div>
                 <div style="flex:0 0 90px;">
                     <label style="font-size:0.7rem; color:var(--accent-green); display:block; margin-bottom:3px;">KAR AL %</label>
-                    <input id="lt-tp" type="number" value="5" min="0.5" step="0.5" style="width:100%; background:var(--bg-base); border:1px solid var(--border-color); color:var(--text-main); border-radius:6px; padding:7px 10px; font-size:0.9rem;">
+                    <input id="lt-tp" type="number" value="5" min="0.5" step="0.5" oninput="ltSyncFromPct('tp')" style="width:100%; background:var(--bg-base); border:1px solid var(--border-color); color:var(--text-main); border-radius:6px; padding:7px 10px; font-size:0.9rem;">
+                </div>
+                <div style="flex:0 0 96px;">
+                    <label style="font-size:0.7rem; color:var(--accent-green); display:block; margin-bottom:3px;">KAR AL ₺</label>
+                    <input id="lt-tp-price" type="number" min="0" step="0.01" placeholder="— (opsiyonel)" oninput="ltSyncFromPrice('tp')" style="width:100%; background:var(--bg-base); border:1px solid var(--border-color); color:var(--text-main); border-radius:6px; padding:7px 10px; font-size:0.9rem;">
                 </div>
                 <div style="flex:0 0 90px;">
                     <label style="font-size:0.7rem; color:var(--accent-red); display:block; margin-bottom:3px;">ZARAR KES %</label>
-                    <input id="lt-sl" type="number" value="3" min="0.5" step="0.5" style="width:100%; background:var(--bg-base); border:1px solid var(--border-color); color:var(--text-main); border-radius:6px; padding:7px 10px; font-size:0.9rem;">
+                    <input id="lt-sl" type="number" value="3" min="0.5" step="0.5" oninput="ltSyncFromPct('sl')" style="width:100%; background:var(--bg-base); border:1px solid var(--border-color); color:var(--text-main); border-radius:6px; padding:7px 10px; font-size:0.9rem;">
+                </div>
+                <div style="flex:0 0 96px;">
+                    <label style="font-size:0.7rem; color:var(--accent-red); display:block; margin-bottom:3px;">ZARAR KES ₺</label>
+                    <input id="lt-sl-price" type="number" min="0" step="0.01" placeholder="— (opsiyonel)" oninput="ltSyncFromPrice('sl')" style="width:100%; background:var(--bg-base); border:1px solid var(--border-color); color:var(--text-main); border-radius:6px; padding:7px 10px; font-size:0.9rem;">
                 </div>
                 <div style="display:flex; align-items:center; gap:5px; padding-bottom:8px;">
                     <input id="lt-trailing" type="checkbox" checked style="accent-color:var(--accent-green); cursor:pointer;">
@@ -2103,7 +2111,7 @@
 
 
 
-    <script src="app.js?v=20260908_detective_v1"></script>
+    <script src="app.js?v=20260908_orders_v2"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js"></script>
 </body>
