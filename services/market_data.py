@@ -130,19 +130,25 @@ class MarketDataManager:
         """
         import pandas as pd
         conn = get_connection()
-        df = pd.read_sql_query("""
-            SELECT timestamp as Datetime, open as Open, high as High, low as Low, close as Close, volume as Volume 
-            FROM market_data 
-            WHERE date_str = ? AND symbol = ? 
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT timestamp, open, high, low, close, volume
+            FROM market_data
+            WHERE date_str = ? AND symbol = ?
             ORDER BY timestamp ASC
-        """, conn, params=(date_str, symbol))
+        """, (date_str, symbol))
+        rows = cur.fetchall()
         conn.close()
-        
-        if not df.empty:
-            df['Datetime'] = pd.to_datetime(df['Datetime'])
-            df.set_index('Datetime', inplace=True)
+
+        if rows:
+            df = pd.DataFrame(
+                [[r[1], r[2], r[3], r[4], r[5]] for r in rows],
+                index=pd.to_datetime([r[0] for r in rows]),
+                columns=['Open', 'High', 'Low', 'Close', 'Volume'],
+            )
+            df.index.name = 'Datetime'
             return df
-            
+
         # Fallback to yfinance if missing in DB
         try:
             import yfinance as yf
@@ -155,6 +161,6 @@ class MarketDataManager:
                 return dl_df
         except Exception as e:
             pass
-            
+
         return pd.DataFrame()
 

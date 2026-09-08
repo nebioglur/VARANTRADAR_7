@@ -127,6 +127,10 @@ class PGCursor:
         self._cur = raw_cursor
         self._names = None
 
+    @property
+    def description(self):
+        return self._cur.description
+
     def execute(self, sql, params=()):
         sql2 = _translate_sql(sql, self._cur)
         self._cur.execute(sql2, tuple(params) if params else None)
