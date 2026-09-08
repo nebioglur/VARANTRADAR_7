@@ -133,6 +133,14 @@ class SimulationEngine:
                 continue # Dönüşüm hatası
                     
             if score >= 80 and phase in ["Erken Kopuş (Phase 1)", "İvmelenme (Phase 2)", "Kilitleme Baskısı (Phase 3)"]:
+                # Kalite filtresi: eksik/hacimsiz ve aşırı şişmiş sinyallerde işlem açma.
+                indicators = meta.get('Indicators', {}) if isinstance(meta, dict) else {}
+                rsi = float(indicators.get('RSI') or indicators.get('RSI_14') or meta.get('RSI') or 50)
+                volume_ratio = float(meta.get('Volume_Ratio') or indicators.get('Volume_Ratio') or 0)
+                if rsi >= 72 or rsi <= 28:
+                    continue
+                if volume_ratio and volume_ratio < 0.85:
+                    continue
                 valid_signals.append(s)
                 
         valid_signals.sort(key=lambda x: float(x.get('score', 0)), reverse=True)
@@ -206,8 +214,13 @@ class SimulationEngine:
                     trade['stop_price'] = entry * 1.002
                     trade['reason_prefix'] = "[İZLEYEN STOP AKTİF] "
                 
-                # Kâr > %4 ise stopu %2 kâra kilitle
-                if high >= entry * 1.04 and trade['stop_price'] < entry * 1.02:
+                # Kâr > %3 ise stopu maliyete taşı; kazananı kaybedene dönüştürme
+                if high >= entry * 1.03 and trade['stop_price'] < entry * 1.001:
+                    trade['stop_price'] = entry * 1.001
+                    trade['reason_prefix'] = "[KÂR KORUMA AKTİF] "
+
+                # Kâr > %5 ise en az %2 kârı kilitle
+                if high >= entry * 1.05 and trade['stop_price'] < entry * 1.02:
                     trade['stop_price'] = entry * 1.02
                     trade['reason_prefix'] = "[KÂR KİLİTLENDİ] "
 
