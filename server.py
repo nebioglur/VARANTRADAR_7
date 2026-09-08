@@ -1672,6 +1672,50 @@ def api_admin_reset_decide():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/api/admin/set_cash', methods=['POST'])
+def api_admin_set_cash():
+    """Yonetici: herhangi bir hesabin bakiyesini dogrudan ayarlar.
+
+    Iki sunucunun ayni pozu kapatmasi gibi gecmis hatalardan dolayi
+    sismanmis bakiyeleri duzeltmek icindir. live_settings icindeki
+    live_cash:<owner> degerini yazar.
+    """
+    if not is_admin_owner():
+        return jsonify({"status": "error", "message": "Bu endpoint yalnızca yönetici içindir."}), 403
+    try:
+        from services.trade_database import get_connection
+        from services.live_trade_monitor import _cash_key
+        data = request.get_json(force=True, silent=True) or {}
+        owner = (data.get('owner') or '').strip()
+        cash = data.get('cash')
+        if not owner or cash is None:
+            return jsonify({"status": "error", "message": "owner ve cash zorunlu"}), 400
+        try:
+            cash = round(float(cash), 2)
+        except (TypeError, ValueError):
+            return jsonify({"status": "error", "message": "cash sayısal olmalı"}), 400
+        if cash < 0 or cash > 10_000_000:
+            return jsonify({"status": "error", "message": "cash aralık dışı (0 - 10.000.000)"}), 400
+
+        # Hedef hesap gercekten var mi? (yanlis owner yazmayi engelle)
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("SELECT 1 FROM app_users WHERE owner_key=?", (owner,))
+        if c.fetchone() is None:
+            conn.close()
+            return jsonify({"status": "error", "message": f"owner bulunamadi: {owner}"}), 404
+
+        from services.live_trade_monitor import _set_setting
+        _set_setting(_cash_key(owner), cash)
+        conn.close()
+
+        # Dogrulama icin geri oku
+        from services.live_trade_monitor import _get_setting
+        now_val = _get_setting(_cash_key(owner))
+        return jsonify({"status": "success", "owner": owner, "cash": float(now_val)})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 @app.route('/api/tavan_history', methods=['GET'])
 def api_tavan_history():
     try:
