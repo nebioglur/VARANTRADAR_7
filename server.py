@@ -1950,11 +1950,12 @@ def api_detective():
         from services.detective_engine import get_rows, start_background_loop
         start_background_loop()  # gunicorn worker'larda garanti baslatma
         data = get_rows()
-        return jsonify({"status": data.get("status", "ok"),
-                        "rows": data.get("rows", []),
-                        "summary": data.get("summary", {}),
-                        "built_at": data.get("built_at"),
-                        "error": data.get("error")})
+        safe_data = sanitize_for_json(data)
+        return jsonify({"status": safe_data.get("status", "ok"),
+                        "rows": safe_data.get("rows", []),
+                        "summary": safe_data.get("summary", {}),
+                        "built_at": safe_data.get("built_at"),
+                        "error": safe_data.get("error")})
     except Exception as e:
         import traceback
         return jsonify({"status": "error", "message": str(e), "trace": traceback.format_exc()}), 500
