@@ -1521,7 +1521,15 @@
 
             <!-- Sleek Trade Log Table -->
             <div class="card" style="border:1px solid var(--border-color); background: var(--bg-card); box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-                <h3 class="card-title" style="margin-bottom: 1.5rem; font-size: 1.2rem;"><i class="fa-solid fa-clock-rotate-left text-green"></i> İşlem Geçmişi (Trade Log)</h3>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem; flex-wrap:wrap; margin-bottom:1.5rem;">
+                    <h3 class="card-title" style="margin:0; font-size:1.2rem;"><i class="fa-solid fa-clock-rotate-left text-green"></i> İşlem Geçmişi (Trade Log)</h3>
+                    <div style="display:flex; align-items:center; gap:0.6rem;">
+                        <span id="sim-notify-status" style="font-size:0.75rem; color:var(--text-muted);">Bildirimler kapalı</span>
+                        <button type="button" class="btn-secondary" onclick="enableTradeNotifications()" style="padding:0.45rem 0.7rem;">
+                            <i class="fa-solid fa-bell"></i> Sesli Bildirimleri Aç
+                        </button>
+                    </div>
+                </div>
                 <div class="table-scroll-wrapper" style="max-height: 500px; overflow-y: auto;">
                     <table class="data-table" style="width:100%; border-collapse: separate; border-spacing: 0;">
                             <tr>
@@ -2112,7 +2120,7 @@
 
 
 
-    <script src="app.js?v=20260908_detective_data_v4"></script>
+    <script src="app.js?v=20260908_trade_notify_v5"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js"></script>
 </body>

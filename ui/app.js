@@ -3748,6 +3748,7 @@ async function fetchSimulationData() {
 
         if (data.status === 'success') {
             globalSimData = data;
+            notifyNewTradeEvents(data.trades || []);
             fetchLiveOrders();
             fetchLiveTerminal();
             ltRefreshResetUI();
@@ -3833,6 +3834,73 @@ async function fetchSimulationData() {
     } catch (e) {
         if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-red text-center" style="padding:2rem;">Bağlantı hatası: ' + e.message + '</td></tr>';
     }
+}
+
+let _knownTradeEvents = new Set();
+let _tradeAudioContext = null;
+let _tradeNotifyReady = false;
+
+function enableTradeNotifications() {
+    _tradeNotifyReady = true;
+    try {
+        _tradeAudioContext = _tradeAudioContext || new (window.AudioContext || window.webkitAudioContext)();
+        if (_tradeAudioContext.state === 'suspended') _tradeAudioContext.resume();
+    } catch (_) {}
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().catch(() => {});
+    }
+    const status = document.getElementById('sim-notify-status');
+    if (status) status.textContent = 'Bildirim ve ses aktif';
+}
+
+function playTradeAlert(kind) {
+    if (!_tradeNotifyReady) return;
+    try {
+        const ctx = _tradeAudioContext || new (window.AudioContext || window.webkitAudioContext)();
+        _tradeAudioContext = ctx;
+        const now = ctx.currentTime;
+        const oscillator = ctx.createOscillator();
+        const gain = ctx.createGain();
+        oscillator.type = kind === 'BUY' ? 'sine' : 'square';
+        oscillator.frequency.setValueAtTime(kind === 'BUY' ? 880 : 440, now);
+        oscillator.frequency.exponentialRampToValueAtTime(kind === 'BUY' ? 1320 : 220, now + 0.18);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(0.18, now + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+        oscillator.connect(gain).connect(ctx.destination);
+        oscillator.start(now);
+        oscillator.stop(now + 0.24);
+    } catch (_) {}
+}
+
+function notifyNewTradeEvents(trades) {
+    const events = [];
+    trades.forEach(t => {
+        const entryKey = `BUY:${t.id || `${t.symbol}:${t.entry_time}`}`;
+        if (!_knownTradeEvents.has(entryKey)) {
+            _knownTradeEvents.add(entryKey);
+            if (t.entry_time) events.push({kind: 'BUY', symbol: t.symbol, price: t.entry_price, time: t.entry_time});
+        }
+        if (t.exit_time) {
+            const exitKey = `SELL:${t.id || `${t.symbol}:${t.exit_time}`}`;
+            if (!_knownTradeEvents.has(exitKey)) {
+                _knownTradeEvents.add(exitKey);
+                events.push({kind: 'SELL', symbol: t.symbol, price: t.exit_price, time: t.exit_time, reason: t.exit_reason});
+            }
+        }
+    });
+    if (!events.length) return;
+    events.slice(-4).forEach(event => {
+        playTradeAlert(event.kind);
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification(event.kind === 'BUY' ? 'VARANTRADAR — ALIŞ' : 'VARANTRADAR — SATIŞ', {
+                body: `${event.symbol} · ₺${Number(event.price || 0).toFixed(2)}${event.reason ? ` · ${event.reason}` : ''}`,
+                tag: `trade-${event.kind}-${event.symbol}`
+            });
+        }
+    });
+    const status = document.getElementById('sim-notify-status');
+    if (status) status.textContent = `${events.length} yeni işlem bildirimi`;
 }
 
 let equityChartInstance = null;
@@ -4073,6 +4141,13 @@ setInterval(() => {
         fetchAdminResetRequests();
     }
 }, 30000);
+
+setInterval(() => {
+    const wrapper = document.getElementById('simulation-wrapper');
+    if (wrapper && wrapper.style.display !== 'none') {
+        fetchSimulationData();
+    }
+}, 10000);
 
 // ========== SIRALAMA (LEADERBOARD) ==========
 async function fetchLeaderboard() {
