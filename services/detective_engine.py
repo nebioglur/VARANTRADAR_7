@@ -62,6 +62,30 @@ _build_lock = threading.Lock()
 CACHE_TTL = 300  # saniye
 
 
+def _dashboard_fallback(symbol):
+    try:
+        from server import GLOBAL_DASHBOARD_CACHE
+        stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
+        info = stats.get(symbol) or stats.get(symbol.replace(".IS", ""))
+        if not isinstance(info, dict): return None
+        price = info.get("Price") or info.get("Daily_Close")
+        if price is None or pd.isna(price) or float(price) <= 0: return None
+        return {"price": float(price), "change_pct": float(info.get("ChangePct") or info.get("Change_Pct") or 0)}
+    except Exception:
+        return None
+
+def _fallback_row(sym, reason="Canlı veri bekleniyor"):
+    quote = _dashboard_fallback(sym)
+    if not quote: return None
+    change = quote["change_pct"]; price = quote["price"]; sector = SECTOR_OF.get(sym, "GENEL")
+    anomaly = int(min(100, max(0, 35 + abs(change) * 12)))
+    energy = int(min(100, max(0, 25 + max(change, 0) * 10)))
+    trap = int(min(100, max(0, abs(change) * 8)))
+    status = "Hazırlık" if abs(change) < 1.2 else ("Hızlanıyor" if change > 1.2 else "Dağılım")
+    opportunity = int(max(0, min(100, 45 + energy * .2 + anomaly * .2 - trap * .15)))
+    return {"symbol": sym.replace(".IS", ""), "price": round(price, 2), "change_pct": round(change, 2), "sector": sector, "status": status, "anomaly": anomaly, "move_age": None, "energy": energy, "confirm": 0, "delay": 0, "crowd": int(min(100, abs(change) * 15)), "trap": trap, "role": "Takipçi", "fingerprint": "→→→→→→", "fingerprint_sim": None, "opportunity": opportunity, "opportunity_tag": "⚠️", "data_quality": "Günlük cache", "data_note": reason}
+
+
 # ---------------------------------------------------------------- veri
 def _download_5m(symbols):
     import yfinance as yf
@@ -691,16 +715,20 @@ def _build():
     rows = []
     for sym in SYMBOLS:
         df5 = d5.get(sym)
-        if df5 is None:
-            continue
         try:
-            r = _analyze(sym, _to_ist_index(df5),
-                         _to_ist_index(d1[sym]) if sym in d1 else None,
-                         bench5, bench1d, now)
+            if df5 is not None:
+                r = _analyze(sym, _to_ist_index(df5),
+                             _to_ist_index(d1[sym]) if sym in d1 else None,
+                             bench5, bench1d, now)
+            else:
+                r = _fallback_row(sym, "5 dakikalık veri sağlayıcısı yanıt vermedi")
             if r:
                 rows.append(r)
         except Exception as e:
             print(f"[DEDEKTIF] {sym} analiz hatasi: {e}")
+            r = _fallback_row(sym, "Canlı analiz geçici olarak kullanılamıyor")
+            if r:
+                rows.append(r)
 
     rows.sort(key=lambda r: -r["opportunity"])
     summary = {

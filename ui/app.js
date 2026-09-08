@@ -5195,15 +5195,17 @@ function _dtRenderTable() {
     }
     tb.innerHTML = rows.map(r => {
         const sc = _dtStatusColors[r.status] || '#94a3b8';
-        const chg = r.change_pct >= 0 ? `+${r.change_pct}` : r.change_pct;
-        const chgColor = r.change_pct >= 0 ? '#22c55e' : '#ef4444';
+        const price = r.price === null || r.price === undefined ? '—' : Number(r.price).toFixed(2);
+        const change = r.change_pct === null || r.change_pct === undefined ? null : Number(r.change_pct);
+        const chg = change === null ? 'veri yok' : (change >= 0 ? `+${change.toFixed(2)}` : change.toFixed(2));
+        const chgColor = change === null ? '#94a3b8' : (change >= 0 ? '#22c55e' : '#ef4444');
         const age = r.move_age !== null && r.move_age !== undefined ? `${r.move_age} dk` : '—';
         const fp = (r.fingerprint || '').split('').map(ch =>
             `<span style="color:${ch === '↑' ? '#22c55e' : ch === '↓' ? '#ef4444' : '#64748b'}; font-weight:700;">${ch}</span>`).join(' ');
         return `<tr onclick="dtOpenDetail('${r.symbol}', true)" style="border-bottom:1px solid rgba(30,41,59,0.6); cursor:pointer;"
                  onmouseover="this.style.background='rgba(249,115,22,0.06)'" onmouseout="this.style.background='none'">
             <td style="padding:0.55rem 0.4rem; font-weight:700;">${r.symbol} <span style="font-size:0.68rem; color:var(--text-muted);">${r.sector !== 'GENEL' ? r.sector : ''}</span></td>
-            <td style="padding:0.55rem 0.4rem;">${r.price} <span style="color:${chgColor}; font-weight:600;">%${chg}</span></td>
+            <td style="padding:0.55rem 0.4rem;">${price} <span style="color:${chgColor}; font-weight:600;">${change === null ? chg : `%${chg}`}</span></td>
             <td style="padding:0.55rem 0.4rem;"><span style="background:${sc}22; color:${sc}; border:1px solid ${sc}66; padding:2px 8px; border-radius:10px; font-size:0.72rem; font-weight:700;">${r.status}</span></td>
             <td style="padding:0.55rem 0.4rem;">${_dtBar(r.anomaly, '#ef4444')}</td>
             <td style="padding:0.55rem 0.4rem;">${age}</td>
