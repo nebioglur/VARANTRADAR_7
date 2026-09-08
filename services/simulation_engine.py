@@ -22,6 +22,26 @@ class SimulationEngine:
         self.owner = owner or "local:nebioglur"
 
     def _save_trades(self, date_str: str, trades: list):
+        # Ayni (sembol, giris dakikasi) icin birden fazla cikis bacagi olusabilir
+        # (TP1 kismi + kalan pozisyon stopu gibi). DB tek satir tutabildigi icin
+        # ezilen bacak PnL kayboluyordu; bacaklari tek kayitta birlestir.
+        merged = {}
+        order = []
+        for t in trades:
+            key = (t['symbol'], t['entry_time'])
+            if key not in merged:
+                merged[key] = dict(t)
+                order.append(key)
+                continue
+            m = merged[key]
+            m['shares'] = int(m.get('shares') or 0) + int(t.get('shares') or 0)
+            m['pnl_val'] = float(m.get('pnl_val') or 0) + float(t.get('pnl_val') or 0)
+            buy_vol = int(m.get('shares') or 0) * float(m.get('entry_price') or 0)
+            m['pnl_pct'] = (m['pnl_val'] / buy_vol * 100) if buy_vol > 0 else 0
+            m['exit_time'] = t.get('exit_time') or m.get('exit_time')
+            m['exit_price'] = t.get('exit_price') or m.get('exit_price')
+            m['exit_reason'] = f"{m.get('exit_reason', '')} + {t.get('exit_reason', '')}".strip(' +')
+
         conn = get_connection()
         cursor = conn.cursor()
         # Idempotent yeniden calistirma: ayni gunun eski islemleri temizlenir,
@@ -30,7 +50,8 @@ class SimulationEngine:
             cursor.execute("DELETE FROM trades WHERE owner=? AND date_str=?", (self.owner, date_str))
         except Exception as e:
             print(f"[SimEngine] Eski trade temizleme hatasi: {e}")
-        for t in trades:
+        for key in order:
+            t = merged[key]
             try:
                 cursor.execute("""
                     INSERT INTO trades (
@@ -61,9 +82,10 @@ class SimulationEngine:
             except Exception as e:
                 print(f"[SimEngine] Trade save err {t['symbol']}: {e}")
 
-        # Equity Log (hesap bazli)
-        total_pnl = sum(t.get('pnl_val', 0) for t in trades if t.get('exit_time'))
-        win_trades = sum(1 for t in trades if t.get('pnl_val', 0) > 0)
+        # Equity Log (hesap bazli) - birlestirilmis kayitlar uzerinden;
+        # boylece equity_log ile trades tablosu SUM'u daima tutarli olur.
+        total_pnl = sum(t.get('pnl_val', 0) for t in merged.values() if t.get('exit_time'))
+        win_trades = sum(1 for t in merged.values() if t.get('pnl_val', 0) > 0)
 
         try:
             # Bakiye zinciri: yalnizca ONCEKI GUNUN bitisi baz alinir.
@@ -90,7 +112,7 @@ class SimulationEngine:
                     win_trades=excluded.win_trades
             """, (
                 self.owner, date_str, start_eq, start_eq + total_pnl,
-                total_pnl, len(trades), win_trades
+                total_pnl, len(order), win_trades
             ))
         except Exception as e:
             print(f"[SimEngine] Equity save err: {e}")
@@ -294,6 +316,12 @@ class SimulationEngine:
             sym = s['symbol']
             df = MarketDataManager.get_market_data(date_str, sym)
             if not df.empty:
+                # Karma tz verisi: Postgres timestamp'leri tz-aware, yfinance
+                # verisi naive geliyor; sorted() bu karisimda patliyor.
+                # Tum indeksleri naive'e cevir (sutun karsilastirmalari zaten
+                # kodun geri kalaninda naive varsayiyor).
+                if getattr(df.index, 'tz', None) is not None:
+                    df.index = df.index.tz_localize(None)
                 dfs[sym] = df
                 for t in df.index:
                     all_times.add(t)
