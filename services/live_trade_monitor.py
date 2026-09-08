@@ -267,7 +267,12 @@ def update_position_orders(pos_id, tp_price=None, sl_price=None, owner=None):
 
 def close_position(pos_id, price=None, reason="MANUEL KAPATMA", owner=None):
     """Pozisyonu kapatir, PnL gerceklestirir (pozisyon sahibine islenir).
-    owner verilirse pozisyonun sahibiyle eslesmesi kontrol edilir."""
+    owner verilirse pozisyonun sahibiyle eslesmesi kontrol edilir.
+
+    ATOMIK KAPANIS: Ana site + yedek site ayni DB'yi izleyebilir; iki
+    monitor ayni pozisyonu ayni anda kapatirsan satis geliri CIFAT
+    yazilmasin diye once 'OPEN -> CLOSED' gecisini kazanan tek thread
+    para kredisi alir. Kaybeden 'zaten kapali' ile doner."""
     conn = get_connection()
     c = conn.cursor()
     c.execute("SELECT * FROM live_positions WHERE id=? AND status='OPEN'", (pos_id,))
@@ -290,26 +295,33 @@ def close_position(pos_id, price=None, reason="MANUEL KAPATMA", owner=None):
 
     entry = float(row["entry_price"])
     shares = int(row["shares"])
-    cost = float(row["cost_val"] or (shares * entry * (1 + COMMISSION)))
 
     sell_volume = shares * price
     commission = (shares * entry + sell_volume) * COMMISSION
     pnl_val = (shares * (price - entry)) - commission
     pnl_pct = (pnl_val / (shares * entry)) * 100 if entry > 0 else 0
 
-    cash = _get_cash(row_owner)
-    _set_setting(_cash_key(row_owner), round(cash + sell_volume - commission, 2))
-
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Atomik sahiplenme: status='OPEN' iken kapat; baska bir sunucu
+    #bizden once kapattiysa rowcount=0 doner ve HICBIR SEY yazmayiz.
     conn = get_connection()
     c = conn.cursor()
     c.execute("""UPDATE live_positions SET
                  status='CLOSED', exit_time=?, exit_price=?, pnl_val=?, pnl_pct=?,
                  exit_reason=?, last_price=?, last_update=?
-                 WHERE id=?""", (now, round(price, 2), round(pnl_val, 2),
-                                 round(pnl_pct, 2), reason, round(price, 2), now, pos_id))
+                 WHERE id=? AND status='OPEN'""", (now, round(price, 2), round(pnl_val, 2),
+                                                   round(pnl_pct, 2), reason, round(price, 2), now, pos_id))
+    won = (c.rowcount == 1)
     conn.commit()
     conn.close()
+
+    if not won:
+        return False, "Pozisyon baska bir oturum tarafindan zaten kapandi"
+
+    # Para kredisi YALNIZCA kapanisi kazanan tarafa yazilir
+    cash = _get_cash(row_owner)
+    _set_setting(_cash_key(row_owner), round(cash + sell_volume - commission, 2))
 
     # Telegram sesli SAT uyarisi (hata islemi bloklamaz)
     try:
