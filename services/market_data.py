@@ -47,29 +47,30 @@ class MarketDataManager:
         conn.close()
 
     @staticmethod
-    def fetch_and_store_intraday(date_str: str):
+    def fetch_and_store_intraday(date_str: str, period: str = "1mo"):
         """
         O gün sinyal üretilen tüm hisseler için yfinance'den 5 dakikalık veya 1 saatlik
         geçmişi indirir ve market_data tablosuna yazar.
         Simülasyon motoru buradan okuyacaktır.
+        period: "1mo" tam tarama; "5d" sadece son gunler (canli toplayici icin hafif).
         """
         conn = get_connection()
         cursor = conn.cursor()
-        
+
         cursor.execute("SELECT symbol FROM signals WHERE date_str = ?", (date_str,))
         rows = cursor.fetchall()
         symbols = [r["symbol"] for r in rows]
-        
+
         if not symbols:
             conn.close()
             return
-            
-        print(f"[MarketData] {date_str} için {len(symbols)} hissenin 5m verisi indiriliyor...")
-        
+
+        print(f"[MarketData] {date_str} için {len(symbols)} hissenin 5m verisi indiriliyor (period={period})...")
+
         # Yahoo Finance bazen 5m vermeyebilir eski tarihler için, 1mo içinde verir.
         try:
             # interval = 5m
-            data = yf.download(symbols, period="1mo", interval="5m", group_by='ticker', threads=False, progress=False)
+            data = yf.download(symbols, period=period, interval="5m", group_by='ticker', threads=False, progress=False)
             
             # Parsing yfinance dataframe
             for sym in symbols:

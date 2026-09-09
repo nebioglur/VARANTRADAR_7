@@ -163,6 +163,40 @@ def background_scanner():
         import traceback
         BACKGROUND_ERROR = str(e) + " - " + traceback.format_exc()
 
+_live_collector_started = False
+def start_live_data_collector():
+    """Canli 5dk veri toplayici: agir ana taramadan BAGIMSIZ, seans saatlerinde
+    her 5 dakikada bir market_data'yi tazeler. Boylece sinyal tablolari ve
+    simulasyon guncel fiyatlarda calisir (30+ dk gecikme olmaz)."""
+    global _live_collector_started
+    if _live_collector_started:
+        return
+    _live_collector_started = True
+
+    def _collector_loop():
+        import time as _time
+        from datetime import datetime as _dt
+        from services.market_data import MarketDataManager
+        while True:
+            try:
+                now = _dt.now()
+                weekday = now.weekday() < 5
+                t = now.time()
+                in_session = t >= _dt.strptime("09:50", "%H:%M").time() and t <= _dt.strptime("18:15", "%H:%M").time()
+                if weekday and in_session:
+                    d_str = now.strftime("%Y-%m-%d")
+                    try:
+                        MarketDataManager.fetch_and_store_intraday(d_str, period="5d")
+                    except Exception as coll_err:
+                        print(f"[LIVE DATA] toplama hatasi: {coll_err}")
+            except Exception as e_outer:
+                print(f"[LIVE DATA] dongu hatasi: {e_outer}")
+            _time.sleep(5 * 60)
+
+    t_live = threading.Thread(target=_collector_loop, daemon=True, name="live-data-collector")
+    t_live.start()
+    print("[LIVE DATA] Canli 5dk veri toplayici baslatildi (seans icinde her 5 dk).")
+
 def _background_scanner_impl():
     # --- V8 ENGINE INIT ---
     try:
@@ -1029,6 +1063,11 @@ def api_quote():
 @app.route('/api/dashboard_init', methods=['GET'])
 def api_dashboard_init():
     """Ön yüz ilk açıldığında gösterilecek Fırsatları ve Sayaçları döner."""
+    # gunicorn worker'inda da canli veri toplayici garanti baslatma
+    try:
+        start_live_data_collector()
+    except Exception:
+        pass
     clean_cache = sanitize_for_json(GLOBAL_DASHBOARD_CACHE)
     
     total = len(BIST_SYMBOLS) if 'BIST_SYMBOLS' in globals() else 550
@@ -2085,6 +2124,10 @@ if __name__ == "__main__":
             daemon=True
         )
         t.start()
+        try:
+            start_live_data_collector()
+        except Exception as e:
+            print(f"[LIVE DATA] Baslatilamadi: {e}")
         try:
             from services.detective_engine import start_background_loop
             start_background_loop()
