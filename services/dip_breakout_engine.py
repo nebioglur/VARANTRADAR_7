@@ -7,7 +7,7 @@ Veri kaynagi: yfinance 1d (6 ay) gunluk barlari; XU100 benchmark.
 """
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, time as dtime
 
 import numpy as np
 import pandas as pd
@@ -25,6 +25,30 @@ _lock = threading.Lock()
 _build_lock = threading.Lock()
 
 CACHE_TTL = 300  # saniye
+
+# canli market_data toplama durumu (dip dongusune bagli hafif toplayici)
+_last_md_collect = None
+
+
+def _maybe_collect_live_data():
+    """Seans icinde en fazla 5 dk'da bir market_data'yi tazeler.
+    Dip radar dongusune baglidir cunku o dongu Render'da surekli kanitli calisir;
+    ayri thread'ler gunicorn worker yeniden baslanmalarinda kaybolabiliyor."""
+    global _last_md_collect
+    now = datetime.now()
+    if now.weekday() >= 5:
+        return
+    t = now.time()
+    if not (dtime(9, 50) <= t <= dtime(18, 15)):
+        return
+    if _last_md_collect and (now - _last_md_collect).total_seconds() < 290:
+        return
+    _last_md_collect = now
+    try:
+        from services.market_data import MarketDataManager
+        MarketDataManager.fetch_and_store_intraday(now.strftime("%Y-%m-%d"), period="2d")
+    except Exception as e:
+        print(f"[LIVE DATA] dip-hook toplama hatasi: {e}")
 
 
 def get_rows():
@@ -402,6 +426,11 @@ def _analyze_minimal(sym, df, meta):
 
 
 def _build():
+    # canli 5dk veri toplama (hafif, bagimsiz) - insa baslamadan once
+    try:
+        _maybe_collect_live_data()
+    except Exception:
+        pass
     with _build_lock:
         with _lock:
             if _cache["building"]:
