@@ -408,8 +408,10 @@ def monitor_once():
     return {"checked": len(open_positions), "closed": closed}
 
 
-def get_terminal_state(owner=None):
-    """UI icin acik pozisyonlar + son islemler + bakiye (owner'a ozel)."""
+def get_terminal_state(owner=None, price_map=None):
+    """UI icin acik pozisyonlar + son islemler + bakiye (owner'a ozel).
+    price_map verildiyse (sembol -> guncel fiyat) acik pozisyon K/Z'si
+    canli fiyatla hesaplanir ve DB'deki last_price guncellenir."""
     owner = owner or DEFAULT_OWNER
     conn = get_connection()
     c = conn.cursor()
@@ -417,6 +419,14 @@ def get_terminal_state(owner=None):
     open_rows = [dict(r) for r in c.fetchall()]
     c.execute("SELECT * FROM live_positions WHERE status='CLOSED' AND owner=? ORDER BY exit_time DESC LIMIT 10", (owner,))
     closed_rows = [dict(r) for r in c.fetchall()]
+
+    if price_map:
+        for r in open_rows:
+            live = price_map.get(r["symbol"])
+            if live:
+                r["last_price"] = live
+                c.execute("UPDATE live_positions SET last_price=? WHERE id=?", (live, r["id"]))
+        conn.commit()
     conn.close()
 
     cash = _get_cash(owner)

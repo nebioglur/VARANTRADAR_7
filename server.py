@@ -1512,12 +1512,23 @@ def api_leaderboard():
     gore buyukten kucuge siralar."""
     try:
         from services.trade_database import get_connection
-        from services.live_trade_monitor import get_terminal_state
+        from services.live_trade_monitor import get_terminal_state, _bulk_prices
         conn = get_connection()
         c = conn.cursor()
         c.execute("SELECT owner_key, email, display_name FROM app_users")
         users = c.fetchall()
+        c.execute("SELECT DISTINCT symbol FROM live_positions WHERE status='OPEN'")
+        open_symbols = [r["symbol"] for r in c.fetchall()]
         conn.close()
+
+        # Tum acik pozisyonlar icin TEK toplu canli fiyat cekimi -> siralama
+        # anlik piyasa degeriyle hesaplanir (sabit/degeramilmez olmaz).
+        price_map = {}
+        if open_symbols:
+            try:
+                price_map = _bulk_prices(open_symbols)
+            except Exception:
+                price_map = {}
 
         rows = []
         for u in users:
@@ -1526,7 +1537,7 @@ def api_leaderboard():
             if not name:
                 name = owner.split(":", 1)[1] if ":" in owner else owner
             try:
-                t = get_terminal_state(owner)
+                t = get_terminal_state(owner, price_map=price_map)
             except Exception:
                 t = {"cash": 100000.0, "invested": 0.0, "open_pnl": 0.0, "equity": 100000.0}
             rows.append({
