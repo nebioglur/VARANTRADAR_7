@@ -206,6 +206,12 @@ def _analyze(sym, df5, df1d, bench5, bench1d, now):
     slots = list(pv["close"].columns)
     now_slot = now.strftime("%H:%M")
     live_slots = [s for s in slots if s <= now_slot] if today == now.date() else slots
+    # Slot kolonlari gecmis gunlerden geliyor; bugunun o slotta verisi yoksa
+    # (yfinance NaN/satir-dusuerturek) fiyat NaN olur. Sadece bugun gercekten
+    # veri olan slotlarla calis.
+    if today in pv["close"].index:
+        today_close_all = pv["close"].loc[today]
+        live_slots = [s for s in live_slots if pd.notna(today_close_all.get(s, np.nan))]
     if len(live_slots) < 4:
         return None
 
@@ -254,6 +260,8 @@ def _analyze(sym, df5, df1d, bench5, bench1d, now):
     day_open = float(t_open.iloc[0])
     day_high = float(t_high.max())
     day_low = float(t_low.min())
+    if not (pd.notna(price) and pd.notna(day_open)) or price <= 0 or day_open <= 0:
+        return None
     change_pct = (price - day_open) / max(day_open, 0.01) * 100
 
     # benchmark bugun
