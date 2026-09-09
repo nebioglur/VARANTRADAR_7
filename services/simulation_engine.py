@@ -143,22 +143,26 @@ class SimulationEngine:
         return False, ""
 
     def _entry_setup(self, sub_df, entry_price):
-        if len(sub_df) < 22:
+        # 5dk veride sinyal saatinde (or. 10:15) 22 bar yok; esnek olmak icin
+        # minimum 12 bar (1 saat) yeterli. EMA21 hesaplanamazsa EMA9 trendi kullanilir.
+        if len(sub_df) < 12:
             return None
 
         close = pd.to_numeric(sub_df['Close'], errors='coerce').dropna()
         high = pd.to_numeric(sub_df['High'], errors='coerce').reindex(close.index)
         low = pd.to_numeric(sub_df['Low'], errors='coerce').reindex(close.index)
-        if len(close) < 22 or high.isna().any() or low.isna().any():
+        if len(close) < 12 or high.isna().any() or low.isna().any():
             return None
 
         ema9 = close.ewm(span=9, adjust=False).mean()
         ema21 = close.ewm(span=21, adjust=False).mean()
-        ema_confirmed = (
-            ema9.iloc[-1] > ema21.iloc[-1]
-            and ema9.iloc[-1] > ema9.iloc[-2]
-            and close.iloc[-1] >= ema9.iloc[-1]
-        )
+
+        ema9_ok = ema9.iloc[-1] > ema9.iloc[-2] and close.iloc[-1] >= ema9.iloc[-1]
+        if len(ema21.dropna()) >= 2:
+            ema_confirmed = ema9_ok and (ema9.iloc[-1] > ema21.iloc[-1])
+        else:
+            # EMA21 henuz guvenilir degilse sadece EMA9 momentumuyla ilerle
+            ema_confirmed = ema9_ok
         if not ema_confirmed:
             return None
 
@@ -179,7 +183,7 @@ class SimulationEngine:
             'stop_pct': stop_pct,
             'stop_price': stop_price,
             'ema9': float(ema9.iloc[-1]),
-            'ema21': float(ema21.iloc[-1])
+            'ema21': float(ema21.iloc[-1]) if len(ema21.dropna()) >= 1 else None
         }
 
     @classmethod
@@ -469,9 +473,10 @@ class SimulationEngine:
 
                 # Verisi erken kesilen hissede islem acma (veri saglayici
                 # bazi sembollerde gunu yari yolda bitiriyor; giris=çikis
-                # ayni dakika kaliyordu). En az 30 dk yonetilebilir veri sart.
+                # ayni dakika kaliyordu). Yine de erken saatlerde pozisyon
+                # acilabilmesi icin en az 3 bar (15 dk) yonetilebilir veri sart.
                 remaining_bars = int((df.index > current_time).sum())
-                if remaining_bars < 6:
+                if remaining_bars < 3:
                     to_remove.append(s)
                     continue
 
@@ -540,7 +545,7 @@ class SimulationEngine:
                     if df is None or current_time not in df.index:
                         continue
                     # Erken kesilen veride yeniden giris de yapma
-                    if int((df.index > current_time).sum()) < 6:
+                    if int((df.index > current_time).sum()) < 3:
                         continue
                     sub_df = df.loc[:current_time]
                     raw_entry = float(sub_df['Close'].iloc[-1])
@@ -576,22 +581,39 @@ class SimulationEngine:
                     })
                     stopped_out_symbols.remove(sym)
 
+        # Seans sonu: acik pozisyonlari kapat.
+        # Ancak BUGUN icin seans henuz 17:50'den onceyse canli modda acik birak;
+        # frontend "Islemde" olarak gostersin.
+        now = datetime.now()
+        is_today = date_str == now.strftime("%Y-%m-%d")
+        close_open_now = is_today and now.time() >= time(17, 50)
+
         for trade in [t for t in active_trades if t['status'] == 'OPEN']:
             sym = trade['symbol']
             df = dfs[sym]
             if not df.empty:
                 last_time = df.index[-1]
                 close = float(df.iloc[-1]['Close'])
-                trade['status'] = 'CLOSED'
-                trade['exit_time'] = str(last_time)
-                trade['exit_price'] = close
-                buy_volume = trade['shares'] * trade['entry_price']
-                sell_volume = trade['shares'] * close
-                commission = (buy_volume + sell_volume) * 0.0004
-                gross_pnl = trade['shares'] * (close - trade['entry_price'])
-                trade['pnl_val'] = gross_pnl - commission
-                trade['pnl_pct'] = (trade['pnl_val'] / buy_volume) * 100
-                trade['exit_reason'] = "⏱️ SEANS SONU NAKİTE GEÇİŞ"
+                if close_open_now:
+                    trade['status'] = 'CLOSED'
+                    trade['exit_time'] = str(last_time)
+                    trade['exit_price'] = close
+                    buy_volume = trade['shares'] * trade['entry_price']
+                    sell_volume = trade['shares'] * close
+                    commission = (buy_volume + sell_volume) * 0.0004
+                    gross_pnl = trade['shares'] * (close - trade['entry_price'])
+                    trade['pnl_val'] = gross_pnl - commission
+                    trade['pnl_pct'] = (trade['pnl_val'] / buy_volume) * 100
+                    trade['exit_reason'] = "⏱️ SEANS SONU NAKİTE GEÇİŞ"
+                else:
+                    # Canli: acik pozisyon olarak kaydet, PnL gecici son fiyatla
+                    trade['exit_time'] = None
+                    trade['exit_price'] = None
+                    buy_volume = trade['shares'] * trade['entry_price']
+                    gross_pnl = trade['shares'] * (close - trade['entry_price'])
+                    trade['pnl_val'] = gross_pnl
+                    trade['pnl_pct'] = (gross_pnl / buy_volume) * 100
+                    trade['exit_reason'] = "🔓 AÇIK POZİSYON"
                 completed_trades.append(trade)
 
         self._save_trades(date_str, completed_trades)
