@@ -296,6 +296,32 @@ function switchMainTab(tabName, btnElement) {
     if (tabName === 'logs') {
         fetchLogs();
     }
+
+    // Aktif sekmenin adini URL hash'ine yaz (yenileme/derin link icin)
+    try { if (history.replaceState) history.replaceState(null, '', '#' + tabName); } catch (e) {}
+}
+
+// Ust menudeki bir sekmeyi YENI tarayici penceresinde acar.
+// Boylece birden fazla bolum ayni anda ayri sekmelerde izlenebilir.
+function openMainTabNew(tabName) {
+    const url = location.origin + location.pathname + '#' + tabName;
+    window.open(url, '_blank');
+}
+
+// Sayfa /#sekme adi ile acildiysa dogru bolumu yukle (yeni sekmeden gelen linkler)
+// DOM hazir olunca calistirilir ki sonradan eklenen sarmalayicilar da uygulanmis olsun.
+function initTabFromHash() {
+    const h = (location.hash || '').replace('#', '').trim();
+    if (!h) return;
+    const btn = Array.from(document.querySelectorAll('.nav-btn')).find(b => (b.getAttribute('onclick') || '').includes("'" + h + "'"));
+    if (btn) {
+        try { switchMainTab(h, btn); } catch (e) { /* varsayilan sekmede kal */ }
+    }
+}
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTabFromHash);
+} else {
+    initTabFromHash();
 }
 
 function cancelLoadingAndGoBack() {

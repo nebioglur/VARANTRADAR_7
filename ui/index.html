@@ -32,19 +32,19 @@
             <div id="ac-dropdown" class="ac-dropdown"></div>
         </div>
         <div class="nav-actions">
-            <button class="nav-btn active" onclick="switchMainTab('home', this)"><i class="fa-solid fa-house"></i> GİRİŞ</button>
-            <button class="nav-btn" onclick="switchMainTab('detective', this)" style="color:#f97316; border:1px solid rgba(249,115,22,0.4);"><i class="fa-solid fa-user-secret"></i> PİYASA DEDEKTİFİ</button>
-            <button class="nav-btn" onclick="switchMainTab('portfolio', this)" style="color:var(--accent-green);"><i class="fa-solid fa-wallet"></i> PORTFÖYÜM</button>
-            <button class="nav-btn" onclick="switchMainTab('leaderboard', this)" style="color:var(--accent-yellow);"><i class="fa-solid fa-ranking-star"></i> SIRALAMA</button>
-            <button class="nav-btn" onclick="switchMainTab('radar', this)"><i class="fa-solid fa-tower-broadcast"></i> RADAR</button>
-            <button class="nav-btn" onclick="switchMainTab('stats', this)"><i class="fa-solid fa-chart-pie"></i> İSTATİSTİKLER</button>
-            <button class="nav-btn" onclick="switchMainTab('news', this)"><i class="fa-solid fa-newspaper"></i> HABERLER (KAP)</button>
-            <!-- <button class="nav-btn" onclick="switchMainTab('varant', this)"><i class="fa-solid fa-calculator"></i> VARANT</button> -->
-            <button class="nav-btn" onclick="switchMainTab('simulation', this)"><i class="fa-solid fa-flask"></i> SİMÜLASYON</button>
-            <button class="nav-btn" onclick="switchMainTab('logs', this)"><i class="fa-solid fa-terminal"></i> LOGLAR</button>
-            <button class="nav-btn" onclick="switchMainTab('backtest', this)" style="color:var(--accent-purple);"><i class="fa-solid fa-microscope"></i> BACKTEST</button>
-            <button class="nav-btn" onclick="switchMainTab('v8', this)" style="color:#0ea5e9; border:1px solid rgba(14,165,233,0.4);"><i class="fa-solid fa-brain"></i> V8 ENGINE (YENİ)</button>
-            <button class="nav-btn" onclick="switchMainTab('guide', this)" style="color:var(--accent-yellow); border:1px solid rgba(234, 179, 8, 0.4);"><i class="fa-solid fa-book-open"></i> NASIL KULLANILIR?</button>
+            <button class="nav-btn active" onclick="openMainTabNew('home')"><i class="fa-solid fa-house"></i> GİRİŞ</button>
+            <button class="nav-btn" onclick="openMainTabNew('detective')" style="color:#f97316; border:1px solid rgba(249,115,22,0.4);"><i class="fa-solid fa-user-secret"></i> PİYASA DEDEKTİFİ</button>
+            <button class="nav-btn" onclick="openMainTabNew('portfolio')" style="color:var(--accent-green);"><i class="fa-solid fa-wallet"></i> PORTFÖYÜM</button>
+            <button class="nav-btn" onclick="openMainTabNew('leaderboard')" style="color:var(--accent-yellow);"><i class="fa-solid fa-ranking-star"></i> SIRALAMA</button>
+            <button class="nav-btn" onclick="openMainTabNew('radar')"><i class="fa-solid fa-tower-broadcast"></i> RADAR</button>
+            <button class="nav-btn" onclick="openMainTabNew('stats')"><i class="fa-solid fa-chart-pie"></i> İSTATİSTİKLER</button>
+            <button class="nav-btn" onclick="openMainTabNew('news')"><i class="fa-solid fa-newspaper"></i> HABERLER (KAP)</button>
+            <!-- <button class="nav-btn" onclick="openMainTabNew('varant')"><i class="fa-solid fa-calculator"></i> VARANT</button> -->
+            <button class="nav-btn" onclick="openMainTabNew('simulation')"><i class="fa-solid fa-flask"></i> SİMÜLASYON</button>
+            <button class="nav-btn" onclick="openMainTabNew('logs')"><i class="fa-solid fa-terminal"></i> LOGLAR</button>
+            <button class="nav-btn" onclick="openMainTabNew('backtest')" style="color:var(--accent-purple);"><i class="fa-solid fa-microscope"></i> BACKTEST</button>
+            <button class="nav-btn" onclick="openMainTabNew('v8')" style="color:#0ea5e9; border:1px solid rgba(14,165,233,0.4);"><i class="fa-solid fa-brain"></i> V8 ENGINE (YENİ)</button>
+            <button class="nav-btn" onclick="openMainTabNew('guide')" style="color:var(--accent-yellow); border:1px solid rgba(234, 179, 8, 0.4);"><i class="fa-solid fa-book-open"></i> NASIL KULLANILIR?</button>
             <div class="status-indicator">
                 <span class="pulse"></span>
                 <span>SİSTEM AKTİF</span>
@@ -2158,7 +2158,7 @@
 
 
 
-    <script src="app.js?v=20260909_open_pos"></script>
+    <script src="app.js?v=20260909_newtabs"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js"></script>
 </body>
