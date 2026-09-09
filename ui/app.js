@@ -301,11 +301,16 @@ function switchMainTab(tabName, btnElement) {
     try { if (history.replaceState) history.replaceState(null, '', '#' + tabName); } catch (e) {}
 }
 
-// Ust menudeki bir sekmeyi YENI tarayici penceresinde acar.
-// Boylece birden fazla bolum ayni anda ayri sekmelerde izlenebilir.
-function openMainTabNew(tabName) {
-    const url = location.origin + location.pathname + '#' + tabName;
-    window.open(url, '_blank');
+// Ust menu linki: normal sol tik sayfa icinde sekmeyi degistirir.
+// Ctrl+tik / orta tik / sag tik -> tarayicinin dogal "yeni sekmede ac" menusu calisir
+// (linkler /#sekme adresine yonlendigi icin yeni sekme dogru bolumle acilir).
+function navClick(ev, tabName, el) {
+    if (ev.button !== 0 || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey) {
+        return true; // tarayici varsayilani
+    }
+    ev.preventDefault();
+    try { switchMainTab(tabName, el); } catch (e) { /* sessiz */ }
+    return false;
 }
 
 // Sayfa /#sekme adi ile acildiysa dogru bolumu yukle (yeni sekmeden gelen linkler)
@@ -313,7 +318,7 @@ function openMainTabNew(tabName) {
 function initTabFromHash() {
     const h = (location.hash || '').replace('#', '').trim();
     if (!h) return;
-    const btn = Array.from(document.querySelectorAll('.nav-btn')).find(b => (b.getAttribute('onclick') || '').includes("'" + h + "'"));
+    const btn = Array.from(document.querySelectorAll('.nav-btn')).find(b => (b.getAttribute('href') || '').endsWith('#' + h) || (b.getAttribute('onclick') || '').includes("'" + h + "'"));
     if (btn) {
         try { switchMainTab(h, btn); } catch (e) { /* varsayilan sekmede kal */ }
     }

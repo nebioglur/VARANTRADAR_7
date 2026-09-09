@@ -200,6 +200,7 @@ body {
 .nav-btn {
     background: transparent; color: var(--text-muted); border: none; font-weight: 600;
     font-size: 0.85rem; cursor: pointer; padding: 0.4rem 0.8rem; border-radius: 6px; transition: 0.2s;
+    text-decoration: none; display: inline-block;
 }
 .nav-btn:hover { color: var(--text-main); background: rgba(255, 255, 255, 0.05); }
 .nav-btn.active { color: var(--accent-blue); background: rgba(59, 130, 246, 0.1); border-bottom: 2px solid var(--accent-blue); border-radius: 6px 6px 0 0; }
@@ -239,6 +240,7 @@ body {
 .nav-btn {
     background: transparent; color: var(--text-muted); border: none; font-weight: 600;
     font-size: 0.9rem; cursor: pointer; padding: 0.5rem 1rem; border-radius: 6px; transition: 0.2s;
+    text-decoration: none; display: inline-block;
 }
 .nav-btn:hover { color: var(--text-main); background: rgba(255, 255, 255, 0.05); }
 .nav-btn.active { color: var(--accent-blue); background: rgba(59, 130, 246, 0.1); border-bottom: 2px solid var(--accent-blue); border-radius: 6px 6px 0 0; }

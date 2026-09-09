@@ -60,6 +60,24 @@ def _get_cash(owner):
     return float(val)
 
 
+def _add_cash(owner, delta):
+    """Nakit guncellemeyi ATOMIK yapar (SQL icinde toplama).
+    Oku-sonra-yaz yarisi (ana site + yedek site ayni DB'yi kullaniyor)
+    bakiye kaymasinin kronik nedeniydi; bu yontemle kayip guncelleme olmaz."""
+    key = _cash_key(owner)
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("UPDATE live_settings SET value = CAST(CAST(value AS DOUBLE PRECISION) + ? AS TEXT) "
+                  "WHERE key=?", (round(float(delta), 2), key))
+        lost = (c.rowcount == 0)
+        conn.commit()
+    finally:
+        conn.close()
+    if lost:
+        _set_setting(key, round(STARTING_CASH + float(delta), 2))
+
+
 def _get_live_price(symbol):
     """Guncel fiyat: once dashboard cache, sonra yfinance."""
     clean = symbol.replace(".IS", "").replace(".is", "").upper().strip()
@@ -197,9 +215,10 @@ def open_position(symbol, allocation=2000.0, tp_pct=5.0, sl_pct=3.0, trailing=Tr
                final_sl, final_tp,
                DEFAULT_TRAIL_PCT if trailing else 0,
                entry_price, source, price, now))
-    c.execute("UPDATE live_settings SET value=? WHERE key=?", (str(round(cash - cost, 2)), _cash_key(owner)))
+    c.execute("UPDATE live_settings SET value = CAST(CAST(value AS DOUBLE PRECISION) - ? AS TEXT) WHERE key=?",
+              (round(cost, 2), _cash_key(owner or DEFAULT_OWNER)))
     if c.rowcount == 0:
-        _set_setting(_cash_key(owner), round(cash - cost, 2))
+        _set_setting(_cash_key(owner or DEFAULT_OWNER), round(STARTING_CASH - cost, 2))
     conn.commit()
     conn.close()
 
@@ -320,9 +339,8 @@ def close_position(pos_id, price=None, reason="MANUEL KAPATMA", owner=None):
     if not won:
         return False, "Pozisyon baska bir oturum tarafindan zaten kapandi"
 
-    # Para kredisi YALNIZCA kapanisi kazanan tarafa yazilir
-    cash = _get_cash(row_owner)
-    _set_setting(_cash_key(row_owner), round(cash + sell_volume - commission, 2))
+    # Para kredisi YALNIZCA kapanisi kazanan tarafa yazilir (atomik toplama)
+    _add_cash(row_owner, sell_volume - commission)
 
     # Telegram sesli SAT uyarisi (hata islemi bloklamaz)
     try:
