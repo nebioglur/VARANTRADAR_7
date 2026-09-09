@@ -3772,9 +3772,10 @@ async function fetchSimulationData() {
                         const pnlSign = t.pnl_pct >= 0 ? '+' : '';
                         
                         const exitTimeStr = isClosed ? t.exit_time : '<span style="color:var(--accent-yellow)">İşlemde</span>';
-                        const exitPriceStr = isClosed ? `₺${t.exit_price.toFixed(2)}` : '-';
-                        const pnlValStr = isClosed ? `${pnlSign}₺${(t.pnl_val || 0).toFixed(2)}` : '-';
-                        const pnlPctStr = isClosed ? `${pnlSign}${(t.pnl_pct || 0).toFixed(2)}%` : '-';
+                        const exitPriceStr = isClosed ? `₺${t.exit_price.toFixed(2)}` : '<span style="color:var(--text-muted)">-</span>';
+                        // Acik pozisyonlarda da anlik K/Z goster (sim motoru hesaplar)
+                        const pnlValStr = `${pnlSign}₺${(t.pnl_val || 0).toFixed(2)}`;
+                        const pnlPctStr = `${pnlSign}${(t.pnl_pct || 0).toFixed(2)}%`;
                         const strategyStr = t.strategy_name
                             ? `<div style="margin-top:0.25rem; color:var(--accent-blue); font-size:0.7rem;" title="${t.entry_checks || ''}">${t.strategy_name}${t.risk_amount ? ` · Risk: ₺${Number(t.risk_amount).toFixed(0)}` : ''}</div>`
                             : '';
