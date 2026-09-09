@@ -2711,7 +2711,8 @@ async function recalculateDetailVarantSim() {
     const sym = window.currentAnalyzedSymbol || document.getElementById('tk-sym')?.innerText || 'THYAO';
     const spot = parseFloat(document.getElementById('tk-price')?.innerText?.replace('₺','').replace(',','') || 100);
     const targetInput = document.getElementById('dt-sim-target-input');
-    const targetVal = parseFloat(targetInput?.value || spot * 1.099);
+    const targetVal = smartNum(targetInput?.value || spot * 1.099);
+    if (isNaN(targetVal)) return;
     const issuerSelect = document.getElementById('dt-sim-issuer-select');
     const issuer = issuerSelect ? issuerSelect.value : 'ALL';
     
@@ -4041,13 +4042,46 @@ function _ltQuotePrice() {
     return (v && v > 0) ? v : null;
 }
 
+// ==== AKILLI SAYI GIRISI ====
+// Turkce klavyede "6,9" / "43.1240" / "431150,2" gibi girisleri otomatik duzeltir.
+// Kural: hem , hem . varsa SONRAKI yazilan ondalik ayraci, digeri binliktir.
+// Tek ayirac ise ondalik kabul edilir ("51.000" -> 51, "0,7" -> 0.7).
+// Birden fazla ayni ayirac -> binlik ayirici sayilir ("1.234.567" -> 1234567).
+function smartNum(v) {
+    if (v === null || v === undefined) return NaN;
+    let s = String(v).trim().replace(/[\s\u00A0']/g, '');
+    if (!s) return NaN;
+    const hasC = s.includes(','), hasD = s.includes('.');
+    if (hasC && hasD) {
+        if (s.lastIndexOf(',') > s.lastIndexOf('.')) s = s.replace(/\./g, '').replace(/,/g, '.');
+        else s = s.replace(/,/g, '');
+    } else if (hasC) {
+        if ((s.match(/,/g) || []).length > 1) s = s.replace(/,/g, '');
+        else s = s.replace(',', '.');
+    } else if (hasD) {
+        if ((s.match(/\./g) || []).length > 1) s = s.replace(/\./g, '');
+    }
+    s = s.replace(/[^0-9.\-]/g, '');
+    const n = parseFloat(s);
+    return isNaN(n) ? NaN : n;
+}
+
+// blur'da alanin gorunusunu temiz sayiya cevirir (kullanicinin yazdigi korunur)
+function normNumField(id, opts) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const n = smartNum(el.value);
+    if (isNaN(n)) return;
+    el.value = (opts && opts.integer) ? String(Math.max(1, Math.round(n))) : String(n);
+}
+
 function ltSyncFromPct(kind) {
     const el = (id) => document.getElementById(id);
     const base = _ltQuotePrice();
     const pctEl = el(kind === 'tp' ? 'lt-tp' : 'lt-sl');
     const priceEl = el(kind === 'tp' ? 'lt-tp-price' : 'lt-sl-price');
     if (!pctEl || !priceEl) return;
-    const pct = parseFloat(pctEl.value);
+    const pct = smartNum(pctEl.value);
     if (isNaN(pct) || pct <= 0) return;
     if (!base) return; // anlik fiyat yoksa fiyati dokme
     const price = kind === 'tp' ? base * (1 + pct / 100) : base * (1 - pct / 100);
@@ -4060,7 +4094,7 @@ function ltSyncFromPrice(kind) {
     const pctEl = el(kind === 'tp' ? 'lt-tp' : 'lt-sl');
     const priceEl = el(kind === 'tp' ? 'lt-tp-price' : 'lt-sl-price');
     if (!pctEl || !priceEl) return;
-    const price = parseFloat(priceEl.value);
+    const price = smartNum(priceEl.value);
     if (isNaN(price) || price <= 0 || !base) return;
     const pct = kind === 'tp' ? (price / base - 1) * 100 : (1 - price / base) * 100;
     if (pct <= 0) return; // mantiksiz yon
@@ -4078,8 +4112,8 @@ async function ltOpenPosition() {
     const btn = el('lt-buy-btn');
     if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gönderiliyor'; }
 
-    const tpPriceRaw = parseFloat(el('lt-tp-price')?.value);
-    const slPriceRaw = parseFloat(el('lt-sl-price')?.value);
+    const tpPriceRaw = smartNum(el('lt-tp-price')?.value);
+    const slPriceRaw = smartNum(el('lt-sl-price')?.value);
 
     try {
         const res = await fetch('/api/simulation/terminal/open', {
@@ -4087,9 +4121,9 @@ async function ltOpenPosition() {
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 symbol: symbol,
-                allocation: parseFloat(el('lt-allocation')?.value) || 2000,
-                tp_pct: parseFloat(el('lt-tp')?.value) || 5,
-                sl_pct: parseFloat(el('lt-sl')?.value) || 3,
+                allocation: smartNum(el('lt-allocation')?.value) || 2000,
+                tp_pct: smartNum(el('lt-tp')?.value) || 5,
+                sl_pct: smartNum(el('lt-sl')?.value) || 3,
                 tp_price: (!isNaN(tpPriceRaw) && tpPriceRaw > 0) ? tpPriceRaw : null,
                 sl_price: (!isNaN(slPriceRaw) && slPriceRaw > 0) ? slPriceRaw : null,
                 trailing: el('lt-trailing')?.checked !== false
@@ -4374,7 +4408,7 @@ function ltUpdateQty() {
     const q = _ltCurrentQuote;
     const box = document.getElementById('lt-quote-box');
     if (!box || box.style.display === 'none' || !q || !q.price) return;
-    const alloc = parseFloat(document.getElementById('lt-allocation').value) || 0;
+    const alloc = smartNum(document.getElementById('lt-allocation').value) || 0;
     const lot = Math.floor(alloc / q.price);
     const el = document.getElementById('lq-qty');
     const est = document.getElementById('lq-est');
@@ -4391,7 +4425,7 @@ function ltOnQtyInput() {
     const q = _ltCurrentQuote;
     if (!q || !q.price || _ltSyncing) return;
     _ltSyncing = true;
-    const qty = parseInt(document.getElementById('lt-qty').value, 10);
+    const qty = Math.round(smartNum(document.getElementById('lt-qty').value) || 0);
     const allocInput = document.getElementById('lt-allocation');
     if (qty > 0 && allocInput) allocInput.value = Math.round(qty * q.price * 100) / 100;
     ltUpdateQty();
@@ -4812,16 +4846,16 @@ async function fetchLiveOrders() {
 async function runBacktest() {
     const symbol = document.getElementById('bt-symbol').value || 'THYAO';
     const strategy = document.getElementById('bt-strategy').value;
-    const capital = document.getElementById('bt-capital').value;
+    const capital = smartNum(document.getElementById('bt-capital').value) || 10000;
     const period = document.getElementById('bt-period').value;
-    
+
     let trailingStop = 0.0;
     const tsEl = document.getElementById('bt-trailing-stop');
-    if (tsEl) trailingStop = parseFloat(tsEl.value) || 0.0;
+    if (tsEl) trailingStop = smartNum(tsEl.value) || 0.0;
     
     let stopLoss = 0.0;
     const slEl = document.getElementById('bt-stop-loss');
-    if (slEl) stopLoss = parseFloat(slEl.value) || 0.0;
+    if (slEl) stopLoss = smartNum(slEl.value) || 0.0;
     
     // Set interval based on period
     const interval = period === '1mo' ? '1h' : '1d';
