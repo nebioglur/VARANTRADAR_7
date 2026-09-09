@@ -28,6 +28,44 @@ CACHE_TTL = 300  # saniye
 
 # canli market_data toplama durumu (dip dongusune bagli hafif toplayici)
 _last_md_collect = None
+# gun sonu simulasyon kapanisi (gunde bir kez, 17:52 sonrasi ilk insada)
+_last_sim_close_date = None
+
+
+def _maybe_close_simulation_day():
+    """17:52 sonrasi ilk dip insasinda tum hesaplarin bugunku simulasyonunu
+    yeniden kosar -> acik pozisyonlar SEANS SONU NAKITE GECIS ile kapanir.
+    Ayri thread'e guvenilmez; kanitli dip dongusune baglidir."""
+    global _last_sim_close_date
+    now = datetime.now()
+    if now.time() < dtime(17, 52):
+        return
+    if _last_sim_close_date == now.date():
+        return
+    _last_sim_close_date = now.date()
+    try:
+        from services.simulation_engine import SimulationEngine
+        from services.trade_database import get_connection
+        d_str = now.strftime("%Y-%m-%d")
+        owners = []
+        try:
+            conn = get_connection()
+            c = conn.cursor()
+            c.execute("SELECT owner_key FROM app_users")
+            owners = [r["owner_key"] for r in c.fetchall()]
+            conn.close()
+        except Exception:
+            owners = []
+        if not owners:
+            owners = ["local:nebioglur"]
+        for o in owners:
+            try:
+                SimulationEngine(owner=o).run_daily_simulation(d_str)
+            except Exception as e:
+                print(f"[SIM CLOSE] {o}: {e}")
+        print(f"[SIM CLOSE] {d_str} gun sonu kapanisi tamamlandi ({len(owners)} hesap)")
+    except Exception as e:
+        print(f"[SIM CLOSE] hata: {e}")
 
 
 def _maybe_collect_live_data():
@@ -429,6 +467,11 @@ def _build():
     # canli 5dk veri toplama (hafif, bagimsiz) - insa baslamadan once
     try:
         _maybe_collect_live_data()
+    except Exception:
+        pass
+    # gun sonu: acik simulasyon pozisyonlarini kapat (17:52 sonrasi ilk insa)
+    try:
+        _maybe_close_simulation_day()
     except Exception:
         pass
     with _build_lock:
