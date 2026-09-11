@@ -296,19 +296,21 @@ class NotificationManager:
                 with open(cache_file, "r") as f: sent_trades = json.load(f)
             except: pass
         if uid in sent_trades: return False
-        icon = "🟢" if action.startswith("AL") else "🔴"
+        
+        icon = "GREEN" if action.startswith("AL") else "RED"
         clean_sym = symbol.replace(".IS", "").upper()
-        msg = f"{icon} <b>ÇELİK SİMÜLASYON İŞLEMİ</b> {icon}
-
-📌 <b>Hisse:</b> #{clean_sym}
-⚡ <b>İşlem:</b> {action}
-💰 <b>Fiyat:</b> ₺{price:.2f}
-🕒 <b>Saat:</b> {time_str}
-"
-        if reason: msg += f"📋 <b>Açıklama:</b> {reason}
-"
-        if pnl_pct is not None: msg += f"📊 <b>İşlem K/Z:</b> %{round(pnl_pct, 2)}
-"
+        
+        msg = f"{icon} *SIMULASYON ISLEMI* {icon}\n\n"
+        msg += f"Hisse: #{clean_sym}\n"
+        msg += f"Islem: {action}\n"
+        msg += f"Fiyat: {price:.2f}\n"
+        msg += f"Saat: {time_str}\n"
+        
+        if reason:
+            msg += f"Aciklama: {reason}\n"
+        if pnl_pct is not None:
+            msg += f"K/Z: %{round(pnl_pct, 2)}\n"
+            
         sent = self.send_telegram_message(msg)
         if sent:
             sent_trades.append(uid)

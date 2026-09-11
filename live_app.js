@@ -1801,6 +1801,7 @@ function openGraphicTab(symbol) {
 }
 
 function renderAllDashboardTables() {
+    renderAllStocksTable();
     const cats = {
         'tavan_adaylari': 'tb-tavan-adaylari',
         'arge_tavan': 'tb-arge-tavan',
@@ -4005,6 +4006,7 @@ async function runBacktest() {
 }
 
 
+
 function renderAllStocksTable() {
     const tbody = document.getElementById('tb-all-stocks-home');
     if (!tbody || !window.dashboardData || !window.dashboardData.all_symbols_stats) return;
@@ -4017,18 +4019,21 @@ function renderAllStocksTable() {
         time: data.Time || '-'
     }));
     
-    // Sort by change % descending
     allStats.sort((a, b) => b.change - a.change);
     
     tbody.innerHTML = allStats.map(s => {
         const color = s.change > 0 ? 'var(--accent-green)' : (s.change < 0 ? 'var(--accent-red)' : 'var(--text-color)');
-        return             <tr>
-                <td style="font-weight:bold;">\</td>
-                <td>₺\</td>
-                <td style="color:\; font-weight:bold;">\%</td>
-                <td>\M</td>
-                <td style="color:var(--text-muted);">\</td>
+        const sign = s.change > 0 ? '+' : '';
+        const volM = (s.volume / 1000000).toFixed(1);
+        const sym = s.symbol.replace('.IS', '');
+        return 
+            <tr>
+                <td style="font-weight:bold;"></td>
+                <td></td>
+                <td style="color:; font-weight:bold;">%</td>
+                <td>M</td>
+                <td style="color:var(--text-muted);"></td>
             </tr>
-        \;
+        ;
     }).join('');
 }
