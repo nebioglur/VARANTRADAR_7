@@ -45,8 +45,8 @@ class AutomationBot:
             score = row['score']
             category = row.get('category', 'Tavan Adayı') # Assuming it's Tavan Adayı if not specified
             
-            # Yalnızca AL sinyali, Puan >= 80 ve Kategori Tavan Adayı ise Telegram'a gönder
-            should_send_telegram = (action == 'AL' and score >= 80 and 'Tavan' in category)
+            # Yalnızca AL sinyali, Puan >= 100 (VIP) ve Kategori Tavan Adayı ise Telegram'a gönder
+            should_send_telegram = (action == 'AL' and score >= 100 and 'Tavan' in category)
             
             # Check if we should notify
             if self.should_notify(symbol, action):

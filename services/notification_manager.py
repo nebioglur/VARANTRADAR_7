@@ -284,15 +284,39 @@ class NotificationManager:
         msg += f"🤖 <i>VarantRadar Pro Otomasyon Sistemi</i>"
         return self.send_telegram_message(msg)
 
-    def send_portfolio_alert(self, symbol: str, pnl_pct: float, action: str, price: float = None) -> bool:
-        """Stop veya Take Profit seviyesine gelindiğinde tetiklenir."""
-        icon = "🟢" if pnl_pct > 0 else "🔴"
+    def send_simulation_trade_alert(self, symbol: str, action: str, price: float, time_str: str, pnl_pct: float = None, reason: str = "") -> bool:
+        import json, os
+        from datetime import datetime
+        cache_file = "data/sent_sim_trades.json"
+        today = datetime.now().strftime("%Y-%m-%d")
+        uid = f"{today}_{symbol}_{action}_{time_str}"
+        sent_trades = []
+        if os.path.exists(cache_file):
+            try:
+                with open(cache_file, "r") as f: sent_trades = json.load(f)
+            except: pass
+        if uid in sent_trades: return False
+        icon = "🟢" if action.startswith("AL") else "🔴"
         clean_sym = symbol.replace(".IS", "").upper()
-        msg = f"{icon} <b>PORTFÖY ALARMI</b> {icon}\n\n"
-        msg += f"📌 <b>İşlem:</b> {action} #{clean_sym}\n"
-        if price is not None:
-            msg += f"💵 <b>Fiyat:</b> ₺{price:.2f}\n"
-        msg += f"💰 <b>Kâr/Zarar:</b> %{round(pnl_pct, 2)}\n\n"
+        msg = f"{icon} <b>ÇELİK SİMÜLASYON İŞLEMİ</b> {icon}
+
+📌 <b>Hisse:</b> #{clean_sym}
+⚡ <b>İşlem:</b> {action}
+💰 <b>Fiyat:</b> ₺{price:.2f}
+🕒 <b>Saat:</b> {time_str}
+"
+        if reason: msg += f"📋 <b>Açıklama:</b> {reason}
+"
+        if pnl_pct is not None: msg += f"📊 <b>İşlem K/Z:</b> %{round(pnl_pct, 2)}
+"
+        sent = self.send_telegram_message(msg)
+        if sent:
+            sent_trades.append(uid)
+            with open(cache_file, "w") as f: json.dump(sent_trades[-500:], f)
+        return sent
+
+    def send_portfolio_alert(self, symbol: str, pnl_pct: float, action: str, price: float = None) -> bool:
+        return False
         msg += f"🤖 <i>Lütfen sistemden kontrol ediniz.</i>"
         return self.send_telegram_message(msg)
 

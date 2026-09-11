@@ -442,6 +442,7 @@ class SimulationEngine:
                         
                     trade['exit_reason'] = reason
                     completed_trades.append(trade)
+                    notif.send_simulation_trade_alert(sym, "SAT", sell_price, str(current_time), trade['pnl_pct'], reason)
                     
                     if "STOP" in reason:
                         stopped_out_symbols.add(sym)

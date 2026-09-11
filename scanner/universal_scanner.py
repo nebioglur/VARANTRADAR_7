@@ -235,7 +235,14 @@ class UniversalScanner:
                     "Daily_Close": r["Daily_Close"],
                     "Price": r.get("Price"),
                     "High": r.get("High"),
-                    "Low": r.get("Low")
+                    "Low": r.get("Low"),
+                    "Change_Pct": r.get("Change_Pct", 0.0),
+                    "Volume": r.get("Volume", 0),
+                    "Time": r.get("Time", "-"),
+                    "v8_discovery": r.get("v8_discovery"),
+                    "v8_breakout": r.get("v8_breakout"),
+                    "v8_execution": r.get("v8_execution"),
+                    "v8_varrant": r.get("v8_varrant")
                 }
                 
         print("[SCANNER] Bulk analiz tamamlandı ve kategorize edildi.")

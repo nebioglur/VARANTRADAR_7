@@ -96,19 +96,17 @@ class TavanAuditTracker:
         existing_items = existing_day.get("items", [])
         existing_sym_times = {f"{it.get('symbol')}_{it.get('snapshot_time')}" for it in existing_items}
 
+        existing_syms = {it.get('symbol') for it in existing_items}
+        
         for item in tavan_candidates:
             sym = item.get("Symbol", "")
-            if not sym:
-                continue
-
-            unique_key = f"{sym}_{checkpoint_time}"
-            if unique_key in existing_sym_times:
+            if not sym or sym in existing_syms:
                 continue
 
             try:
-                price = float(item.get("Price", 0.0))
+                price = float(item.get("Price", 0))
             except (ValueError, TypeError):
-                price = 0.0
+                continue
 
             try:
                 ceiling = float(item.get("Ceiling_Price", price * 1.099))
