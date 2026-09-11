@@ -4007,6 +4007,7 @@ async function runBacktest() {
 
 
 
+
 function renderAllStocksTable() {
     const tbody = document.getElementById('tb-all-stocks-home');
     if (!tbody || !window.dashboardData || !window.dashboardData.all_symbols_stats) return;
@@ -4026,14 +4027,14 @@ function renderAllStocksTable() {
         const sign = s.change > 0 ? '+' : '';
         const volM = (s.volume / 1000000).toFixed(1);
         const sym = s.symbol.replace('.IS', '');
-        return 
+        return `
             <tr>
-                <td style="font-weight:bold;"></td>
-                <td></td>
-                <td style="color:; font-weight:bold;">%</td>
-                <td>M</td>
-                <td style="color:var(--text-muted);"></td>
+                <td style="font-weight:bold;">${sym}</td>
+                <td>TL ${s.price.toFixed(2)}</td>
+                <td style="color:${color}; font-weight:bold;">${sign}${s.change.toFixed(2)}%</td>
+                <td>${volM}M</td>
+                <td style="color:var(--text-muted);">${s.time}</td>
             </tr>
-        ;
+        `;
     }).join('');
 }
