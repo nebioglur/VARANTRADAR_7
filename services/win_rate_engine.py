@@ -41,6 +41,14 @@ class WinRateEngine:
             # BUG FIX: daily_breakdown icerisinde "candidates" anahtari yok.
             # Aday hisseleri dogrudan tavan_daily_audit.json'daki items'dan cekmemiz gerekiyor.
             all_audits = TavanAuditTracker.load_all_audits()
+            proper_daily_breakdown = []
+            for date_key, day_data in all_audits.items():
+                proper_daily_breakdown.append({
+                    "date": date_key,
+                    "all_symbols": day_data.get("items", [])
+                })
+            proper_daily_breakdown.sort(key=lambda x: x["date"], reverse=True)
+
             daily_breakdown = history.get("daily_breakdown", [])
             recent_signals = []
             
