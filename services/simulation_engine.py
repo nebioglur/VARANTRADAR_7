@@ -525,6 +525,8 @@ class SimulationEngine:
                     'risk_amount': risk_amount,
                     'market_regime': market_regime
                 })
+                from services.notification_manager import notif
+                notif.send_simulation_trade_alert(sym, 'AL', entry_price, str(current_time), None, 'Sistem AL verdi')
                 to_remove.append(s)
             for s in to_remove:
                 if s in pending_signals:
@@ -580,6 +582,8 @@ class SimulationEngine:
                         'risk_amount': risk_amount,
                         'market_regime': market_regime
                     })
+                    from services.notification_manager import notif
+                    notif.send_simulation_trade_alert(sym, 'AL (Yeniden)', entry_price, str(current_time), None, 'Yeniden Giris')
                     stopped_out_symbols.remove(sym)
 
         # Seans sonu: acik pozisyonlari kapat.
@@ -605,7 +609,9 @@ class SimulationEngine:
                     gross_pnl = trade['shares'] * (close - trade['entry_price'])
                     trade['pnl_val'] = gross_pnl - commission
                     trade['pnl_pct'] = (trade['pnl_val'] / buy_volume) * 100
-                    trade['exit_reason'] = "⏱️ SEANS SONU NAKİTE GEÇİŞ"
+                    trade['exit_reason'] = 'SEANS SONU NAKITE GECIS (17:50)'
+                    from services.notification_manager import notif
+                    notif.send_simulation_trade_alert(sym, 'SAT (GUN SONU)', close, str(last_time), trade['pnl_pct'], '17:50 Otomatik Kapanis')
                 else:
                     # Canli: acik pozisyon olarak kaydet, PnL gecici son fiyatla
                     trade['exit_time'] = None
