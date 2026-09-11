@@ -1994,6 +1994,7 @@ def api_v8_radar_breakout():
     for sym, data in all_stats.items():
         bo = data.get("v8_breakout")
         if bo and bo.get("is_breakout"):
+            bo["symbol"] = sym
             bo["price"] = data.get("Daily_Close", 0.0)
             bo["change_pct"] = data.get("Change_Pct", 0.0)
             bo["volume"] = data.get("Volume", 0)
@@ -2014,6 +2015,7 @@ def api_v8_radar_discovery():
         disc = data.get("v8_discovery")
         if disc and disc.get("state") in ["READY", "PREPARING", "WATCH"]:
             # Combine some essential pricing data
+            disc["symbol"] = sym
             disc["price"] = data.get("Daily_Close", 0.0)
             disc["change_pct"] = data.get("Change_Pct", 0.0)
             disc["volume"] = data.get("Volume", 0)

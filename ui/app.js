@@ -1891,6 +1891,7 @@ function openGraphicTab(symbol) {
 }
 
 function renderAllDashboardTables() {
+    renderAllStocksTable();
     const cats = {
         'tavan_adaylari': 'tb-tavan-adaylari',
         'arge_tavan': 'tb-arge-tavan',
@@ -5616,3 +5617,35 @@ function _dtRenderDetail(panel, d) {
     </div>`;
 }
 // ========== /PİYASA DEDEKTİFİ ==========
+
+
+function renderAllStocksTable() {
+    const tbody = document.getElementById('tb-all-stocks-home');
+    if (!tbody || !window.dashboardData || !window.dashboardData.all_symbols_stats) return;
+    
+    let allStats = Object.entries(window.dashboardData.all_symbols_stats).map(([sym, data]) => ({
+        symbol: sym,
+        price: data.Price || data.Daily_Close || 0,
+        change: data.Change_Pct || 0,
+        volume: data.Volume || 0,
+        time: data.Time || '-'
+    }));
+    
+    allStats.sort((a, b) => b.change - a.change);
+    
+    tbody.innerHTML = allStats.map(s => {
+        const color = s.change > 0 ? 'var(--accent-green)' : (s.change < 0 ? 'var(--accent-red)' : 'var(--text-color)');
+        const sign = s.change > 0 ? '+' : '';
+        const volM = (s.volume / 1000000).toFixed(1);
+        const sym = s.symbol.replace('.IS', '');
+        return `
+            <tr>
+                <td style="font-weight:bold;">${sym}</td>
+                <td>TL ${s.price.toFixed(2)}</td>
+                <td style="color:${color}; font-weight:bold;">${sign}${s.change.toFixed(2)}%</td>
+                <td>${volM}M</td>
+                <td style="color:var(--text-muted);">${s.time}</td>
+            </tr>
+        `;
+    }).join('');
+}

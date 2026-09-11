@@ -123,7 +123,7 @@ class WinRateEngine:
                         "desc": f"~6.2x kaldıracli varant getirisi ortalaması"
                     }
                 ],
-                "daily_breakdown": daily_breakdown,
+                "daily_breakdown": proper_daily_breakdown,
                 "recent_completed_signals": recent_signals
             }
         except Exception as e:
