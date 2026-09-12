@@ -52916,6 +52916,23 @@
       "Bars_Ago": 0
     },
     {
+      "Symbol": "IHGZT.IS",
+      "Score_5": 5,
+      "EMA_Gap_Pct": 0.85,
+      "Daily_Change_Pct": 4.17,
+      "Crossover_Bars_Ago": 2,
+      "Price": 1.25,
+      "EMA_Match": 1,
+      "MACD_Match": 1,
+      "RSI_Match": 1,
+      "ADX_Match": 1,
+      "MOM_Match": 1,
+      "RSI_Val": 66.7,
+      "ADX_Val": 39.7,
+      "Time_Label": "ŞİMDİ (Sıcak)",
+      "Bars_Ago": 0
+    },
+    {
       "Symbol": "MHRGY.IS",
       "Score_5": 5,
       "EMA_Gap_Pct": 0.49,
@@ -53123,7 +53140,7 @@
       "VWAP": 1.97,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "15:48 - 16:13",
+      "ETA": "16:09 - 16:34",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Indicators": {
@@ -53200,7 +53217,7 @@
         "TP1": 2.06,
         "TP2": 2.15,
         "RR": 3.06,
-        "Projection": "15:48 - 16:13"
+        "Projection": "16:09 - 16:34"
       },
       "Time_Label": "ŞİMDİ (Sıcak)",
       "Bars_Ago": 0
@@ -53224,7 +53241,7 @@
       "VWAP": 3978.91,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "13:13 - 13:38",
+      "ETA": "13:34 - 13:59",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Indicators": {
@@ -53303,7 +53320,109 @@
         "TP1": 4207.55,
         "TP2": 4292.75,
         "RR": 2.03,
-        "Projection": "13:13 - 13:38"
+        "Projection": "13:34 - 13:59"
+      },
+      "Time_Label": "ŞİMDİ (Sıcak)",
+      "Bars_Ago": 0
+    },
+    {
+      "Symbol": "IHGZT.IS",
+      "Price": 1.25,
+      "Daily_Change_Pct": 4.17,
+      "Ceiling_Price": 1.32,
+      "Distance_To_Ceiling_Pct": 5.6,
+      "Phase": "Erken Kopuş (Phase 1)",
+      "Phase_Badge": "ERKEN KOPUŞ",
+      "Phase_Color": "green",
+      "Vol_Multiplier": 4.2,
+      "Candle_Strength": "Normal",
+      "Trap_Risk": 0,
+      "Anti_Trap_Badge": "🛡️ TEYİTLİ TAVAN",
+      "Anti_Trap_Color": "#10b981",
+      "Teyit_Score": 99,
+      "ORB_Breakout": 1,
+      "VWAP": 1.22,
+      "V_Reversal": 1,
+      "V_Power": 5.8,
+      "ETA": "15:36 - 16:01",
+      "Breakdown_Risk": 0,
+      "Breakdown_Warning": null,
+      "Indicators": {
+        "RSI": 66.7,
+        "ADX": 39.7,
+        "EMA_50": 1.19,
+        "EMA_200": 1.18,
+        "MACD_Positive": null
+      },
+      "Details": [
+        "🔥 Agresif Hacim Patlaması (4.2x).",
+        "🎯 ORB Kırılımı: Sabah açılış bandı tepe seviyesi hacimle yukarı kırıldı!",
+        "OBV yeni zirvede (Kurumsal Para Girişi).",
+        "VWAP üzerinde (Kurumsal Alım Güvenli Bölge).",
+        "Direnç hacimli kırıldı.",
+        "CMF Pozitif (Net Para Girişi Teyitli).",
+        "ATR volatilite artışı.",
+        "⚡ V-Dönüş: Dip seviyeden (%-1.7) +%5.8 güçlü sıçrama!"
+      ],
+      "Domino_Sector": null,
+      "Domino_Peers": [],
+      "Domino_Str": "Yok",
+      "Warrant_Match": null,
+      "Streak_Score": 96,
+      "Streak_Potential": "%96 (Çift Tavan İhtimali)",
+      "Squeeze_Pct": 5.32,
+      "P_Score": 78,
+      "Footprint": "Nötr (Bekleme)",
+      "Footprint_Color": "yellow",
+      "Momentum_Accel": 0,
+      "Alpha_Str": "Pozitif (+%16.8)",
+      "Alpha_Val": 16.8,
+      "Short_Squeeze": "Yükseliyor",
+      "Smart_Money": "🟢 Güçlü Giriş",
+      "Score": 100,
+      "Factor_Breakdown": [
+        {
+          "Factor": "Hacim",
+          "Score": 20
+        },
+        {
+          "Factor": "VWAP üstü",
+          "Score": 15
+        },
+        {
+          "Factor": "ORB kırılımı",
+          "Score": 15
+        },
+        {
+          "Factor": "RSI",
+          "Score": 10
+        },
+        {
+          "Factor": "MACD",
+          "Score": 10
+        },
+        {
+          "Factor": "Para girişi",
+          "Score": 10
+        },
+        {
+          "Factor": "BIST Göreceli Güç",
+          "Score": 5
+        }
+      ],
+      "Factor_Total": 100,
+      "Signal_Quality": "🟢 ÇOK GÜÇLÜ AL",
+      "FOMO_Score": 100,
+      "FOMO_Level": "🔥 AŞIRI (Extreme)",
+      "FOMO_Color": "red",
+      "Report": "🔥 Agresif Hacim Patlaması (4.2x). 🎯 ORB Kırılımı: Sabah açılış bandı tepe seviyesi hacimle yukarı kırıldı! OBV yeni zirvede (Kurumsal Para Girişi). VWAP üzerinde (Kurumsal Alım Güvenli Bölge). Direnç hacimli kırıldı. CMF Pozitif (Net Para Girişi Teyitli). ATR volatilite artışı. ⚡ V-Dönüş: Dip seviyeden (%-1.7) +%5.8 güçlü sıçrama!",
+      "Position": {
+        "Entry": 1.25,
+        "SL": 1.22,
+        "TP1": 1.29,
+        "TP2": 1.32,
+        "RR": 2.24,
+        "Projection": "15:36 - 16:01"
       },
       "Time_Label": "ŞİMDİ (Sıcak)",
       "Bars_Ago": 0
@@ -53327,7 +53446,7 @@
       "VWAP": 226.71,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "15:48 - 16:13",
+      "ETA": "16:09 - 16:34",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Indicators": {
@@ -53393,7 +53512,7 @@
         "TP1": 230.1,
         "TP2": 246.95,
         "RR": 4.01,
-        "Projection": "15:48 - 16:13"
+        "Projection": "16:09 - 16:34"
       },
       "Time_Label": "ŞİMDİ (Sıcak)",
       "Bars_Ago": 0
@@ -53417,7 +53536,7 @@
       "VWAP": 13.36,
       "V_Reversal": 1,
       "V_Power": 5.1,
-      "ETA": "14:51 - 15:16",
+      "ETA": "15:12 - 15:37",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Indicators": {
@@ -53492,7 +53611,7 @@
         "TP1": 14.1,
         "TP2": 14.53,
         "RR": 2.45,
-        "Projection": "14:51 - 15:16"
+        "Projection": "15:12 - 15:37"
       },
       "Time_Label": "ŞİMDİ (Sıcak)",
       "Bars_Ago": 0
@@ -53516,7 +53635,7 @@
       "VWAP": 34.05,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "15:47 - 16:12",
+      "ETA": "16:08 - 16:33",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Indicators": {
@@ -53589,7 +53708,7 @@
         "TP1": 35.16,
         "TP2": 37.64,
         "RR": 3.41,
-        "Projection": "15:47 - 16:12"
+        "Projection": "16:08 - 16:33"
       },
       "Time_Label": "ŞİMDİ (Sıcak)",
       "Bars_Ago": 0
@@ -53613,7 +53732,7 @@
       "VWAP": 48.75,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "15:48 - 16:13",
+      "ETA": "16:09 - 16:34",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Indicators": {
@@ -53689,7 +53808,7 @@
         "TP1": 50.9,
         "TP2": 52.76,
         "RR": 2.93,
-        "Projection": "15:48 - 16:13"
+        "Projection": "16:09 - 16:34"
       },
       "Time_Label": "ŞİMDİ (Sıcak)",
       "Bars_Ago": 0
@@ -53713,7 +53832,7 @@
       "VWAP": 13.96,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "13:03 - 13:28",
+      "ETA": "13:25 - 13:50",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Indicators": {
@@ -53787,7 +53906,7 @@
         "TP1": 15.5,
         "TP2": 15.95,
         "RR": 3.55,
-        "Projection": "13:03 - 13:28"
+        "Projection": "13:25 - 13:50"
       },
       "Time_Label": "28 Saat Önce",
       "Bars_Ago": 28
@@ -53811,7 +53930,7 @@
       "VWAP": 16.54,
       "V_Reversal": 1,
       "V_Power": 6.5,
-      "ETA": "12:57 - 13:22",
+      "ETA": "13:18 - 13:43",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Indicators": {
@@ -53894,7 +54013,7 @@
         "TP1": 17.6,
         "TP2": 17.97,
         "RR": 2.06,
-        "Projection": "12:57 - 13:22"
+        "Projection": "13:18 - 13:43"
       },
       "Time_Label": "ŞİMDİ (Sıcak)",
       "Bars_Ago": 0
@@ -53918,7 +54037,7 @@
       "VWAP": 4.03,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "15:47 - 16:12",
+      "ETA": "16:08 - 16:33",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Indicators": {
@@ -53991,108 +54110,7 @@
         "TP1": 4.13,
         "TP2": 4.4,
         "RR": 3.35,
-        "Projection": "15:47 - 16:12"
-      },
-      "Time_Label": "ŞİMDİ (Sıcak)",
-      "Bars_Ago": 0
-    },
-    {
-      "Symbol": "KGYO.IS",
-      "Price": 11.63,
-      "Daily_Change_Pct": 5.63,
-      "Ceiling_Price": 12.11,
-      "Distance_To_Ceiling_Pct": 4.13,
-      "Phase": "İvmelenme (Phase 2)",
-      "Phase_Badge": "İVMELENME",
-      "Phase_Color": "yellow",
-      "Vol_Multiplier": 1.5,
-      "Candle_Strength": "Güçlü Boğa (Marubozu)",
-      "Trap_Risk": 0,
-      "Anti_Trap_Badge": "🛡️ TEYİTLİ TAVAN",
-      "Anti_Trap_Color": "#10b981",
-      "Teyit_Score": 99,
-      "ORB_Breakout": 1,
-      "VWAP": 11.32,
-      "V_Reversal": 0,
-      "V_Power": 0.0,
-      "ETA": "13:32 - 13:57",
-      "Breakdown_Risk": 0,
-      "Breakdown_Warning": null,
-      "Indicators": {
-        "RSI": 76.5,
-        "ADX": 20.5,
-        "EMA_50": 11.47,
-        "EMA_200": 11.82,
-        "MACD_Positive": null
-      },
-      "Details": [
-        "💪 Güçlü Boğa Mumu (Alıcılar Hakim).",
-        "🎯 ORB Kırılımı: Sabah açılış bandı tepe seviyesi hacimle yukarı kırıldı!",
-        "OBV yeni zirvede (Kurumsal Para Girişi).",
-        "VWAP üzerinde (Kurumsal Alım Güvenli Bölge).",
-        "EMA50 > EMA200 (Pozitif Trend).",
-        "Direnç hacimli kırıldı.",
-        "CMF Pozitif (Net Para Girişi Teyitli)."
-      ],
-      "Domino_Sector": null,
-      "Domino_Peers": [],
-      "Domino_Str": "Yok",
-      "Warrant_Match": null,
-      "Streak_Score": 94,
-      "Streak_Potential": "%94 (Çift Tavan İhtimali)",
-      "Squeeze_Pct": 6.55,
-      "P_Score": 40,
-      "Footprint": "Toplama (Akümülasyon)",
-      "Footprint_Color": "green",
-      "Momentum_Accel": 1,
-      "Alpha_Str": "Nötr (+%4.7)",
-      "Alpha_Val": 4.72,
-      "Short_Squeeze": "Yok",
-      "Smart_Money": "🟢 Akümülasyon",
-      "Score": 100,
-      "Factor_Breakdown": [
-        {
-          "Factor": "Hacim",
-          "Score": 10
-        },
-        {
-          "Factor": "VWAP üstü",
-          "Score": 15
-        },
-        {
-          "Factor": "ORB kırılımı",
-          "Score": 15
-        },
-        {
-          "Factor": "RSI",
-          "Score": 10
-        },
-        {
-          "Factor": "MACD",
-          "Score": 10
-        },
-        {
-          "Factor": "Para girişi",
-          "Score": 10
-        },
-        {
-          "Factor": "Momentum",
-          "Score": 10
-        }
-      ],
-      "Factor_Total": 100,
-      "Signal_Quality": "🟢 ÇOK GÜÇLÜ AL",
-      "FOMO_Score": 79.9819534807009,
-      "FOMO_Level": "🚀 Yüksek",
-      "FOMO_Color": "orange",
-      "Report": "💪 Güçlü Boğa Mumu (Alıcılar Hakim). 🎯 ORB Kırılımı: Sabah açılış bandı tepe seviyesi hacimle yukarı kırıldı! OBV yeni zirvede (Kurumsal Para Girişi). VWAP üzerinde (Kurumsal Alım Güvenli Bölge). EMA50 > EMA200 (Pozitif Trend). Direnç hacimli kırıldı. CMF Pozitif (Net Para Girişi Teyitli).",
-      "Position": {
-        "Entry": 11.63,
-        "SL": 11.34,
-        "TP1": 11.98,
-        "TP2": 12.11,
-        "RR": 1.65,
-        "Projection": "13:32 - 13:57"
+        "Projection": "16:08 - 16:33"
       },
       "Time_Label": "ŞİMDİ (Sıcak)",
       "Bars_Ago": 0
@@ -55086,23 +55104,6 @@
       "Bars_Ago": 0
     },
     {
-      "Symbol": "YAYLA.IS",
-      "Score_5": 5,
-      "EMA_Gap_Pct": 1.08,
-      "Daily_Change_Pct": -2.47,
-      "Crossover_Bars_Ago": 9,
-      "Price": 22.14,
-      "EMA_Match": 1,
-      "MACD_Match": 1,
-      "RSI_Match": 1,
-      "ADX_Match": 1,
-      "MOM_Match": 1,
-      "RSI_Val": 13.6,
-      "ADX_Val": 20.3,
-      "Time_Label": "ŞİMDİ (Sıcak)",
-      "Bars_Ago": 0
-    },
-    {
       "Symbol": "AKFIS.IS",
       "Score_5": 5,
       "EMA_Gap_Pct": 1.56,
@@ -55953,23 +55954,6 @@
       "Bars_Ago": 0
     },
     {
-      "Symbol": "KRSTL.IS",
-      "Score_5": 4,
-      "EMA_Gap_Pct": 0.29,
-      "Daily_Change_Pct": -1.02,
-      "Crossover_Bars_Ago": 15,
-      "Price": 8.75,
-      "EMA_Match": 1,
-      "MACD_Match": 1,
-      "RSI_Match": 1,
-      "ADX_Match": 0,
-      "MOM_Match": 1,
-      "RSI_Val": 40.0,
-      "ADX_Val": 14.3,
-      "Time_Label": "ŞİMDİ (Sıcak)",
-      "Bars_Ago": 0
-    },
-    {
       "Symbol": "KAYSE.IS",
       "Score_5": 3,
       "EMA_Gap_Pct": 0.33,
@@ -56660,5 +56644,5 @@
     "c_ema20": 14276.66,
     "current_price": 14467.3
   },
-  "cache_timestamp": 1789203934.9086378
+  "cache_timestamp": 1789204203.475935
 }
