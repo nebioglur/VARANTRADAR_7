@@ -29,7 +29,10 @@ class TavanAuditTracker:
 
     @classmethod
     def _ensure_dir(cls):
-        os.makedirs(os.path.dirname(AUDIT_FILE_PATH), exist_ok=True)
+        try:
+            os.makedirs(os.path.dirname(AUDIT_FILE_PATH), exist_ok=True)
+        except Exception:
+            pass
 
     @classmethod
     def load_all_audits(cls) -> Dict[str, Any]:
