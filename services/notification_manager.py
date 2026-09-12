@@ -5,7 +5,19 @@ from database.db_manager import DBManager
 from config.settings import TELEGRAM_BOT_TOKEN as DEFAULT_TOKEN, TELEGRAM_CHAT_ID as DEFAULT_CHAT_ID
 from utils.logger import logger
 
-class NotificationManager:
+
+VIP_SYMBOLS = [
+    "AKBNK", "ALARK", "ASELS", "ASTOR", "BIMAS", "BRSAN", "DOAS", "EGEEN", 
+    "EKGYO", "ENKAI", "EREGL", "FROTO", "GARAN", "GUBRF", "HEKTS", "ISCTR", "KCHOL", 
+    "KONTR", "KOZAA", "KOZAL", "KRDMD", "ODAS", "OYAKC", "PETKM", "PGSUS", "SAHOL", 
+    "SASA", "SISE", "TAVHL", "TCELL", "THYAO", "TOASO", "TUPRS", "VAKBN", "YKBNK"
+]
+
+def is_vip(symbol):
+    clean = symbol.replace(".IS", "").upper()
+    return clean in VIP_SYMBOLS
+
+\nclass NotificationManager:
     """
     VarantRadar Pro V7 - Profesyonel Bildirim ve Sinyal Merkezi
     Telegram Bot API üzerinden kullanıcılara anlık fiyatlı tavan, 1 saatlik ve 5 dakikalık sinyalleri iletir.
@@ -109,100 +121,29 @@ class NotificationManager:
         return self.send_telegram_message(msg)
 
     def send_tavan_alert(self, symbol: str, score: int, reason: str, position: dict = None, extra: dict = None) -> bool:
-        """Yüksek Tavan Olasılığı tespit edildiğinde profesyonel detaylı şablonla tetiklenir."""
-        if score < 100:
-            return True  # Kullanıcı isteği: Yalnızca VIP (score >= 100) mesajlar gitsin
+        if not is_vip(symbol):
+            return False
         
-        extra = extra or {}
         clean_sym = symbol.replace(".IS", "").upper()
-        
-        # Fiyat Bilgisi
-        raw_price = extra.get("Price") or extra.get("Close") or (position.get("Entry") if position else None)
-        price_str = f"{float(raw_price):.2f}" if raw_price is not None else "-"
-        
-        # Yüzde Değişim
-        chg_val = extra.get("Daily_Change_Pct") or extra.get("Change_Pct")
-        if chg_val is not None:
-            try:
-                chg_num = float(chg_val)
-                chg_sign = "+" if chg_num > 0 else ""
-                chg_str = f"({chg_sign}%{chg_num:.2f})"
-            except:
-                chg_str = f"(%{chg_val})"
-        else:
-            chg_str = ""
+        msg = f"🚀 <b>VIP TAVAN ADAYI</b> 🚀
 
-        # Tavan ve Mesafe
-        tavan_price = extra.get("Ceiling_Price", position.get("TP2", "-") if position else "-")
-        if isinstance(tavan_price, (int, float)):
-            tavan_price_str = f"₺{float(tavan_price):.2f}"
-        else:
-            tavan_price_str = f"₺{tavan_price}" if tavan_price != "-" else "-"
-            
-        dist = extra.get("Distance_To_Ceiling_Pct", "-")
-        dist_str = f"+%{float(dist):.1f}" if isinstance(dist, (int, float)) else f"%{dist}"
+"
+        msg += f"👑 <b>Hisse:</b> #{clean_sym}
+"
+        msg += f"🎯 <b>Puan:</b> {score}/100
+"
+        msg += f"📊 <b>Neden:</b> {reason}
+"
         
-        vol_m = extra.get("Vol_Multiplier", "-")
-        vol_str = f"{float(vol_m):.1f}x" if isinstance(vol_m, (int, float)) else f"{vol_m}x"
-        
-        phase = extra.get("Phase_Badge", "TAVAN RADARI")
-        candle_st = extra.get("Candle_Strength", "")
-        trap = extra.get("Trap_Risk", False)
-        v_rev = extra.get("V_Reversal", False)
-        v_pow = extra.get("V_Power", 0.0)
-        eta = extra.get("ETA", position.get("Projection", "-") if position else "-")
-        domino_sec = extra.get("Domino_Sector")
-        domino_peers = extra.get("Domino_Peers", [])
-        warrant = extra.get("Warrant_Match")
-        streak = extra.get("Streak_Potential")
-        breakdown = extra.get("Breakdown_Warning")
-        
-        msg = f"🚀 <b>[{phase}] DAĞ KEKLİĞİ TAVAN RADARI</b> 🚀\n\n"
-        msg += f"📌 <b>Hisse:</b> #{clean_sym}\n"
-        msg += f"💰 <b>Anlık Fiyat:</b> ₺{price_str} {chg_str}\n"
-        msg += f"🎯 <b>Tavan Hedefi:</b> {tavan_price_str} (Kalan: {dist_str})\n"
-        msg += f"⭐ <b>AI Tavan Skoru:</b> {score}/100\n"
-        msg += f"🔥 <b>Hacim Gücü:</b> {vol_str} Katlama\n"
-        msg += f"⏱ <b>Tahmini Tavan Saati (ETA):</b> {eta}\n"
-        
-        if streak:
-            msg += f"🔗 <b>Tavan Zinciri:</b> {streak}\n"
+        if extra and "Price" in extra:
+            msg += f"💰 <b>Fiyat:</b> {float(extra['Price']):.2f}
+"
             
-        if v_rev:
-            msg += f"⚡ <b>V-Dönüş Gücü:</b> Dipten +%{v_pow} Hızlı Sıçrama!\n"
-            
-        if candle_st:
-            msg += f"🕯 <b>Mum Durumu:</b> {candle_st}\n"
-            
-        if trap:
-            msg += f"⚠️ <b>UYARI:</b> Üst fitil uzun (Satış Baskısı / Tuzak Riski!)\n"
-            
-        if breakdown:
-            msg += f"\n🚨 <b>ACİL UYARI:</b> {breakdown}\n"
-            
-        if domino_sec and domino_peers:
-            peer_txt = ", ".join([f"#{p}" for p in domino_peers[:3]])
-            msg += f"\n♟️ <b>Domino Etkisi ({domino_sec}):</b> Peşinden gelebilecek kardeşler: {peer_txt}\n"
-            
-        if warrant:
-            msg += f"\n🎯 <b>VARANT ROKETİ EŞLEŞMESİ:</b>\n"
-            msg += f"   • Dayanak: #{clean_sym} ➡️ Varant Grubu: <b>{warrant.get('Name')} ({warrant.get('Leverage')})</b>\n"
-            msg += f"   • Potansiyel Getiri: <b>+%{warrant.get('Potential_Gain_Pct')}%</b>\n"
-            
-        if position:
-            sl_val = position.get('SL', '-')
-            tp1_val = position.get('TP1', '-')
-            msg += f"\n🛡 <b>İz Süren Stop (SL):</b> ₺{sl_val}\n"
-            msg += f"🎯 <b>İlk Kâr Al (TP1):</b> ₺{tp1_val}\n"
-            msg += f"⚖️ <b>Risk/Kazanç (R:R):</b> 1:{position.get('RR', '-')}\n"
-            
-        if reason:
-            msg += f"\n💡 <b>Teknik Gerekçe:</b> {reason}\n"
-            
-        msg += f"\n🤖 <i>VarantRadar Pro Otomasyon Sistemi</i>"
+        msg += f"
+🤖 <i>VarantRadar VIP Motoru</i>"
         return self.send_telegram_message(msg)
-
-    def send_1h_opportunity_alert(self, opp: dict) -> bool:
+def send_1h_opportunity_alert(self, opp: dict) -> bool:
+        if not is_vip(opp.get('Symbol', '')): return False
         """1 Saatlik grafikte fırsat tespit edildiğinde atılacak mesaj."""
         return True # Kullanıcı isteği: Devre dışı bırakıldı
         clean_sym = opp.get("Symbol", "").replace(".IS", "").upper()
@@ -250,6 +191,7 @@ class NotificationManager:
         return self.send_telegram_message(msg)
 
     def send_5m_rsi_alert(self, symbol: str, signal: str, rsi: float, price: float) -> bool:
+        if not is_vip(symbol): return False
         """5 Dakikalık grafikte aşırı alım/satım veya RSI uyumsuzluğu tespit edildiğinde."""
         return True # Kullanıcı isteği: Devre dışı bırakıldı
         clean_sym = symbol.replace(".IS", "").upper()
@@ -268,23 +210,28 @@ class NotificationManager:
         return self.send_telegram_message(msg)
 
     def send_radar_alert(self, symbol: str, score: int, level: str, reason: str, price: float = None, change_pct: float = None) -> bool:
-        """Genel Radar uyarıları (düşük skorlular için vs. yedek amaçlı)."""
-        if score < 100:
-            return True # Kullanıcı isteği: Yalnızca VIP mesajlar
-
+        if not is_vip(symbol): return False
+        
         clean_sym = symbol.replace(".IS", "").upper()
-        msg = f"🚨 <b>YENİ RADAR FIRSATI</b> 🚨\n\n"
-        msg += f"📌 <b>Hisse:</b> #{clean_sym}\n"
+        msg = f"💎 <b>VIP RADAR FIRSATI</b> 💎
+
+"
+        msg += f"👑 <b>Hisse:</b> #{clean_sym}
+"
         if price is not None:
             chg_str = f" (%+{change_pct:.2f})" if change_pct and change_pct > 0 else (f" (%{change_pct:.2f})" if change_pct else "")
-            msg += f"💰 <b>Anlık Fiyat:</b> ₺{price:.2f}{chg_str}\n"
-        msg += f"⭐ <b>Puan:</b> {score}/100\n"
-        msg += f"📊 <b>Seviye:</b> {level}\n"
-        msg += f"💡 <b>Neden:</b> {reason}\n\n"
-        msg += f"🤖 <i>VarantRadar Pro Otomasyon Sistemi</i>"
-        return self.send_telegram_message(msg)
+            msg += f"💰 <b>Fiyat:</b> {price:.2f}{chg_str}
+"
+        msg += f"🎯 <b>Puan:</b> {score}/100
+"
+        msg += f"📊 <b>Seviye:</b> {level}
+"
+        msg += f"📝 <b>Neden:</b> {reason}
 
-    def send_simulation_trade_alert(self, symbol: str, action: str, price: float, time_str: str, pnl_pct: float = None, reason: str = "") -> bool:
+"
+        msg += f"🤖 <i>VarantRadar VIP Motoru</i>"
+        return self.send_telegram_message(msg)
+def send_simulation_trade_alert(self, symbol: str, action: str, price: float, time_str: str, pnl_pct: float = None, reason: str = "") -> bool:
         import json, os
         from datetime import datetime
         cache_file = "data/sent_sim_trades.json"
@@ -297,27 +244,54 @@ class NotificationManager:
             except: pass
         if uid in sent_trades: return False
         
-        icon = "GREEN" if action.startswith("AL") else "RED"
         clean_sym = symbol.replace(".IS", "").upper()
         
-        msg = f"{icon} *SIMULASYON ISLEMI* {icon}\n\n"
-        msg += f"Hisse: #{clean_sym}\n"
-        msg += f"Islem: {action}\n"
-        msg += f"Fiyat: {price:.2f}\n"
-        msg += f"Saat: {time_str}\n"
+        if "AL" in action or action == "ENTER":
+            icon = "🟢"
+            title = "OTOMATIK ALIM EMRI"
+        elif "KAR" in action or "TP" in action:
+            icon = "🔵"
+            title = "OTOMATIK KAR AL EMRI"
+        elif "STOP" in action or "ZARAR" in action:
+            icon = "🔴"
+            title = "OTOMATIK STOP-LOSS EMRI"
+        else:
+            icon = "🟠"
+            title = "OTOMATIK SATIS EMRI"
+            
+        msg = f"{icon} <b>SIMULASYON: {title}</b> {icon}
+
+"
+        msg += f"📌 <b>Hisse:</b> #{clean_sym}
+"
+        msg += f"⚡ <b>Islem Tipi:</b> <b>{action}</b>
+"
+        msg += f"💰 <b>Gerceklesen Fiyat:</b> <b>{float(price):.2f} TL</b>
+"
+        msg += f"⏱ <b>Emir Saati:</b> {time_str}
+"
         
         if reason:
-            msg += f"Aciklama: {reason}\n"
+            msg += f"📝 <b>Strateji & Neden:</b> <i>{reason}</i>
+"
+            
         if pnl_pct is not None:
-            msg += f"K/Z: %{round(pnl_pct, 2)}\n"
+            pnl_icon = "🔥" if pnl_pct > 0 else "🩸"
+            msg += f"{pnl_icon} <b>Kar/Zarar:</b> %{round(pnl_pct, 2)}
+"
+            
+        msg += f"
+🤖 <i>VarantRadar V8 AI Algoritmasi</i>"
             
         sent = self.send_telegram_message(msg)
         if sent:
             sent_trades.append(uid)
-            with open(cache_file, "w") as f: json.dump(sent_trades[-500:], f)
+            try:
+                os.makedirs("data", exist_ok=True)
+                with open(cache_file, "w") as f: json.dump(sent_trades, f)
+            except: pass
         return sent
-
-    def send_portfolio_alert(self, symbol: str, pnl_pct: float, action: str, price: float = None) -> bool:
+def send_portfolio_alert(self, symbol: str, pnl_pct: float, action: str, price: float = None) -> bool:
         return False
         msg += f"🤖 <i>Lütfen sistemden kontrol ediniz.</i>"
         return self.send_telegram_message(msg)
