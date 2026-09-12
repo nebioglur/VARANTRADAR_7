@@ -17,7 +17,8 @@ def is_vip(symbol):
     clean = symbol.replace(".IS", "").upper()
     return clean in VIP_SYMBOLS
 
-\nclass NotificationManager:
+
+class NotificationManager:
     """
     VarantRadar Pro V7 - Profesyonel Bildirim ve Sinyal Merkezi
     Telegram Bot API üzerinden kullanıcılara anlık fiyatlı tavan, 1 saatlik ve 5 dakikalık sinyalleri iletir.
