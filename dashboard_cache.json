@@ -357,8 +357,8 @@
           "SuperTrend": "YÜKSELİŞ"
         }
       },
-      "Daily_EMA50": 416.57172827282426,
-      "Daily_EMA200": 322.04655980976383,
+      "Daily_EMA50": 416.5717282728235,
+      "Daily_EMA200": 322.04655980970176,
       "Daily_Close": 475.5,
       "Gap_Pct": null,
       "Short_Squeeze_Candidate": 0,
@@ -2079,8 +2079,8 @@
           "SuperTrend": "YÜKSELİŞ"
         }
       },
-      "Daily_EMA50": 398.76968550077515,
-      "Daily_EMA200": 356.71720787005773,
+      "Daily_EMA50": 398.7696855013803,
+      "Daily_EMA200": 356.71720799408257,
       "Daily_Close": 430.0,
       "Gap_Pct": null,
       "Short_Squeeze_Candidate": 0,
@@ -2088,8 +2088,8 @@
       "Change_Pct": 0.0,
       "Volume": 7202728.0,
       "Money_Volume": 3097173040.0,
-      "MACD": 9.498886350672649,
-      "MACD_Signal": 8.176499719076713,
+      "MACD": 9.498886350672706,
+      "MACD_Signal": 8.17649971907682,
       "ATR": null,
       "Vol_SMA10": 9380174.0,
       "Price": 430.0,
@@ -2837,8 +2837,8 @@
           "SuperTrend": "YÜKSELİŞ"
         }
       },
-      "Daily_EMA50": 50.240385849281246,
-      "Daily_EMA200": 34.71617003707386,
+      "Daily_EMA50": 50.240385857247425,
+      "Daily_EMA200": 34.71617006143909,
       "Daily_Close": 41.81999969482422,
       "Gap_Pct": null,
       "Short_Squeeze_Candidate": 0,
@@ -2846,8 +2846,8 @@
       "Change_Pct": 0.0,
       "Volume": 385875178.0,
       "Money_Volume": 16137299826.200241,
-      "MACD": -3.164581863500942,
-      "MACD_Signal": -0.6170141574596373,
+      "MACD": -3.1645818641839014,
+      "MACD_Signal": -0.6170141584624985,
       "ATR": null,
       "Vol_SMA10": 227608499.6,
       "Price": 41.82,
@@ -7146,8 +7146,8 @@
           "SuperTrend": "YÜKSELİŞ"
         }
       },
-      "Daily_EMA50": 398.76968550077515,
-      "Daily_EMA200": 356.71720787005773,
+      "Daily_EMA50": 398.7696855013803,
+      "Daily_EMA200": 356.71720799408257,
       "Daily_Close": 430.0,
       "Gap_Pct": null,
       "Short_Squeeze_Candidate": 0,
@@ -7155,8 +7155,8 @@
       "Change_Pct": 0.0,
       "Volume": 7202728.0,
       "Money_Volume": 3097173040.0,
-      "MACD": 9.498886350672649,
-      "MACD_Signal": 8.176499719076713,
+      "MACD": 9.498886350672706,
+      "MACD_Signal": 8.17649971907682,
       "ATR": null,
       "Vol_SMA10": 9380174.0,
       "Price": 430.0,
@@ -7890,8 +7890,8 @@
           "SuperTrend": "YÜKSELİŞ"
         }
       },
-      "Daily_EMA50": 88.44957077873762,
-      "Daily_EMA200": 87.83817692285457,
+      "Daily_EMA50": 88.44957077600615,
+      "Daily_EMA200": 87.83817644003076,
       "Daily_Close": 89.75,
       "Gap_Pct": null,
       "Short_Squeeze_Candidate": 0,
@@ -7899,8 +7899,8 @@
       "Change_Pct": 0.0,
       "Volume": 11059783.0,
       "Money_Volume": 992615524.25,
-      "MACD": 0.6857448313732135,
-      "MACD_Signal": 0.07708053303967745,
+      "MACD": 0.6857448313791394,
+      "MACD_Signal": 0.0770805330483896,
       "ATR": null,
       "Vol_SMA10": 14156668.7,
       "Price": 89.75,
@@ -8100,8 +8100,8 @@
           "SuperTrend": "DÜŞÜŞ"
         }
       },
-      "Daily_EMA50": 81.14169667357743,
-      "Daily_EMA200": 89.38430798691988,
+      "Daily_EMA50": 81.14169667357592,
+      "Daily_EMA200": 89.38430855718053,
       "Daily_Close": 81.9000015258789,
       "Gap_Pct": null,
       "Short_Squeeze_Candidate": 0,
@@ -8109,8 +8109,8 @@
       "Change_Pct": 0.0,
       "Volume": 18320498.0,
       "Money_Volume": 1500448814.1548615,
-      "MACD": 0.3120490740935651,
-      "MACD_Signal": -0.33030620305848346,
+      "MACD": 0.3120490740938777,
+      "MACD_Signal": -0.3303062030580237,
       "ATR": null,
       "Vol_SMA10": 21199924.6,
       "Price": 81.9,
@@ -12569,8 +12569,8 @@
       "v8_varrant": null
     },
     "ALKLC.IS": {
-      "Daily_EMA50": 416.57172827282426,
-      "Daily_EMA200": 322.04655980976383,
+      "Daily_EMA50": 416.5717282728235,
+      "Daily_EMA200": 322.04655980970176,
       "Daily_Close": 475.5,
       "Price": 475.5,
       "High": null,
@@ -14489,8 +14489,8 @@
       "v8_varrant": null
     },
     "AVPGY.IS": {
-      "Daily_EMA50": 53.97859196838707,
-      "Daily_EMA200": 54.32400987357895,
+      "Daily_EMA50": 53.97859196836778,
+      "Daily_EMA200": 54.32400986676467,
       "Daily_Close": 55.599998474121094,
       "Price": 55.6,
       "High": null,
@@ -14681,8 +14681,8 @@
       "v8_varrant": null
     },
     "AYEN.IS": {
-      "Daily_EMA50": 32.78484212910296,
-      "Daily_EMA200": 31.863720384125067,
+      "Daily_EMA50": 32.7848421291095,
+      "Daily_EMA200": 31.863720387209874,
       "Daily_Close": 31.959999084472656,
       "Price": 31.96,
       "High": null,
@@ -15577,8 +15577,8 @@
       "v8_varrant": null
     },
     "BEGYO.IS": {
-      "Daily_EMA50": 3.621437346066659,
-      "Daily_EMA200": 4.3134249204604265,
+      "Daily_EMA50": 3.6214373458195768,
+      "Daily_EMA200": 4.31342488085473,
       "Daily_Close": 3.380000114440918,
       "Price": 3.38,
       "High": null,
@@ -16275,8 +16275,8 @@
       "v8_varrant": null
     },
     "BIMAS.IS": {
-      "Daily_EMA50": 398.76968550077515,
-      "Daily_EMA200": 356.71720787005773,
+      "Daily_EMA50": 398.7696855013803,
+      "Daily_EMA200": 356.71720799408257,
       "Daily_Close": 430.0,
       "Price": 430.0,
       "High": null,
@@ -17372,8 +17372,8 @@
       "v8_varrant": null
     },
     "BRKSN.IS": {
-      "Daily_EMA50": 7.873579715659674,
-      "Daily_EMA200": 8.120272787315013,
+      "Daily_EMA50": 7.87357972339075,
+      "Daily_EMA200": 8.120272949553048,
       "Daily_Close": 7.889999866485596,
       "Price": 7.89,
       "High": null,
@@ -20076,8 +20076,8 @@
       "v8_varrant": null
     },
     "DESA.IS": {
-      "Daily_EMA50": 10.258400294143126,
-      "Daily_EMA200": 11.772280828703574,
+      "Daily_EMA50": 10.258400294135601,
+      "Daily_EMA200": 11.772280825508373,
       "Daily_Close": 9.739999771118164,
       "Price": 9.74,
       "High": null,
@@ -21620,8 +21620,8 @@
       "v8_varrant": null
     },
     "EBEBK.IS": {
-      "Daily_EMA50": 81.66637127718472,
-      "Daily_EMA200": 72.51399615429503,
+      "Daily_EMA50": 81.66637127720627,
+      "Daily_EMA200": 72.51399616120679,
       "Daily_Close": 81.80000305175781,
       "Price": 81.8,
       "High": null,
@@ -22324,8 +22324,8 @@
       "v8_varrant": null
     },
     "EGPRO.IS": {
-      "Daily_EMA50": 36.94124989930197,
-      "Daily_EMA200": 33.53864793314625,
+      "Daily_EMA50": 36.94124989930163,
+      "Daily_EMA200": 33.53864792844116,
       "Daily_Close": 37.58000183105469,
       "Price": 37.58,
       "High": null,
@@ -23229,8 +23229,8 @@
       "v8_varrant": null
     },
     "ENKAI.IS": {
-      "Daily_EMA50": 88.44957077873762,
-      "Daily_EMA200": 87.83817692285457,
+      "Daily_EMA50": 88.44957077600615,
+      "Daily_EMA200": 87.83817644003076,
       "Daily_Close": 89.75,
       "Price": 89.75,
       "High": null,
@@ -25085,8 +25085,8 @@
       "v8_varrant": null
     },
     "FROTO.IS": {
-      "Daily_EMA50": 81.14169667357743,
-      "Daily_EMA200": 89.38430798691988,
+      "Daily_EMA50": 81.14169667357592,
+      "Daily_EMA200": 89.38430855718053,
       "Daily_Close": 81.9000015258789,
       "Price": 81.9,
       "High": null,
@@ -25862,8 +25862,8 @@
       "v8_varrant": null
     },
     "GIPTA.IS": {
-      "Daily_EMA50": 74.52503018587316,
-      "Daily_EMA200": 76.11473782044963,
+      "Daily_EMA50": 74.52503018723303,
+      "Daily_EMA200": 76.11473779823787,
       "Daily_Close": 73.5,
       "Price": 73.5,
       "High": null,
@@ -26374,8 +26374,8 @@
       "v8_varrant": null
     },
     "GOLTS.IS": {
-      "Daily_EMA50": 306.661240960681,
-      "Daily_EMA200": 322.92109020804423,
+      "Daily_EMA50": 306.6612409592196,
+      "Daily_EMA200": 322.9210878503266,
       "Daily_Close": 296.0,
       "Price": 296.0,
       "High": null,
@@ -26630,8 +26630,8 @@
       "v8_varrant": null
     },
     "GRSEL.IS": {
-      "Daily_EMA50": 319.0848844987979,
-      "Daily_EMA200": 323.79743643625415,
+      "Daily_EMA50": 319.084884590578,
+      "Daily_EMA200": 323.7974390360254,
       "Daily_Close": 298.5,
       "Price": 298.5,
       "High": null,
@@ -26694,8 +26694,8 @@
       "v8_varrant": null
     },
     "GRTHO.IS": {
-      "Daily_EMA50": 224.98611330644974,
-      "Daily_EMA200": 266.5532914097703,
+      "Daily_EMA50": 224.98611328385653,
+      "Daily_EMA200": 266.553291274581,
       "Daily_Close": 219.39999389648438,
       "Price": 219.4,
       "High": null,
@@ -27014,8 +27014,8 @@
       "v8_varrant": null
     },
     "GUNDG.IS": {
-      "Daily_EMA50": 1581.3426471788366,
-      "Daily_EMA200": 1105.8316797142174,
+      "Daily_EMA50": 1581.3426471788193,
+      "Daily_EMA200": 1105.831679707598,
       "Daily_Close": 1006.0,
       "Price": 1006.0,
       "High": null,
@@ -32816,8 +32816,8 @@
       "v8_varrant": null
     },
     "KTLEV.IS": {
-      "Daily_EMA50": 50.240385849281246,
-      "Daily_EMA200": 34.71617003707386,
+      "Daily_EMA50": 50.240385857247425,
+      "Daily_EMA200": 34.71617006143909,
       "Daily_Close": 41.81999969482422,
       "Price": 41.82,
       "High": null,
@@ -33272,8 +33272,8 @@
       "v8_varrant": null
     },
     "LIDER.IS": {
-      "Daily_EMA50": 58.03555272588982,
-      "Daily_EMA200": 80.54766593130677,
+      "Daily_EMA50": 58.03555272614565,
+      "Daily_EMA200": 80.54766599562059,
       "Daily_Close": 22.440000534057617,
       "Price": 22.44,
       "High": null,
@@ -34111,8 +34111,8 @@
       "v8_varrant": null
     },
     "MACKO.IS": {
-      "Daily_EMA50": 34.82959399567086,
-      "Daily_EMA200": 34.90571482402741,
+      "Daily_EMA50": 34.829593995517484,
+      "Daily_EMA200": 34.90571452015881,
       "Daily_Close": 34.58000183105469,
       "Price": 34.58,
       "High": null,
@@ -34824,8 +34824,8 @@
       "v8_varrant": null
     },
     "MEDTR.IS": {
-      "Daily_EMA50": 26.092050924568067,
-      "Daily_EMA200": 27.952340066240655,
+      "Daily_EMA50": 26.092050924572245,
+      "Daily_EMA200": 27.952340066494983,
       "Daily_Close": 24.600000381469727,
       "Price": 24.6,
       "High": null,
@@ -37648,8 +37648,8 @@
       "v8_varrant": null
     },
     "OSMEN.IS": {
-      "Daily_EMA50": 7.70162561906499,
-      "Daily_EMA200": 7.95988233411652,
+      "Daily_EMA50": 7.701625618417472,
+      "Daily_EMA200": 7.959882331913741,
       "Daily_Close": 7.059999942779541,
       "Price": 7.06,
       "High": null,
@@ -39632,8 +39632,8 @@
       "v8_varrant": null
     },
     "PLTUR.IS": {
-      "Daily_EMA50": 20.496797716345228,
-      "Daily_EMA200": 21.467525950686017,
+      "Daily_EMA50": 20.49679768621303,
+      "Daily_EMA200": 21.467526101668994,
       "Daily_Close": 20.420000076293945,
       "Price": 20.42,
       "High": null,
@@ -40272,8 +40272,8 @@
       "v8_varrant": null
     },
     "PSGYO.IS": {
-      "Daily_EMA50": 3.3343621673527353,
-      "Daily_EMA200": 3.1163204369415403,
+      "Daily_EMA50": 3.334362167372853,
+      "Daily_EMA200": 3.1163204392109747,
       "Daily_Close": 3.0999999046325684,
       "Price": 3.1,
       "High": null,
@@ -49003,8 +49003,8 @@
       "v8_varrant": null
     },
     "ZRGYO.IS": {
-      "Daily_EMA50": 19.032605486717213,
-      "Daily_EMA200": 20.1316646435856,
+      "Daily_EMA50": 19.03260548672089,
+      "Daily_EMA200": 20.13166464517491,
       "Daily_Close": 19.860000610351562,
       "Price": 19.86,
       "High": null,
@@ -49311,7 +49311,7 @@
       "VWAP": 1.97,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "14:00 - 14:25",
+      "ETA": "14:20 - 14:45",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Indicators": {
@@ -49388,7 +49388,7 @@
         "TP1": 2.06,
         "TP2": 2.15,
         "RR": 3.06,
-        "Projection": "14:00 - 14:25"
+        "Projection": "14:20 - 14:45"
       },
       "Time_Label": "ŞİMDİ (Sıcak)",
       "Bars_Ago": 0
@@ -49412,7 +49412,7 @@
       "VWAP": 3978.91,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "11:25 - 11:50",
+      "ETA": "11:45 - 12:10",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Indicators": {
@@ -49491,7 +49491,7 @@
         "TP1": 4207.55,
         "TP2": 4292.75,
         "RR": 2.03,
-        "Projection": "11:25 - 11:50"
+        "Projection": "11:45 - 12:10"
       },
       "Time_Label": "ŞİMDİ (Sıcak)",
       "Bars_Ago": 0
@@ -49515,7 +49515,7 @@
       "VWAP": 226.71,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "14:00 - 14:25",
+      "ETA": "14:20 - 14:45",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Indicators": {
@@ -49581,7 +49581,7 @@
         "TP1": 230.1,
         "TP2": 246.95,
         "RR": 4.01,
-        "Projection": "14:00 - 14:25"
+        "Projection": "14:20 - 14:45"
       },
       "Time_Label": "ŞİMDİ (Sıcak)",
       "Bars_Ago": 0
@@ -49605,7 +49605,7 @@
       "VWAP": 13.36,
       "V_Reversal": 1,
       "V_Power": 5.1,
-      "ETA": "13:03 - 13:28",
+      "ETA": "13:23 - 13:48",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Indicators": {
@@ -49680,7 +49680,7 @@
         "TP1": 14.1,
         "TP2": 14.53,
         "RR": 2.45,
-        "Projection": "13:03 - 13:28"
+        "Projection": "13:23 - 13:48"
       },
       "Time_Label": "ŞİMDİ (Sıcak)",
       "Bars_Ago": 0
@@ -49704,7 +49704,7 @@
       "VWAP": 34.05,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "13:59 - 14:24",
+      "ETA": "14:19 - 14:44",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Indicators": {
@@ -49777,7 +49777,7 @@
         "TP1": 35.16,
         "TP2": 37.64,
         "RR": 3.41,
-        "Projection": "13:59 - 14:24"
+        "Projection": "14:19 - 14:44"
       },
       "Time_Label": "ŞİMDİ (Sıcak)",
       "Bars_Ago": 0
@@ -49801,7 +49801,7 @@
       "VWAP": 48.75,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "14:00 - 14:25",
+      "ETA": "14:20 - 14:45",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Indicators": {
@@ -49877,7 +49877,7 @@
         "TP1": 50.9,
         "TP2": 52.76,
         "RR": 2.93,
-        "Projection": "14:00 - 14:25"
+        "Projection": "14:20 - 14:45"
       },
       "Time_Label": "ŞİMDİ (Sıcak)",
       "Bars_Ago": 0
@@ -49901,7 +49901,7 @@
       "VWAP": 13.96,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "11:15 - 11:40",
+      "ETA": "11:36 - 12:01",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Indicators": {
@@ -49975,7 +49975,7 @@
         "TP1": 15.5,
         "TP2": 15.95,
         "RR": 3.55,
-        "Projection": "11:15 - 11:40"
+        "Projection": "11:36 - 12:01"
       },
       "Time_Label": "28 Saat Önce",
       "Bars_Ago": 28
@@ -49999,7 +49999,7 @@
       "VWAP": 16.54,
       "V_Reversal": 1,
       "V_Power": 6.5,
-      "ETA": "11:09 - 11:34",
+      "ETA": "11:30 - 11:55",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Indicators": {
@@ -50082,7 +50082,7 @@
         "TP1": 17.6,
         "TP2": 17.97,
         "RR": 2.06,
-        "Projection": "11:09 - 11:34"
+        "Projection": "11:30 - 11:55"
       },
       "Time_Label": "ŞİMDİ (Sıcak)",
       "Bars_Ago": 0
@@ -50106,7 +50106,7 @@
       "VWAP": 4.03,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "13:59 - 14:24",
+      "ETA": "14:19 - 14:44",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Indicators": {
@@ -50179,7 +50179,7 @@
         "TP1": 4.13,
         "TP2": 4.4,
         "RR": 3.35,
-        "Projection": "13:59 - 14:24"
+        "Projection": "14:19 - 14:44"
       },
       "Time_Label": "ŞİMDİ (Sıcak)",
       "Bars_Ago": 0
@@ -50203,7 +50203,7 @@
       "VWAP": 11.32,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "11:44 - 12:09",
+      "ETA": "12:05 - 12:30",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Indicators": {
@@ -50280,7 +50280,7 @@
         "TP1": 11.98,
         "TP2": 12.11,
         "RR": 1.65,
-        "Projection": "11:44 - 12:09"
+        "Projection": "12:05 - 12:30"
       },
       "Time_Label": "ŞİMDİ (Sıcak)",
       "Bars_Ago": 0
@@ -52843,10 +52843,10 @@
     "score": 85,
     "xu100_trend": 0.51,
     "volatility_state": "NORMAL",
-    "timestamp": "2026-09-12T09:50:18.123112",
+    "timestamp": "2026-09-12T10:06:43.550971",
     "c_ema5": 14383.32,
     "c_ema20": 14276.66,
     "current_price": 14467.3
   },
-  "cache_timestamp": 1789196449.2797463
+  "cache_timestamp": 1789197693.3699405
 }
