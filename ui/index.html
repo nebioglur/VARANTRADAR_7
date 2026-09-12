@@ -84,25 +84,6 @@
 
     <!-- HOME WRAPPER (MARKET PULSE) -->
     <div id="home-wrapper" class="main-wrapper" style="display: block;">
-    <!-- TUM HISSELER TABLOSU -->
-    <div class="card glass-panel" style="margin: 1rem 0; border:1px solid rgba(255,255,255,0.1);">
-        <div class="card-header"><i class="fa-solid fa-list"></i> Tüm Hisseler (Günlük Değişim)</div>
-        <div class="table-scroll-wrapper" style="max-height: 400px; overflow-y: auto;">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Hisse</th>
-                        <th>Fiyat</th>
-                        <th>Değişim (%)</th>
-                        <th>Hacim</th>
-                        <th>Saat</th>
-                    </tr>
-                </thead>
-                <tbody id="tb-all-stocks-home">
-                </tbody>
-            </table>
-        </div>
-    </div>
 
         <div class="grid-2-col">
             <!-- MARKET PULSE CLOCK & SUMMARY -->
@@ -175,8 +156,11 @@
                 <button type="button" class="pill-btn" onclick="filterRadarGrid('radar-card-5', this)" style="background:rgba(30,41,59,0.8); color:var(--text-muted); border:1px solid rgba(255,255,255,0.1); padding:7px 15px; border-radius:20px; font-weight:700; font-size:0.85rem; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:6px;">
                     <i class="fa-solid fa-arrow-trend-down" style="color:var(--accent-red);"></i> 📉 Düşenler
                 </button>
+                <button type="button" class="pill-btn" onclick="document.getElementById('all-stocks-modal').style.display='block'" style="background:linear-gradient(135deg, rgba(59,130,246,0.25), rgba(37,99,235,0.25)); color:#60a5fa; border:1px solid rgba(59,130,246,0.5); padding:7px 15px; border-radius:20px; font-weight:700; font-size:0.85rem; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-list" style="color:#3b82f6;"></i> Tüm Hisseler Listesi
+                </button>
                 <button type="button" class="pill-btn" onclick="openTavanAuditModal()" style="background:linear-gradient(135deg, rgba(239,68,68,0.25), rgba(185,28,28,0.25)); color:#fca5a5; border:1px solid rgba(239,68,68,0.5); padding:7px 15px; border-radius:20px; font-weight:700; font-size:0.85rem; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:6px;">
-                    <i class="fa-solid fa-clipboard-list" style="color:#ef4444;"></i> 📋 10:15 ➔ 18:10 Tavan Karnesi
+                    <i class="fa-solid fa-clipboard-list" style="color:#ef4444;"></i> 🚀 10:15 - 18:10 Tavan Karnesi
                 </button>
                 <button type="button" class="pill-btn" onclick="openLongTermHistoryModal()" style="background:linear-gradient(135deg, rgba(16,185,129,0.25), rgba(5,150,105,0.25)); color:#6ee7b7; border:1px solid rgba(16,185,129,0.5); padding:7px 15px; border-radius:20px; font-weight:700; font-size:0.85rem; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:6px;">
                     <i class="fa-solid fa-trophy" style="color:#10b981;"></i> 🏆 Uzun Vadeli Tavan & Kâr Arşivi
@@ -2181,5 +2165,28 @@
     <script src="app.js?v=20260912_v3"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js?v=20260912_v4"></script>
+    <!-- TUM HISSELER MODAL -->
+    <div id="all-stocks-modal" class="modal">
+        <div class="modal-content" style="max-width:600px; max-height:85vh; display:flex; flex-direction:column;">
+            <span class="close-btn" onclick="document.getElementById('all-stocks-modal').style.display='none'">&times;</span>
+            <h2 style="margin-bottom:1rem; color:var(--accent-blue);"><i class="fa-solid fa-list"></i> Tüm Hisseler (Günlük Değişim)</h2>
+            <div class="table-scroll-wrapper" style="flex:1; overflow-y:auto; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
+                <table class="data-table" style="width:100%;">
+                    <thead>
+                        <tr>
+                            <th>Hisse</th>
+                            <th>Fiyat</th>
+                            <th>Değişim (%)</th>
+                            <th>Hacim</th>
+                            <th>Saat</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tb-all-stocks-home">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
 </body>
 </html>
