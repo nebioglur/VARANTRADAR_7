@@ -86,25 +86,18 @@ def save_stats(stats):
 
 CACHE_FILE = "dashboard_cache.json"
 
+
 def load_dashboard_cache():
     if os.path.exists(CACHE_FILE):
         try:
-            from datetime import datetime
-            import time
+            import json
             with open(CACHE_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            
             if isinstance(data, dict):
-                today_str = datetime.now().strftime("%Y-%m-%d")
-            if data.get("cache_date", today_str) != today_str:
-                print("[BACKGROUND] Yeni gun tespit edildi. Eski bellekteki veriler temizleniyor.")
-                pass
-
-                cache_date = data.get("cache_date")
-                
-                if cache_date and cache_date != today_str:
-                    print(f"[Server] Eski gunun cache dosyasi reddedildi.")
-                    return {}
+                return data
+        except Exception as e:
+            print(f"Cache load error: {e}")
+    return {}
                     
                 # Dosya mtime (git clone nedeniyle yaniltici olabilir), gercek timestamp kullan.
                 real_ts = data.get("cache_timestamp", 0)
@@ -198,6 +191,11 @@ def start_live_data_collector():
     print("[LIVE DATA] Canli 5dk veri toplayici baslatildi (seans icinde her 5 dk).")
 
 def _background_scanner_impl():
+    import os
+    if os.environ.get("RENDER"):
+        print("[BACKGROUND] Render sunucusunda agir BIST taramasi IP iptali yuzunden kapatildi. Cache'den devam edilecek.")
+        return
+
     # --- V8 ENGINE INIT ---
     try:
         from v8_engine.database import V8Database
