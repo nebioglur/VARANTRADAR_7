@@ -708,7 +708,7 @@ def login():
     try:
         with open('ui/login.html', 'r', encoding='utf-8') as f:
             html = f.read()
-        if os.environ.get('CLASSIC_ONLY') == '1':
+        if True: # Her zaman klasik login goster (Supabase Auth Bypass)
             flag = '<script>window.VR_CLASSIC_ONLY=1;</script>'
             if '<head>' in html:
                 html = html.replace('<head>', '<head>' + flag, 1)
