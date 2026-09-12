@@ -53190,7 +53190,7 @@
       "VWAP": 1.97,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "00:32 - 00:57",
+      "ETA": "00:52 - 01:17",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Indicators": {
@@ -53267,7 +53267,7 @@
         "TP1": 2.06,
         "TP2": 2.15,
         "RR": 3.06,
-        "Projection": "00:32 - 00:57"
+        "Projection": "00:52 - 01:17"
       },
       "Time_Label": "ŞİMDİ (Sıcak)",
       "Bars_Ago": 0
@@ -53394,7 +53394,7 @@
       "VWAP": 1.22,
       "V_Reversal": 1,
       "V_Power": 5.8,
-      "ETA": "Seans Kapanışı (17:45-18:00)",
+      "ETA": "00:18 - 00:43",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Indicators": {
@@ -53472,7 +53472,7 @@
         "TP1": 1.29,
         "TP2": 1.32,
         "RR": 2.24,
-        "Projection": "Seans Kapanışı (17:45-18:00)"
+        "Projection": "00:18 - 00:43"
       },
       "Time_Label": "ŞİMDİ (Sıcak)",
       "Bars_Ago": 0
@@ -53496,7 +53496,7 @@
       "VWAP": 226.71,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "00:32 - 00:57",
+      "ETA": "00:52 - 01:17",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Indicators": {
@@ -53562,7 +53562,7 @@
         "TP1": 230.1,
         "TP2": 246.95,
         "RR": 4.01,
-        "Projection": "00:32 - 00:57"
+        "Projection": "00:52 - 01:17"
       },
       "Time_Label": "ŞİMDİ (Sıcak)",
       "Bars_Ago": 0
@@ -53685,7 +53685,7 @@
       "VWAP": 34.05,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "00:32 - 00:57",
+      "ETA": "00:51 - 01:16",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Indicators": {
@@ -53758,7 +53758,7 @@
         "TP1": 35.16,
         "TP2": 37.64,
         "RR": 3.41,
-        "Projection": "00:32 - 00:57"
+        "Projection": "00:51 - 01:16"
       },
       "Time_Label": "ŞİMDİ (Sıcak)",
       "Bars_Ago": 0
@@ -53782,7 +53782,7 @@
       "VWAP": 48.75,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "00:32 - 00:57",
+      "ETA": "00:52 - 01:17",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Indicators": {
@@ -53858,7 +53858,7 @@
         "TP1": 50.9,
         "TP2": 52.76,
         "RR": 2.93,
-        "Projection": "00:32 - 00:57"
+        "Projection": "00:52 - 01:17"
       },
       "Time_Label": "ŞİMDİ (Sıcak)",
       "Bars_Ago": 0
@@ -54087,7 +54087,7 @@
       "VWAP": 4.03,
       "V_Reversal": 0,
       "V_Power": 0.0,
-      "ETA": "00:32 - 00:57",
+      "ETA": "00:51 - 01:16",
       "Breakdown_Risk": 0,
       "Breakdown_Warning": null,
       "Indicators": {
@@ -54160,7 +54160,7 @@
         "TP1": 4.13,
         "TP2": 4.4,
         "RR": 3.35,
-        "Projection": "00:32 - 00:57"
+        "Projection": "00:51 - 01:16"
       },
       "Time_Label": "ŞİMDİ (Sıcak)",
       "Bars_Ago": 0
@@ -56660,74 +56660,5 @@
     "c_ema20": 14276.66,
     "current_price": 14467.3
   },
-  "cache_timestamp": 1789235334.904718
-}_Match": 1,
-      "RSI_Val": 24.8,
-      "ADX_Val": 15.5,
-      "Time_Label": "ŞİMDİ (Sıcak)",
-      "Bars_Ago": 0
-    },
-    {
-      "Symbol": "BORSK.IS",
-      "Score_5": 5,
-      "EMA_Gap_Pct": 1.34,
-      "Daily_Change_Pct": -2.99,
-      "Crossover_Bars_Ago": 19,
-      "Price": 6.48,
-      "EMA_Match": 1,
-      "MACD_Match": 1,
-      "RSI_Match": 1,
-      "ADX_Match": 1,
-      "MOM_Match": 1,
-      "RSI_Val": 31.6,
-      "ADX_Val": 22.1,
-      "Time_Label": "ŞİMDİ (Sıcak)",
-      "Bars_Ago": 0
-    },
-    {
-      "Symbol": "BESTE.IS",
-      "Score_5": 5,
-      "EMA_Gap_Pct": 2.19,
-      "Daily_Change_Pct": -3.05,
-      "Crossover_Bars_Ago": 19,
-      "Price": 30.48,
-      "EMA_Match": 1,
-      "MACD_Match": 1,
-      "RSI_Match": 1,
-      "ADX_Match": 1,
-      "MOM_Match": 1,
-      "RSI_Val": 15.0,
-      "ADX_Val": 28.6,
-      "Time_Label": "ŞİMDİ (Sıcak)",
-      "Bars_Ago": 0
-    },
-    {
-      "Symbol": "HKTM.IS",
-      "Score_5": 3,
-      "EMA_Gap_Pct": 0.42,
-      "Daily_Change_Pct": 0.55,
-      "Crossover_Bars_Ago": 20,
-      "Price": 12.69,
-      "EMA_Match": 1,
-      "MACD_Match": 0,
-      "RSI_Match": 1,
-      "ADX_Match": 0,
-      "MOM_Match": 1,
-      "RSI_Val": 41.5,
-      "ADX_Val": 13.2,
-      "Time_Label": "3 Saat Önce",
-      "Bars_Ago": 3
-    }
-  ],
-  "v8_market_regime": {
-    "regime": "STRONG_BULL",
-    "score": 85,
-    "xu100_trend": 0.51,
-    "volatility_state": "NORMAL",
-    "timestamp": "2026-09-12T20:43:25.534053",
-    "c_ema5": 14383.32,
-    "c_ema20": 14276.66,
-    "current_price": 14467.3
-  },
-  "cache_timestamp": 1789235334.3129828
+  "cache_timestamp": 1789235572.697774
 }
