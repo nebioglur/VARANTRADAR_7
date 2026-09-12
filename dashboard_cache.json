@@ -56724,5 +56724,359 @@
     "c_ema20": 14276.66,
     "current_price": 14467.3
   },
-  "cache_timestamp": 1789211247.3576055
+  "cache_timestamp": 1789211430.313708,
+  "mtf_results": [
+    {
+      "Symbol": "BARMA.IS",
+      "Score": 100,
+      "Price": 9.93,
+      "Target": 10.43,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %10.15 | Hacim: 0.9x"
+    },
+    {
+      "Symbol": "BIGTK.IS",
+      "Score": 100,
+      "Price": 291.75,
+      "Target": 306.34,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %6.27 | Hacim: 1.5x"
+    },
+    {
+      "Symbol": "BAHKM.IS",
+      "Score": 100,
+      "Price": 183.7,
+      "Target": 192.88,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %4.58 | Hacim: 0.1x"
+    },
+    {
+      "Symbol": "ALKLC.IS",
+      "Score": 100,
+      "Price": 506.5,
+      "Target": 531.83,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %5.87 | Hacim: 0.6x"
+    },
+    {
+      "Symbol": "EFOR.IS",
+      "Score": 99.7,
+      "Price": 20.08,
+      "Target": 21.08,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %4.04 | Hacim: 1.0x"
+    },
+    {
+      "Symbol": "CEOEM.IS",
+      "Score": 97.8,
+      "Price": 28.92,
+      "Target": 30.37,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %3.14 | Hacim: 0.0x"
+    },
+    {
+      "Symbol": "ARSAN.IS",
+      "Score": 97.0,
+      "Price": 4.09,
+      "Target": 4.29,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %3.00 | Hacim: 3.4x"
+    },
+    {
+      "Symbol": "AVGYO.IS",
+      "Score": 96.3,
+      "Price": 17.07,
+      "Target": 17.92,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %2.88 | Hacim: 2.4x"
+    },
+    {
+      "Symbol": "BIGEN.IS",
+      "Score": 94.9,
+      "Price": 143.8,
+      "Target": 150.99,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %2.34 | Hacim: 3.2x"
+    },
+    {
+      "Symbol": "AKYHO.IS",
+      "Score": 90.8,
+      "Price": 2.25,
+      "Target": 2.36,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %2.73 | Hacim: 3.5x"
+    },
+    {
+      "Symbol": "BULGS.IS",
+      "Score": 89.9,
+      "Price": 31.84,
+      "Target": 33.43,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %2.49 | Hacim: 3.3x"
+    },
+    {
+      "Symbol": "DSTKF.IS",
+      "Score": 85.9,
+      "Price": 2500.0,
+      "Target": 2625.0,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %2.79 | Hacim: 2.7x"
+    },
+    {
+      "Symbol": "AVHOL.IS",
+      "Score": 85.4,
+      "Price": 34.68,
+      "Target": 36.41,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %1.93 | Hacim: 5.0x"
+    },
+    {
+      "Symbol": "EGGUB.IS",
+      "Score": 84.1,
+      "Price": 112.5,
+      "Target": 118.12,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %0.90 | Hacim: 4.2x"
+    },
+    {
+      "Symbol": "ANHYT.IS",
+      "Score": 80.7,
+      "Price": 109.3,
+      "Target": 114.77,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %1.20 | Hacim: 6.4x"
+    },
+    {
+      "Symbol": "CELHA.IS",
+      "Score": 80.2,
+      "Price": 27.36,
+      "Target": 28.73,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %0.97 | Hacim: 1.8x"
+    },
+    {
+      "Symbol": "CATES.IS",
+      "Score": 75.2,
+      "Price": 67.2,
+      "Target": 70.56,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %1.29 | Hacim: 4.1x"
+    },
+    {
+      "Symbol": "AKSGY.IS",
+      "Score": 75.2,
+      "Price": 10.13,
+      "Target": 10.64,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %1.10 | Hacim: 4.0x"
+    },
+    {
+      "Symbol": "BJKAS.IS",
+      "Score": 75.1,
+      "Price": 2.83,
+      "Target": 2.97,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %0.04 | Hacim: 1.4x"
+    },
+    {
+      "Symbol": "CUSAN.IS",
+      "Score": 74.6,
+      "Price": 25.0,
+      "Target": 26.25,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %0.17 | Hacim: 3.9x"
+    },
+    {
+      "Symbol": "BRISA.IS",
+      "Score": 73.5,
+      "Price": 78.45,
+      "Target": 82.37,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %1.09 | Hacim: 2.0x"
+    },
+    {
+      "Symbol": "AHGAZ.IS",
+      "Score": 73.1,
+      "Price": 40.52,
+      "Target": 42.55,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %0.35 | Hacim: 2.4x"
+    },
+    {
+      "Symbol": "EBEBK.IS",
+      "Score": 72.7,
+      "Price": 84.4,
+      "Target": 88.62,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %1.28 | Hacim: 1.2x"
+    },
+    {
+      "Symbol": "BIMAS.IS",
+      "Score": 72.1,
+      "Price": 434.75,
+      "Target": 456.49,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %0.41 | Hacim: 2.2x"
+    },
+    {
+      "Symbol": "DURDO.IS",
+      "Score": 71.9,
+      "Price": 5.21,
+      "Target": 5.47,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %0.19 | Hacim: 1.8x"
+    },
+    {
+      "Symbol": "ATATR.IS",
+      "Score": 70.4,
+      "Price": 13.95,
+      "Target": 14.65,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %0.08 | Hacim: 3.3x"
+    },
+    {
+      "Symbol": "DEVA.IS",
+      "Score": 70.3,
+      "Price": 103.5,
+      "Target": 108.68,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %0.88 | Hacim: 0.9x"
+    },
+    {
+      "Symbol": "ALARK.IS",
+      "Score": 68.0,
+      "Price": 117.1,
+      "Target": 122.95,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %0.60 | Hacim: 2.1x"
+    },
+    {
+      "Symbol": "DERIM.IS",
+      "Score": 67.1,
+      "Price": 35.04,
+      "Target": 36.79,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %0.52 | Hacim: 1.8x"
+    },
+    {
+      "Symbol": "BINHO.IS",
+      "Score": 66.6,
+      "Price": 9.95,
+      "Target": 10.45,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %0.52 | Hacim: 1.5x"
+    },
+    {
+      "Symbol": "AGYO.IS",
+      "Score": 65.1,
+      "Price": 7.79,
+      "Target": 8.18,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %1.17 | Hacim: 0.0x"
+    },
+    {
+      "Symbol": "CCOLA.IS",
+      "Score": 64.0,
+      "Price": 79.95,
+      "Target": 83.95,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %0.88 | Hacim: 1.4x"
+    },
+    {
+      "Symbol": "ALGYO.IS",
+      "Score": 63.6,
+      "Price": 3.8,
+      "Target": 3.99,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %0.27 | Hacim: 2.5x"
+    },
+    {
+      "Symbol": "ARCLK.IS",
+      "Score": 63.6,
+      "Price": 95.9,
+      "Target": 100.7,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %0.11 | Hacim: 0.9x"
+    },
+    {
+      "Symbol": "ALBRK.IS",
+      "Score": 63.4,
+      "Price": 9.2,
+      "Target": 9.66,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %0.33 | Hacim: 2.2x"
+    },
+    {
+      "Symbol": "BUCIM.IS",
+      "Score": 62.7,
+      "Price": 5.87,
+      "Target": 6.16,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %0.69 | Hacim: 0.6x"
+    },
+    {
+      "Symbol": "BINBN.IS",
+      "Score": 62.4,
+      "Price": 176.4,
+      "Target": 185.22,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %0.63 | Hacim: 1.2x"
+    },
+    {
+      "Symbol": "ADESE.IS",
+      "Score": 61.2,
+      "Price": 0.86,
+      "Target": 0.9,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %0.03 | Hacim: 1.1x"
+    },
+    {
+      "Symbol": "AKSA.IS",
+      "Score": 61.1,
+      "Price": 11.38,
+      "Target": 11.95,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %0.09 | Hacim: 1.4x"
+    },
+    {
+      "Symbol": "CIMSA.IS",
+      "Score": 59.4,
+      "Price": 45.62,
+      "Target": 47.9,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %0.22 | Hacim: 1.5x"
+    },
+    {
+      "Symbol": "ADGYO.IS",
+      "Score": 58.8,
+      "Price": 59.75,
+      "Target": 62.74,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %0.25 | Hacim: 1.6x"
+    },
+    {
+      "Symbol": "AVPGY.IS",
+      "Score": 58.7,
+      "Price": 55.95,
+      "Target": 58.75,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %0.00 | Hacim: 1.3x"
+    },
+    {
+      "Symbol": "ATAGY.IS",
+      "Score": 57.6,
+      "Price": 10.24,
+      "Target": 10.75,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %0.14 | Hacim: 0.5x"
+    },
+    {
+      "Symbol": "CLEBI.IS",
+      "Score": 53.4,
+      "Price": 1463.0,
+      "Target": 1536.15,
+      "Trend": "MTF IVME",
+      "Momentum": "15m Kumulatif: %0.00 | Hacim: 0.8x"
+    }
+  ]
 }
