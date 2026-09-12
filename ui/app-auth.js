@@ -51,7 +51,12 @@ const kitPromise = (async () => {
             storage: safeLocalStorage(),
         },
     });
-    const auth = createVerdentAuth({ supabase });
+    const auth = createVerdentAuth({ 
+        supabase,
+        oauth: {
+            authorizeUrl: cfg.supabase_url + '/auth/v1/authorize'
+        }
+    });
     return { supabase, auth, config: cfg };
 })();
 

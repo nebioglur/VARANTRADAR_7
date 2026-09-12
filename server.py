@@ -537,8 +537,8 @@ from flask import request, Response, session, redirect, jsonify, render_template
 app.secret_key = os.environ.get('SECRET_KEY', 'varant_pro_ultra_secret_2026_xyz')
 
 # --- Verdent-Managed Supabase Auth (public browser config) ---
-SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://supabase-api-prod.verdent.ai/p/p4c2618bf93ce4a2f45f8')
-SUPABASE_PUBLISHABLE_KEY = os.environ.get('SUPABASE_PUBLISHABLE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoyMTA0NDA3NTczLCJpYXQiOjE3ODg3ODgzNzMsImlzcyI6InN1cGFiYXNlIiwicHJvamVjdF9yZWYiOiJwNGMyNjE4YmY5M2NlNGEyZjQ1ZjgiLCJyb2xlIjoiYW5vbiJ9.u-E7X433Llwcg-5jF8IDiHwiHqaBN_xtjuvkuEA7Llo')
+SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://kfslwkmrnjqxirzhfmbn.supabase.co')
+SUPABASE_PUBLISHABLE_KEY = os.environ.get('SUPABASE_PUBLISHABLE_KEY', 'sb_publishable_r2tfnmKF3dq_I1YkqGi-Bw_O38IUlEj----sb_publishable_RP_ouZJiDHK_PA_3o1dmfg_G5BgAuzl')
 
 _jwks_client = None
 
