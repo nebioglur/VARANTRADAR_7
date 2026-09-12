@@ -5621,9 +5621,9 @@ function _dtRenderDetail(panel, d) {
 
 function renderAllStocksTable() {
     const tbody = document.getElementById('tb-all-stocks-home');
-    if (!tbody || !window.dashboardData || !window.dashboardData.all_symbols_stats) return;
+    if (!tbody || !globalDashboardData || !globalDashboardData.all_symbols_stats) return;
     
-    let allStats = Object.entries(window.dashboardData.all_symbols_stats).map(([sym, data]) => ({
+    let allStats = Object.entries(globalDashboardData.all_symbols_stats).map(([sym, data]) => ({
         symbol: sym,
         price: data.Price || data.Daily_Close || 0,
         change: data.Change_Pct || 0,
