@@ -44,6 +44,7 @@
             <a class="nav-btn" href="/#logs" onclick="return navClick(event, 'logs', this)"><i class="fa-solid fa-terminal"></i> LOGLAR</a>
             <a class="nav-btn" href="/#backtest" onclick="return navClick(event, 'backtest', this)" style="color:var(--accent-purple);"><i class="fa-solid fa-microscope"></i> BACKTEST</a>
             <a class="nav-btn" href="/#v8" onclick="return navClick(event, 'v8', this)" style="color:#0ea5e9; border:1px solid rgba(14,165,233,0.4);"><i class="fa-solid fa-brain"></i> V8 ENGINE (YENİ)</a>
+            <a class="nav-btn" href="javascript:void(0)" onclick="document.getElementById('all-stocks-modal').style.display='block'" style="color:#60a5fa; border:1px solid rgba(59,130,246,0.4);"><i class="fa-solid fa-list"></i> TÜM HİSSELER</a>
             <a class="nav-btn" href="/#guide" onclick="return navClick(event, 'guide', this)" style="color:var(--accent-yellow); border:1px solid rgba(234, 179, 8, 0.4);"><i class="fa-solid fa-book-open"></i> NASIL KULLANILIR?</a>
             <div class="status-indicator">
                 <span class="pulse"></span>
@@ -156,9 +157,7 @@
                 <button type="button" class="pill-btn" onclick="filterRadarGrid('radar-card-5', this)" style="background:rgba(30,41,59,0.8); color:var(--text-muted); border:1px solid rgba(255,255,255,0.1); padding:7px 15px; border-radius:20px; font-weight:700; font-size:0.85rem; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:6px;">
                     <i class="fa-solid fa-arrow-trend-down" style="color:var(--accent-red);"></i> 📉 Düşenler
                 </button>
-                <button type="button" class="pill-btn" onclick="document.getElementById('all-stocks-modal').style.display='block'" style="background:linear-gradient(135deg, rgba(59,130,246,0.25), rgba(37,99,235,0.25)); color:#60a5fa; border:1px solid rgba(59,130,246,0.5); padding:7px 15px; border-radius:20px; font-weight:700; font-size:0.85rem; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:6px;">
-                    <i class="fa-solid fa-list" style="color:#3b82f6;"></i> Tüm Hisseler Listesi
-                </button>
+
                 <button type="button" class="pill-btn" onclick="openTavanAuditModal()" style="background:linear-gradient(135deg, rgba(239,68,68,0.25), rgba(185,28,28,0.25)); color:#fca5a5; border:1px solid rgba(239,68,68,0.5); padding:7px 15px; border-radius:20px; font-weight:700; font-size:0.85rem; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:6px;">
                     <i class="fa-solid fa-clipboard-list" style="color:#ef4444;"></i> 🚀 10:15 - 18:10 Tavan Karnesi
                 </button>
