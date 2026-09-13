@@ -5836,6 +5836,26 @@ function renderAllStocksTable() {
         let volLot = data.Volume || 0;
         let volTL = volLot * price;
         let rVol = (data.v8_discovery && data.v8_discovery.metrics && data.v8_discovery.metrics.relative_volume) ? data.v8_discovery.metrics.relative_volume : 0;
+        let state = (data.v8_discovery && data.v8_discovery.state) ? data.v8_discovery.state : 'NONE';
+        
+        let tScore = 50;
+        if (change > 0 && change <= 7) tScore += (change * 3);
+        else if (change > 7) tScore += 20;
+        else if (change < 0) tScore += (change * 3);
+        
+        if (change > 0) {
+            if (rVol > 1.5) tScore += 15;
+            if (rVol > 2.5) tScore += 15;
+            if (rVol < 0.8) tScore -= 15;
+        } else if (change < 0) {
+            if (rVol > 1.5) tScore -= 15;
+            if (rVol > 2.5) tScore -= 15;
+            if (rVol < 0.8) tScore += 10;
+        }
+        if (state === 'BREAKOUT') tScore += 20;
+        else if (state === 'PRE_BREAKOUT') tScore += 15;
+        tScore = Math.min(Math.max(tScore, 0), 100);
+        
         return {
             symbol: sym,
             price: price,
@@ -5843,8 +5863,9 @@ function renderAllStocksTable() {
             volume_lot: volLot,
             volume_tl: volTL,
             rel_vol: rVol,
+            tavan_score: tScore,
             time: data.Time || '-',
-            state: data.v8_discovery?.state || 'NONE'
+            state: state
         };
     });
     
@@ -5867,11 +5888,15 @@ function renderAllStocksTable() {
         const relVolPct = (s.rel_vol * 100).toFixed(0);
         const relVolText = s.change > 0 ? `+ %${relVolPct}` : (s.change < 0 ? `- %${relVolPct}` : `%${relVolPct}`);
         
+        let scColor = '#ef4444'; // Kirmizi
+        if (s.tavan_score >= 80) scColor = '#22c55e'; // Yesil
+        else if (s.tavan_score >= 60) scColor = '#3b82f6'; // Mavi
+        else if (s.tavan_score >= 40) scColor = '#f97316'; // Turuncu
+        let scoreBadge = `<span style="font-weight:900; padding:3px 10px; border-radius:12px; background:${scColor}22; color:${scColor}; border:1px solid ${scColor}66; min-width:35px; display:inline-block; text-align:center;">${s.tavan_score.toFixed(0)}</span>`;
+        
         const sym = s.symbol.replace('.IS', '');
-        let stateBadge = '';
-        if (s.state !== 'NONE' && s.state !== 'UNKNOWN') {
-            stateBadge = `<span style="font-size:0.7rem; background:rgba(255,255,255,0.1); padding:2px 5px; border-radius:4px;">${s.state}</span>`;
-        }
+        let actionBtns = `<button onclick="quickTradeBuy('${sym}')" style="background:rgba(34,197,94,0.2); color:#22c55e; border:1px solid rgba(34,197,94,0.5); border-radius:4px; padding:3px 10px; cursor:pointer; font-weight:bold; font-size:0.75rem; margin-right:4px; transition:0.2s;" onmouseover="this.style.background='#22c55e'; this.style.color='#fff';" onmouseout="this.style.background='rgba(34,197,94,0.2)'; this.style.color='#22c55e';">AL</button>
+                          <button onclick="quickTradeBuy('${sym}')" style="background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid rgba(239,68,68,0.5); border-radius:4px; padding:3px 10px; cursor:pointer; font-weight:bold; font-size:0.75rem; transition:0.2s;" onmouseover="this.style.background='#ef4444'; this.style.color='#fff';" onmouseout="this.style.background='rgba(239,68,68,0.2)'; this.style.color='#ef4444';">SAT</button>`;
         
         return `
             <tr>
@@ -5881,8 +5906,22 @@ function renderAllStocksTable() {
                 <td style="color:var(--text-muted);">${volTLM}</td>
                 <td style="color:var(--text-muted);">${volLotM}</td>
                 <td style="color:${color}; font-weight:bold;">${relVolText}</td>
-                <td style="font-size:0.8rem; color:var(--text-muted);">${stateBadge}</td>
+                <td>${scoreBadge}</td>
+                <td>${actionBtns}</td>
             </tr>
         `;
     }).join('');
+}
+
+function quickTradeBuy(sym) {
+    const pfBtn = Array.from(document.querySelectorAll('.nav-btn')).find(b => b.getAttribute('href') && b.getAttribute('href').includes('portfolio'));
+    if (pfBtn) switchMainTab('portfolio', pfBtn);
+    
+    setTimeout(() => {
+        const symInput = document.getElementById('lt-symbol');
+        if (symInput) {
+            symInput.value = sym;
+            symInput.dispatchEvent(new Event('input'));
+        }
+    }, 200);
 }
