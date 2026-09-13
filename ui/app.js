@@ -255,11 +255,11 @@ function switchMainTab(tabName, btnElement) {
     const logsWrapper = document.getElementById('logs-wrapper');
     if (logsWrapper) logsWrapper.style.display = tabName === 'logs' ? 'block' : 'none';
 
-    const guideWrapper = document.getElementById('guide-wrapper');
-    if (guideWrapper) guideWrapper.style.display = tabName === 'guide' ? 'block' : 'none';
-    
     const super12Wrapper = document.getElementById('super12-wrapper');
     if (super12Wrapper) super12Wrapper.style.display = tabName === 'super12' ? 'block' : 'none';
+
+    const guideWrapper = document.getElementById('guide-wrapper');
+    if (guideWrapper) guideWrapper.style.display = tabName === 'guide' ? 'block' : 'none';
     
     const btWrapper = document.getElementById('backtest-wrapper');
     if (btWrapper) btWrapper.style.display = tabName === 'backtest' ? 'block' : 'none';
@@ -1895,6 +1895,7 @@ function openGraphicTab(symbol) {
 
 function renderAllDashboardTables() {
     renderAllStocksTable();
+    if (typeof renderSuper12Table === "function") renderSuper12Table();
     const cats = {
         'tavan_adaylari': 'tb-tavan-adaylari',
         'arge_tavan': 'tb-arge-tavan',
@@ -3594,7 +3595,6 @@ function renderHourlyCards(hourlyList, container) {
                 <div style="margin-top:0.5rem; font-size:0.7rem; color:var(--text-muted); text-align:right;">${h.candidates} oneri tarama yapildi</div>
             </div>`;
     }).join('');
-    renderSuper12Table();
 }
 
 
@@ -4359,7 +4359,6 @@ function renderDipBreakout() {
             '<td data-label="Fırsat"><b style="color:' + (r.opportunity >= 70 ? 'var(--accent-green)' : r.opportunity >= 50 ? '#f59e0b' : 'var(--text-muted)') + ';">' + r.opportunity + '</b></td>' +
             '</tr>';
     }).join('');
-    renderSuper12Table();
 }
 
 // GİRİŞ görünürken 90 sn'de bir tazele
@@ -5539,7 +5538,6 @@ function _dtRenderTable() {
             <td style="padding:0.55rem 0.4rem; font-weight:800; font-size:1.05rem; color:${r.opportunity >= 85 ? '#22c55e' : r.opportunity >= 70 ? '#f97316' : r.opportunity < 55 ? '#ef4444' : 'var(--text-light, #f8fafc)'};">${r.opportunity_tag} ${r.opportunity}</td>
         </tr>`;
     }).join('');
-    renderSuper12Table();
 }
 
 function dtOpenDetail(symbol, scroll) {
@@ -5757,7 +5755,6 @@ function renderAllStocksTable() {
             </tr>
         `;
     }).join('');
-    renderSuper12Table();
 }
 
 function quickTradeBuy(sym) {
@@ -5848,7 +5845,7 @@ function renderSuper12Table() {
         let actionBtns = <button onclick="quickTradeBuy('')" style="background:rgba(34,197,94,0.2); color:#22c55e; border:1px solid rgba(34,197,94,0.5); border-radius:4px; padding:3px 10px; cursor:pointer; font-weight:bold; font-size:0.75rem; margin-right:4px; transition:0.2s;" onmouseover="this.style.background='#22c55e'; this.style.color='#fff';" onmouseout="this.style.background='rgba(34,197,94,0.2)'; this.style.color='#22c55e';">AL</button>
                           <button onclick="quickTradeBuy('')" style="background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid rgba(239,68,68,0.5); border-radius:4px; padding:3px 10px; cursor:pointer; font-weight:bold; font-size:0.75rem; transition:0.2s;" onmouseover="this.style.background='#ef4444'; this.style.color='#fff';" onmouseout="this.style.background='rgba(239,68,68,0.2)'; this.style.color='#ef4444';">SAT</button>;
         
-        let rankBadge = <span style="display:inline-block; width:20px; text-align:center; color:var(--text-muted); font-size:0.8rem; font-weight:bold; margin-right:5px;">#</span>;
+        let rankBadge = <span style="display:inline-block; width:30px; text-align:center; color:var(--text-muted); font-size:0.85rem; font-weight:bold; margin-right:5px; background:rgba(0,0,0,0.05); border-radius:4px;">#</span>;
         
         return 
             <tr>
