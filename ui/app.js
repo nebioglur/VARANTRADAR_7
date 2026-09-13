@@ -1895,6 +1895,7 @@ function openGraphicTab(symbol) {
 
 function renderAllDashboardTables() {
     renderAllStocksTable();
+    if (typeof renderSuper12Table === 'function') renderSuper12Table();
     if (typeof renderSuper12Table === "function") renderSuper12Table();
     const cats = {
         'tavan_adaylari': 'tb-tavan-adaylari',
@@ -5831,33 +5832,31 @@ function renderSuper12Table() {
         const color = s.change > 0 ? 'var(--accent-green)' : (s.change < 0 ? 'var(--accent-red)' : 'var(--text-color)');
         const sign = s.change > 0 ? '+' : '';
         const volLotM = (s.volume_lot / 1000000).toFixed(1) + 'M';
-        const volTLM = (s.volume_tl / 1000000).toFixed(1) + 'M ?';
+        const volTLM = (s.volume_tl / 1000000).toFixed(1) + 'M \u20BA';
         const relVolPct = (s.rel_vol * 100).toFixed(0);
-        const relVolText = s.change > 0 ? + % : (s.change < 0 ? - % : %);
+        const relVolText = s.change > 0 ? '+ %' + relVolPct : (s.change < 0 ? '- %' + relVolPct : '%' + relVolPct);
         
         let scColor = '#ef4444'; 
         if (s.tavan_score >= 80) scColor = '#22c55e'; 
         else if (s.tavan_score >= 60) scColor = '#3b82f6'; 
         else if (s.tavan_score >= 40) scColor = '#f97316'; 
-        let scoreBadge = <span style="font-weight:900; padding:3px 10px; border-radius:12px; background:22; color:; border:1px solid 66; min-width:35px; display:inline-block; text-align:center;"></span>;
+        let scoreBadge = '<span style="font-weight:900; padding:3px 10px; border-radius:12px; background:' + scColor + '22; color:' + scColor + '; border:1px solid ' + scColor + '66; min-width:35px; display:inline-block; text-align:center;">' + s.tavan_score.toFixed(0) + '</span>';
         
         const sym = s.symbol.replace('.IS', '');
-        let actionBtns = <button onclick="quickTradeBuy('')" style="background:rgba(34,197,94,0.2); color:#22c55e; border:1px solid rgba(34,197,94,0.5); border-radius:4px; padding:3px 10px; cursor:pointer; font-weight:bold; font-size:0.75rem; margin-right:4px; transition:0.2s;" onmouseover="this.style.background='#22c55e'; this.style.color='#fff';" onmouseout="this.style.background='rgba(34,197,94,0.2)'; this.style.color='#22c55e';">AL</button>
-                          <button onclick="quickTradeBuy('')" style="background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid rgba(239,68,68,0.5); border-radius:4px; padding:3px 10px; cursor:pointer; font-weight:bold; font-size:0.75rem; transition:0.2s;" onmouseover="this.style.background='#ef4444'; this.style.color='#fff';" onmouseout="this.style.background='rgba(239,68,68,0.2)'; this.style.color='#ef4444';">SAT</button>;
+        let actionBtns = '<button onclick="quickTradeBuy(\'' + sym + '\')" style="background:rgba(34,197,94,0.2); color:#22c55e; border:1px solid rgba(34,197,94,0.5); border-radius:4px; padding:3px 10px; cursor:pointer; font-weight:bold; font-size:0.75rem; margin-right:4px; transition:0.2s;" onmouseover="this.style.background=\'#22c55e\'; this.style.color=\'#fff\';" onmouseout="this.style.background=\'rgba(34,197,94,0.2)\'; this.style.color=\'#22c55e\';">AL</button>' +
+                         '<button onclick="quickTradeBuy(\'' + sym + '\')" style="background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid rgba(239,68,68,0.5); border-radius:4px; padding:3px 10px; cursor:pointer; font-weight:bold; font-size:0.75rem; transition:0.2s;" onmouseover="this.style.background=\'#ef4444\'; this.style.color=\'#fff\';" onmouseout="this.style.background=\'rgba(239,68,68,0.2)\'; this.style.color=\'#ef4444\';">SAT</button>';
         
-        let rankBadge = <span style="display:inline-block; width:30px; text-align:center; color:var(--text-muted); font-size:0.85rem; font-weight:bold; margin-right:5px; background:rgba(0,0,0,0.05); border-radius:4px;">#</span>;
+        let rankBadge = '<span style="display:inline-block; width:30px; text-align:center; color:var(--text-muted); font-size:0.85rem; font-weight:bold; margin-right:5px; background:rgba(0,0,0,0.05); border-radius:4px;">#' + (index+1) + '</span>';
         
-        return 
-            <tr>
-                <td style="font-weight:bold; cursor:pointer; color:var(--text-light);" onclick="openGraphicTab('')"> </td>
-                <td style="font-weight:600;">?</td>
-                <td style="color:; font-weight:bold;">%</td>
-                <td style="color:var(--text-muted);"></td>
-                <td style="color:var(--text-muted);"></td>
-                <td style="color:; font-weight:bold;"></td>
-                <td></td>
-                <td></td>
-            </tr>
-        ;
+        return '<tr>' +
+               '<td style="font-weight:bold; cursor:pointer; color:var(--text-light);" onclick="openGraphicTab(\'' + s.symbol + '\')">' + rankBadge + ' ' + sym + '</td>' +
+               '<td style="font-weight:600;">\u20BA' + s.price.toFixed(2) + '</td>' +
+               '<td style="color:' + color + '; font-weight:bold;">' + sign + s.change.toFixed(2) + '%</td>' +
+               '<td style="color:var(--text-muted);">' + volTLM + '</td>' +
+               '<td style="color:var(--text-muted);">' + volLotM + '</td>' +
+               '<td style="color:' + color + '; font-weight:bold;">' + relVolText + '</td>' +
+               '<td>' + scoreBadge + '</td>' +
+               '<td>' + actionBtns + '</td>' +
+               '</tr>';
     }).join('');
 }
