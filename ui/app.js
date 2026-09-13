@@ -5630,201 +5630,6 @@ function sortAllStocks(col) {
     }
     renderAllStocksTable();
 }
-    }
-    // serbest metin: sembol/sektor/rol adı
-    const free = term.replace(/sessiz|anomal[^\s]*|geciken|gecikme|lider|uydu|tuzak|kırılı[mn]|kirilim|kalabalığı düşük|kalabalik dusuk|yeni başlamış|yeni baslamis|patlamaya hazırl|sessiz ama|hazırlık|hazirlik|fırsat|firsat|düşük risk|dusuk risk|taze|hareket yaşı/g, '').trim();
-    if (free) {
-        const hay = `${r.symbol} ${r.sector} ${r.role} ${r.status}`.toLowerCase();
-        if (!hay.includes(free)) return false;
-    }
-    return true;
-}
-
-function _dtFilteredRows() {
-    let rows = _dtRows;
-    const f = _dtFilter;
-    if (f === 'anomaly') rows = rows.filter(r => r.anomaly >= 70);
-    else if (f === 'energy') rows = rows.filter(r => r.energy >= 70 && r.confirm < 66);
-    else if (f === 'quiet') rows = rows.filter(r => r.status === 'Hazırlık' || (r.change_pct < 1 && r.anomaly >= 60));
-    else if (f === 'delayed') rows = rows.filter(r => r.delay >= 60);
-    else if (f === 'trap') rows = rows.filter(r => r.trap >= 60);
-    else if (f === 'leader') rows = rows.filter(r => r.role === 'Lider');
-    else if (f === 'breakout') rows = rows.filter(r => r.status === 'Kırılım');
-    if (_dtSearchTerm) rows = rows.filter(r => _dtMatchSearch(r, _dtSearchTerm));
-    return rows;
-}
-
-function _dtBar(v, color) {
-    const c = v >= 70 ? color : (v >= 40 ? '#eab308' : '#475569');
-    return `<div style="display:flex; align-items:center; gap:4px;">
-        <span style="min-width:24px; font-weight:700; color:${v >= 70 ? c : 'var(--text-light, #f8fafc)'};">${v}</span>
-        <div style="flex:1; height:5px; background:#1e293b; border-radius:3px; overflow:hidden;">
-            <div style="width:${Math.min(100, v)}%; height:100%; background:${c};"></div>
-        </div></div>`;
-}
-
-const _dtStatusColors = {
-    'Sessiz': '#64748b', 'Anormal': '#ef4444', 'Hazırlık': '#22c55e', 'Hareket': '#3b82f6',
-    'Kırılım': '#0ea5e9', 'Hızlanıyor': '#f97316', 'Aşırı': '#dc2626', 'Dağılım': '#a855f7', 'Tuzak': '#a855f7'
-};
-
-function _dtRenderTable() {
-    const tb = document.getElementById('dt-tbody');
-    if (!tb) return;
-    const rows = _dtFilteredRows();
-    if (!rows.length) {
-        tb.innerHTML = `<tr><td colspan="12" style="text-align:center; color:var(--text-muted); padding:1.5rem;">Bu filtrede hisse yok.</td></tr>`;
-        return;
-    }
-    tb.innerHTML = rows.map(r => {
-        const sc = _dtStatusColors[r.status] || '#94a3b8';
-        const price = r.price === null || r.price === undefined ? '—' : Number(r.price).toFixed(2);
-        const change = r.change_pct === null || r.change_pct === undefined ? null : Number(r.change_pct);
-        const chg = change === null ? 'veri yok' : (change >= 0 ? `+${change.toFixed(2)}` : change.toFixed(2));
-        const chgColor = change === null ? '#94a3b8' : (change >= 0 ? '#22c55e' : '#ef4444');
-        const age = r.move_age !== null && r.move_age !== undefined ? `${r.move_age} dk` : '—';
-        const fp = (r.fingerprint || '').split('').map(ch =>
-            `<span style="color:${ch === '↑' ? '#22c55e' : ch === '↓' ? '#ef4444' : '#64748b'}; font-weight:700;">${ch}</span>`).join(' ');
-        return `<tr onclick="dtOpenDetail('${r.symbol}', true)" style="border-bottom:1px solid rgba(30,41,59,0.6); cursor:pointer;"
-                 onmouseover="this.style.background='rgba(249,115,22,0.06)'" onmouseout="this.style.background='none'">
-            <td style="padding:0.55rem 0.4rem; font-weight:700;">${r.symbol} <span style="font-size:0.68rem; color:var(--text-muted);">${r.sector !== 'GENEL' ? r.sector : ''}</span></td>
-            <td style="padding:0.55rem 0.4rem;">${price} <span style="color:${chgColor}; font-weight:600;">${change === null ? chg : `%${chg}`}</span></td>
-            <td style="padding:0.55rem 0.4rem;"><span style="background:${sc}22; color:${sc}; border:1px solid ${sc}66; padding:2px 8px; border-radius:10px; font-size:0.72rem; font-weight:700;">${r.status}</span></td>
-            <td style="padding:0.55rem 0.4rem;">${_dtBar(r.anomaly, '#ef4444')}</td>
-            <td style="padding:0.55rem 0.4rem;">${age}</td>
-            <td style="padding:0.55rem 0.4rem;">${_dtBar(r.energy, '#f97316')}</td>
-            <td style="padding:0.55rem 0.4rem;">${_dtBar(r.delay, '#eab308')}</td>
-            <td style="padding:0.55rem 0.4rem;">${_dtBar(r.crowd, '#38bdf8')}</td>
-            <td style="padding:0.55rem 0.4rem;">${_dtBar(r.trap, '#a855f7')}</td>
-            <td style="padding:0.55rem 0.4rem; font-size:0.75rem;">${r.role}</td>
-            <td style="padding:0.55rem 0.4rem; font-size:0.85rem;">${fp}</td>
-            <td style="padding:0.55rem 0.4rem; font-weight:800; font-size:1.05rem; color:${r.opportunity >= 85 ? '#22c55e' : r.opportunity >= 70 ? '#f97316' : r.opportunity < 55 ? '#ef4444' : 'var(--text-light, #f8fafc)'};">${r.opportunity_tag} ${r.opportunity}</td>
-        </tr>`;
-    }).join('');
-}
-
-function dtOpenDetail(symbol, scroll) {
-    _dtOpenSymbol = symbol;
-    const panel = document.getElementById('dt-panel');
-    if (!panel) return;
-    panel.style.display = 'block';
-    panel.innerHTML = `<div class="card" style="border:1px solid rgba(249,115,22,0.35); padding:1.2rem;">
-        <div style="color:var(--text-muted); padding:1rem; text-align:center;"><i class="fa-solid fa-magnifying-glass fa-spin"></i> ${symbol} dedektif dosyası açılıyor...</div></div>`;
-    if (scroll) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    fetch(`/api/detective/detail/${encodeURIComponent(symbol)}`).then(r => r.json()).then(d => {
-        if (d.status !== 'success') {
-            panel.innerHTML = `<div class="card" style="border:1px solid rgba(239,68,68,0.4); padding:1rem; color:#ef4444;">
-                ${d.message || 'Panel verisi alınamadı'} <button onclick="dtCloseDetail()" style="margin-left:1rem; background:none; border:none; color:var(--text-muted); cursor:pointer;">kapat</button></div>`;
-            return;
-        }
-        _dtRenderDetail(panel, d.detail);
-    }).catch(() => {
-        panel.innerHTML = `<div class="card" style="padding:1rem; color:#ef4444;">Bağlantı hatası</div>`;
-    });
-}
-
-function dtCloseDetail() {
-    _dtOpenSymbol = null;
-    const panel = document.getElementById('dt-panel');
-    if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
-}
-
-function _dtRenderDetail(panel, d) {
-    const r = d.row || {};
-    const tl = (d.timeline || []).map(e =>
-        `<div style="display:flex; gap:0.6rem; padding:0.25rem 0; font-size:0.8rem;">
-            <span style="color:#f97316; font-weight:700; min-width:48px;">${e.time}</span>
-            <span>${e.kind} ${e.text}</span></div>`).join('') || '<div style="color:var(--text-muted); font-size:0.8rem;">Bugün kayda değer olay zinciri yok.</div>';
-
-    const why = (d.why || []).map(w => `<div style="padding:0.2rem 0; font-size:0.82rem;">${w[0]} ${w[1]}</div>`).join('');
-
-    const sim = (d.similar || []);
-    const simHtml = sim.length
-        ? `<table style="width:100%; border-collapse:collapse; font-size:0.8rem;">
-            <thead><tr style="color:var(--text-muted); border-bottom:1px solid var(--border-color);">
-            <th style="text-align:left; padding:0.3rem;">TARİH</th><th style="text-align:left; padding:0.3rem;">BENZERLİK</th><th style="text-align:left; padding:0.3rem;">SONRAKİ DÖNEM</th></tr></thead>
-            <tbody>${sim.map(s => {
-                const oc = s.outcome >= 0 ? '#22c55e' : '#ef4444';
-                return `<tr style="border-bottom:1px solid rgba(30,41,59,0.5);">
-                    <td style="padding:0.3rem;">${s.date}</td>
-                    <td style="padding:0.3rem; font-weight:700;">%${s.sim}</td>
-                    <td style="padding:0.3rem; color:${oc}; font-weight:700;">${s.label}: ${s.outcome >= 0 ? '+' : ''}%${s.outcome}</td></tr>`;
-            }).join('')}</tbody></table>
-          <div style="margin-top:0.5rem; font-size:0.82rem; font-weight:700; color:${d.bias && d.bias.startsWith('Pozitif') ? '#22c55e' : '#ef4444'};">
-            📌 Geçmiş benzerlik sonucu: ${d.bias || 'Belirsiz'}</div>`
-        : '<div style="color:var(--text-muted); font-size:0.8rem;">Bu davranışa benzeyen geçmiş gün bulunamadı — bugün benzersiz bir davranış.</div>';
-
-    const ch = d.character;
-    const chHtml = ch ? `
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:0.5rem;">
-            ${[['🚀 Hızlı hareket', ch.hizli], ['💣 Ani patlama', ch.ani_patlama], ['🪤 Sahte kırılım', ch.sahte_kirilim],
-               ['🔄 Retest eğilimi', ch.retest], ['📈 Trend devamı', ch.trend_devam], ['🌊 Volatilite', ch.volatilite]]
-              .map(x => `<div style="background:var(--bg-lighter); border-radius:8px; padding:0.5rem 0.6rem;">
-                    <div style="font-size:0.7rem; color:var(--text-muted);">${x[0]}</div>
-                    <div style="font-weight:800; font-size:1.1rem; color:${x[1] >= 70 ? '#ef4444' : x[1] >= 40 ? '#eab308' : '#22c55e'};">${x[1]}</div>
-                </div>`).join('')}
-        </div>` : '<div style="color:var(--text-muted); font-size:0.8rem;">Karakter analizi için yeterli geçmiş yok.</div>';
-
-    const chain = d.chain || {};
-    const mem = (chain.members || []);
-    const chainHtml = mem.length
-        ? `<div style="font-size:0.82rem;">${mem.map(m => {
-            const oc = m.change_pct >= 0 ? '#22c55e' : '#ef4444';
-            return `<div style="display:flex; justify-content:space-between; padding:0.25rem 0; border-bottom:1px solid rgba(30,41,59,0.4);">
-                <span><b>${m.symbol}</b> <span style="color:var(--text-muted); font-size:0.72rem;">${m.status}</span></span>
-                <span style="color:${oc}; font-weight:700;">%${m.change_pct >= 0 ? '+' : ''}${m.change_pct}</span></div>`;
-          }).join('')}</div>
-          ${chain.next && chain.next.length ? `<div style="margin-top:0.5rem; font-size:0.82rem; color:#22c55e;">👀 <b>Sırada olabilir:</b> ${chain.next.join(', ')}</div>` : ''}`
-        : '<div style="color:var(--text-muted); font-size:0.8rem;">Bu sektörde taranan başka hisse yok.</div>';
-
-    const startPt = d.start_point ? `<span style="color:#f97316; font-weight:700;">Hareketin muhtemel başlangıcı: ${d.start_point}</span>` : '';
-
-    panel.innerHTML = `
-    <div class="card" style="border:1px solid rgba(249,115,22,0.35);">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.8rem;">
-            <h3 class="card-title" style="color:#f97316; margin:0;">🔬 ${r.symbol} — DEDEKTİF PANELİ
-                <span style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">${r.price} TL · %${r.change_pct >= 0 ? '+' : ''}${r.change_pct} · ${r.sector} · Parmak izi: ${r.fingerprint}</span></h3>
-            <button onclick="dtCloseDetail()" style="background:transparent; border:1px solid var(--border-color); color:var(--text-muted); border-radius:8px; padding:0.3rem 0.7rem; cursor:pointer;">✕ Kapat</button>
-        </div>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1rem;">
-            <div>
-                <div style="font-weight:700; margin-bottom:0.4rem; color:#f97316;">🕰️ Hareketin Hikâyesi</div>
-                ${tl}
-                <div style="margin-top:0.4rem;">${startPt}</div>
-            </div>
-            <div>
-                <div style="font-weight:700; margin-bottom:0.4rem; color:#f97316;">🧩 Neden Dikkat Çekiyor?</div>
-                ${why}
-            </div>
-            <div>
-                <div style="font-weight:700; margin-bottom:0.4rem; color:#f97316;">🕵️ Aynı Geçmiş</div>
-                ${simHtml}
-            </div>
-            <div>
-                <div style="font-weight:700; margin-bottom:0.4rem; color:#f97316;">🧬 Hisse Karakteri</div>
-                ${chHtml}
-            </div>
-            <div>
-                <div style="font-weight:700; margin-bottom:0.4rem; color:#f97316;">🌊 ${chain.sector || 'Sektör'} — Hareket Zinciri</div>
-                ${chainHtml}
-            </div>
-        </div>
-    </div>`;
-}
-// ========== /PİYASA DEDEKTİFİ ==========
-
-
-var currentStocksSort = { col: 'change', asc: false };
-
-function sortAllStocks(col) {
-    if (currentStocksSort.col === col) {
-        currentStocksSort.asc = !currentStocksSort.asc;
-    } else {
-        currentStocksSort.col = col;
-        currentStocksSort.asc = (col === 'symbol');
-    }
-    renderAllStocksTable();
-}
 
 function renderAllStocksTable() {
     const tbody = document.getElementById('tb-all-stocks-home');
@@ -5835,8 +5640,15 @@ function renderAllStocksTable() {
         let change = data.Change_Pct || 0;
         let volLot = data.Volume || 0;
         let volTL = volLot * price;
-        let rVol = (data.v8_discovery && data.v8_discovery.metrics && data.v8_discovery.metrics.relative_volume) ? data.v8_discovery.metrics.relative_volume : 0;
-        let state = (data.v8_discovery && data.v8_discovery.state) ? data.v8_discovery.state : 'NONE';
+        
+        let rVol = 0;
+        let state = 'NONE';
+        if (data.v8_discovery) {
+            state = data.v8_discovery.state || 'NONE';
+            if (data.v8_discovery.metrics) {
+                rVol = data.v8_discovery.metrics.relative_volume || 0;
+            }
+        }
         
         let tScore = 50;
         if (change > 0 && change <= 7) tScore += (change * 3);
@@ -5888,10 +5700,10 @@ function renderAllStocksTable() {
         const relVolPct = (s.rel_vol * 100).toFixed(0);
         const relVolText = s.change > 0 ? `+ %${relVolPct}` : (s.change < 0 ? `- %${relVolPct}` : `%${relVolPct}`);
         
-        let scColor = '#ef4444'; // Kirmizi
-        if (s.tavan_score >= 80) scColor = '#22c55e'; // Yesil
-        else if (s.tavan_score >= 60) scColor = '#3b82f6'; // Mavi
-        else if (s.tavan_score >= 40) scColor = '#f97316'; // Turuncu
+        let scColor = '#ef4444'; 
+        if (s.tavan_score >= 80) scColor = '#22c55e'; 
+        else if (s.tavan_score >= 60) scColor = '#3b82f6'; 
+        else if (s.tavan_score >= 40) scColor = '#f97316'; 
         let scoreBadge = `<span style="font-weight:900; padding:3px 10px; border-radius:12px; background:${scColor}22; color:${scColor}; border:1px solid ${scColor}66; min-width:35px; display:inline-block; text-align:center;">${s.tavan_score.toFixed(0)}</span>`;
         
         const sym = s.symbol.replace('.IS', '');
