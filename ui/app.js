@@ -5619,32 +5619,68 @@ function _dtRenderDetail(panel, d) {
 // ========== /PİYASA DEDEKTİFİ ==========
 
 
+let currentStocksSort = { col: 'change', asc: false };
+
+function sortAllStocks(col) {
+    if (currentStocksSort.col === col) {
+        currentStocksSort.asc = !currentStocksSort.asc;
+    } else {
+        currentStocksSort.col = col;
+        currentStocksSort.asc = (col === 'symbol');
+    }
+    renderAllStocksTable();
+}
+
 function renderAllStocksTable() {
     const tbody = document.getElementById('tb-all-stocks-home');
     if (!tbody || !globalDashboardData || !globalDashboardData.all_symbols_stats) return;
     
-    let allStats = Object.entries(globalDashboardData.all_symbols_stats).map(([sym, data]) => ({
-        symbol: sym,
-        price: data.Price || data.Daily_Close || 0,
-        change: data.Change_Pct || 0,
-        volume: data.Volume || 0,
-        time: data.Time || '-'
-    }));
+    let allStats = Object.entries(globalDashboardData.all_symbols_stats).map(([sym, data]) => {
+        let price = data.Price || data.Daily_Close || 0;
+        let change = data.Change_Pct || 0;
+        let volLot = data.Volume || 0;
+        let volTL = volLot * price;
+        return {
+            symbol: sym,
+            price: price,
+            change: change,
+            volume_lot: volLot,
+            volume_tl: volTL,
+            time: data.Time || '-',
+            state: data.v8_discovery?.state || 'NONE'
+        };
+    });
     
-    allStats.sort((a, b) => b.change - a.change);
+    allStats.sort((a, b) => {
+        let valA = a[currentStocksSort.col];
+        let valB = b[currentStocksSort.col];
+        if (typeof valA === 'string') valA = valA.toLowerCase();
+        if (typeof valB === 'string') valB = valB.toLowerCase();
+        
+        if (valA < valB) return currentStocksSort.asc ? -1 : 1;
+        if (valA > valB) return currentStocksSort.asc ? 1 : -1;
+        return 0;
+    });
     
     tbody.innerHTML = allStats.map(s => {
         const color = s.change > 0 ? 'var(--accent-green)' : (s.change < 0 ? 'var(--accent-red)' : 'var(--text-color)');
         const sign = s.change > 0 ? '+' : '';
-        const volM = (s.volume / 1000000).toFixed(1);
+        const volLotM = (s.volume_lot / 1000000).toFixed(1) + 'M';
+        const volTLM = (s.volume_tl / 1000000).toFixed(1) + 'M ₺';
         const sym = s.symbol.replace('.IS', '');
+        let stateBadge = '';
+        if (s.state !== 'NONE' && s.state !== 'UNKNOWN') {
+            stateBadge = `<span style="font-size:0.7rem; background:rgba(255,255,255,0.1); padding:2px 5px; border-radius:4px;">${s.state}</span>`;
+        }
+        
         return `
             <tr>
-                <td style="font-weight:bold;">${sym}</td>
-                <td>TL ${s.price.toFixed(2)}</td>
+                <td style="font-weight:bold; cursor:pointer; color:var(--text-light);" onclick="openGraphicTab('${s.symbol}')">${sym}</td>
+                <td style="font-weight:600;">₺${s.price.toFixed(2)}</td>
                 <td style="color:${color}; font-weight:bold;">${sign}${s.change.toFixed(2)}%</td>
-                <td>${volM}M</td>
-                <td style="color:var(--text-muted);">${s.time}</td>
+                <td style="color:var(--text-muted);">${volTLM}</td>
+                <td style="color:var(--text-muted);">${volLotM}</td>
+                <td style="font-size:0.8rem; color:var(--text-muted);">${stateBadge} ${s.time}</td>
             </tr>
         `;
     }).join('');

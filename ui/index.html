@@ -205,8 +205,7 @@
             
             
                 
-                <!-- TUM HISSELER (GRID KART) -->
-                <div class="card glass-panel" id="radar-card-99" style="flex:1; min-width:320px;">
+                <div class="card glass-panel" id="radar-card-99" style="grid-column: 1 / -1; width: 100%;">
                     <h3 style="color:var(--accent-blue); display:flex; justify-content:space-between; align-items:center;">
                         <span><i class="fa-solid fa-list"></i> Tüm Hisseler (BIST)</span>
                         <span style="font-size:0.75rem; background:rgba(59,130,246,0.2); padding:3px 8px; border-radius:12px; color:#60a5fa; border:1px solid rgba(59,130,246,0.3);"><i class="fa-solid fa-arrows-up-down"></i> Scroll</span>
@@ -215,11 +214,12 @@
                         <table class="data-table" style="width:100%;">
                             <thead>
                                 <tr>
-                                    <th>Hisse</th>
-                                    <th>Fiyat</th>
-                                    <th>Değişim (%)</th>
-                                    <th>Hacim</th>
-                                    <th>Saat</th>
+                                    <th style="cursor:pointer;" onclick="sortAllStocks('symbol')">Hisse ↕</th>
+                                    <th style="cursor:pointer;" onclick="sortAllStocks('price')">Fiyat ↕</th>
+                                    <th style="cursor:pointer;" onclick="sortAllStocks('change')">Değişim ↕</th>
+                                    <th style="cursor:pointer;" onclick="sortAllStocks('volume_tl')">Hacim(TL) ↕</th>
+                                    <th style="cursor:pointer;" onclick="sortAllStocks('volume_lot')">Hacim(Lot) ↕</th>
+                                    <th>Durum / Saat</th>
                                 </tr>
                             </thead>
                             <tbody id="tb-all-stocks-home">
@@ -2183,7 +2183,7 @@
 
 
 
-    <script src="app.js?v=20260913_v1"></script>
+    <script src="app.js?v=20260913_v2"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js?v=20260913_v1"></script>
 </body>
