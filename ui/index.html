@@ -44,7 +44,6 @@
             <a class="nav-btn" href="/#logs" onclick="return navClick(event, 'logs', this)"><i class="fa-solid fa-terminal"></i> LOGLAR</a>
             <a class="nav-btn" href="/#backtest" onclick="return navClick(event, 'backtest', this)" style="color:var(--accent-purple);"><i class="fa-solid fa-microscope"></i> BACKTEST</a>
             <a class="nav-btn" href="/#v8" onclick="return navClick(event, 'v8', this)" style="color:#0ea5e9; border:1px solid rgba(14,165,233,0.4);"><i class="fa-solid fa-brain"></i> V8 ENGINE (YENİ)</a>
-            <a class="nav-btn" href="javascript:void(0)" onclick="document.getElementById('all-stocks-modal').style.display='block'" style="color:#60a5fa; border:1px solid rgba(59,130,246,0.4);"><i class="fa-solid fa-list"></i> TÜM HİSSELER</a>
             <a class="nav-btn" href="/#guide" onclick="return navClick(event, 'guide', this)" style="color:var(--accent-yellow); border:1px solid rgba(234, 179, 8, 0.4);"><i class="fa-solid fa-book-open"></i> NASIL KULLANILIR?</a>
             <div class="status-indicator">
                 <span class="pulse"></span>
@@ -206,6 +205,29 @@
             
             
                 
+                <!-- TUM HISSELER (GRID KART) -->
+                <div class="card glass-panel" id="radar-card-99" style="flex:1; min-width:320px;">
+                    <h3 style="color:var(--accent-blue); display:flex; justify-content:space-between; align-items:center;">
+                        <span><i class="fa-solid fa-list"></i> Tüm Hisseler (BIST)</span>
+                        <span style="font-size:0.75rem; background:rgba(59,130,246,0.2); padding:3px 8px; border-radius:12px; color:#60a5fa; border:1px solid rgba(59,130,246,0.3);"><i class="fa-solid fa-arrows-up-down"></i> Scroll</span>
+                    </h3>
+                    <div class="table-scroll-wrapper" style="max-height:350px; overflow-y:auto; padding-right:5px; margin-top:10px;">
+                        <table class="data-table" style="width:100%;">
+                            <thead>
+                                <tr>
+                                    <th>Hisse</th>
+                                    <th>Fiyat</th>
+                                    <th>Değişim (%)</th>
+                                    <th>Hacim</th>
+                                    <th>Saat</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tb-all-stocks-home">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <!-- Yüksek Tavan Olasılığı -->
                 <div class="card" id="radar-card-0" style="padding:1rem; border:1px solid rgba(239, 68, 68, 0.5); box-shadow: 0 0 15px rgba(239, 68, 68, 0.15); background: linear-gradient(145deg, rgba(239, 68, 68, 0.05) 0%, rgba(15,23,42,1) 100%);">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem; flex-wrap:wrap; gap:6px;">
@@ -2164,28 +2186,5 @@
     <script src="app.js?v=20260912_v3"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js?v=20260912_v4"></script>
-    <!-- TUM HISSELER MODAL -->
-    <div id="all-stocks-modal" class="modal">
-        <div class="modal-content" style="max-width:600px; max-height:85vh; display:flex; flex-direction:column;">
-            <span class="close-btn" onclick="document.getElementById('all-stocks-modal').style.display='none'">&times;</span>
-            <h2 style="margin-bottom:1rem; color:var(--accent-blue);"><i class="fa-solid fa-list"></i> Tüm Hisseler (Günlük Değişim)</h2>
-            <div class="table-scroll-wrapper" style="flex:1; overflow-y:auto; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
-                <table class="data-table" style="width:100%;">
-                    <thead>
-                        <tr>
-                            <th>Hisse</th>
-                            <th>Fiyat</th>
-                            <th>Değişim (%)</th>
-                            <th>Hacim</th>
-                            <th>Saat</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tb-all-stocks-home">
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    
 </body>
 </html>
