@@ -5705,6 +5705,8 @@ function renderAllStocksTable() {
             symbol: sym,
             price: price,
             change: change,
+              high: data.High || price,
+              low: data.Low || price,
             volume_lot: volLot,
             volume_tl: volTL,
             rel_vol: rVol,
@@ -5733,7 +5735,26 @@ function renderAllStocksTable() {
         const relVolPct = (s.rel_vol * 100).toFixed(0);
         const relVolText = s.change > 0 ? `+ %${relVolPct}` : (s.change < 0 ? `- %${relVolPct}` : `%${relVolPct}`);
         
-        let scColor = '#ef4444'; 
+        
+        let p_val = (s.high + s.low + s.price) / 3;
+        let dR1 = (2 * p_val) - s.low;
+        let dS1 = (2 * p_val) - s.high;
+        if (s.price > dR1) dR1 = p_val + (s.high - s.low);
+        if (s.price < dS1) dS1 = p_val - (s.high - s.low);
+        let hR1 = s.price + (dR1 - s.price) * 0.4;
+        let hS1 = s.price - (s.price - dS1) * 0.4;
+        
+        let dR1_p = s.price > 0 ? ((dR1 - s.price)/s.price)*100 : 0;
+        let dS1_p = s.price > 0 ? ((dS1 - s.price)/s.price)*100 : 0;
+        let hR1_p = s.price > 0 ? ((hR1 - s.price)/s.price)*100 : 0;
+        let hS1_p = s.price > 0 ? ((hS1 - s.price)/s.price)*100 : 0;
+        
+        let ddCell = '<td style="font-size:0.65rem; line-height:1.2; min-width:140px;">' +
+                     '<div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span style="color:var(--text-muted);">S:</span> <span><span style="color:var(--accent-red);">' + hS1.toFixed(2) + '(%'+hS1_p.toFixed(1)+')</span> / <span style="color:var(--accent-green);">' + hR1.toFixed(2) + '(+%'+hR1_p.toFixed(1)+')</span></span></div>' +
+                     '<div style="display:flex; justify-content:space-between;"><span style="color:var(--text-muted);">G:</span> <span><span style="color:var(--accent-red);">' + dS1.toFixed(2) + '(%'+dS1_p.toFixed(1)+')</span> / <span style="color:var(--accent-green);">' + dR1.toFixed(2) + '(+%'+dR1_p.toFixed(1)+')</span></span></div>' +
+                     '</td>';
+
+          let scColor = '#ef4444'; 
         if (s.tavan_score >= 80) scColor = '#22c55e'; 
         else if (s.tavan_score >= 60) scColor = '#3b82f6'; 
         else if (s.tavan_score >= 40) scColor = '#f97316'; 
@@ -5751,6 +5772,7 @@ function renderAllStocksTable() {
                 <td style="color:var(--text-muted);">${volTLM}</td>
                 <td style="color:var(--text-muted);">${volLotM}</td>
                 <td style="color:${color}; font-weight:bold;">${relVolText}</td>
+                  
                 <td>${scoreBadge}</td>
                 <td>${actionBtns}</td>
             </tr>
@@ -5817,6 +5839,8 @@ function renderSuper12Table() {
             symbol: sym,
             price: price,
             change: change,
+              high: data.High || price,
+              low: data.Low || price,
             volume_lot: volLot,
             volume_tl: volTL,
             rel_vol: rVol,
@@ -5836,7 +5860,26 @@ function renderSuper12Table() {
         const relVolPct = (s.rel_vol * 100).toFixed(0);
         const relVolText = s.change > 0 ? '+ %' + relVolPct : (s.change < 0 ? '- %' + relVolPct : '%' + relVolPct);
         
-        let scColor = '#ef4444'; 
+        
+        let p_val = (s.high + s.low + s.price) / 3;
+        let dR1 = (2 * p_val) - s.low;
+        let dS1 = (2 * p_val) - s.high;
+        if (s.price > dR1) dR1 = p_val + (s.high - s.low);
+        if (s.price < dS1) dS1 = p_val - (s.high - s.low);
+        let hR1 = s.price + (dR1 - s.price) * 0.4;
+        let hS1 = s.price - (s.price - dS1) * 0.4;
+        
+        let dR1_p = s.price > 0 ? ((dR1 - s.price)/s.price)*100 : 0;
+        let dS1_p = s.price > 0 ? ((dS1 - s.price)/s.price)*100 : 0;
+        let hR1_p = s.price > 0 ? ((hR1 - s.price)/s.price)*100 : 0;
+        let hS1_p = s.price > 0 ? ((hS1 - s.price)/s.price)*100 : 0;
+        
+        let ddCell = '<td style="font-size:0.65rem; line-height:1.2; min-width:140px;">' +
+                     '<div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span style="color:var(--text-muted);">S:</span> <span><span style="color:var(--accent-red);">' + hS1.toFixed(2) + '(%'+hS1_p.toFixed(1)+')</span> / <span style="color:var(--accent-green);">' + hR1.toFixed(2) + '(+%'+hR1_p.toFixed(1)+')</span></span></div>' +
+                     '<div style="display:flex; justify-content:space-between;"><span style="color:var(--text-muted);">G:</span> <span><span style="color:var(--accent-red);">' + dS1.toFixed(2) + '(%'+dS1_p.toFixed(1)+')</span> / <span style="color:var(--accent-green);">' + dR1.toFixed(2) + '(+%'+dR1_p.toFixed(1)+')</span></span></div>' +
+                     '</td>';
+
+          let scColor = '#ef4444'; 
         if (s.tavan_score >= 80) scColor = '#22c55e'; 
         else if (s.tavan_score >= 60) scColor = '#3b82f6'; 
         else if (s.tavan_score >= 40) scColor = '#f97316'; 
@@ -5855,6 +5898,7 @@ function renderSuper12Table() {
                '<td style="color:var(--text-muted);">' + volTLM + '</td>' +
                '<td style="color:var(--text-muted);">' + volLotM + '</td>' +
                '<td style="color:' + color + '; font-weight:bold;">' + relVolText + '</td>' +
+               ddCell +
                '<td>' + scoreBadge + '</td>' +
                '<td>' + actionBtns + '</td>' +
                '</tr>';
