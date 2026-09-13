@@ -17,7 +17,7 @@ from datetime import datetime, time as dtime
 from services.trade_database import get_connection
 from services.telegram_bot import notify_buy, notify_sell
 
-COMMISSION = 0.0004
+COMMISSION = 0.0002
 TRAIL_ACTIVATION = 3.0   # +3% kazancta izleyen stop devreye girer
 DEFAULT_TRAIL_PCT = 1.5  # zirveden %1.5 geri cekilmede kilitle
 
@@ -143,19 +143,18 @@ def _bulk_prices(symbols):
 
 
 def open_position(symbol, allocation=2000.0, tp_pct=5.0, sl_pct=3.0, trailing=True, source="MANUAL", owner=None,
-                  tp_price=None, sl_price=None):
+                  tp_price=None, sl_price=None, price=None, qty=None):
     """Yeni pozisyon acar (owner'a ozel). tp_price/sl_price verilirse fiyat bazli emir kullanilir.
     (success, message) dondurur."""
     clean = symbol.replace(".IS", "").replace(".is", "").upper().strip()
     if not clean:
         return False, "Sembol gerekli"
 
-    try:
-        allocation = float(allocation)
-    except (TypeError, ValueError):
-        return False, "Gecersiz tutar"
-    if allocation < 100:
-        return False, "Minimum islem tutari 100 TL"
+    if allocation is not None:
+        try:
+            allocation = float(allocation)
+        except (TypeError, ValueError):
+            return False, "Gecersiz tutar"
 
     try:
         tp_pct = float(tp_pct) if tp_pct is not None else 5.0
@@ -173,29 +172,41 @@ def open_position(symbol, allocation=2000.0, tp_pct=5.0, sl_pct=3.0, trailing=Tr
     tp_price = _f(tp_price)
     sl_price = _f(sl_price)
 
-    price, src = _get_live_price(clean)
-    if not price or price <= 0:
+    live_price, src = _get_live_price(clean)
+    if not live_price or live_price <= 0:
         return False, f"{clean} icin guncel fiyat alinamadi"
 
-    if tp_price is not None and tp_price <= price:
-        return False, f"Kâr Al fiyati anlik fiyattan yuksek olmali ({price:.2f} TL uzeri)"
-    if sl_price is not None and sl_price >= price:
-        return False, f"Zarar Kes fiyati anlik fiyattan dusuk olmali ({price:.2f} TL alti)"
+    manual_price = _f(price)
+    if manual_price is not None:
+        entry_price = round(manual_price, 2)
+        base_price = entry_price
+    else:
+        entry_price = round(live_price * 1.0015, 2)  # slipaj
+        base_price = live_price
 
-    cash = _get_cash(owner)
-    if allocation > cash:
-        return False, f"Yetersiz bakiye (Kullanilabilir: {cash:.2f} TL)"
+    if tp_price is not None and tp_price <= base_price:
+        return False, f"Kar Al fiyati alis fiyatindan yuksek olmali ({base_price:.2f} TL uzeri)"
+    if sl_price is not None and sl_price >= base_price:
+        return False, f"Zarar Kes fiyati alis fiyatindan dusuk olmali ({base_price:.2f} TL alti)"
 
-    entry_price = round(price * 1.0015, 2)  # slipaj
-    shares = int(allocation // entry_price)
+    manual_qty = _f(qty)
+    if manual_qty is not None and manual_qty > 0:
+        shares = int(manual_qty)
+    elif allocation is not None and allocation > 0:
+        shares = int(allocation // entry_price)
+    else:
+        return False, "Tutar veya adet belirtilmeli"
+
     if shares <= 0:
         return False, "Bu fiyattan lot alinamadi (tutar cok dusuk)"
 
     cost = shares * entry_price * (1 + COMMISSION)
+    
+    cash = _get_cash(owner)
     if cost > cash:
         shares = int(cash // (entry_price * (1 + COMMISSION)))
         if shares <= 0:
-            return False, "Yetersiz bakiye"
+            return False, f"Yetersiz bakiye (Kullanilabilir: {cash:.2f} TL)"
         cost = shares * entry_price * (1 + COMMISSION)
 
     conn = get_connection()
@@ -214,7 +225,7 @@ def open_position(symbol, allocation=2000.0, tp_pct=5.0, sl_pct=3.0, trailing=Tr
               (owner or DEFAULT_OWNER, d_str, clean, now, entry_price, shares, cost,
                final_sl, final_tp,
                DEFAULT_TRAIL_PCT if trailing else 0,
-               entry_price, source, price, now))
+               entry_price, source, live_price, now))
     c.execute("UPDATE live_settings SET value = CAST(CAST(value AS DOUBLE PRECISION) - ? AS TEXT) WHERE key=?",
               (round(cost, 2), _cash_key(owner or DEFAULT_OWNER)))
     if c.rowcount == 0:

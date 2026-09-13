@@ -1486,7 +1486,9 @@ def api_simulation_terminal_open():
         symbol = data.get('symbol', '')
         ok, msg = open_position(
             symbol,
-            allocation=data.get('allocation', 2000.0),
+            allocation=data.get('allocation'),
+            qty=data.get('qty'),
+            price=data.get('price'),
             tp_pct=data.get('tp_pct', 5.0),
             sl_pct=data.get('sl_pct', 3.0),
             trailing=bool(data.get('trailing', True)),
