@@ -6,7 +6,7 @@
     <title>VARANTRADAR PRO | FINTECH TERMINAL</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=11?v=20260908_pro_tables">
+    <link rel="stylesheet" href="style.css?v=12?v=20260908_pro_tables">
     <!-- ApexCharts -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     
@@ -45,6 +45,7 @@
             <a class="nav-btn" href="/#backtest" onclick="return navClick(event, 'backtest', this)" style="color:var(--accent-purple);"><i class="fa-solid fa-microscope"></i> BACKTEST</a>
             <a class="nav-btn" href="/#v8" onclick="return navClick(event, 'v8', this)" style="color:#0ea5e9; border:1px solid rgba(14,165,233,0.4);"><i class="fa-solid fa-brain"></i> V8 ENGINE (YENİ)</a>
             <a class="nav-btn" href="/#guide" onclick="return navClick(event, 'guide', this)" style="color:var(--accent-yellow); border:1px solid rgba(234, 179, 8, 0.4);"><i class="fa-solid fa-book-open"></i> NASIL KULLANILIR?</a>
+              <a class="nav-btn" href="/#super12" onclick="return navClick(event, 'super12', this)" style="background: linear-gradient(135deg, #FFD700, #F59E0B); color: #000; font-weight: 800; border: 1px solid #F59E0B; box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);"><i class="fa-solid fa-crown"></i> SUPER_12</a>
             <div class="status-indicator">
                 <span class="pulse"></span>
                 <span>SİSTEM AKTİF</span>
@@ -2011,6 +2012,36 @@
     </div>
 </div>
 
+
+<div id="super12-wrapper" class="main-wrapper" style="display:none; max-width:1200px; margin:0 auto; padding:2rem; color:var(--text-main);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+        <h2 style="color:#F59E0B; margin:0;"><i class="fa-solid fa-crown"></i> SUPER 12 (Yapay Zeka & Radar Ortak Secimi)</h2>
+        <span style="background: rgba(245, 158, 11, 0.1); color: #F59E0B; border: 1px solid #F59E0B; padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 0.85rem;"><i class="fa-solid fa-bolt"></i> En Yuksek Skorlu 12 Hisse</span>
+    </div>
+    
+    <div class="card" style="padding:1rem;">
+        <div class="table-responsive">
+            <table class="data-table" style="width:100%; text-align:left;">
+                <thead>
+                    <tr>
+                        <th>Hisse</th>
+                        <th>Fiyat</th>
+                        <th>Degisim</th>
+                        <th>Hacim(TL)</th>
+                        <th>Hacim(Lot)</th>
+                        <th>Hacim Gucu %</th>
+                        <th>Tavan Skoru</th>
+                        <th>Islem</th>
+                    </tr>
+                </thead>
+                <tbody id="tb-super12-stocks">
+                    <tr><td colspan="8" style="text-align:center; padding:2rem;">Veriler hesaplaniyor...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <div id="guide-wrapper" class="main-wrapper" style="display:none; max-width:900px; margin:0 auto; padding:2rem; color:var(--text-light, #f8fafc);">
         <h2 style="color:var(--accent-yellow); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-top:0;"><i class="fa-solid fa-book-open"></i> VarantRadar Pro v7 - Kullanım Kılavuzu</h2>
         
@@ -2189,7 +2220,7 @@
 
 
 
-    <script src="app.js?v=20260913_v8"></script>
+    <script src="app.js?v=20260913_v9"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js?v=20260913_v1"></script>
 </body>
