@@ -5927,18 +5927,18 @@ window.showSR = function(sym, price, high, low) {
         
         let html = <div style="text-align:left; font-size:0.95rem; line-height:1.6; color:var(--text-main);">
             <h3 style="color:var(--accent-blue); margin-top:0; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px;"><i class="fa-solid fa-crosshairs"></i>  - Seviyeler</h3>
-            <p style="margin-bottom:5px; font-weight:bold;">Anlık Fiyat: ₺</p>
+            <p style="margin-bottom:5px; font-weight:bold;">Anl\u0131k Fiyat: \u20BA</p>
             
             <div style="background:rgba(0,0,0,0.2); padding:10px; border-radius:8px; border-left:3px solid var(--accent-yellow); margin-bottom:15px;">
-                <b style="color:var(--accent-yellow);"><i class="fa-regular fa-clock"></i> Saatlik (Kısa Vade)</b><br>
-                <span style="color:var(--text-muted);">Direnç:</span> <span style="color:var(--accent-green); font-weight:bold;">₺ (+%)</span><br>
-                <span style="color:var(--text-muted);">Destek:</span> <span style="color:var(--accent-red); font-weight:bold;">₺ (%)</span>
+                <b style="color:var(--accent-yellow);"><i class="fa-regular fa-clock"></i> Saatlik (K\u0131sa Vade)</b><br>
+                <span style="color:var(--text-muted);">Diren\u00e7:</span> <span style="color:var(--accent-green); font-weight:bold;">\u20BA (+%)</span><br>
+                <span style="color:var(--text-muted);">Destek:</span> <span style="color:var(--accent-red); font-weight:bold;">\u20BA (%)</span>
             </div>
             
             <div style="background:rgba(0,0,0,0.2); padding:10px; border-radius:8px; border-left:3px solid var(--accent-purple); margin-bottom:5px;">
-                <b style="color:var(--accent-purple);"><i class="fa-regular fa-calendar"></i> Günlük (Pivot)</b><br>
-                <span style="color:var(--text-muted);">Direnç:</span> <span style="color:var(--accent-green); font-weight:bold;">₺ (+%)</span><br>
-                <span style="color:var(--text-muted);">Destek:</span> <span style="color:var(--accent-red); font-weight:bold;">₺ (%)</span>
+                <b style="color:var(--accent-purple);"><i class="fa-regular fa-calendar"></i> G\u00fcnl\u00fck (Pivot)</b><br>
+                <span style="color:var(--text-muted);">Diren\u00e7:</span> <span style="color:var(--accent-green); font-weight:bold;">\u20BA (+%)</span><br>
+                <span style="color:var(--text-muted);">Destek:</span> <span style="color:var(--accent-red); font-weight:bold;">\u20BA (%)</span>
             </div>
         </div>;
         
@@ -5952,10 +5952,7 @@ window.showSR = function(sym, price, high, low) {
                 confirmButtonColor: '#3b82f6'
             });
         } else {
-            alert(sym + " Pivot Seviyeleri
-Fiyat: " + price.toFixed(2) + "
-G. Direnc: " + dR1.toFixed(2) + "
-G. Destek: " + dS1.toFixed(2));
+            alert(sym + " Pivot Seviyeleri\nFiyat: " + price.toFixed(2) + "\nG. Direnc: " + dR1.toFixed(2) + "\nG. Destek: " + dS1.toFixed(2));
         }
     } catch(e) {
         console.error("showSR error:", e);
