@@ -5619,7 +5619,7 @@ function _dtRenderDetail(panel, d) {
 // ========== /PİYASA DEDEKTİFİ ==========
 
 
-let currentStocksSort = { col: 'change', asc: false };
+var currentStocksSort = { col: 'change', asc: false };
 
 function sortAllStocks(col) {
     if (currentStocksSort.col === col) {
@@ -5814,7 +5814,7 @@ function _dtRenderDetail(panel, d) {
 // ========== /PİYASA DEDEKTİFİ ==========
 
 
-let currentStocksSort = { col: 'change', asc: false };
+var currentStocksSort = { col: 'change', asc: false };
 
 function sortAllStocks(col) {
     if (currentStocksSort.col === col) {
