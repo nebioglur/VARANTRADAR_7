@@ -98,17 +98,6 @@ def load_dashboard_cache():
         except Exception as e:
             print(f"Cache load error: {e}")
     return {}
-                    
-                # Dosya mtime (git clone nedeniyle yaniltici olabilir), gercek timestamp kullan.
-                real_ts = data.get("cache_timestamp", 0)
-                if time.time() - real_ts > 1800: # 30 dakikadan eskiyse kesin reddet
-                    print("[Server] Cache JSON icindeki gercek timestamp 30 dakikadan eski! Fast-Start tetiklenecek.")
-                    return {}
-                    
-                return data
-        except Exception as e:
-            print(f"Cache load error: {e}")
-    return {}
 
 def sync_to_github():
     try:
@@ -679,7 +668,7 @@ def require_auth():
     if request.method == 'OPTIONS': return
     
     allowed = ['/login', '/logout', '/api/ping', '/api/auth_config', '/api/auth/session']
-    if request.path in allowed: return
+    if request.path in allowed or request.path.startswith('/api/dashboard_init'): return
     
     # Allow static assets for login page
     if request.path.endswith('.css') or request.path.endswith('.js') or request.path.endswith('.png') or request.path.endswith('.woff2'):
