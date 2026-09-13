@@ -4122,7 +4122,9 @@ async function ltOpenPosition() {
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 symbol: symbol,
-                allocation: smartNum(el('lt-allocation')?.value) || 2000,
+                price: smartNum(el('lt-price')?.value) || null,
+                allocation: smartNum(el('lt-allocation')?.value) || null,
+                qty: smartNum(el('lt-qty')?.value) || null,
                 tp_pct: smartNum(el('lt-tp')?.value) || 5,
                 sl_pct: smartNum(el('lt-sl')?.value) || 3,
                 tp_price: (!isNaN(tpPriceRaw) && tpPriceRaw > 0) ? tpPriceRaw : null,
@@ -4409,13 +4411,15 @@ function ltUpdateQty() {
     const q = _ltCurrentQuote;
     const box = document.getElementById('lt-quote-box');
     if (!box || box.style.display === 'none' || !q || !q.price) return;
+    const inputPrice = smartNum(document.getElementById('lt-price')?.value);
+    const p = inputPrice > 0 ? inputPrice : q.price;
     const alloc = smartNum(document.getElementById('lt-allocation').value) || 0;
-    const lot = Math.floor(alloc / q.price);
+    const lot = Math.floor(alloc / p);
     const el = document.getElementById('lq-qty');
     const est = document.getElementById('lq-est');
     if (el) el.textContent = lot > 0 ? lot.toLocaleString('tr-TR') : '0';
     if (est) est.textContent = lot > 0
-        ? `≈ ${(lot * q.price).toLocaleString('tr-TR', {maximumFractionDigits: 2})} ₺`
+        ? `≈ ${(lot * p).toLocaleString('tr-TR', {maximumFractionDigits: 2})} ₺`
         : 'Tutar bu fiyata 1 lot bile etmiyor';
     // ADET alanini da senkronize et (donguye girmeyecek)
     const qtyInput = document.getElementById('lt-qty');
@@ -4426,9 +4430,11 @@ function ltOnQtyInput() {
     const q = _ltCurrentQuote;
     if (!q || !q.price || _ltSyncing) return;
     _ltSyncing = true;
+    const inputPrice = smartNum(document.getElementById('lt-price')?.value);
+    const p = inputPrice > 0 ? inputPrice : q.price;
     const qty = Math.round(smartNum(document.getElementById('lt-qty').value) || 0);
     const allocInput = document.getElementById('lt-allocation');
-    if (qty > 0 && allocInput) allocInput.value = Math.round(qty * q.price * 100) / 100;
+    if (qty > 0 && allocInput && document.activeElement !== allocInput) allocInput.value = Math.round(qty * p * 100) / 100;
     ltUpdateQty();
     _ltSyncing = false;
 }
@@ -4450,6 +4456,10 @@ async function ltFetchQuote(sym) {
         box.style.display = 'flex';
         document.getElementById('lq-symbol').textContent = q.symbol;
         document.getElementById('lq-price').textContent = q.price.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        
+        const priceInput = document.getElementById('lt-price');
+        if (priceInput) priceInput.value = q.price;
+        
         const chEl = document.getElementById('lq-change');
         const up = q.change_pct >= 0;
         chEl.textContent = (up ? '+' : '') + q.change_pct.toFixed(2) + '%';
@@ -4535,6 +4545,24 @@ function ltOnSymbolInput() {
             if (dd) dd.style.display = 'none';
         }, 200);
     });
+    const priceInput = document.getElementById('lt-price');
+    if (priceInput) priceInput.addEventListener('input', () => {
+        if (_ltSyncing) return;
+        _ltSyncing = true;
+        
+        const q = _ltCurrentQuote;
+        const p = smartNum(priceInput.value) || (q ? q.price : 0);
+        const qty = smartNum(document.getElementById('lt-qty').value) || 0;
+        
+        if (qty > 0 && p > 0) {
+            const allocInput = document.getElementById('lt-allocation');
+            if (allocInput) allocInput.value = Math.round(qty * p * 100) / 100;
+        }
+        
+        ltUpdateQty();
+        _ltSyncing = false;
+    });
+
     const alloc = document.getElementById('lt-allocation');
     if (alloc) alloc.addEventListener('input', () => {
         if (_ltSyncing) return;
