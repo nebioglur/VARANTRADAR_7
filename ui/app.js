@@ -4395,8 +4395,8 @@ async function fetchLeaderboard() {
                 <td style="text-align:center; font-weight:800; font-size:1rem;">${medals[r.rank] || r.rank}</td>
                 <td style="font-weight:600; color:var(--text-light);">${r.name}${isMe ? ' <span style="font-size:0.65rem; color:var(--accent-yellow); border:1px solid rgba(250,204,21,0.5); border-radius:4px; padding:1px 5px;">SİZ</span>' : ''}</td>
                 <td style="text-align:right; font-weight:800; color:var(--accent-green);">${r.equity.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₺</td>
-                <td style="text-align:right;">${r.cash.toLocaleString('tr-TR', {maximumFractionDigits: 0})} ₺</td>
-                <td style="text-align:right;">${r.invested.toLocaleString('tr-TR', {maximumFractionDigits: 0})} ₺</td>
+                <td style="text-align:right;">${r.cash.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₺</td>
+                <td style="text-align:right;">${r.invested.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₺</td>
                 <td style="text-align:right; font-weight:700; color:${pnlColor};">${(r.open_pnl >= 0 ? '+' : '') + r.open_pnl.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₺</td>`;
             tbody.appendChild(tr);
         });
