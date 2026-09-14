@@ -88,15 +88,18 @@ CACHE_FILE = "dashboard_cache.json"
 
 
 def load_dashboard_cache():
-    if os.path.exists(CACHE_FILE):
-        try:
-            import json
+    import os, json
+    from datetime import datetime
+    try:
+        if os.path.exists(CACHE_FILE):
             with open(CACHE_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            if isinstance(data, dict):
+                today_str = datetime.now().strftime("%Y-%m-%d")
+                if data.get("cache_date") != today_str:
+                    return {} # DONT LOAD YESTERDAY'S DATA!
                 return data
-        except Exception as e:
-            print(f"Cache load error: {e}")
+    except Exception:
+        pass
     return {}
 
 def sync_to_github():
@@ -1065,8 +1068,12 @@ def api_quote():
 
 @app.route('/api/dashboard_init', methods=['GET'])
 def api_dashboard_init():
-    """Ön yüz ilk açıldığında gösterilecek Fırsatları ve Sayaçları döner."""
-    # gunicorn worker'inda da canli veri toplayici garanti baslatma
+    from datetime import datetime
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    global GLOBAL_DASHBOARD_CACHE
+    if GLOBAL_DASHBOARD_CACHE and GLOBAL_DASHBOARD_CACHE.get("cache_date") != today_str:
+        GLOBAL_DASHBOARD_CACHE = {} # CLEAR STALE CACHE
+
     try:
         start_live_data_collector()
     except Exception:

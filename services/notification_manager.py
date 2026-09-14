@@ -146,6 +146,9 @@ class NotificationManager:
         vol_str = f"{float(vol_m):.1f}x" if isinstance(vol_m, (int, float)) else f"{vol_m}x"
         
         phase = extra.get("Phase_Badge", "TAVAN RADARI")
+        if phase and "Erken" in phase:
+            return True
+
         candle_st = extra.get("Candle_Strength", "")
         trap = extra.get("Trap_Risk", False)
         v_rev = extra.get("V_Reversal", False)
@@ -157,7 +160,7 @@ class NotificationManager:
         streak = extra.get("Streak_Potential")
         breakdown = extra.get("Breakdown_Warning")
         
-        msg = f"🚀 <b>[{phase}] DAĞ KEKLİĞİ TAVAN RADARI</b> 🚀\n\n"
+        msg = f"🚀 <b>[{phase}] VIP TAVAN RADARI</b> 🚀\n\n"
         msg += f"📌 <b>Hisse:</b> #{clean_sym}\n"
         msg += f"💰 <b>Anlık Fiyat:</b> ₺{price_str} {chg_str}\n"
         msg += f"🎯 <b>Tavan Hedefi:</b> {tavan_price_str} (Kalan: {dist_str})\n"
