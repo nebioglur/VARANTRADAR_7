@@ -232,48 +232,24 @@ def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.
     sl_pct = ((entry - sl) / entry * 100) if sl and entry else 0
     
     if "AL" in action:
-        text = (f"🤖 <b>SIMULASYON {action}</b>
-
-"
-                f"📈 <b>{symbol}</b> -> {price:.2f} TL
-"
-                f"📦 <b>Lot Sayisi:</b> {shares} Lot
-"
-                f"💰 <b>Toplam Tutar:</b> {total_val:.2f} TL
-
-"
-                f"🎯 <b>Kar Al (TP):</b> {tp1:.2f} TL (+%{tp_pct:.1f})
-"
-                f"🛑 <b>Stop Sat (SL):</b> {sl:.2f} TL (-%{sl_pct:.1f})
-")
+        text = "🤖 <b>SIMULASYON " + action + "</b>\n\n"
+        text += "📈 <b>" + symbol + "</b> ? " + f"{price:.2f}" + " TL\n"
+        text += "📦 <b>Lot Sayisi:</b> " + str(shares) + " Lot\n"
+        text += "💰 <b>Toplam Tutar:</b> " + f"{total_val:.2f}" + " TL\n\n"
+        text += "🎯 <b>Kar Al (TP):</b> " + f"{tp1:.2f}" + " TL (+%" + f"{tp_pct:.1f}" + ")\n"
+        text += "🛑 <b>Stop Sat (SL):</b> " + f"{sl:.2f}" + " TL (-%" + f"{sl_pct:.1f}" + ")\n"
         if reason:
-            text += f"
-💡 <b>Neden:</b> {reason}"
+            text += "\n💡 <b>Neden:</b> " + reason
         return send_telegram_message(text)
     else:
         emoji = "🟢" if pnl_pct >= 0 else "🔴"
         pnl_val = trade.get('pnl_val', 0)
-        text = (f"🤖 <b>SIMULASYON {action}</b>
-
-"
-                f"📉 <b>{symbol}</b> -> {price:.2f} TL
-"
-                f"📦 <b>Lot Sayisi:</b> {shares} Lot
-"
-                f"💰 <b>Cikis Tutari:</b> {total_val:.2f} TL
-
-"
-                f"{emoji} <b>K/Z (Tutar):</b> {pnl_val:+.2f} TL
-"
-                f"{emoji} <b>K/Z (%):</b> %{pnl_pct:+.2f}
-")
+        text = "🤖 <b>SIMULASYON " + action + "</b>\n\n"
+        text += "📉 <b>" + symbol + "</b> ? " + f"{price:.2f}" + " TL\n"
+        text += "📦 <b>Lot Sayisi:</b> " + str(shares) + " Lot\n"
+        text += "💰 <b>Cikis Tutari:</b> " + f"{total_val:.2f}" + " TL\n\n"
+        text += emoji + " <b>K/Z (Tutar):</b> " + f"{pnl_val:+.2f}" + " TL\n"
+        text += emoji + " <b>K/Z (%):</b> %" + f"{pnl_pct:+.2f}" + "\n"
         if reason:
-            text += f"
-💡 <b>Neden:</b> {reason}"
-        return send_telegram_message(text)
-    else:
-        emoji = "🟢" if pnl_pct >= 0 else "🔴"
-        text = (f"🤖 <b>SIMULASYON {action}</b>\n" + f"📉 {symbol} -> {price:.2f} TL\n" + f"{emoji} K/Z: %{pnl_pct:+.2f}\n")
-        if reason:
-            text += f"💡 Neden: {reason}"
+            text += "\n💡 <b>Neden:</b> " + reason
         return send_telegram_message(text)
