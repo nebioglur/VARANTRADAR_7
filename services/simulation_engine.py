@@ -235,7 +235,7 @@ class SimulationEngine:
             xu100_change = 0.0
         is_bear = xu100_change < -0.5
         market_regime = "AYI" if is_bear else ("GÜÇLÜ POZİTİF" if xu100_change > 0.5 else "NÖTR")
-        minimum_score = 90 if is_bear else 85
+        minimum_score = 85 if is_bear else 80
 
         valid_signals = []
         import json
@@ -264,7 +264,7 @@ class SimulationEngine:
                 indicators = meta.get('Indicators', {}) if isinstance(meta, dict) else {}
                 r_vol = float(meta.get('Vol_Multiplier') or meta.get('Volume_Ratio') or indicators.get('Volume_Ratio') or 0)
             
-            if float(r_vol) < 1.5:
+            if float(r_vol) < 1.3:
                 continue
 
                     
@@ -272,7 +272,7 @@ class SimulationEngine:
             if not ema50 or not ema200 or not price:
                 continue # Veri eksikse atla
             try:
-                if float(price) <= float(ema50) or float(price) <= float(ema200):
+                if float(price) <= float(ema50) and float(price) <= float(ema200):
                     continue # Fiyat EMA altında
             except (ValueError, TypeError):
                 continue # Dönüşüm hatası
@@ -288,7 +288,7 @@ class SimulationEngine:
                 vwap = meta.get('VWAP')
                 vwap_ok = bool(vwap) and price >= float(vwap)
                 fomo_score = float(meta.get('FOMO_Score') or 0)
-                no_trap = not bool(meta.get('Trap_Risk'))
+                no_trap = not bool(meta.get('Trap_Risk')) or (score >= 85 and volume_multiplier >= 1.5)
                 fomo_ok = fomo_score < 90 or (
                     volume_multiplier >= 2.0
                     and ("Giriş" in str(meta.get("Smart_Money", "")) or "Akümülasyon" in str(meta.get("Smart_Money", "")))
