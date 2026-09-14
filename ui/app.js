@@ -4859,8 +4859,12 @@ async function fetchLiveOrders() {
                         </div>
                         <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
                             <span style="color:var(--accent-green);">Kâr Al TP2 (Tavan):</span>
-                            <strong>₺${order.tp2_price.toFixed(2)}</strong>
+                            <strong>?${order.tp2_price.toFixed(2)}</strong>
                         </div>
+                    </div>
+                    <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
+                        <button onclick="quickTrade('${order.symbol}', 'buy', ${order.shares}, ${order.entry_price}, ${order.tp1_price}, ${order.stop_price})" class="btn-primary" style="flex:1; background:var(--accent-green); color:#fff; border:none; padding:0.4rem; border-radius:4px; font-weight:bold; cursor:pointer;"><i class="fa-solid fa-cart-arrow-down"></i> Portfoye AL</button>
+                        <button onclick="quickTrade('${order.symbol}', 'sell', ${order.shares}, ${order.entry_price}, ${order.tp1_price}, ${order.stop_price})" class="btn-primary" style="flex:1; background:var(--accent-red); color:#fff; border:none; padding:0.4rem; border-radius:4px; font-weight:bold; cursor:pointer;"><i class="fa-solid fa-money-bill-wave"></i> Portfoyden SAT</button>
                     </div>
                 `;
                 container.appendChild(card);
@@ -5959,3 +5963,53 @@ window.showSR = function(sym, price, high, low) {
         alert("Destek/Direnc gosterilirken hata: " + e.message);
     }
 };
+
+
+// Hizli islem fonksiyonu (Kartlardaki Al/Sat butonlari icin)
+async function quickTrade(symbol, action, qty, price, tp_price, sl_price) {
+    if (!confirm(`Emin misiniz? ${symbol} icin ${action === 'buy' ? 'ALIS' : 'SATIS'} islemi portfoyunuze eklenecektir.`)) return;
+    
+    if (action === 'buy') {
+        const payload = {
+            symbol: symbol,
+            qty: qty,
+            price: price,
+            tp_price: tp_price,
+            sl_price: sl_price
+        };
+        try {
+            const res = await fetch('/api/simulation/terminal/open', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                alert(`Basarili! ${symbol} portfoye eklendi.`);
+                fetchLiveTerminal();
+            } else {
+                alert(`Hata: ${data.message}`);
+            }
+        } catch (e) {
+            alert(`Sunucu hatasi: ${e}`);
+        }
+    } else if (action === 'sell') {
+        // Sat butonu icin: Sembole gore portfoydeki acik pozisyonlari bulup kapat!
+        try {
+            const res = await fetch('/api/simulation/terminal/close_by_symbol', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ symbol: symbol })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                alert(`Basarili! ${symbol} portfoyden satildi.`);
+                fetchLiveTerminal();
+            } else {
+                alert(`Hata: ${data.message}`);
+            }
+        } catch (e) {
+            alert(`Sunucu hatasi: ${e}`);
+        }
+    }
+}
