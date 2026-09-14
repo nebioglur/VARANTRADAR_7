@@ -455,7 +455,7 @@ class SimulationEngine:
                     trade['exit_reason'] = reason
                     completed_trades.append(trade)
                     from services.telegram_bot import notify_sim_trade
-                    notify_sim_trade(sym, "SAT", sell_price, trade["pnl_pct"], reason, str(current_time)[:10])
+                    notify_sim_trade(sym, "SAT", sell_price, trade["pnl_pct"], reason, str(current_time)[:10], trade)
                     
                     if "STOP" in reason:
                         stopped_out_symbols.add(sym)
@@ -539,7 +539,7 @@ class SimulationEngine:
                     'market_regime': market_regime
                 })
                 from services.telegram_bot import notify_sim_trade
-                notify_sim_trade(sym, "AL", entry_price, 0.0, "Sistem AL verdi", str(current_time)[:10])
+                notify_sim_trade(sym, "AL", entry_price, 0.0, "Sistem AL verdi", str(current_time)[:10], active_trades[-1])
                 to_remove.append(s)
             for s in to_remove:
                 if s in pending_signals:
@@ -596,7 +596,7 @@ class SimulationEngine:
                         'market_regime': market_regime
                     })
                     from services.telegram_bot import notify_sim_trade
-                    notify_sim_trade(sym, "AL (Yeniden)", entry_price, 0.0, "Yeniden Giris", str(current_time)[:10])
+                    notify_sim_trade(sym, "AL (Yeniden)", entry_price, 0.0, "Yeniden Giris", str(current_time)[:10], active_trades[-1])
                     stopped_out_symbols.remove(sym)
 
         # Seans sonu: acik pozisyonlari kapat.
@@ -624,7 +624,7 @@ class SimulationEngine:
                     trade['pnl_pct'] = (trade['pnl_val'] / buy_volume) * 100
                     trade['exit_reason'] = 'SEANS SONU NAKITE GECIS (17:50)'
                     from services.telegram_bot import notify_sim_trade
-                    notify_sim_trade(sym, "SAT (GUN SONU)", close, trade["pnl_pct"], "17:50 Otomatik Kapanis", str(last_time)[:10])
+                    notify_sim_trade(sym, "SAT (GUN SONU)", close, trade["pnl_pct"], "17:50 Otomatik Kapanis", str(last_time)[:10], trade)
                 else:
                     # Canli: acik pozisyon olarak kaydet, PnL gecici son fiyatla
                     trade['exit_time'] = None
