@@ -608,8 +608,8 @@ class SimulationEngine:
 
         for trade in [t for t in active_trades if t['status'] == 'OPEN']:
             sym = trade['symbol']
-            df = dfs[sym]
-            if not df.empty:
+            df = dfs.get(sym)
+            if df is not None and not df.empty:
                 last_time = df.index[-1]
                 close = float(df.iloc[-1]['Close'])
                 if close_open_now:
@@ -626,14 +626,20 @@ class SimulationEngine:
                     from services.telegram_bot import notify_sim_trade
                     notify_sim_trade(sym, "SAT (GUN SONU)", close, trade["pnl_pct"], "17:50 Otomatik Kapanis", str(last_time)[:10], trade)
                 else:
-                    # Canli: acik pozisyon olarak kaydet, PnL gecici son fiyatla
                     trade['exit_time'] = None
                     trade['exit_price'] = None
                     buy_volume = trade['shares'] * trade['entry_price']
                     gross_pnl = trade['shares'] * (close - trade['entry_price'])
                     trade['pnl_val'] = gross_pnl
                     trade['pnl_pct'] = (gross_pnl / buy_volume) * 100
-                    trade['exit_reason'] = "🔓 AÇIK POZİSYON"
+                    trade['exit_reason'] = "⏳ ACIK POZISYON"
+                completed_trades.append(trade)
+            else:
+                trade['exit_time'] = None
+                trade['exit_price'] = None
+                trade['pnl_val'] = 0.0
+                trade['pnl_pct'] = 0.0
+                trade['exit_reason'] = "⏳ ACIK POZISYON (Veri Bekleniyor)"
                 completed_trades.append(trade)
 
         self._save_trades(date_str, completed_trades)
