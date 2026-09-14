@@ -191,3 +191,39 @@ def notify_sell(symbol: str, price: float, pnl_val: float, pnl_pct: float, reaso
     if reason:
         text += f"\nℹ️ {reason}"
     return send_voice_alert("sell", text)
+
+def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.0, reason: str = "", date_str: str = "") -> bool:
+    import json, os
+    from datetime import datetime
+    if not date_str:
+        date_str = datetime.now().strftime("%Y-%m-%d")
+    cache_file = "data/sent_sim_alerts.json"
+    cache = {}
+    if os.path.exists(cache_file):
+        try:
+            with open(cache_file, "r", encoding="utf-8") as f_c:
+                cache = json.load(f_c)
+        except:
+            pass
+    if cache.get("date") != date_str:
+        cache = {"date": date_str, "alerts": []}
+    alert_key = f"{symbol}_{action}_{price:.2f}"
+    if alert_key in cache["alerts"]:
+        return True
+    cache["alerts"].append(alert_key)
+    try:
+        with open(cache_file, "w", encoding="utf-8") as f_c:
+            json.dump(cache, f_c)
+    except:
+        pass
+    if "AL" in action:
+        text = (f"🤖 <b>SIMULASYON {action}</b>\n" + f"📈 {symbol} -> {price:.2f} TL\n")
+        if reason:
+            text += f"💡 Neden: {reason}"
+        return send_telegram_message(text)
+    else:
+        emoji = "🟢" if pnl_pct >= 0 else "🔴"
+        text = (f"🤖 <b>SIMULASYON {action}</b>\n" + f"📉 {symbol} -> {price:.2f} TL\n" + f"{emoji} K/Z: %{pnl_pct:+.2f}\n")
+        if reason:
+            text += f"💡 Neden: {reason}"
+        return send_telegram_message(text)

@@ -277,7 +277,7 @@ class SimulationEngine:
             except (ValueError, TypeError):
                 continue # Dönüşüm hatası
                     
-            if score >= minimum_score and phase in ["Erken Kopuş (Phase 1)", "İvmelenme (Phase 2)", "Kilitleme Baskısı (Phase 3)"]:
+            if score >= minimum_score and any(p in phase for p in ["Phase 1", "Phase 2", "Phase 3"]):
                 indicators = meta.get('Indicators', {}) if isinstance(meta, dict) else {}
                 rsi = float(indicators.get('RSI') or indicators.get('RSI_14') or meta.get('RSI') or 50)
                 volume_multiplier = float(meta.get('Vol_Multiplier') or meta.get('Volume_Ratio') or indicators.get('Volume_Ratio') or 0)
@@ -454,7 +454,8 @@ class SimulationEngine:
                         
                     trade['exit_reason'] = reason
                     completed_trades.append(trade)
-                    notif.send_simulation_trade_alert(sym, "SAT", sell_price, str(current_time), trade['pnl_pct'], reason)
+                    from services.telegram_bot import notify_sim_trade
+                    notify_sim_trade(sym, "SAT", sell_price, trade["pnl_pct"], reason, str(current_time)[:10])
                     
                     if "STOP" in reason:
                         stopped_out_symbols.add(sym)
@@ -537,8 +538,8 @@ class SimulationEngine:
                     'risk_amount': risk_amount,
                     'market_regime': market_regime
                 })
-                from services.notification_manager import notif
-                notif.send_simulation_trade_alert(sym, 'AL', entry_price, str(current_time), None, 'Sistem AL verdi')
+                from services.telegram_bot import notify_sim_trade
+                notify_sim_trade(sym, "AL", entry_price, 0.0, "Sistem AL verdi", str(current_time)[:10])
                 to_remove.append(s)
             for s in to_remove:
                 if s in pending_signals:
@@ -594,8 +595,8 @@ class SimulationEngine:
                         'risk_amount': risk_amount,
                         'market_regime': market_regime
                     })
-                    from services.notification_manager import notif
-                    notif.send_simulation_trade_alert(sym, 'AL (Yeniden)', entry_price, str(current_time), None, 'Yeniden Giris')
+                    from services.telegram_bot import notify_sim_trade
+                    notify_sim_trade(sym, "AL (Yeniden)", entry_price, 0.0, "Yeniden Giris", str(current_time)[:10])
                     stopped_out_symbols.remove(sym)
 
         # Seans sonu: acik pozisyonlari kapat.
@@ -622,8 +623,8 @@ class SimulationEngine:
                     trade['pnl_val'] = gross_pnl - commission
                     trade['pnl_pct'] = (trade['pnl_val'] / buy_volume) * 100
                     trade['exit_reason'] = 'SEANS SONU NAKITE GECIS (17:50)'
-                    from services.notification_manager import notif
-                    notif.send_simulation_trade_alert(sym, 'SAT (GUN SONU)', close, str(last_time), trade['pnl_pct'], '17:50 Otomatik Kapanis')
+                    from services.telegram_bot import notify_sim_trade
+                    notify_sim_trade(sym, "SAT (GUN SONU)", close, trade["pnl_pct"], "17:50 Otomatik Kapanis", str(last_time)[:10])
                 else:
                     # Canli: acik pozisyon olarak kaydet, PnL gecici son fiyatla
                     trade['exit_time'] = None
