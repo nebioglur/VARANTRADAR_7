@@ -181,9 +181,7 @@ def start_live_data_collector():
 
 def _background_scanner_impl():
     import os
-    if os.environ.get("RENDER"):
-        print("[BACKGROUND] Render sunucusunda agir BIST taramasi IP iptali yuzunden kapatildi. Cache'den devam edilecek.")
-        return
+    
 
     # --- V8 ENGINE INIT ---
     try:
@@ -491,7 +489,7 @@ def _background_scanner_impl():
             print(f"[BACKGROUND] MTF Hatasi: {e_mtf}")
 
         # Dinlen (15 dakika)
-        time.sleep(8 * 60) # Hizlandirilmis guncelleme
+        time.sleep(15 * 60) # Hizlandirilmis guncelleme, ban riskine karsi 15 dk
 
 # Varant Sembolleri (Örnek Liste - IS Warrant yapısı)
 # ⚠️ DİKKAT: Bu varant sembolleri eski vadeli (Temmuz 2024). Güncel vadeli sembollerle değiştirilmelidir.
