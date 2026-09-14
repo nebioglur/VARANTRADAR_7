@@ -255,6 +255,18 @@ class SimulationEngine:
             price = float(meta.get('Price') or meta.get('Daily_Close') or s.get('morning_price', 0))
             
             ema50, ema200 = self._daily_trend_values(meta, s['symbol'])
+            
+            # KULLANICI ISTEGI: 150% hacim gucu zorunlu
+            v8_disc = meta.get('v8_discovery', {})
+            metrics = v8_disc.get('metrics', {})
+            r_vol = metrics.get('relative_volume', 0)
+            if not r_vol:
+                indicators = meta.get('Indicators', {}) if isinstance(meta, dict) else {}
+                r_vol = float(meta.get('Vol_Multiplier') or meta.get('Volume_Ratio') or indicators.get('Volume_Ratio') or 0)
+            
+            if float(r_vol) < 1.5:
+                continue
+
                     
             # EMA Filtresi ZORUNLU
             if not ema50 or not ema200 or not price:
