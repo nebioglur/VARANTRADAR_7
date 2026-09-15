@@ -1796,6 +1796,24 @@ def api_admin_set_cash():
 def api_tavan_history():
     try:
         from services.tavan_tracker import TavanAuditTracker
+        # Arka plan taraması henüz ilk denetim kaydını yazmadıysa, mevcut
+        # gerçek dashboard cache'inden bir canlı snapshot oluştur. Böylece
+        # Render yeniden başlatmalarında istatistik ekranı boş kalmaz.
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        audits = TavanAuditTracker.load_all_audits()
+        if today_str not in audits:
+            cached_candidates = GLOBAL_DASHBOARD_CACHE.get("tavan_adaylari", [])
+            cached_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
+            if cached_candidates and cached_stats:
+                TavanAuditTracker.record_snapshot(
+                    cached_candidates,
+                    all_symbols_stats=cached_stats,
+                    date_str=today_str,
+                )
+                TavanAuditTracker.update_daily_progress(
+                    cached_stats,
+                    date_str=today_str,
+                )
         start_date = request.args.get('start_date', '2026-08-04')
         end_date = request.args.get('end_date')
         symbol_filter = request.args.get('symbol_filter')

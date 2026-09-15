@@ -1,4 +1,20 @@
 // ========== STATE MANAGEMENT ==========
+async function vrAuthorizedFetch(resource, options = {}) {
+    const headers = new Headers(options.headers || {});
+    try {
+        const authKit = window.VerdentAuthKit;
+        if (authKit) {
+            const { supabase } = await authKit;
+            const { data } = await supabase.auth.getSession();
+            const token = data?.session?.access_token;
+            if (token) headers.set('Authorization', `Bearer ${token}`);
+        }
+    } catch (e) {
+        console.warn('[Auth] İstatistik isteği için token alınamadı', e);
+    }
+    return fetch(resource, { ...options, headers });
+}
+
 let acTimeout = null;
 let acSelectedIndex = -1;
 let acItems = [];
@@ -174,7 +190,7 @@ function toggleTheme() {
 // ============================================================
 async function fetchHomeWinrateStats() {
     try {
-        const res = await fetch('/api/tavan_history?start_date=2026-08-04');
+        const res = await vrAuthorizedFetch('/api/tavan_history?start_date=2026-08-04');
         const data = await res.json();
         const s = (data.status === 'success' && data.summary) ? data.summary : null;
 
@@ -2901,7 +2917,7 @@ async function fetchTavanAuditData(dateStr = '') {
 
     try {
         const url = dateStr ? `/api/tavan_tracker?date=${encodeURIComponent(dateStr)}` : '/api/tavan_tracker';
-        const res = await fetch(url);
+        const res = await vrAuthorizedFetch(url);
         const data = await res.json();
 
         if (data.status === 'success' && data.audit) {
@@ -3268,7 +3284,7 @@ async function fetchStatsTabData() {
     }
 
     try {
-        const res = await fetch(`/api/tavan_history?t=` + Date.now());
+        const res = await vrAuthorizedFetch(`/api/tavan_history?t=` + Date.now());
         const data = await res.json();
         global_stats_data = data;
 
