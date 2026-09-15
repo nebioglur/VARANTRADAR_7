@@ -1141,8 +1141,8 @@ def api_dashboard_init():
     from datetime import datetime
     today_str = datetime.now().strftime("%Y-%m-%d")
     global GLOBAL_DASHBOARD_CACHE
-    if GLOBAL_DASHBOARD_CACHE and GLOBAL_DASHBOARD_CACHE.get("cache_date") != today_str:
-        GLOBAL_DASHBOARD_CACHE = {} # CLEAR STALE CACHE
+    # NOT: Bayat cache BURADA SILINMEZ. Onceki gunun kapanislari tabloyu dolu
+    # tutar; ilk basarili tarama verileri ve cache_date'i gunceller.
 
     try:
         start_live_data_collector()
