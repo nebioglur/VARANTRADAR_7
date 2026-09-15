@@ -4,6 +4,7 @@ from typing import Optional, List
 from data.providers.base_provider import BaseDataProvider
 from data.providers.yfinance_provider import YFinanceProvider
 from data.providers.finnhub_provider import FinnhubProvider
+from data.providers.isyatirim_provider import IsYatirimProvider
 from data.validation import DataValidator
 from data.cache import DataCache
 from data.health_monitor import DataHealthMonitor
@@ -39,14 +40,15 @@ class DataSourceManager:
     ✓ Loglama
     
     Failover Zinciri:
-    Primary (YFinance) → Secondary (Finnhub) → Cache → Safe Mode
+    Primary (YFinance) → Secondary (Finnhub) → Backup (IsYatirim) → Cache → Safe Mode
     """
-    
+
     def __init__(self):
         # Provider Registry (Öncelik sırasına göre)
         self.providers: List[BaseDataProvider] = [
             YFinanceProvider(),     # Priority 1: Primary
             FinnhubProvider(),      # Priority 2: Secondary
+            IsYatirimProvider(),    # Priority 3: Backup (BIST günlük)
         ]
         
         self.cache = DataCache()
