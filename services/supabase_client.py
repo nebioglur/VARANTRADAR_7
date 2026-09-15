@@ -2,8 +2,8 @@
 import json
 from supabase import create_client, Client
 
-SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://kfslwkmrnjqxirzhfmbn.supabase.co')
-SUPABASE_KEY = os.environ.get('SUPABASE_PUBLISHABLE_KEY', 'sb_publishable_r2tfnmKF3dq_I1YkqGi-Bw_O38IUlEj----sb_publishable_RP_ouZJiDHK_PA_3o1dmfg_G5BgAuzl')
+SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://supabase-api-prod.verdent.ai/p/pf565ccea3c6a9b19d28e')
+SUPABASE_KEY = os.environ.get('SUPABASE_PUBLISHABLE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoyMTA1MTI2MzA2LCJpYXQiOjE3ODk1MDcxMDYsImlzcyI6InN1cGFiYXNlIiwicHJvamVjdF9yZWYiOiJwZjU2NWNjZWEzYzZhOWIxOWQyOGUiLCJyb2xlIjoiYW5vbiJ9.cG_7QJGV7r0n7JIrvsSb2G1lnGwHg14TAJM0koDOq28')
 
 try:
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)

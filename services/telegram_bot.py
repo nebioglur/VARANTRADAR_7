@@ -228,24 +228,43 @@ def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.
         
     trade = trade or {}
     # Telegram yalnızca VIP (100 puan) simülasyon işlemlerini alır.
-    if float(trade.get("score", 0) or 0) < 100:
+    # SimulationEngine trade kaydında puanı entry_score alanında taşır.
+    trade_score = trade.get("entry_score", trade.get("score", 0))
+    if float(trade_score or 0) < 100:
         return True
     shares = trade.get('shares', 0)
     total_val = shares * price if shares else 0
     tp1 = trade.get('tp1_price', 0)
     sl = trade.get('stop_price', 0)
     entry = trade.get('entry_price', price)
+    strategy = trade.get('strategy_name', '')
+    checks = trade.get('entry_checks', '')
+    risk_amount = trade.get('risk_amount', 0)
+    regime = trade.get('market_regime', '')
+    entry_time = trade.get('entry_time', '')
+    exit_time = trade.get('exit_time', '')
     
     tp_pct = ((tp1 - entry) / entry * 100) if tp1 and entry else 0
     sl_pct = ((entry - sl) / entry * 100) if sl and entry else 0
     
     if "AL" in action:
         text = "🤖 <b>SIMULASYON " + action + "</b>\n\n"
-        text += "📈 <b>" + symbol + "</b> ? " + f"{price:.2f}" + " TL\n"
+        text += "📈 <b>" + symbol + "</b> @ " + f"{price:.2f}" + " TL\n"
         text += "📦 <b>Lot Sayisi:</b> " + str(shares) + " Lot\n"
         text += "💰 <b>Toplam Tutar:</b> " + f"{total_val:.2f}" + " TL\n\n"
         text += "🎯 <b>Kar Al (TP):</b> " + f"{tp1:.2f}" + " TL (+%" + f"{tp_pct:.1f}" + ")\n"
         text += "🛑 <b>Stop Sat (SL):</b> " + f"{sl:.2f}" + " TL (-%" + f"{sl_pct:.1f}" + ")\n"
+        text += f"🏆 <b>VIP Puanı:</b> {float(trade_score):.0f}/100\n"
+        if entry_time:
+            text += f"🕒 <b>Alış Saati:</b> {entry_time}\n"
+        if strategy:
+            text += f"🧠 <b>Strateji:</b> {strategy}\n"
+        if risk_amount:
+            text += f"⚠️ <b>Risk:</b> {float(risk_amount):.2f} TL\n"
+        if regime:
+            text += f"🌐 <b>Piyasa Rejimi:</b> {regime}\n"
+        if checks:
+            text += f"✅ <b>Kontroller:</b> {checks}\n"
         if reason:
             text += "\n💡 <b>Neden:</b> " + reason
         return send_telegram_message(text)
@@ -253,11 +272,21 @@ def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.
         emoji = "🟢" if pnl_pct >= 0 else "🔴"
         pnl_val = trade.get('pnl_val', 0)
         text = "🤖 <b>SIMULASYON " + action + "</b>\n\n"
-        text += "📉 <b>" + symbol + "</b> ? " + f"{price:.2f}" + " TL\n"
+        text += "📉 <b>" + symbol + "</b> @ " + f"{price:.2f}" + " TL\n"
+        text += "📌 <b>Alış Fiyatı:</b> " + f"{float(entry):.2f}" + " TL\n"
         text += "📦 <b>Lot Sayisi:</b> " + str(shares) + " Lot\n"
         text += "💰 <b>Cikis Tutari:</b> " + f"{total_val:.2f}" + " TL\n\n"
         text += emoji + " <b>K/Z (Tutar):</b> " + f"{pnl_val:+.2f}" + " TL\n"
         text += emoji + " <b>K/Z (%):</b> %" + f"{pnl_pct:+.2f}" + "\n"
+        text += f"🏆 <b>VIP Puanı:</b> {float(trade_score):.0f}/100\n"
+        if entry_time:
+            text += f"🕒 <b>Alış Saati:</b> {entry_time}\n"
+        if exit_time:
+            text += f"🕒 <b>Satış Saati:</b> {exit_time}\n"
+        if strategy:
+            text += f"🧠 <b>Strateji:</b> {strategy}\n"
+        if regime:
+            text += f"🌐 <b>Piyasa Rejimi:</b> {regime}\n"
         if reason:
             text += "\n💡 <b>Neden:</b> " + reason
         return send_telegram_message(text)
