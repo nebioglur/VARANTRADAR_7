@@ -4157,17 +4157,40 @@ async function ltOpenPosition() {
 }
 
 async function ltEditOrders(id, curTp, curSl, lastPrice) {
-    const tpInp = prompt(
-        'Yeni KÂR AL fiyatı (₺) — anlık: ' + Number(lastPrice).toFixed(2) + ' TL\n' +
-        'Boş bırakırsan değişmez. Mevcut: ' + Number(curTp).toFixed(2), '');
-    if (tpInp === null) return;
-    const slInp = prompt(
-        'Yeni ZARAR KES fiyatı (₺) — anlık: ' + Number(lastPrice).toFixed(2) + ' TL\n' +
-        'Boş bırakırsan değişmez. Mevcut: ' + Number(curSl).toFixed(2), '');
-    if (slInp === null) return;
+    const fmt = (v) => (v === null || v === undefined || isNaN(Number(v))) ? '' : Number(v).toFixed(2);
+    const { value: formValues } = await Swal.fire({
+        title: 'Emir Düzeltme',
+        html:
+            '<div style="text-align:left; width:100%;">' +
+            '<div style="display:flex; justify-content:space-between; align-items:center; background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.25); border-radius:8px; padding:8px 12px; margin-bottom:14px; font-size:0.85rem;">' +
+            '<span style="color:#94a3b8;">Anlık Fiyat</span>' +
+            '<b style="color:#38bdf8; font-size:1rem;">₺' + Number(lastPrice).toFixed(2) + '</b></div>' +
+            '<label for="swal-lt-tp" style="display:block; margin-bottom:6px; color:#22c55e; font-weight:700; font-size:0.8rem;">🎯 KÂR AL (₺)</label>' +
+            '<input id="swal-lt-tp" class="swal2-input" type="number" step="0.01" min="0" inputmode="decimal" placeholder="Mevcut: ₺' + fmt(curTp) + '" style="margin:0 0 14px; width:100%; background:#0f1420; border:1px solid #2a3245; color:#fff; border-radius:8px; height:2.6em; font-size:1rem;">' +
+            '<label for="swal-lt-sl" style="display:block; margin-bottom:6px; color:#ef4444; font-weight:700; font-size:0.8rem;">🛑 ZARAR KES (₺)</label>' +
+            '<input id="swal-lt-sl" class="swal2-input" type="number" step="0.01" min="0" inputmode="decimal" placeholder="Mevcut: ₺' + fmt(curSl) + '" style="margin:0; width:100%; background:#0f1420; border:1px solid #2a3245; color:#fff; border-radius:8px; height:2.6em; font-size:1rem;">' +
+            '<div style="margin-top:12px; font-size:0.75rem; color:#64748b; text-align:center;">Boş bırakırsan o emir değişmez.</div>' +
+            '</div>',
+        background: '#1a1f2e',
+        color: '#fff',
+        width: 380,
+        showCancelButton: true,
+        confirmButtonText: '<i class="fa-solid fa-floppy-disk"></i> Kaydet',
+        cancelButtonText: 'İptal',
+        confirmButtonColor: '#38bdf8',
+        cancelButtonColor: '#475569',
+        focusConfirm: false,
+        preConfirm: () => {
+            return {
+                tp: document.getElementById('swal-lt-tp').value.trim(),
+                sl: document.getElementById('swal-lt-sl').value.trim()
+            };
+        }
+    });
+    if (!formValues) return;
 
-    const tpV = parseFloat(tpInp);
-    const slV = parseFloat(slInp);
+    const tpV = parseFloat(formValues.tp);
+    const slV = parseFloat(formValues.sl);
     const body = { id: id };
     if (!isNaN(tpV) && tpV > 0) body.tp_price = tpV;
     if (!isNaN(slV) && slV > 0) body.sl_price = slV;
