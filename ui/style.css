@@ -20,64 +20,113 @@
     --glass-blur: blur(12px);
 }
 
-/* ===== AÇIK TEMA (Light Mode) ===== */
+/* ===== ACIK TEMA (Light Mode) - KURUMSAL ===== */
 body.light-mode {
-    --bg-base: #F0F4FA;
-    --bg-card: rgba(255, 255, 255, 0.92);
-    --bg-card-hover: rgba(241, 245, 249, 0.98);
-    --border-color: rgba(0, 0, 0, 0.09);
-    --text-main: #0F172A;
-    --text-muted: #475569;
-    --accent-blue: #2563EB;
-    --accent-blue-hover: #1D4ED8;
-    --accent-green: #059669;
-    --accent-red: #DC2626;
-    --accent-yellow: #D97706;
-    --accent-purple: #7C3AED;
-    --shadow-sm: 0 1px 3px 0 rgba(0,0,0,0.08);
-    --shadow-md: 0 4px 12px -1px rgba(0,0,0,0.12);
-    --shadow-lg: 0 10px 30px -5px rgba(0,0,0,0.15);
+    --bg-base: #EEF2F6;
+    --bg-card: #FFFFFF;
+    --bg-card-hover: #F8FAFC;
+    --border-color: #E2E8F0;
+    --text-main: #1E293B;
+    --text-muted: #64748B;
+    --accent-blue: #1D4ED8;
+    --accent-blue-hover: #1E3A8A;
+    --accent-green: #15803D;
+    --accent-red: #B91C1C;
+    --accent-yellow: #B45309;
+    --accent-purple: #6D28D9;
+    --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.05), 0 4px 6px -2px rgba(0,0,0,0.03);
 }
+
 body.light-mode { background: var(--bg-base); color: var(--text-main); }
 body.light-mode .top-nav {
-    background: rgba(255,255,255,0.92);
-    border-bottom: 1px solid rgba(0,0,0,0.1);
-    box-shadow: 0 1px 8px rgba(0,0,0,0.08);
+    background: #FFFFFF;
+    border-bottom: 1px solid #E2E8F0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 body.light-mode .card {
     background: var(--bg-card) !important;
     border: 1px solid var(--border-color) !important;
-    box-shadow: var(--shadow-md) !important;
+    box-shadow: var(--shadow-sm) !important;
     color: var(--text-main);
+    border-radius: 8px;
 }
 body.light-mode .card h3, body.light-mode .card-title {
-    color: #1e293b !important;
+    color: #0F172A !important;
+    font-weight: 700;
 }
-body.light-mode .card [style*="color:var(--text-light)"] {
-    color: #1e293b !important;
+
+/* Zorunlu eziyoruz, inline stiller siritiyor */
+body.light-mode [style*="color:var(--text-light)"],
+body.light-mode [style*="color:#fff"] {
+    color: #0F172A !important;
+    font-weight: 700 !important;
 }
-body.light-mode .card [style*="color:#fff"] {
-    color: #0f172a !important;
+body.light-mode [style*="color:var(--accent-yellow)"] { color: #B45309 !important; }
+body.light-mode [style*="color:var(--accent-green)"] { color: #15803D !important; }
+body.light-mode [style*="color:var(--accent-red)"] { color: #B91C1C !important; }
+
+/* Tablolar - Kurumsal finans havasi */
+body.light-mode .data-table {
+    border-collapse: separate;
+    border-spacing: 0;
 }
-body.light-mode .card [style*="color:var(--accent-yellow)"] {
-    color: #b45309 !important;
+body.light-mode .data-table th { 
+    background-color: #F1F5F9 !important; 
+    color: #475569 !important; 
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #E2E8F0 !important;
+    border-top: 1px solid #E2E8F0 !important;
 }
-body.light-mode .data-table th { color: #475569; }
-body.light-mode .data-table td { color: #0f172a; }
-body.light-mode .data-table tr:hover td { background: rgba(0,0,0,0.02); }
-body.light-mode #symbol-input { background: #f1f5f9; border-color: #cbd5e1; color: #0f172a; }
-body.light-mode .s-tab { color: #475569; }
-body.light-mode .s-tab:hover { background: #f1f5f9; color: #0f172a; }
-body.light-mode .s-tab.active { background: rgba(37,99,235,0.08); color: #2563eb; }
-body.light-mode .nav-btn { color: #475569; }
-body.light-mode .nav-btn:hover { background: rgba(0,0,0,0.05); color: #0f172a; }
-body.light-mode .nav-btn.active { color: #2563eb; background: rgba(37,99,235,0.08); border-bottom-color: #2563eb; }
+body.light-mode .data-table td { 
+    color: #1E293B; 
+    border-bottom: 1px solid #F1F5F9 !important;
+}
+body.light-mode .data-table tr:hover td { 
+    background: #F8FAFC !important; 
+}
+
+/* Buton ve Girdiler */
+body.light-mode #symbol-input { background: #FFFFFF; border-color: #CBD5E1; color: #0F172A; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05); }
+body.light-mode .s-tab { color: #64748B; }
+body.light-mode .s-tab:hover { background: #F1F5F9; color: #0F172A; }
+body.light-mode .s-tab.active { background: #EEF2FF; color: #4338CA; font-weight:600; }
+
+body.light-mode .nav-btn { color: #64748B; border-bottom: 2px solid transparent; }
+body.light-mode .nav-btn:hover { background: #F1F5F9; color: #0F172A; }
+body.light-mode .nav-btn.active { color: #4338CA; background: transparent; border-bottom-color: #4338CA; font-weight:700; }
+
 body.light-mode .bottom-mobile-bar {
-    background: rgba(255,255,255,0.95);
-    border-top: 1px solid rgba(0,0,0,0.1);
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+    background: #FFFFFF;
+    border-top: 1px solid #E2E8F0;
+    box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
 }
-body.light-mode .sidebar-tabs { background: rgba(241,245,249,0.6); }
+body.light-mode .sidebar-tabs { background: #F8FAFC; border-right: 1px solid #E2E8F0; }
+
+/* Rozetler ve Butonlar (AL/SAT) */
+body.light-mode span[style*="background:#22c55e22"], body.light-mode span[style*="border:1px solid #22c55e66"] {
+    background: #DCFCE7 !important; color: #166534 !important; border-color: #86EFAC !important;
+}
+body.light-mode span[style*="background:#3b82f622"], body.light-mode span[style*="border:1px solid #3b82f666"] {
+    background: #DBEAFE !important; color: #1E40AF !important; border-color: #93C5FD !important;
+}
+body.light-mode span[style*="background:#f9731622"], body.light-mode span[style*="border:1px solid #f9731666"] {
+    background: #FFEDD5 !important; color: #9A3412 !important; border-color: #FDBA74 !important;
+}
+body.light-mode span[style*="background:#ef444422"], body.light-mode span[style*="border:1px solid #ef444466"] {
+    background: #FEE2E2 !important; color: #991B1B !important; border-color: #FCA5A5 !important;
+}
+
+body.light-mode button[style*="rgba(34,197,94,0.2)"] {
+    background: #DCFCE7 !important; color: #166534 !important; border-color: #86EFAC !important;
+}
+body.light-mode button[style*="rgba(239,68,68,0.2)"] {
+    background: #FEE2E2 !important; color: #991B1B !important; border-color: #FCA5A5 !important;
+}
 
 /* Tema Toggle Butonu */
 .theme-toggle-btn {
@@ -200,6 +249,7 @@ body {
 .nav-btn {
     background: transparent; color: var(--text-muted); border: none; font-weight: 600;
     font-size: 0.85rem; cursor: pointer; padding: 0.4rem 0.8rem; border-radius: 6px; transition: 0.2s;
+    text-decoration: none; display: inline-block;
 }
 .nav-btn:hover { color: var(--text-main); background: rgba(255, 255, 255, 0.05); }
 .nav-btn.active { color: var(--accent-blue); background: rgba(59, 130, 246, 0.1); border-bottom: 2px solid var(--accent-blue); border-radius: 6px 6px 0 0; }
@@ -239,6 +289,7 @@ body {
 .nav-btn {
     background: transparent; color: var(--text-muted); border: none; font-weight: 600;
     font-size: 0.9rem; cursor: pointer; padding: 0.5rem 1rem; border-radius: 6px; transition: 0.2s;
+    text-decoration: none; display: inline-block;
 }
 .nav-btn:hover { color: var(--text-main); background: rgba(255, 255, 255, 0.05); }
 .nav-btn.active { color: var(--accent-blue); background: rgba(59, 130, 246, 0.1); border-bottom: 2px solid var(--accent-blue); border-radius: 6px 6px 0 0; }
@@ -1062,11 +1113,372 @@ body {
 
 .super-green-row {
     border-left: 4px solid var(--accent-green) !important;
-    animation: pulse-green 1.5s infinite;
     transition: all 0.3s ease;
+}
+/* Yanip sonme SADECE sembol hucrede (tum satirda degil) */
+.super-green-row td:first-child {
+    animation: pulse-green 1.5s infinite;
+    border-radius: 6px;
 }
 .super-green-row:hover {
     transform: scale(1.015);
     z-index: 10;
     position: relative;
+}
+
+/* PIYASA DEDEKTIFI */
+.dt-filter { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 20px; padding: 0.3rem 0.85rem; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all .15s; }
+.dt-filter:hover { color: #f97316; border-color: #f9731666; }
+.dt-filter.active { background: #f97316; color: #fff; border-color: #f97316; }
+
+/* ============================================================
+   PROFESYONEL TABLO SISTEMI (PC + MOBIL)
+   ============================================================ */
+
+/* ---- PC: her tabloya sabit baslik, zebra, hizali sayilar ---- */
+.table-scroll-wrapper { position: relative; }
+
+.data-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--card-bg, #111827);
+    border-bottom: 2px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.data-table tbody tr:nth-child(even) td { background: rgba(255, 255, 255, 0.015); }
+.data-table tbody tr:hover td { background: rgba(59, 130, 246, 0.06); }
+
+.data-table td, .data-table th {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+    vertical-align: middle;
+}
+
+/* DIP & KIRILIM radar: PC'de sik professional gorunum */
+#dip-breakout-card .data-table { font-size: 0.82rem; min-width: 860px; }
+#dip-breakout-card .data-table th { font-size: 0.68rem; padding: 0.55rem 0.45rem; }
+#dip-breakout-card .data-table td { padding: 0.5rem 0.45rem; }
+#dip-breakout-card .data-table tbody tr { border-left: 3px solid transparent; }
+#dip-breakout-card .data-table tbody tr:has(.dip-cat-yeni) { border-left-color: #22d3ee; }
+#dip-breakout-card .data-table tbody tr:has(.dip-cat-momentum) { border-left-color: var(--accent-red, #ef4444); }
+#dip-breakout-card .data-table tbody tr:has(.dip-cat-dipkir) { border-left-color: #f59e0b; }
+#dip-breakout-card .data-table tbody tr:has(.dip-cat-erken) { border-left-color: var(--accent-green, #10b981); }
+
+/* ---- MOBIL (<=850px): genis tablolar karta donusur ---- */
+@media (max-width: 850px) {
+    /* data-cards ozelligi verilen tablolar dikey karta acilir */
+    .data-table.mobile-cards { min-width: 0 !important; width: 100% !important; }
+    .data-table.mobile-cards thead { display: none; }
+    .data-table.mobile-cards tbody { display: block; }
+    .data-table.mobile-cards tbody tr {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.35rem 0.8rem;
+        padding: 0.7rem 0.8rem;
+        margin-bottom: 0.6rem;
+        border: 1px solid var(--border-color);
+        border-left: 3px solid var(--border-color);
+        border-radius: 10px;
+        background: var(--card-bg, #111827);
+    }
+    .data-table.mobile-cards tbody tr:nth-child(even) td { background: transparent; }
+    .data-table.mobile-cards tbody tr:hover td { background: transparent; }
+
+    .data-table.mobile-cards td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.15rem 0 !important;
+        border-bottom: none !important;
+        white-space: normal;
+        font-size: 0.78rem !important;
+    }
+    /* Ilk hucre (sembol) kart basligi: tam genislik */
+    .data-table.mobile-cards td:first-child {
+        grid-column: 1 / -1;
+        justify-content: flex-start;
+        padding-bottom: 0.35rem !important;
+        border-bottom: 1px dashed var(--border-color) !important;
+        margin-bottom: 0.15rem;
+        position: static !important;
+        box-shadow: none !important;
+    }
+    /* Son hucre (incele btn) tam genislik */
+    .data-table.mobile-cards td:last-child {
+        grid-column: 1 / -1;
+        padding-top: 0.35rem !important;
+    }
+    .data-table.mobile-cards td::before {
+        content: attr(data-label);
+        color: var(--text-muted);
+        font-size: 0.66rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        flex-shrink: 0;
+    }
+    .data-table.mobile-cards td:first-child::before { display: none; }
+    .data-table.mobile-cards td:last-child::before { display: none; }
+
+    /* Mobilde dip radarinda kolon yigitimi: en onemli 6 alan kartta one cikar */
+    .data-table.mobile-cards td.dip-secondary { display: none; }
+    .data-table.mobile-cards .dip-btn {
+        width: 100%;
+        padding: 0.55rem !important;
+        font-size: 0.8rem !important;
+        min-height: 40px;
+    }
+}
+
+/* --- ACIK TEMA: HERO BANNER & SLIDER & FILTERS --- */
+body.light-mode .glass-panel[style*="linear-gradient(145deg, rgba(30,30,35,0.9)"] {
+    background: linear-gradient(135deg, #1E3A8A, #1D4ED8) !important;
+    border: none !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 10px 25px -5px rgba(29, 78, 216, 0.4) !important;
+}
+body.light-mode .glass-panel[style*="linear-gradient"] [style*="color:var(--text-muted)"] {
+    color: #93C5FD !important;
+}
+body.light-mode .glass-panel[style*="linear-gradient"] [style*="color:var(--text-main)"] {
+    color: #FFFFFF !important;
+}
+body.light-mode .glass-panel[style*="linear-gradient"] [style*="background:var(--bg-secondary)"] {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+body.light-mode #live-clock {
+    background: none !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+}
+
+body.light-mode .mobile-slider-controls {
+    background: #FFFFFF !important;
+    border: 1px solid #E2E8F0 !important;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05) !important;
+}
+body.light-mode .slider-nav-btn {
+    background: #F8FAFC !important;
+    color: #0F172A !important;
+    border: 1px solid #CBD5E1 !important;
+}
+body.light-mode .slider-nav-btn:hover {
+    background: #E2E8F0 !important;
+}
+body.light-mode .indicator-dot {
+    background: #F8FAFC !important;
+    color: #475569 !important;
+    border: 1px solid #E2E8F0 !important;
+}
+body.light-mode .indicator-dot.active {
+    background: #2563EB !important;
+    color: #FFFFFF !important;
+    border-color: #2563EB !important;
+}
+body.light-mode .indicator-dot[style*="color:#0ea5e9"] {
+    color: #0284C7 !important;
+}
+body.light-mode .indicator-dot.active[style*="color:#0ea5e9"] {
+    color: #FFFFFF !important;
+}
+
+body.light-mode .filter-btn {
+    background: #FFFFFF !important;
+    color: #475569 !important;
+    border: 1px solid #CBD5E1 !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
+}
+body.light-mode .filter-btn:hover {
+    background: #F8FAFC !important;
+    color: #0F172A !important;
+}
+body.light-mode .filter-btn.active {
+    background: #2563EB !important;
+    color: #FFFFFF !important;
+    border-color: #2563EB !important;
+}
+
+body.light-mode #total-analyzed-counter {
+    background: #DCFCE7 !important;
+    color: #166534 !important;
+    border-color: #86EFAC !important;
+    box-shadow: 0 2px 4px rgba(22, 101, 52, 0.1) !important;
+}
+
+/* --- ACIK TEMA: INLINE KOYU RENKLERI TAMAMEN EZME --- */
+body.light-mode [style*="rgba(15,23,42,1)"],
+body.light-mode [style*="rgba(15, 23, 42, 1)"],
+body.light-mode [style*="rgba(15,23,42,0.95)"],
+body.light-mode [style*="rgba(30,41,59,0.8)"],
+body.light-mode [style*="background:rgba(0,0,0,0.2)"],
+body.light-mode [style*="background:rgba(0,0,0,0.3)"],
+body.light-mode [style*="background:rgba(255,255,255,0.03)"],
+body.light-mode [style*="background:rgba(255,255,255,0.04)"],
+body.light-mode [style*="background:var(--bg-secondary)"] {
+    background: #FFFFFF !important;
+}
+
+/* Radar Kartlarindaki Gradient (Linear) Koyu Renkleri Ezme */
+body.light-mode .card[style*="linear-gradient"] {
+    background: #FFFFFF !important;
+    border-color: #E2E8F0 !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+}
+
+/* Pill Butonlar (Tum, Tavan Radari vb.) */
+body.light-mode .pill-btn {
+    background: #F8FAFC !important;
+    color: #475569 !important;
+    border: 1px solid #CBD5E1 !important;
+}
+body.light-mode .pill-btn:hover {
+    background: #E2E8F0 !important;
+    color: #0F172A !important;
+}
+
+body.light-mode .dip-filter-btn {
+    background: #F8FAFC !important;
+    color: #475569 !important;
+    border: 1px solid #CBD5E1 !important;
+}
+body.light-mode .dip-filter-btn.active {
+    background: #DCFCE7 !important;
+    color: #166534 !important;
+    border-color: #86EFAC !important;
+}
+
+/* Aktif Pill Butonlari */
+body.light-mode .pill-btn.active {
+    background: #2563EB !important;
+    color: #FFFFFF !important;
+    border-color: #2563EB !important;
+}
+/* Detaylar Karti */
+body.light-mode details.card {
+    background: #FFFFFF !important;
+    border: 1px solid #E2E8F0 !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+}
+body.light-mode details.card[style*="rgba(15,23,42,0.95)"] {
+    background: #FFFFFF !important;
+    border: 1px solid #E2E8F0 !important;
+}
+/* Ekstra siyah buton (Sabah Adaylari vb) */
+body.light-mode button[style*="rgba(239,68,68,0.25)"] {
+    background: #FEE2E2 !important;
+    color: #991B1B !important;
+    border-color: #FCA5A5 !important;
+}
+
+/* --- ACIK TEMA: TABLOLARDAKI (HISSELER) INLINE SIYAH ARKA PLANLARI EZME --- */
+body.light-mode .data-table tr, 
+body.light-mode .data-table td,
+body.light-mode table tr,
+body.light-mode table td {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+body.light-mode table tbody tr:nth-child(odd) {
+    background-color: #FFFFFF !important;
+}
+body.light-mode table tbody tr:nth-child(even) {
+    background-color: #F8FAFC !important;
+}
+body.light-mode table tbody tr:hover td,
+body.light-mode table tbody tr:hover {
+    background-color: #F1F5F9 !important;
+}
+
+/* Javascript tarafindan basilan kapkaranlik inline background lari temizle */
+body.light-mode [style*="rgba(0,0,0"],
+body.light-mode [style*="rgba(0, 0, 0"],
+body.light-mode [style*="rgba(30,41,59"],
+body.light-mode [style*="rgba(15,23,42"] {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+body.light-mode tr[style*="rgba(0,0,0"],
+body.light-mode td[style*="rgba(0,0,0"] {
+    background-color: #FFFFFF !important;
+}
+
+body.light-mode .scenario-box,
+body.light-mode .cio-verdict-box {
+    background-color: #F8FAFC !important;
+    border-color: #E2E8F0 !important;
+    color: #1E293B !important;
+}
+
+/* =========================================================
+   ULTRA MODERN CORPORATE TABLE REDESIGN
+   ========================================================= */
+.data-table {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+.data-table thead th {
+    background: rgba(0,0,0,0.15) !important;
+    color: var(--text-muted) !important;
+    font-weight: 700 !important;
+    font-size: 0.75rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    padding: 12px 16px !important;
+    border-bottom: 2px solid var(--border-color) !important;
+    text-align: left !important;
+}
+
+.data-table tbody td {
+    padding: 12px 16px !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    vertical-align: middle !important;
+}
+
+.data-table tbody tr:last-child td {
+    border-bottom: none !important;
+}
+
+.data-table tbody tr:hover td {
+    background-color: rgba(59, 130, 246, 0.08) !important;
+    transition: background-color 0.2s ease !important;
+}
+
+/* Light Mode Corporate Professional Overrides */
+body.light-mode .data-table {
+    background-color: #ffffff !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+body.light-mode .data-table thead th {
+    background: #f8fafc !important;
+    color: #475569 !important;
+    border-bottom: 2px solid #cbd5e1 !important;
+}
+
+body.light-mode .data-table tbody td {
+    border-bottom: 1px solid #f1f5f9 !important;
+    color: #1e293b !important;
+}
+
+body.light-mode .data-table tbody tr:nth-child(even) td {
+    background-color: #f8fafc !important;
+}
+
+body.light-mode .data-table tbody tr:hover td {
+    background-color: #f1f5f9 !important;
 }

@@ -14,4 +14,7 @@ cryptography
 pyjwt
 gunicorn
 google-generativeai
+psycopg2-binary
 
+
+supabase

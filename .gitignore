@@ -18,3 +18,9 @@ demo_output.txt
 output.txt
 test.txt
 logs-*.txt
+lcz.txt
+dt.json
+dt2.json
+dt_ase.json
+v8out.json
+scratch/__pycache__/

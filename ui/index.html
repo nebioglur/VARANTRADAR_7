@@ -6,7 +6,7 @@
     <title>VARANTRADAR PRO | FINTECH TERMINAL</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=20260815_v19_final_fix">
+    <link rel="stylesheet" href="style.css?v=12?v=20260908_pro_tables">
     <!-- ApexCharts -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     
@@ -32,16 +32,20 @@
             <div id="ac-dropdown" class="ac-dropdown"></div>
         </div>
         <div class="nav-actions">
-            <button class="nav-btn active" onclick="switchMainTab('home', this)"><i class="fa-solid fa-house"></i> GİRİŞ</button>
-            <button class="nav-btn" onclick="switchMainTab('radar', this)"><i class="fa-solid fa-tower-broadcast"></i> RADAR</button>
-            <button class="nav-btn" onclick="switchMainTab('stats', this)"><i class="fa-solid fa-chart-pie"></i> İSTATİSTİKLER</button>
-            <button class="nav-btn" onclick="switchMainTab('news', this)"><i class="fa-solid fa-newspaper"></i> HABERLER (KAP)</button>
-            <!-- <button class="nav-btn" onclick="switchMainTab('varant', this)"><i class="fa-solid fa-calculator"></i> VARANT</button> -->
-            <button class="nav-btn" onclick="switchMainTab('simulation', this)"><i class="fa-solid fa-flask"></i> SİMÜLASYON</button>
-            <button class="nav-btn" onclick="switchMainTab('logs', this)"><i class="fa-solid fa-terminal"></i> LOGLAR</button>
-            <button class="nav-btn" onclick="switchMainTab('backtest', this)" style="color:var(--accent-purple);"><i class="fa-solid fa-microscope"></i> BACKTEST</button>
-            <button class="nav-btn" onclick="switchMainTab('v8', this)" style="color:#0ea5e9; border:1px solid rgba(14,165,233,0.4);"><i class="fa-solid fa-brain"></i> V8 ENGINE (YENİ)</button>
-            <button class="nav-btn" onclick="switchMainTab('guide', this)" style="color:var(--accent-yellow); border:1px solid rgba(234, 179, 8, 0.4);"><i class="fa-solid fa-book-open"></i> NASIL KULLANILIR?</button>
+            <a class="nav-btn active" href="/#home" onclick="return navClick(event, 'home', this)"><i class="fa-solid fa-house"></i> GİRİŞ</a>
+            <a class="nav-btn" href="/#detective" onclick="return navClick(event, 'detective', this)" style="color:#f97316; border:1px solid rgba(249,115,22,0.4);"><i class="fa-solid fa-user-secret"></i> PİYASA DEDEKTİFİ</a>
+            <a class="nav-btn" href="/#portfolio" onclick="return navClick(event, 'portfolio', this)" style="color:var(--accent-green);"><i class="fa-solid fa-wallet"></i> PORTFÖYÜM</a>
+            <a class="nav-btn" href="/#leaderboard" onclick="return navClick(event, 'leaderboard', this)" style="color:var(--accent-yellow);"><i class="fa-solid fa-ranking-star"></i> SIRALAMA</a>
+            <a class="nav-btn" href="/#radar" onclick="return navClick(event, 'radar', this)"><i class="fa-solid fa-tower-broadcast"></i> RADAR</a>
+            <a class="nav-btn" href="/#stats" onclick="return navClick(event, 'stats', this)"><i class="fa-solid fa-chart-pie"></i> İSTATİSTİKLER</a>
+            <a class="nav-btn" href="/#news" onclick="return navClick(event, 'news', this)"><i class="fa-solid fa-newspaper"></i> HABERLER (KAP)</a>
+            <!-- <a class="nav-btn" href="/#varant" onclick="return navClick(event, 'varant', this)"><i class="fa-solid fa-calculator"></i> VARANT</a> -->
+            <a class="nav-btn" href="/#simulation" onclick="return navClick(event, 'simulation', this)"><i class="fa-solid fa-flask"></i> SİMÜLASYON</a>
+            <a class="nav-btn" href="/#logs" onclick="return navClick(event, 'logs', this)"><i class="fa-solid fa-terminal"></i> LOGLAR</a>
+            <a class="nav-btn" href="/#backtest" onclick="return navClick(event, 'backtest', this)" style="color:var(--accent-purple);"><i class="fa-solid fa-microscope"></i> BACKTEST</a>
+            <a class="nav-btn" href="/#v8" onclick="return navClick(event, 'v8', this)" style="color:#0ea5e9; border:1px solid rgba(14,165,233,0.4);"><i class="fa-solid fa-brain"></i> V8 ENGINE (YENİ)</a>
+            <a class="nav-btn" href="/#guide" onclick="return navClick(event, 'guide', this)" style="color:var(--accent-yellow); border:1px solid rgba(234, 179, 8, 0.4);"><i class="fa-solid fa-book-open"></i> NASIL KULLANILIR?</a>
+              <a class="nav-btn" href="/#super12" onclick="return navClick(event, 'super12', this)" style="background: linear-gradient(135deg, #FFD700, #F59E0B); color: #000; font-weight: 800; border: 1px solid #F59E0B; box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);"><i class="fa-solid fa-crown"></i> SUPER_12</a>
             <div class="status-indicator">
                 <span class="pulse"></span>
                 <span>SİSTEM AKTİF</span>
@@ -53,7 +57,7 @@
                 <span style="color:var(--text-muted); font-weight:500;">online</span>
             </div>
             <!-- KULLANICI CIPİ + CIKIŞ -->
-            <div id="user-chip" style="display:none; align-items:center; gap:6px; font-size:0.78rem; font-weight:600; color:var(--accent-blue); background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.3); border-radius:16px; padding:3px 10px; margin-left:0.5rem; max-width:220px;">
+            <div id="user-chip" style="display:flex; align-items:center; gap:6px; font-size:0.78rem; font-weight:600; color:var(--accent-blue); background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.3); border-radius:16px; padding:3px 10px; margin-left:0.5rem; max-width:220px;">
                 <i class="fa-solid fa-circle-user"></i>
                 <span id="user-chip-email" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
                 <button id="btn-signout" title="Çıkış Yap" style="background:none; border:none; color:var(--text-muted); cursor:pointer; padding:0 2px; transition:color 0.2s ease;" onmouseover="this.style.color='var(--accent-red)'" onmouseout="this.style.color='var(--text-muted)'"><i class="fa-solid fa-right-from-bracket"></i></button>
@@ -81,6 +85,7 @@
 
     <!-- HOME WRAPPER (MARKET PULSE) -->
     <div id="home-wrapper" class="main-wrapper" style="display: block;">
+
         <div class="grid-2-col">
             <!-- MARKET PULSE CLOCK & SUMMARY -->
             <div style="grid-column: 1 / -1; display:flex; justify-content:space-between; align-items:center; background:linear-gradient(135deg, rgba(15,23,42,0.9), rgba(30,41,59,0.8)); border:1px solid var(--border-color); border-radius:12px; padding:1.5rem; margin-bottom:1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
@@ -152,8 +157,9 @@
                 <button type="button" class="pill-btn" onclick="filterRadarGrid('radar-card-5', this)" style="background:rgba(30,41,59,0.8); color:var(--text-muted); border:1px solid rgba(255,255,255,0.1); padding:7px 15px; border-radius:20px; font-weight:700; font-size:0.85rem; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:6px;">
                     <i class="fa-solid fa-arrow-trend-down" style="color:var(--accent-red);"></i> 📉 Düşenler
                 </button>
+
                 <button type="button" class="pill-btn" onclick="openTavanAuditModal()" style="background:linear-gradient(135deg, rgba(239,68,68,0.25), rgba(185,28,28,0.25)); color:#fca5a5; border:1px solid rgba(239,68,68,0.5); padding:7px 15px; border-radius:20px; font-weight:700; font-size:0.85rem; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:6px;">
-                    <i class="fa-solid fa-clipboard-list" style="color:#ef4444;"></i> 📋 10:15 ➔ 18:10 Tavan Karnesi
+                    <i class="fa-solid fa-clipboard-list" style="color:#ef4444;"></i> 🚀 10:15 - 18:10 Tavan Karnesi
                 </button>
                 <button type="button" class="pill-btn" onclick="openLongTermHistoryModal()" style="background:linear-gradient(135deg, rgba(16,185,129,0.25), rgba(5,150,105,0.25)); color:#6ee7b7; border:1px solid rgba(16,185,129,0.5); padding:7px 15px; border-radius:20px; font-weight:700; font-size:0.85rem; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:6px;">
                     <i class="fa-solid fa-trophy" style="color:#10b981;"></i> 🏆 Uzun Vadeli Tavan & Kâr Arşivi
@@ -200,6 +206,31 @@
             
             
                 
+                <div class="card glass-panel" id="radar-card-99" style="grid-column: 1 / -1; width: 100%;">
+                    <h3 style="color:var(--accent-blue); display:flex; justify-content:space-between; align-items:center;">
+                        <span><i class="fa-solid fa-list"></i> Tüm Hisseler (BIST)</span>
+                        <span style="font-size:0.75rem; background:rgba(59,130,246,0.2); padding:3px 8px; border-radius:12px; color:#60a5fa; border:1px solid rgba(59,130,246,0.3);"><i class="fa-solid fa-arrows-up-down"></i> Scroll</span>
+                    </h3>
+                    <div class="table-scroll-wrapper" style="max-height:350px; overflow-y:auto; padding-right:5px; margin-top:10px;">
+                        <table class="data-table" style="width:100%;">
+                            <thead>
+                                <tr>
+                                    <th style="cursor:pointer;" onclick="sortAllStocks('symbol')">Hisse ↕</th>
+                                    <th style="cursor:pointer;" onclick="sortAllStocks('price')">Fiyat ↕</th>
+                                    <th style="cursor:pointer;" onclick="sortAllStocks('change')">Değişim ↕</th>
+                                    <th style="cursor:pointer;" onclick="sortAllStocks('volume_tl')">Hacim(TL) ↕</th>
+                                    <th style="cursor:pointer;" onclick="sortAllStocks('volume_lot')">Hacim(Lot) ↕</th>
+                                    <th style="cursor:pointer;" onclick="sortAllStocks('rel_vol')">Hacim Gücü % ↕</th>
+                                    <th style="cursor:pointer;" onclick="sortAllStocks('tavan_score')">Tavan Skoru ↕</th>
+                                    <th>İşlem</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tb-all-stocks-home">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <!-- Yüksek Tavan Olasılığı -->
                 <div class="card" id="radar-card-0" style="padding:1rem; border:1px solid rgba(239, 68, 68, 0.5); box-shadow: 0 0 15px rgba(239, 68, 68, 0.15); background: linear-gradient(145deg, rgba(239, 68, 68, 0.05) 0%, rgba(15,23,42,1) 100%);">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem; flex-wrap:wrap; gap:6px;">
@@ -209,7 +240,7 @@
                     <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; margin-top:-0.5rem;">🛡️ Anti-Trap Kalkanı: VWAP Üzeri Kurumsal Alım Teyidi, ORB Açılış Kırılımı ve Sahte Fitil Koruması ile Yüksek Başarı.</p>
                     <div class="table-scroll-wrapper" style="max-height:65vh; min-height:300px; overflow-y:auto;">
                     <table class="data-table" style="width: 100%;">
-                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>Evre & Kalkan</th><th>Tavan / Kalan</th><th>Hacim & VWAP</th><th>AI & Teyit</th><th style="width:60px;"></th></tr></thead>
+                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>Evre & Kalkan</th><th>Tavan / Kalan</th><th>Hacim & VWAP</th><th>AI & Teyit</th><th>Destek / Direnç</th></tr></thead>
                         <tbody id="tb-tavan-adaylari"><tr><td colspan="7" class="text-muted text-center">Taranıyor...</td></tr></tbody>
                     </table>
                     </div>
@@ -221,7 +252,7 @@
                     <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; margin-top:-0.5rem;">Tavan Radar adaylarının patlama olasılığını, hacim şiddetini ve fiyat sıkışmasını ölçen <b>Zenginleştirilmiş Arıtma</b> analizleri.</p>
                     <div class="table-scroll-wrapper" style="max-height:65vh; min-height:300px; overflow-y:auto;">
                     <table class="data-table" style="width: 100%;">
-                        <thead><tr><th>Aday Hisse</th><th>Alpha (BIST Ayrışma)</th><th>Squeeze (Şort)</th><th>Akıllı Para (CMF)</th><th>Sektör Domino</th><th>Patlama Olasılığı</th><th style="width:60px;"></th></tr></thead>
+                        <thead><tr><th>Aday Hisse</th><th>Alpha (BIST Ayrışma)</th><th>Squeeze (Şort)</th><th>Akıllı Para (CMF)</th><th>Sektör Domino</th><th>Patlama Olasılığı</th><th>Destek / Direnç</th></tr></thead>
                         <tbody id="tb-arge-tavan"><tr><td colspan="7" class="text-muted text-center"><i class="fa-solid fa-microscope fa-beat"></i> Laboratuvar verileri analiz ediliyor...</td></tr></tbody>
                     </table>
                     </div>
@@ -233,7 +264,7 @@
                     <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; margin-top:-0.5rem;">Kısa-Orta Vade (1-5 Gün): EMA, MACD, RSI, ADX ve Momentum taraması.</p>
                     <div class="table-scroll-wrapper" style="max-height:65vh; min-height:300px; overflow-y:auto;">
                     <table class="data-table" style="width: 100%;">
-                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>Şart (X/5)</th><th>Kısa Vade Sinyali</th><th style="width:60px;"></th></tr></thead>
+                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>Şart (X/5)</th><th>Kısa Vade Sinyali</th><th>Destek / Direnç</th></tr></thead>
                         <tbody id="tb-opportunities-1h"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
                     </table>
                     </div>
@@ -244,7 +275,7 @@
                     <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem;"><i class="fa-solid fa-bolt text-yellow"></i> Fırsatlar (Günlük) <span id="time-opportunities" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
                     <div class="table-scroll-wrapper" style="max-height:65vh; min-height:300px; overflow-y:auto;">
                     <table class="data-table" style="width: 100%;">
-                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>Skor</th><th>Durum</th><th style="width:60px;"></th></tr></thead>
+                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>Skor</th><th>Durum</th><th>Destek / Direnç</th></tr></thead>
                         <tbody id="tb-opportunities"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
                     </table>
                     </div>
@@ -256,7 +287,7 @@
             <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem;"><i class="fa-solid fa-shield-cat text-green"></i> 0 Risk Adayları (Defansif) <span id="time-defensive" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
             <div class="table-scroll-wrapper" style="max-height:65vh; min-height:300px; overflow-y:auto;">
                 <table class="data-table" style="width: 100%;">
-                    <thead><tr><th>Sembol</th><th>Değişim</th><th>Trend (EMA50/200)</th><th>RSI (Güvenli Alan)</th><th style="width:60px;"></th></tr></thead>
+                    <thead><tr><th>Sembol</th><th>Değişim</th><th>Trend (EMA50/200)</th><th>RSI (Güvenli Alan)</th><th>Destek / Direnç</th></tr></thead>
                     <tbody id="defensive-tbody">
                         <tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Sistem piyasayı tarıyor...</td></tr>
                     </tbody>
@@ -268,7 +299,7 @@
                     <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem;"><i class="fa-solid fa-star text-blue"></i> YZ Favorileri <span id="time-favorites" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
                     <div class="table-scroll-wrapper" style="max-height:65vh; min-height:300px; overflow-y:auto;">
                     <table class="data-table" style="width: 100%;">
-                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>Skor</th><th>Durum</th><th style="width:60px;"></th></tr></thead>
+                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>Skor</th><th>Durum</th><th>Destek / Direnç</th></tr></thead>
                         <tbody id="tb-favorites"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
                     </table>
                     </div>
@@ -279,7 +310,7 @@
                     <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem;"><i class="fa-solid fa-water text-blue"></i> Kurumsal / Hacimli <span id="time-high_volume" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
                     <div class="table-scroll-wrapper" style="max-height:65vh; min-height:300px; overflow-y:auto;">
                     <table class="data-table" style="width: 100%;">
-                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>Skor</th><th>Hacim</th><th style="width:60px;"></th></tr></thead>
+                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>Skor</th><th>Hacim</th><th>Destek / Direnç</th></tr></thead>
                         <tbody id="tb-high_volume"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
                     </table>
                     </div>
@@ -290,7 +321,7 @@
                     <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem;"><i class="fa-solid fa-arrow-trend-up text-green"></i> Yükselenler <span id="time-gainers" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
                     <div class="table-scroll-wrapper" style="max-height:65vh; min-height:300px; overflow-y:auto;">
                     <table class="data-table" style="width: 100%;">
-                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>Skor</th><th>Değişim</th><th style="width:60px;"></th></tr></thead>
+                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>Skor</th><th>Değişim</th><th>Destek / Direnç</th></tr></thead>
                         <tbody id="tb-gainers"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
                     </table>
                     </div>
@@ -301,7 +332,7 @@
                     <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem;"><i class="fa-solid fa-arrow-trend-down text-red"></i> Düşenler <span id="time-losers" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
                     <div class="table-scroll-wrapper" style="max-height:65vh; min-height:300px; overflow-y:auto;">
                     <table class="data-table" style="width: 100%;">
-                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>Skor</th><th>Değişim</th><th style="width:60px;"></th></tr></thead>
+                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>Skor</th><th>Değişim</th><th>Destek / Direnç</th></tr></thead>
                         <tbody id="tb-losers"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
                     </table>
                     </div>
@@ -312,7 +343,7 @@
                     <h3 class="card-title" style="font-size:1rem; margin-bottom:0.8rem;"><i class="fa-solid fa-droplet-slash text-yellow"></i> Sığ Hisseler <span id="time-low_volume" style="float:right; font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-top:5px;"></span></h3>
                     <div class="table-scroll-wrapper" style="max-height:65vh; min-height:300px; overflow-y:auto;">
                     <table class="data-table" style="width: 100%;">
-                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>Skor</th><th>Hacim</th><th style="width:60px;"></th></tr></thead>
+                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>Skor</th><th>Hacim</th><th>Destek / Direnç</th></tr></thead>
                         <tbody id="tb-low_volume"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
                     </table>
                     </div>
@@ -323,12 +354,38 @@
                     <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; margin-top:-0.5rem;">Sert düşüş sinyali: 1 saatlikte EMA, MACD, RSI ve Momentum SAT veriyor.</p>
                     <div class="table-scroll-wrapper" style="max-height:65vh; min-height:300px; overflow-y:auto;">
                     <table class="data-table" style="width: 100%;">
-                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>Şart (X/5)</th><th>Düşüş Sinyali</th><th style="width:60px;"></th></tr></thead>
+                        <thead><tr><th>Sembol</th><th>Fiyat</th><th>Şart (X/5)</th><th>Düşüş Sinyali</th><th>Destek / Direnç</th></tr></thead>
                         <tbody id="tb-stay-away-1h"><tr><td colspan="5" class="text-muted text-center">Taranıyor...</td></tr></tbody>
                     </table>
                     </div>
                 </div>
-                
+
+                <!-- DIP & KIRILIM RADARI (tam genislik) -->
+                <div class="card" id="dip-breakout-card" style="grid-column: 1 / -1; padding:1rem; border:1px solid rgba(16,185,129,0.35); box-shadow: 0 0 15px rgba(16,185,129,0.10);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.6rem; margin-bottom:0.6rem;">
+                        <h3 class="card-title" style="margin:0; font-size:1.05rem; color:var(--accent-green);"><i class="fa-solid fa-water-arrow-up"></i> 🎯 DİP &amp; KIRILIM RADARI <span id="time-dip-breakout" style="font-size:0.75rem; font-weight:normal; color:var(--text-muted); margin-left:8px;"></span></h3>
+                        <div id="dip-filter-btns" style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+                            <button class="dip-filter-btn" data-cat="ALL" onclick="setDipCategory('ALL')" style="padding:0.35rem 0.8rem; border-radius:8px; border:1px solid var(--accent-green); background:rgba(16,185,129,0.2); color:var(--accent-green); cursor:pointer; font-size:0.78rem; font-weight:700;">TÜMÜ</button>
+                            <button class="dip-filter-btn" data-cat="ERKEN_DIP" onclick="setDipCategory('ERKEN_DIP')" style="padding:0.35rem 0.8rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-muted); cursor:pointer; font-size:0.78rem;">🟢 EN ERKEN DİPLER</button>
+                            <button class="dip-filter-btn" data-cat="DIP_KIRILIM" onclick="setDipCategory('DIP_KIRILIM')" style="padding:0.35rem 0.8rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-muted); cursor:pointer; font-size:0.78rem;">🟡 DİP → KIRILIM</button>
+                            <button class="dip-filter-btn" data-cat="MOMENTUM" onclick="setDipCategory('MOMENTUM')" style="padding:0.35rem 0.8rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-muted); cursor:pointer; font-size:0.78rem;">🔴 KIRILIM → MOMENTUM</button>
+                            <button class="dip-filter-btn" data-cat="YENI" onclick="setDipCategory('YENI')" style="padding:0.35rem 0.8rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-muted); cursor:pointer; font-size:0.78rem;">🆕 YENİ HİSSELER</button>
+                        </div>
+                    </div>
+                    <p style="font-size:0.78rem; color:var(--text-muted); margin:0 0 0.6rem 0;">Dip: 10 kriter (satış baskısı, higher-low, hacim, para akışı, volatilite, destek tepkisi...). Kırılım: 1️⃣ Yaklaşıyor → 2️⃣ Deneme → 3️⃣ Onaylandı. Destek = geçmişte tepki alınmış en yakın swing bölgesi; Direnç altında ana direnç (90g tepe) yazar. Tuzak riski yüksekse skor ne kadar iyi olursa olsun <b>BEKLE</b>.</p>
+                    <div class="table-scroll-wrapper" style="max-height:520px; min-height:180px; overflow:auto;">
+                    <table class="data-table mobile-cards" id="dip-breakout-table" style="width: 100%; min-width:920px;">
+                        <thead><tr>
+                            <th>Sembol</th><th>Fiyat</th><th>Aşama</th><th>Dip Oluşumu</th>
+                            <th>Dip</th><th>Dipten</th><th>Destek</th>
+                            <th>Direnç</th><th>Dirence</th>
+                            <th>🪤 Tuzak</th><th>İşlem</th><th>Fırsat</th>
+                        </tr></thead>
+                        <tbody id="tb-dip-breakout"><tr><td colspan="12" class="text-muted text-center">Taranıyor...</td></tr></tbody>
+                    </table>
+                    </div>
+                </div>
+
                             </div>
 
             <!-- Right Side: Live Autonomous AI Committee Macro & Sector Engine -->
@@ -982,7 +1039,7 @@
                             </div>
                             <div style="flex:1; min-width:180px;">
                                 <label style="color:var(--text-muted); font-size:0.8rem; display:block; margin-bottom:4px;">Hedef Hisse Fiyatı (TL):</label>
-                                <input type="number" step="0.1" id="dt-sim-target-input" style="background:var(--bg-base); color:var(--accent-green); font-weight:bold; border:1px solid var(--border-color); border-radius:6px; padding:0.4rem 0.8rem; width:100%;" placeholder="Hedef Fiyat Girin...">
+                                <input type="text" inputmode="decimal" id="dt-sim-target-input" onblur="normNumField('dt-sim-target-input')" style="background:var(--bg-base); color:var(--accent-green); font-weight:bold; border:1px solid var(--border-color); border-radius:6px; padding:0.4rem 0.8rem; width:100%;" placeholder="Hedef Fiyat Girin...">
                             </div>
                             <div style="min-width:180px;">
                                 <label style="color:var(--text-muted); font-size:0.8rem; display:block; margin-bottom:4px;">İhraççı Kurum Seçimi:</label>
@@ -1046,6 +1103,8 @@
                                 <div id="dt-stat-duration" style="font-size:1.8rem; font-weight:800; color:var(--accent-blue); margin-top:5px;">3.4 Saat</div>
                             </div>
                         </div>
+
+                        <div id="scorecard-trade-performance" style="margin-bottom:1.5rem;"></div>
 
                         <h4 style="margin-bottom:0.8rem; color:var(--text-light);"><i class="fa-solid fa-list-check text-yellow"></i> Son Kapanan ve Gerçekleşen İşlemler</h4>
                         <div style="overflow-x:auto;">
@@ -1258,7 +1317,88 @@
         </div>
     </div> <!-- END VARANT-WRAPPER -->
 
-    <div id="simulation-wrapper" class="main-wrapper" style="display: none;">
+    <div id="leaderboard-wrapper" class="main-wrapper" style="display: none;">
+        <div class="card" style="border:1px solid var(--accent-yellow); background:rgba(250,204,21,0.03);">
+            <h3 class="card-title" style="color:var(--accent-yellow); font-size:1.3rem; margin:0 0 1rem;"><i class="fa-solid fa-ranking-star"></i> Sıralama — Toplam Mal Varlığı</h3>
+            <div style="overflow-x:auto;">
+                <table class="data-table" style="width:100%; font-size:0.9rem;">
+                    <thead><tr>
+                        <th style="text-align:center;">#</th>
+                        <th>Kullanıcı</th>
+                        <th style="text-align:right;">Toplam Varlık</th>
+                        <th style="text-align:right;">Nakit</th>
+                        <th style="text-align:right;">Yatırımda</th>
+                        <th style="text-align:right;">Açık K/Z</th>
+                    </tr></thead>
+                    <tbody id="lb-tbody">
+                        <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Yükleniyor...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top:0.7rem; font-size:0.75rem; color:var(--text-muted);">
+                Toplam varlık = nakit + açık pozisyon maliyeti + anlık açık kâr/zarar. Güncellemek için sekmeyi yeniden açın.
+            </div>
+        </div>
+    </div>
+
+    <div id="detective-wrapper" class="main-wrapper" style="display: none;">
+        <div class="card" style="border:1px solid rgba(249,115,22,0.45); background: rgba(249,115,22,0.04); margin-bottom:1.5rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;">
+                <h3 class="card-title" style="color:#f97316; font-size:1.3rem; margin:0;"><i class="fa-solid fa-user-secret"></i> 🕵️ PİYASA DEDEKTİFİ <span style="font-size:0.75rem; color:var(--text-muted); font-weight:400;">(davranışsal analiz: indikatör değil, davranış)</span></h3>
+                <span id="dt-updated" style="font-size:0.75rem; color:var(--text-muted);">-</span>
+            </div>
+
+            <div id="dt-boxes" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:0.6rem; margin-bottom:1rem;"></div>
+
+            <div style="display:flex; flex-wrap:wrap; gap:0.4rem; margin-bottom:0.8rem; align-items:center;">
+                <span style="font-size:0.78rem; color:var(--text-muted); margin-right:0.3rem;">FİLTRE:</span>
+                <button class="dt-filter active" data-f="all" onclick="dtSetFilter('all', this)">TÜMÜ</button>
+                <button class="dt-filter" data-f="anomaly" onclick="dtSetFilter('anomaly', this)">ANOMALİ</button>
+                <button class="dt-filter" data-f="quiet" onclick="dtSetFilter('quiet', this)">SESSİZ</button>
+                <button class="dt-filter" data-f="energy" onclick="dtSetFilter('energy', this)">PATLAMA</button>
+                <button class="dt-filter" data-f="delayed" onclick="dtSetFilter('delayed', this)">GECİKEN</button>
+                <button class="dt-filter" data-f="leader" onclick="dtSetFilter('leader', this)">LİDER</button>
+                <button class="dt-filter" data-f="trap" onclick="dtSetFilter('trap', this)">TUZAK</button>
+                <button class="dt-filter" data-f="breakout" onclick="dtSetFilter('breakout', this)">KIRILIM</button>
+            </div>
+
+            <div style="display:flex; gap:0.5rem; margin-bottom:1rem; flex-wrap:wrap;">
+                <input id="dt-search" type="text" placeholder='🔎 NE ARIYORSUN?  örn: "sessiz ama patlamaya hazırlanan" veya "kalabalığı düşük, hareketi yeni başlamış"' style="flex:1; min-width:260px; background:var(--bg-lighter); border:1px solid var(--border-color); border-radius:8px; padding:0.55rem 0.8rem; color:var(--text-light, #f8fafc); font-size:0.85rem;" onkeydown="if(event.key==='Enter') dtApplySearch()">
+                <button onclick="dtApplySearch()" style="background:#f97316; color:#fff; border:none; border-radius:8px; padding:0.55rem 1rem; cursor:pointer; font-weight:600;">TARA</button>
+                <button onclick="dtClearSearch()" style="background:transparent; color:var(--text-muted); border:1px solid var(--border-color); border-radius:8px; padding:0.55rem 0.8rem; cursor:pointer;">Temizle</button>
+            </div>
+            <div id="dt-search-note" style="display:none; font-size:0.75rem; color:#f97316; margin:-0.5rem 0 0.8rem 0;"></div>
+
+            <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse; font-size:0.82rem; min-width:900px;">
+                    <thead><tr style="color:var(--text-muted); border-bottom:1px solid var(--border-color); text-align:left;">
+                        <th style="padding:0.5rem 0.4rem;">HİSSE</th>
+                        <th style="padding:0.5rem 0.4rem;">FİYAT / %</th>
+                        <th style="padding:0.5rem 0.4rem;">DURUM</th>
+                        <th style="padding:0.5rem 0.4rem;" title="Normal davranıştan sapma">ANOMALİ</th>
+                        <th style="padding:0.5rem 0.4rem;" title="Hareketin başlayalı geçen süre">YAŞ</th>
+                        <th style="padding:0.5rem 0.4rem;" title="Kırılım için gerekli şartların oluşma oranı">ENERJİ</th>
+                        <th style="padding:0.5rem 0.4rem;" title="Sektör/emsal hareket etti, hisse geride">GECİKME</th>
+                        <th style="padding:0.5rem 0.4rem;" title="Yöne yığılma / geç giriş riski">KALABALIK</th>
+                        <th style="padding:0.5rem 0.4rem;" title="Birleşik tuzak riski">TUZAK</th>
+                        <th style="padding:0.5rem 0.4rem;">ROL</th>
+                        <th style="padding:0.5rem 0.4rem;" title="Bugünkü davranış parmak izi (F H V M S L)">İZİ</th>
+                        <th style="padding:0.5rem 0.4rem;" title="Birleşik fırsat skoru">FIRSAT</th>
+                    </tr></thead>
+                    <tbody id="dt-tbody">
+                        <tr><td colspan="12" style="text-align:center; color:var(--text-muted); padding:1.5rem;">Dedektif verisi hazırlanıyor...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top:0.7rem; font-size:0.72rem; color:var(--text-muted);">
+                Satıra tıklayınca dedektif paneli açılır: hareketin hikâyesi, benzer geçmiş günler, hisse karakteri ve hareket zinciri. Veri her 10 dakikada bir tazelenir.
+            </div>
+        </div>
+
+        <div id="dt-panel" style="display:none; margin-bottom:2rem;"></div>
+    </div>
+
+    <div id="portfolio-wrapper" class="main-wrapper" style="display: none;">
 
         <!-- ANLIK İŞLEM TERMİNALİ (Manuel Al/Sat + Akıllı TP/SL) -->
         <div class="card" style="border:1px solid var(--accent-green); background: rgba(16,185,129,0.04); margin-bottom:2rem;">
@@ -1289,21 +1429,38 @@
 
             <!-- Manuel AL formu -->
             <div style="display:flex; flex-wrap:wrap; gap:0.6rem; align-items:flex-end; background:rgba(0,0,0,0.25); border-radius:8px; padding:0.8rem; margin-bottom:1.2rem;">
-                <div style="flex:1 1 140px;">
+                <div style="flex:1 1 140px; position:relative;">
                     <label style="font-size:0.7rem; color:var(--text-muted); display:block; margin-bottom:3px;">SEMBOL</label>
-                    <input id="lt-symbol" placeholder="THYAO" style="width:100%; background:var(--bg-base); border:1px solid var(--border-color); color:var(--text-main); border-radius:6px; padding:7px 10px; font-size:0.9rem; text-transform:uppercase;">
+                    <input id="lt-symbol" placeholder="THYAO" autocomplete="off" style="width:100%; background:var(--bg-base); border:1px solid var(--border-color); color:var(--text-main); border-radius:6px; padding:7px 10px; font-size:0.9rem; text-transform:uppercase;">
+                    <div id="lt-ac-dropdown" style="display:none; position:absolute; top:calc(100% + 4px); left:0; width:100%; min-width:220px; z-index:1000; background:#1e1e22; border:1px solid rgba(255,255,255,0.15); border-radius:8px; max-height:200px; overflow-y:auto; box-shadow:0 10px 28px rgba(0,0,0,0.65);"></div>
                 </div>
-                <div style="flex:1 1 110px;">
-                    <label style="font-size:0.7rem; color:var(--text-muted); display:block; margin-bottom:3px;">TUTAR (₺)</label>
-                    <input id="lt-allocation" type="number" value="2000" min="100" step="100" style="width:100%; background:var(--bg-base); border:1px solid var(--border-color); color:var(--text-main); border-radius:6px; padding:7px 10px; font-size:0.9rem;">
-                </div>
+                  <div style="flex:0 0 90px;">
+                      <label style="font-size:0.7rem; color:var(--text-muted); display:block; margin-bottom:3px;">FİYAT (₺)</label>
+                      <input id="lt-price" type="text" inputmode="decimal" min="0" placeholder="Anlık" onblur="normNumField('lt-price')" style="width:100%; background:var(--bg-base); border:1px solid var(--border-color); color:var(--text-main); border-radius:6px; padding:7px 10px; font-size:0.9rem;">
+                  </div>
+                  <div style="flex:0 0 84px;">
+                      <label style="font-size:0.7rem; color:var(--text-muted); display:block; margin-bottom:3px;">ADET</label>
+                      <input id="lt-qty" type="text" inputmode="numeric" min="1" placeholder="Miktar" onblur="normNumField('lt-qty', {integer:true})" style="width:100%; background:var(--bg-base); border:1px solid var(--border-color); color:var(--text-main); border-radius:6px; padding:7px 10px; font-size:0.9rem;">
+                  </div>
+                  <div style="flex:1 1 110px;">
+                      <label style="font-size:0.7rem; color:var(--text-muted); display:block; margin-bottom:3px;">TUTAR (₺)</label>
+                      <input id="lt-allocation" type="text" inputmode="decimal" placeholder="Boş" min="100" onblur="normNumField('lt-allocation')" style="width:100%; background:var(--bg-base); border:1px solid var(--border-color); color:var(--text-main); border-radius:6px; padding:7px 10px; font-size:0.9rem;">
+                  </div>
                 <div style="flex:0 0 90px;">
                     <label style="font-size:0.7rem; color:var(--accent-green); display:block; margin-bottom:3px;">KAR AL %</label>
-                    <input id="lt-tp" type="number" value="5" min="0.5" step="0.5" style="width:100%; background:var(--bg-base); border:1px solid var(--border-color); color:var(--text-main); border-radius:6px; padding:7px 10px; font-size:0.9rem;">
+                    <input id="lt-tp" type="text" inputmode="decimal" value="5" min="0.5" oninput="ltSyncFromPct('tp')" onblur="normNumField('lt-tp')" style="width:100%; background:var(--bg-base); border:1px solid var(--border-color); color:var(--text-main); border-radius:6px; padding:7px 10px; font-size:0.9rem;">
+                </div>
+                <div style="flex:0 0 96px;">
+                    <label style="font-size:0.7rem; color:var(--accent-green); display:block; margin-bottom:3px;">KAR AL ₺</label>
+                    <input id="lt-tp-price" type="text" inputmode="decimal" min="0" placeholder="— (opsiyonel)" oninput="ltSyncFromPrice('tp')" onblur="normNumField('lt-tp-price')" style="width:100%; background:var(--bg-base); border:1px solid var(--border-color); color:var(--text-main); border-radius:6px; padding:7px 10px; font-size:0.9rem;">
                 </div>
                 <div style="flex:0 0 90px;">
                     <label style="font-size:0.7rem; color:var(--accent-red); display:block; margin-bottom:3px;">ZARAR KES %</label>
-                    <input id="lt-sl" type="number" value="3" min="0.5" step="0.5" style="width:100%; background:var(--bg-base); border:1px solid var(--border-color); color:var(--text-main); border-radius:6px; padding:7px 10px; font-size:0.9rem;">
+                    <input id="lt-sl" type="text" inputmode="decimal" value="3" min="0.5" oninput="ltSyncFromPct('sl')" onblur="normNumField('lt-sl')" style="width:100%; background:var(--bg-base); border:1px solid var(--border-color); color:var(--text-main); border-radius:6px; padding:7px 10px; font-size:0.9rem;">
+                </div>
+                <div style="flex:0 0 96px;">
+                    <label style="font-size:0.7rem; color:var(--accent-red); display:block; margin-bottom:3px;">ZARAR KES ₺</label>
+                    <input id="lt-sl-price" type="text" inputmode="decimal" min="0" placeholder="— (opsiyonel)" oninput="ltSyncFromPrice('sl')" onblur="normNumField('lt-sl-price')" style="width:100%; background:var(--bg-base); border:1px solid var(--border-color); color:var(--text-main); border-radius:6px; padding:7px 10px; font-size:0.9rem;">
                 </div>
                 <div style="display:flex; align-items:center; gap:5px; padding-bottom:8px;">
                     <input id="lt-trailing" type="checkbox" checked style="accent-color:var(--accent-green); cursor:pointer;">
@@ -1311,6 +1468,15 @@
                 </div>
                 <button id="lt-buy-btn" onclick="ltOpenPosition()" style="background:linear-gradient(135deg, var(--accent-green), #059669); border:none; color:#fff; font-weight:800; border-radius:6px; padding:9px 18px; cursor:pointer; font-size:0.9rem;"><i class="fa-solid fa-cart-plus"></i> AL</button>
                 <span id="lt-msg" style="font-size:0.8rem; font-weight:600; align-self:center;"></span>
+            </div>
+
+            <!-- Anlik fiyat / degisim / miktar bilgisi -->
+            <div id="lt-quote-box" style="display:none; align-items:center; flex-wrap:wrap; gap:1.4rem; background:rgba(0,0,0,0.2); border:1px solid var(--border-color); border-radius:8px; padding:0.55rem 0.9rem; margin:-0.7rem 0 1.2rem; font-size:0.85rem;">
+                <span style="font-weight:800; color:var(--text-light);" id="lq-symbol">—</span>
+                <span>Anlık: <b id="lq-price" style="color:var(--text-light);">—</b> ₺</span>
+                <span>Değişim: <b id="lq-change">—</b></span>
+                <span>Miktar: <b id="lq-qty" style="color:var(--accent-green);">—</b> lot</span>
+                <span style="color:var(--text-muted); font-size:0.75rem;" id="lq-est">—</span>
             </div>
 
             <!-- Açık pozisyonlar -->
@@ -1338,7 +1504,33 @@
                     </table>
                 </div>
             </details>
+
+            <!-- Portföy sıfırlama talebi -->
+            <div style="margin-top:1rem; display:flex; justify-content:flex-end;">
+                <button id="lt-reset-btn" onclick="ltResetRequest()"
+                        style="background:rgba(255,193,7,0.08); border:1px solid var(--accent-yellow); color:var(--accent-yellow); border-radius:8px; padding:8px 16px; cursor:pointer; font-size:0.82rem; font-weight:600;">
+                    <i class="fa-solid fa-rotate-left"></i> Portföyü Sıfırla
+                </button>
+            </div>
+
+            <!-- Yönetici: sıfırlama talepleri (yalnızca yönetici girişte görünür) -->
+            <div id="lt-admin-panel" style="display:none; margin-top:1rem; border:1px solid rgba(168,85,247,0.35); border-radius:10px; padding:0.9rem; background:rgba(168,85,247,0.05);">
+                <div style="font-weight:700; color:var(--accent-purple); margin-bottom:0.5rem; font-size:0.9rem;">
+                    <i class="fa-solid fa-user-shield"></i> Yönetici: Portföy Sıfırlama Talepleri
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="data-table" style="width:100%; font-size:0.8rem;">
+                        <thead><tr><th>Hesap</th><th>Owner</th><th>Talep Zamanı</th><th>İşlem</th></tr></thead>
+                        <tbody id="lt-admin-tbody">
+                            <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Yükleniyor...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
+    </div> <!-- END PORTFOLIO-WRAPPER -->
+
+    <div id="simulation-wrapper" class="main-wrapper" style="display: none;">
 
         <!-- Live Orders Card -->
         <div class="card" style="border:1px solid var(--accent-yellow); background: rgba(255,193,7,0.05); margin-bottom:2rem;">
@@ -1357,6 +1549,14 @@
             <div style="margin-bottom:2rem; text-align: center;">
                 <h2 style="color:var(--accent-blue); font-size: 1.8rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-flask"></i> Gerçekçi Simülasyon Motoru</h2>
                 <p style="color:var(--text-muted); font-size: 0.95rem;">Tavan adaylarına yatırım yapan ve UZAK DUR sinyaliyle çıkış yapan test motoru.</p>
+                <div style="display:flex; justify-content:center; gap:0.6rem; margin-top:0.8rem; flex-wrap:wrap;">
+                    <button id="sim-auto-refresh-toggle" onclick="toggleSimAutoRefresh()" style="padding:0.45rem 1rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-main); cursor:pointer; font-size:0.85rem;">
+                        <i class="fa-solid fa-pause"></i> Otomatik Yenileme: AÇIK
+                    </button>
+                    <button onclick="refreshSimNow()" style="padding:0.45rem 1rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-main); cursor:pointer; font-size:0.85rem;">
+                        <i class="fa-solid fa-rotate-right"></i> Şimdi Yenile
+                    </button>
+                </div>
             </div>
 
             <!-- 4 KPI Cards row -->
@@ -1379,6 +1579,8 @@
                 </div>
             </div>
 
+            <div id="sim-performance-summary" class="card" style="border:1px solid var(--border-color); background:var(--bg-card); margin-bottom:2rem; padding:1rem; display:none;"></div>
+
             <!-- Chart -->
             <div class="card" style="border:1px solid var(--border-color); margin-bottom: 2rem; background: var(--bg-card); box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
                 <h3 class="card-title" style="margin-bottom: 1.5rem; font-size: 1.2rem;"><i class="fa-solid fa-chart-line text-blue"></i> Bakiye Grafiği (Equity Curve)</h3>
@@ -1389,7 +1591,15 @@
 
             <!-- Sleek Trade Log Table -->
             <div class="card" style="border:1px solid var(--border-color); background: var(--bg-card); box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-                <h3 class="card-title" style="margin-bottom: 1.5rem; font-size: 1.2rem;"><i class="fa-solid fa-clock-rotate-left text-green"></i> İşlem Geçmişi (Trade Log)</h3>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem; flex-wrap:wrap; margin-bottom:1.5rem;">
+                    <h3 class="card-title" style="margin:0; font-size:1.2rem;"><i class="fa-solid fa-clock-rotate-left text-green"></i> İşlem Geçmişi (Trade Log)</h3>
+                    <div style="display:flex; align-items:center; gap:0.6rem;">
+                        <span id="sim-notify-status" style="font-size:0.75rem; color:var(--text-muted);">Bildirimler kapalı</span>
+                        <button type="button" class="btn-secondary" onclick="enableTradeNotifications()" style="padding:0.45rem 0.7rem;">
+                            <i class="fa-solid fa-bell"></i> Sesli Bildirimleri Aç
+                        </button>
+                    </div>
+                </div>
                 <div class="table-scroll-wrapper" style="max-height: 500px; overflow-y: auto;">
                     <table class="data-table" style="width:100%; border-collapse: separate; border-spacing: 0;">
                             <tr>
@@ -1459,7 +1669,7 @@
                         </div>
                         <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1rem;">EMA Kesişimi, MACD Sinyali, RSI > 50, Güçlü ADX ve Pozitif Momentum analizine göre filtrelenmiştir.</p>
                         <table class="data-table" id="opp1h-results">
-                            <thead><tr><th>Sembol</th><th>Fiyat</th><th>Şart (X/5)</th><th>Detaylar</th><th>Aksiyon</th></tr></thead>
+                            <thead><tr><th>Sembol</th><th>Fiyat</th><th>Şart (X/5)</th><th>Detaylar</th><th>Destek / Direnç</th></tr></thead>
                             <tbody id="opp1h-tbody"><tr><td colspan="5" class="text-muted text-center">Giriş sayfasındaki veriler bekleniyor...</td></tr></tbody>
                         </table>
                     </div>
@@ -1613,11 +1823,12 @@
                         <option value="RSI_MEAN_REVERSION">RSI Mean Reversion (Aşırı Alım/Satım)</option>
                         <option value="BOLLINGER_BREAKOUT">Bollinger Kırılımı (Volatilite Patlaması)</option>
                         <option value="GOLDEN_CROSS">Golden Cross (SMA 50/200 Uzun Vade)</option>
+                        <option value="EMA_9_21_CROSS">EMA 9/21 Kesişimi (Kısa-Orta Vade)</option>
                     </select>
                 </div>
                 <div style="flex:1; min-width:150px;">
                     <label style="color:var(--text-muted); font-size:0.8rem; margin-bottom:5px; display:block;">Sermaye (TL)</label>
-                    <input type="number" id="bt-capital" class="search-input" value="10000" style="width:100%; border:1px solid rgba(255,255,255,0.1); padding:10px; border-radius:6px; background:rgba(0,0,0,0.2); color:white;" />
+                    <input type="text" inputmode="decimal" id="bt-capital" class="search-input" value="10000" onblur="normNumField('bt-capital')" style="width:100%; border:1px solid rgba(255,255,255,0.1); padding:10px; border-radius:6px; background:rgba(0,0,0,0.2); color:white;" />
                 </div>
                 <div style="flex:1; min-width:150px;">
                     <label style="color:var(--text-muted); font-size:0.8rem; margin-bottom:5px; display:block;">Geçmiş Veri</label>
@@ -1630,11 +1841,11 @@
                 </div>
                 <div style="flex:1; min-width:120px;">
                     <label style="color:var(--text-muted); font-size:0.8rem; margin-bottom:5px; display:block;">İzleyen Stop (%)</label>
-                    <input type="number" id="bt-trailing-stop" value="0.0" step="0.1" min="0" style="width:100%; border:1px solid rgba(255,255,255,0.1); padding:10px; border-radius:6px; background:rgba(0,0,0,0.2); color:white;" title="0 yaparsanız kapalı olur." />
+                    <input type="text" inputmode="decimal" id="bt-trailing-stop" value="0.0" onblur="normNumField('bt-trailing-stop')" style="width:100%; border:1px solid rgba(255,255,255,0.1); padding:10px; border-radius:6px; background:rgba(0,0,0,0.2); color:white;" title="0 yaparsanız kapalı olur." />
                 </div>
                 <div style="flex:1; min-width:120px;">
                     <label style="color:var(--text-muted); font-size:0.8rem; margin-bottom:5px; display:block;">Sabit Zarar Kes (%)</label>
-                    <input type="number" id="bt-stop-loss" value="0.0" step="0.1" min="0" style="width:100%; border:1px solid rgba(255,255,255,0.1); padding:10px; border-radius:6px; background:rgba(0,0,0,0.2); color:white;" title="0 yaparsanız kapalı olur." />
+                    <input type="text" inputmode="decimal" id="bt-stop-loss" value="0.0" onblur="normNumField('bt-stop-loss')" style="width:100%; border:1px solid rgba(255,255,255,0.1); padding:10px; border-radius:6px; background:rgba(0,0,0,0.2); color:white;" title="0 yaparsanız kapalı olur." />
                 </div>
                 <div>
                     <button onclick="runBacktest()" class="btn-primary" id="btn-run-backtest" style="background:var(--accent-purple); color:white; padding:10px 20px; font-weight:bold; height:41px;"><i class="fa-solid fa-play"></i> Simülasyonu Başlat</button>
@@ -1798,6 +2009,36 @@
             <button class="btn-primary" onclick="fetchLogs()" style="padding:6px 12px; font-size:0.8rem;"><i class="fa-solid fa-rotate-right"></i> Yenile</button>
         </h3>
         <pre id="log-container" style="background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:1rem; max-height:65vh; overflow-y:auto; font-size:0.72rem; line-height:1.5; color:#94a3b8; white-space:pre-wrap; word-break:break-all; margin:0;">Yükleniyor...</pre>
+    </div>
+</div>
+
+
+<div id="super12-wrapper" class="main-wrapper" style="display:none; max-width:1200px; margin:0 auto; padding:2rem; color:var(--text-main);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+        <h2 style="color:#F59E0B; margin:0;"><i class="fa-solid fa-crown"></i> SUPER 12 (Yapay Zeka & Radar Ortak Secimi)</h2>
+        <span style="background: rgba(245, 158, 11, 0.1); color: #F59E0B; border: 1px solid #F59E0B; padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 0.85rem;"><i class="fa-solid fa-bolt"></i> En Yuksek Skorlu 12 Hisse</span>
+    </div>
+    
+    <div class="card" style="padding:1rem;">
+        <div class="table-responsive">
+            <table class="data-table" style="width:100%; text-align:left;">
+                <thead>
+                    <tr>
+                        <th>Hisse</th>
+                        <th>Fiyat</th>
+                        <th>Degisim</th>
+                        <th>Hacim(TL)</th>
+                        <th>Hacim(Lot)</th>
+                        <th>Hacim Gucu %</th>
+                        <th>Tavan Skoru</th>
+                        <th>Islem</th>
+                    </tr>
+                </thead>
+                <tbody id="tb-super12-stocks">
+                    <tr><td colspan="8" style="text-align:center; padding:2rem;">Veriler hesaplaniyor...</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -1979,8 +2220,8 @@
 
 
 
-    <script src="app.js?v=20260907_v8_fix"></script>
+    <script src="app.js?v=20260914_v23"></script>
     <script src="/vendor/supabase.umd.js"></script>
-    <script type="module" src="/app-auth.js"></script>
+    <script type="module" src="/app-auth.js?v=20260913_v1"></script>
 </body>
 </html>

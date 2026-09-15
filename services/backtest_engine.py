@@ -41,6 +41,22 @@ class BacktestEngine:
             # EMA(20) > SMA(50) AL, tam tersi SAT
             data.loc[(data['ema'] > data['sma']), 'Signal'] = 1
             data.loc[(data['ema'] < data['sma']), 'Signal'] = -1
+        elif strategy_name == "EMA_9_21_CROSS":
+            close = pd.to_numeric(data['close'], errors='coerce')
+            ema9 = close.ewm(span=9, adjust=False, min_periods=9).mean()
+            ema21 = close.ewm(span=21, adjust=False, min_periods=21).mean()
+            bullish_cross = (ema9 > ema21) & (ema9.shift(1) <= ema21.shift(1))
+            bearish_cross = (ema9 < ema21) & (ema9.shift(1) >= ema21.shift(1))
+            data.loc[bullish_cross, 'Signal'] = 1
+            data.loc[bearish_cross, 'Signal'] = -1
+        elif strategy_name == "EMA_9_21_CROSS":
+            close = pd.to_numeric(data['close'], errors='coerce')
+            ema9 = close.ewm(span=9, adjust=False, min_periods=9).mean()
+            ema21 = close.ewm(span=21, adjust=False, min_periods=21).mean()
+            bullish_cross = (ema9 > ema21) & (ema9.shift(1) <= ema21.shift(1))
+            bearish_cross = (ema9 < ema21) & (ema9.shift(1) >= ema21.shift(1))
+            data.loc[bullish_cross, 'Signal'] = 1
+            data.loc[bearish_cross, 'Signal'] = -1
         else:
             # Sadece elde tut (Buy and Hold benchmark)
             data['Signal'] = 1

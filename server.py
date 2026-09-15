@@ -86,35 +86,20 @@ def save_stats(stats):
 
 CACHE_FILE = "dashboard_cache.json"
 
+
 def load_dashboard_cache():
-    if os.path.exists(CACHE_FILE):
-        try:
-            from datetime import datetime
-            import time
+    import os, json
+    from datetime import datetime
+    try:
+        if os.path.exists(CACHE_FILE):
             with open(CACHE_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            
-            if isinstance(data, dict):
                 today_str = datetime.now().strftime("%Y-%m-%d")
-            if data.get("cache_date", today_str) != today_str:
-                print("[BACKGROUND] Yeni gun tespit edildi. Eski bellekteki veriler temizleniyor.")
-                pass
-
-                cache_date = data.get("cache_date")
-                
-                if cache_date and cache_date != today_str:
-                    print(f"[Server] Eski gunun cache dosyasi reddedildi.")
-                    return {}
-                    
-                # Dosya mtime (git clone nedeniyle yaniltici olabilir), gercek timestamp kullan.
-                real_ts = data.get("cache_timestamp", 0)
-                if time.time() - real_ts > 1800: # 30 dakikadan eskiyse kesin reddet
-                    print("[Server] Cache JSON icindeki gercek timestamp 30 dakikadan eski! Fast-Start tetiklenecek.")
-                    return {}
-                    
+                if data.get("cache_date") != today_str:
+                    return {} # DONT LOAD YESTERDAY'S DATA!
                 return data
-        except Exception as e:
-            print(f"Cache load error: {e}")
+    except Exception:
+        pass
     return {}
 
 def sync_to_github():
@@ -163,7 +148,44 @@ def background_scanner():
         import traceback
         BACKGROUND_ERROR = str(e) + " - " + traceback.format_exc()
 
+_live_collector_started = False
+def start_live_data_collector():
+    """Canli 5dk veri toplayici: agir ana taramadan BAGIMSIZ, seans saatlerinde
+    her 5 dakikada bir market_data'yi tazeler. Boylece sinyal tablolari ve
+    simulasyon guncel fiyatlarda calisir (30+ dk gecikme olmaz)."""
+    global _live_collector_started
+    if _live_collector_started:
+        return
+    _live_collector_started = True
+
+    def _collector_loop():
+        import time as _time
+        from datetime import datetime as _dt
+        from services.market_data import MarketDataManager
+        while True:
+            try:
+                now = _dt.now()
+                weekday = now.weekday() < 5
+                t = now.time()
+                in_session = t >= _dt.strptime("09:50", "%H:%M").time() and t <= _dt.strptime("18:15", "%H:%M").time()
+                if weekday and in_session:
+                    d_str = now.strftime("%Y-%m-%d")
+                    try:
+                        MarketDataManager.fetch_and_store_intraday(d_str, period="5d")
+                    except Exception as coll_err:
+                        print(f"[LIVE DATA] toplama hatasi: {coll_err}")
+            except Exception as e_outer:
+                print(f"[LIVE DATA] dongu hatasi: {e_outer}")
+            _time.sleep(5 * 60)
+
+    t_live = threading.Thread(target=_collector_loop, daemon=True, name="live-data-collector")
+    t_live.start()
+    print("[LIVE DATA] Canli 5dk veri toplayici baslatildi (seans icinde her 5 dk).")
+
 def _background_scanner_impl():
+    import os
+    
+
     # --- V8 ENGINE INIT ---
     try:
         from v8_engine.database import V8Database
@@ -247,8 +269,11 @@ def _background_scanner_impl():
             fast_results = scanner.scan_pool_bulk(BIST50_SYMBOLS)
             from datetime import datetime
             fast_results["cache_date"] = datetime.now().strftime("%Y-%m-%d")
-            
+
+            _prev_regime = GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else None
             GLOBAL_DASHBOARD_CACHE = sanitize_for_json(fast_results)
+            if _prev_regime:
+                GLOBAL_DASHBOARD_CACHE["v8_market_regime"] = _prev_regime
             save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
             print("[BACKGROUND] Hızlı Başlangıç Faz 1 tamamlandı - Günlük veriler HAZIR!")
             
@@ -319,7 +344,9 @@ def _background_scanner_impl():
                     results["stay_away_1h"] = GLOBAL_DASHBOARD_CACHE["stay_away_1h"]
                 if "signals_5m" in GLOBAL_DASHBOARD_CACHE:
                     results["signals_5m"] = GLOBAL_DASHBOARD_CACHE["signals_5m"]
-                
+                if "v8_market_regime" in GLOBAL_DASHBOARD_CACHE:
+                    results["v8_market_regime"] = GLOBAL_DASHBOARD_CACHE["v8_market_regime"]
+
                 GLOBAL_DASHBOARD_CACHE = sanitize_for_json(results)
                 save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
                 print("[BACKGROUND] Günlük veriler güncellendi. 1h taraması başlıyor...")
@@ -341,6 +368,11 @@ def _background_scanner_impl():
                 print(f"[BACKGROUND] Yfinance hatası veya boş veri! results length: {len(results.get('all_symbols_stats', {})) if isinstance(results, dict) else 0}. Cache korunuyor.")
                 # Eger cache hic yoksa, en azindan bos listelerle dolsun ki UI patlamasin.
                 if not GLOBAL_DASHBOARD_CACHE:
+                    if isinstance(results, dict) and "v8_market_regime" not in results:
+                        try:
+                            results["v8_market_regime"] = regime_engine.determine_regime() if regime_engine else {"regime": "NEUTRAL", "score": 50.0, "xu100_trend": 0.0}
+                        except Exception:
+                            pass
                     GLOBAL_DASHBOARD_CACHE = results
                 results = GLOBAL_DASHBOARD_CACHE
                 
@@ -369,17 +401,31 @@ def _background_scanner_impl():
                             MarketDataManager.record_signals(d_str, tavan_candidates)
                             MarketDataManager.fetch_and_store_intraday(d_str)
                             
-                            # Günlük simülasyonu çalıştır
-                            sim = SimulationEngine()
-                            sim.run_daily_simulation(d_str)
-                            
+                            # Günlük simülasyonu çalıştır (kayıtlı her hesap için ayrı)
+                            try:
+                                from services.trade_database import get_connection as _get_conn
+                                with _get_conn() as _uc:
+                                    _cur = _uc.cursor()
+                                    _cur.execute("SELECT owner_key FROM app_users")
+                                    _owners = [r["owner_key"] for r in _cur.fetchall()]
+                            except Exception:
+                                _owners = []
+                            if not _owners:
+                                _owners = ["local:nebioglur"]
+                            for _owner in _owners:
+                                try:
+                                    sim = SimulationEngine(owner=_owner)
+                                    sim.run_daily_simulation(d_str)
+                                except Exception as _sim_err:
+                                    print(f"[BACKGROUND] Sim hatasi ({_owner}): {_sim_err}")
+
                             # Gün Sonu Simülasyon Telegram Raporu (18:10 Sonrası)
                             now_time = datetime.now()
                             if now_time.hour == 18 and now_time.minute >= 10:
                                 try:
                                     import json, os
                                     from services.telegram_bot import send_simulation_report
-                                    
+
                                     report_cache = "data/sent_sim_report.json"
                                     sent_today = False
                                     if os.path.exists(report_cache):
@@ -387,14 +433,15 @@ def _background_scanner_impl():
                                             cd = json.load(f)
                                             if cd.get("date") == d_str:
                                                 sent_today = True
-                                                
+
                                     if not sent_today:
                                         from services.trade_database import get_connection
                                         trades = []
                                         try:
                                             with get_connection() as conn:
                                                 c = conn.cursor()
-                                                c.execute("SELECT * FROM trades WHERE date_str=?", (d_str,))
+                                                _report_owner = os.environ.get('ADMIN_OWNER', 'local:nebioglur')
+                                                c.execute("SELECT * FROM trades WHERE date_str=? AND owner=?", (d_str, _report_owner))
                                                 trades = [dict(row) for row in c.fetchall()]
                                         except Exception as db_err:
                                             print(f"[SIM DB HATA] {db_err}")
@@ -445,7 +492,25 @@ def _background_scanner_impl():
             print(f"[BACKGROUND] MTF Hatasi: {e_mtf}")
 
         # Dinlen (15 dakika)
-        time.sleep(8 * 60) # Hizlandirilmis guncelleme
+        # Kullanici ozel kural: 10:00'da kesin, 17:58'de kesin, arada 10 dk aralikla
+        def get_next_run_seconds():
+            import datetime
+            now = datetime.datetime.now()
+            t_10 = now.replace(hour=10, minute=0, second=0, microsecond=0)
+            t_1758 = now.replace(hour=17, minute=58, second=0, microsecond=0)
+            
+            if now < t_10:
+                return (t_10 - now).total_seconds()
+            
+            if now < t_1758:
+                return min(600.0, (t_1758 - now).total_seconds())
+                
+            t_tomorrow_10 = t_10 + datetime.timedelta(days=1)
+            return (t_tomorrow_10 - now).total_seconds()
+            
+        sleep_secs = get_next_run_seconds()
+        print(f"[BACKGROUND] Sradaki tarama icin {int(sleep_secs)} saniye bekleniyor... (Akilli Zamanlayici: 10:00-17:58)")
+        time.sleep(sleep_secs)
 
 # Varant Sembolleri (Örnek Liste - IS Warrant yapısı)
 # ⚠️ DİKKAT: Bu varant sembolleri eski vadeli (Temmuz 2024). Güncel vadeli sembollerle değiştirilmelidir.
@@ -555,6 +620,43 @@ def api_auth_config():
         "locale": "tr"
     })
 
+# ========== HESAP BAZLI PORTFOY (OWNER) YONETIMI ==========
+def get_owner_key():
+    """Oturum sahibinin portfoy anahtarini dondurur:
+    Supabase -> sb:<user_id>, klasik giris -> local:<username>."""
+    uid = session.get('supabase_user_id')
+    if uid:
+        return f"sb:{uid}"
+    uname = session.get('username')
+    if uname:
+        return f"local:{uname}"
+    return "local:nebioglur"
+
+
+def is_admin_owner(owner=None):
+    return (owner or get_owner_key()) == os.environ.get('ADMIN_OWNER', 'local:nebioglur')
+
+
+def upsert_app_user(owner_key, email=None, display_name=None):
+    """Giris yapan hesabi app_users tablosuna kaydeder/gunceller."""
+    try:
+        from services.trade_database import get_connection
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("""INSERT INTO app_users (owner_key, email, display_name, created_at, last_login)
+                     VALUES (?, ?, ?, ?, ?)
+                     ON CONFLICT(owner_key) DO UPDATE SET
+                         email=COALESCE(excluded.email, app_users.email),
+                         display_name=COALESCE(excluded.display_name, app_users.display_name),
+                         last_login=excluded.last_login""",
+                  (owner_key, email, display_name, now, now))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"[AUTH] app_users upsert hatasi: {e}")
+
+
 @app.route('/api/auth/session', methods=['POST'])
 def api_auth_session():
     """Supabase oturumunu Flask cookie oturumuna senkronize eder."""
@@ -565,6 +667,17 @@ def api_auth_session():
     user_id = verify_supabase_token(token)
     if not user_id:
         return jsonify({"status": "error", "message": "Invalid or expired token"}), 401
+    # E-postayi JWT payload'indan oku (token zaten dogrulandi)
+    email = None
+    try:
+        import base64
+        payload_b64 = token.split('.')[1]
+        payload_b64 += '=' * (-len(payload_b64) % 4)
+        email = json.loads(base64.urlsafe_b64decode(payload_b64)).get('email')
+    except Exception:
+        pass
+    owner = f"sb:{user_id}"
+    upsert_app_user(owner, email=email, display_name=email)
     session['logged_in'] = True
     session['supabase_user_id'] = user_id
     return jsonify({"status": "success", "user_id": user_id})
@@ -574,7 +687,7 @@ def require_auth():
     if request.method == 'OPTIONS': return
     
     allowed = ['/login', '/logout', '/api/ping', '/api/auth_config', '/api/auth/session']
-    if request.path in allowed: return
+    if request.path in allowed or request.path.startswith('/api/dashboard_init'): return
     
     # Allow static assets for login page
     if request.path.endswith('.css') or request.path.endswith('.js') or request.path.endswith('.png') or request.path.endswith('.woff2'):
@@ -597,16 +710,63 @@ def require_auth():
 def login():
     # Giris artık tarayici tarafinda Verdent-managed Supabase Auth ile yapilir
     # (@verdent/auth-js builtin UI). Sunucu tarafinda form login yoktur.
+    # CLASSIC_ONLY=1 ise (bagimsiz yedek site) sadece klasik kullanici/sifre formu gosterilir.
     try:
         with open('ui/login.html', 'r', encoding='utf-8') as f:
-            return f.read()
+            html = f.read()
+        if os.environ.get('CLASSIC_ONLY') == '1':
+            flag = '<script>window.VR_CLASSIC_ONLY=1;</script>'
+            if '<head>' in html:
+                html = html.replace('<head>', '<head>' + flag, 1)
+            else:
+                html = flag + html
+        return html
     except:
         return "login.html bulunamadi", 404
+
+@app.route('/login', methods=['POST'])
+def login_post():
+    """Klasik kullanici adi / sifre girisi (yedek giris yolu).
+
+    ADMIN_USER / ADMIN_PASS ortam degiskenleriyle override edilebilir.
+    """
+    data = request.get_json(silent=True) or request.form
+    username = (data.get('username') or '').strip()
+    password = data.get('password') or ''
+    valid_user = os.environ.get('ADMIN_USER', 'nebioglur')
+    valid_pass = os.environ.get('ADMIN_PASS', '123')
+    if username == valid_user and password == valid_pass:
+        session['logged_in'] = True
+        session['username'] = username
+        upsert_app_user(f"local:{username}", display_name=username)
+        return jsonify({"status": "success"})
+    return jsonify({"status": "error", "message": "Kullanıcı adı veya şifre hatalı"}), 401
+
+@app.route('/api/me', methods=['GET'])
+def api_me():
+    """Oturum sahibinin gorunen adi + owner anahtari (cikis chip'i icin)."""
+    if not session.get('logged_in'):
+        return jsonify({"status": "error", "message": "Oturum yok"}), 401
+    owner = get_owner_key()
+    name = session.get('username')
+    if not name:
+        try:
+            from services.trade_database import get_connection
+            conn = get_connection()
+            c = conn.cursor()
+            c.execute("SELECT COALESCE(email, display_name) AS n FROM app_users WHERE owner_key=?", (owner,))
+            row = c.fetchone()
+            conn.close()
+            name = row["n"] if row and row["n"] else "Hesabım"
+        except Exception:
+            name = "Hesabım"
+    return jsonify({"status": "success", "name": name, "owner": owner})
 
 @app.route('/logout')
 def logout():
     session.pop('logged_in', None)
     session.pop('supabase_user_id', None)
+    session.pop('username', None)
     return redirect('/login')
 # =================================================
 
@@ -832,16 +992,92 @@ def api_analyze():
 
 @app.route('/api/autocomplete', methods=['GET'])
 def api_autocomplete():
-    """Hisse veya Varant sembolünün ilk harflerine göre eşleşen listesini döndürür."""
+    """Hisse veya Varant sembolünün ilk harflerine göre eşleşen listesini döndürür.
+    grouped=1 ise {stocks:[], warrants:[{symbol,label}]} dondurur (temiz liste)."""
     q = request.args.get('q', '').upper()
     if len(q) < 1:
-        return jsonify([])
+        return jsonify([]) if request.args.get('grouped') != '1' else jsonify({"stocks": [], "warrants": []})
+
+    if request.args.get('grouped') == '1':
+        stocks = [s for s in ALL_SYMBOLS if s.startswith(q) and '-' not in s][:8]
+        warrants = []
+        for s in ALL_SYMBOLS:
+            if s.startswith(q) and '-' in s:
+                try:
+                    parts = s.split('-')
+                    base = parts[0]
+                    opt = 'CALL' if parts[2].upper() == 'C' else 'PUT'
+                    strike = parts[3] if len(parts) > 3 else ''
+                    warrants.append({"symbol": s, "label": f"{base} {opt} {strike}"})
+                except Exception:
+                    warrants.append({"symbol": s, "label": s})
+            if len(warrants) >= 6:
+                break
+        return jsonify({"stocks": stocks, "warrants": warrants})
+
     matches = [s for s in ALL_SYMBOLS if s.startswith(q)][:15]
     return jsonify(matches)
 
+@app.route('/api/quote', methods=['GET'])
+def api_quote():
+    """Tek sembol icin anlik fiyat + gunluk %degisim (terminal sembol kutusu icin)."""
+    sym = (request.args.get('symbol') or '').upper().strip()
+    if not sym or len(sym) > 12:
+        return jsonify({"status": "error", "message": "Gecersiz sembol"}), 400
+    clean = sym.replace(".IS", "").upper()
+    price = None
+    prev_close = None
+    # 1) Dashboard cache
+    try:
+        stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {}) if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else {}
+        info = stats.get(clean) or stats.get(clean + ".IS")
+        if isinstance(info, dict):
+            p = info.get("Price") or info.get("Daily_Close")
+            pc = info.get("Prev_Close") or info.get("Previous_Close")
+            if p:
+                price = float(p)
+            if pc:
+                prev_close = float(pc)
+    except Exception:
+        pass
+    # 2) yfinance (5m intraday + 5d daily)
+    if price is None or prev_close is None:
+        try:
+            import yfinance as yf
+            if price is None:
+                h = yf.Ticker(clean + ".IS").history(period="1d", interval="5m")
+                if h is not None and not h.empty:
+                    price = float(h["Close"].iloc[-1])
+            hd = yf.Ticker(clean + ".IS").history(period="5d", interval="1d")
+            if hd is not None and len(hd) >= 1:
+                closes = [float(x) for x in hd["Close"].tolist()]
+                if price is None:
+                    price = closes[-1]
+                if len(closes) >= 2:
+                    prev_close = closes[-2]
+        except Exception:
+            pass
+    if price is None:
+        return jsonify({"status": "error", "message": "Fiyat bulunamadi"}), 404
+    pct = 0.0
+    if prev_close and prev_close > 0:
+        pct = (price - prev_close) / prev_close * 100.0
+    return jsonify({"status": "success", "symbol": clean, "price": round(price, 2),
+                    "prev_close": round(prev_close, 2) if prev_close else None,
+                    "change_pct": round(pct, 2)})
+
 @app.route('/api/dashboard_init', methods=['GET'])
 def api_dashboard_init():
-    """Ön yüz ilk açıldığında gösterilecek Fırsatları ve Sayaçları döner."""
+    from datetime import datetime
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    global GLOBAL_DASHBOARD_CACHE
+    if GLOBAL_DASHBOARD_CACHE and GLOBAL_DASHBOARD_CACHE.get("cache_date") != today_str:
+        GLOBAL_DASHBOARD_CACHE = {} # CLEAR STALE CACHE
+
+    try:
+        start_live_data_collector()
+    except Exception:
+        pass
     clean_cache = sanitize_for_json(GLOBAL_DASHBOARD_CACHE)
     
     total = len(BIST_SYMBOLS) if 'BIST_SYMBOLS' in globals() else 550
@@ -1144,7 +1380,7 @@ def api_simulation_live_orders():
         for s in signals:
             score = float(s.get('score', 0))
             phase = str(s.get('morning_phase', ''))
-            if score >= 80 and "YATAY" not in phase and "NEGATİF" not in phase and "UZAK DUR" not in phase:
+            if score >= 80 and "NEGAT" not in phase and "UZAK DUR" not in phase:
                 valid_signals.append(s)
                 
         orders = []
@@ -1257,10 +1493,10 @@ def api_simulation_live_orders():
 
 @app.route('/api/simulation/terminal', methods=['GET'])
 def api_simulation_terminal():
-    """Anlik islem terminali durumu: acik pozisyonlar, son islemler, bakiye."""
+    """Anlik islem terminali durumu: acik pozisyonlar, son islemler, bakiye (hesaba ozel)."""
     try:
         from services.live_trade_monitor import get_terminal_state
-        return jsonify({"status": "success", "terminal": sanitize_for_json(get_terminal_state())})
+        return jsonify({"status": "success", "terminal": sanitize_for_json(get_terminal_state(get_owner_key()))})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -1273,11 +1509,35 @@ def api_simulation_terminal_open():
         symbol = data.get('symbol', '')
         ok, msg = open_position(
             symbol,
-            allocation=data.get('allocation', 2000.0),
+            allocation=data.get('allocation'),
+            qty=data.get('qty'),
+            price=data.get('price'),
             tp_pct=data.get('tp_pct', 5.0),
             sl_pct=data.get('sl_pct', 3.0),
             trailing=bool(data.get('trailing', True)),
-            source='MANUAL'
+            source='MANUAL',
+            owner=get_owner_key(),
+            tp_price=data.get('tp_price'),
+            sl_price=data.get('sl_price')
+        )
+        return jsonify({"status": "success" if ok else "error", "message": msg}), (200 if ok else 400)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/simulation/terminal/update', methods=['POST'])
+def api_simulation_terminal_update():
+    """Acik pozisyonun Kâr Al / Zarar Kes emirlerini (TL bazli) duzenle."""
+    try:
+        from services.live_trade_monitor import update_position_orders
+        data = request.get_json(force=True, silent=True) or {}
+        pos_id = data.get('id')
+        if not pos_id:
+            return jsonify({"status": "error", "message": "Pozisyon id gerekli"}), 400
+        ok, msg = update_position_orders(
+            int(pos_id),
+            tp_price=data.get('tp_price'),
+            sl_price=data.get('sl_price'),
+            owner=get_owner_key()
         )
         return jsonify({"status": "success" if ok else "error", "message": msg}), (200 if ok else 400)
     except Exception as e:
@@ -1292,8 +1552,243 @@ def api_simulation_terminal_close():
         pos_id = data.get('id')
         if not pos_id:
             return jsonify({"status": "error", "message": "Pozisyon id gerekli"}), 400
-        ok, msg = close_position(int(pos_id), reason="MANUEL KAPATMA (Kullanıcı)")
+        ok, msg = close_position(int(pos_id), reason="MANUEL KAPATMA (Kullanici)", owner=get_owner_key())
         return jsonify({"status": "success" if ok else "error", "message": msg}), (200 if ok else 400)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/simulation/terminal/close_by_symbol', methods=['POST'])
+def api_simulation_terminal_close_by_symbol():
+    """Sembole gore acik pozisyonlari kapat."""
+    try:
+        from services.live_trade_monitor import close_position_by_symbol
+        data = request.get_json(force=True, silent=True) or {}
+        symbol = data.get('symbol')
+        if not symbol:
+            return jsonify({"status": "error", "message": "Sembol gerekli"}), 400
+        ok, msg = close_position_by_symbol(symbol, reason="MANUEL KAPATMA (Portfoyden SAT)", owner=get_owner_key())
+        return jsonify({"status": "success" if ok else "error", "message": msg}), (200 if ok else 400)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/leaderboard', methods=['GET'])
+def api_leaderboard():
+    """Tum kayitli kullanicilari toplam portfoy degerine (nakit + yatirim + acik K/Z)
+    gore buyukten kucuge siralar."""
+    try:
+        from services.trade_database import get_connection
+        from services.live_trade_monitor import get_terminal_state, _bulk_prices
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("SELECT owner_key, email, display_name FROM app_users")
+        users = c.fetchall()
+        c.execute("SELECT DISTINCT symbol FROM live_positions WHERE status='OPEN'")
+        open_symbols = [r["symbol"] for r in c.fetchall()]
+        conn.close()
+
+        # Tum acik pozisyonlar icin TEK toplu canli fiyat cekimi -> siralama
+        # anlik piyasa degeriyle hesaplanir (sabit/degeramilmez olmaz).
+        price_map = {}
+        if open_symbols:
+            try:
+                price_map = _bulk_prices(open_symbols)
+            except Exception:
+                price_map = {}
+
+        rows = []
+        for u in users:
+            owner = u["owner_key"]
+            name = u["display_name"] or u["email"]
+            if not name:
+                name = owner.split(":", 1)[1] if ":" in owner else owner
+            try:
+                t = get_terminal_state(owner, price_map=price_map)
+            except Exception:
+                t = {"cash": 100000.0, "invested": 0.0, "open_pnl": 0.0, "equity": 100000.0}
+            rows.append({
+                "owner": owner,
+                "name": name,
+                "cash": t["cash"],
+                "invested": t["invested"],
+                "open_pnl": t["open_pnl"],
+                "equity": t["equity"],
+            })
+        rows.sort(key=lambda r: r["equity"], reverse=True)
+        for i, r in enumerate(rows):
+            r["rank"] = i + 1
+        return jsonify({"status": "success", "leaderboard": rows})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/portfolio/reset_request', methods=['POST'])
+def api_portfolio_reset_request():
+    """Kullanici portfoy sifirlama talebi olusturur; yoneticiye Telegram bildirilir."""
+    try:
+        from services.trade_database import get_connection
+        owner = get_owner_key()
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("SELECT id FROM reset_requests WHERE owner_key=? AND status='PENDING'", (owner,))
+        if c.fetchone():
+            conn.close()
+            return jsonify({"status": "error", "message": "Zaten bekleyen bir sıfırlama talebiniz var."}), 400
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        c.execute("INSERT INTO reset_requests (owner_key, status, created_at) VALUES (?, 'PENDING', ?)", (owner, now))
+        conn.commit()
+        conn.close()
+        # Yoneticiye Telegram bildirimi
+        try:
+            from services.telegram_bot import send_telegram_message
+            send_telegram_message(f"🔄 <b>Portföy Sıfırlama Talebi</b>\n👤 {owner}\n🕒 {now}\n\nOnay için uygulamadaki yönetici panelini kullanın.")
+        except Exception:
+            pass
+        return jsonify({"status": "success", "message": "Sıfırlama talebiniz yöneticiye iletildi."})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/portfolio/reset_status', methods=['GET'])
+def api_portfolio_reset_status():
+    """Kullanıcının son sıfırlama talebinin durumunu dondurur."""
+    try:
+        from services.trade_database import get_connection
+        owner = get_owner_key()
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("SELECT status FROM reset_requests WHERE owner_key=? ORDER BY id DESC LIMIT 1", (owner,))
+        row = c.fetchone()
+        conn.close()
+        return jsonify({"status": "success", "last_request": row["status"] if row else None})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/admin/simulation/run', methods=['POST'])
+def api_admin_simulation_run():
+    """Admin: Belirli tarih için günlük simülasyonu manuel tetikler."""
+    try:
+        owner = get_owner_key()
+        if not is_admin_owner(owner):
+            return jsonify({"status": "error", "message": "Yetkisiz"}), 403
+        data = request.get_json() or {}
+        date_str = data.get('date') or datetime.now().strftime("%Y-%m-%d")
+
+        from services.trade_database import get_connection
+        with get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT owner_key FROM app_users")
+            owners = [r["owner_key"] for r in cur.fetchall()]
+        if not owners:
+            owners = [owner]
+
+        from services.simulation_engine import SimulationEngine
+        results = []
+        for _owner in owners:
+            try:
+                sim = SimulationEngine(owner=_owner)
+                sim.run_daily_simulation(date_str)
+                results.append({"owner": _owner, "status": "ok"})
+            except Exception as _e:
+                results.append({"owner": _owner, "status": "error", "message": str(_e)})
+
+        return jsonify({"status": "success", "date": date_str, "results": results})
+    except Exception as e:
+        import traceback
+        return jsonify({"status": "error", "message": str(e), "trace": traceback.format_exc()}), 500
+
+
+@app.route('/api/admin/reset_requests', methods=['GET'])
+def api_admin_reset_requests():
+    """Yonetici: bekleyen sifirlama taleplerini listeler."""
+    if not is_admin_owner():
+        return jsonify({"status": "error", "message": "Bu endpoint yalnızca yönetici içindir."}), 403
+    try:
+        from services.trade_database import get_connection
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("""SELECT r.id, r.owner_key, r.status, r.created_at, u.email, u.display_name
+                     FROM reset_requests r LEFT JOIN app_users u ON u.owner_key = r.owner_key
+                     WHERE r.status='PENDING' ORDER BY r.created_at ASC""")
+        reqs = [dict(r) for r in c.fetchall()]
+        conn.close()
+        return jsonify({"status": "success", "requests": reqs})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/admin/reset_requests/decide', methods=['POST'])
+def api_admin_reset_decide():
+    """Yonetici: sifirlama talebini onaylar veya reddeder."""
+    if not is_admin_owner():
+        return jsonify({"status": "error", "message": "Bu endpoint yalnızca yönetici içindir."}), 403
+    try:
+        from services.trade_database import get_connection
+        from services.live_trade_monitor import reset_portfolio
+        data = request.get_json(force=True, silent=True) or {}
+        req_id = data.get('id')
+        action = (data.get('action') or '').lower()
+        if not req_id or action not in ('approve', 'reject'):
+            return jsonify({"status": "error", "message": "id ve action (approve/reject) gerekli"}), 400
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("SELECT * FROM reset_requests WHERE id=? AND status='PENDING'", (req_id,))
+        row = c.fetchone()
+        if row is None:
+            conn.close()
+            return jsonify({"status": "error", "message": "Talep bulunamadı (zaten işlenmiş olabilir)"}), 404
+        owner = row["owner_key"]
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        if action == 'approve':
+            reset_portfolio(owner)
+            c.execute("UPDATE reset_requests SET status='APPROVED', processed_at=? WHERE id=?", (now, req_id))
+            msg = "Portföy sıfırlandı."
+        else:
+            c.execute("UPDATE reset_requests SET status='REJECTED', processed_at=? WHERE id=?", (now, req_id))
+            msg = "Talep reddedildi."
+        conn.commit()
+        conn.close()
+        return jsonify({"status": "success", "message": msg})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/admin/set_cash', methods=['POST'])
+def api_admin_set_cash():
+    """Yonetici: herhangi bir hesabin bakiyesini dogrudan ayarlar.
+
+    Iki sunucunun ayni pozu kapatmasi gibi gecmis hatalardan dolayi
+    sismanmis bakiyeleri duzeltmek icindir. live_settings icindeki
+    live_cash:<owner> degerini yazar.
+    """
+    if not is_admin_owner():
+        return jsonify({"status": "error", "message": "Bu endpoint yalnızca yönetici içindir."}), 403
+    try:
+        from services.trade_database import get_connection
+        from services.live_trade_monitor import _cash_key
+        data = request.get_json(force=True, silent=True) or {}
+        owner = (data.get('owner') or '').strip()
+        cash = data.get('cash')
+        if not owner or cash is None:
+            return jsonify({"status": "error", "message": "owner ve cash zorunlu"}), 400
+        try:
+            cash = round(float(cash), 2)
+        except (TypeError, ValueError):
+            return jsonify({"status": "error", "message": "cash sayısal olmalı"}), 400
+        if cash < 0 or cash > 10_000_000:
+            return jsonify({"status": "error", "message": "cash aralık dışı (0 - 10.000.000)"}), 400
+
+        # Hedef hesap gercekten var mi? (yanlis owner yazmayi engelle)
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("SELECT 1 FROM app_users WHERE owner_key=?", (owner,))
+        if c.fetchone() is None:
+            conn.close()
+            return jsonify({"status": "error", "message": f"owner bulunamadi: {owner}"}), 404
+
+        from services.live_trade_monitor import _set_setting
+        _set_setting(_cash_key(owner), cash)
+        conn.close()
+
+        # Dogrulama icin geri oku
+        from services.live_trade_monitor import _get_setting
+        now_val = _get_setting(_cash_key(owner))
+        return jsonify({"status": "success", "owner": owner, "cash": float(now_val)})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -1319,8 +1814,14 @@ def api_tavan_history():
 def api_winrate_stats():
     try:
         from services.win_rate_engine import WinRateEngine
+        from services.statistics_engine import StatisticsEngine
         stats = WinRateEngine.get_performance_stats()
-        return jsonify({"status": "success", "stats": sanitize_for_json(stats)})
+        trade_performance = StatisticsEngine.get_trade_performance(get_owner_key())
+        return jsonify({
+            "status": "success",
+            "stats": sanitize_for_json(stats),
+            "trade_performance": sanitize_for_json(trade_performance)
+        })
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
@@ -1346,23 +1847,27 @@ def api_simulation_daily_pnl():
         with get_connection() as conn:
             conn.row_factory = sqlite3.Row
             c = conn.cursor()
-            # Fetch daily equity log
-            c.execute("SELECT * FROM equity_log ORDER BY date_str ASC")
+            owner = get_owner_key()
+            # Fetch daily equity log (hesaba ozel)
+            c.execute("SELECT * FROM equity_log WHERE owner=? ORDER BY date_str ASC", (owner,))
             equity_rows = c.fetchall()
             equity_curve = [dict(row) for row in equity_rows]
             if not equity_curve:
                 from datetime import datetime
                 equity_curve = [{"date_str": datetime.now().strftime("%Y-%m-%d"), "start_equity": 100000.0, "end_equity": 100000.0, "total_pnl": 0.0}]
-            
-            # Fetch closed trades
-            c.execute("SELECT * FROM trades ORDER BY entry_time DESC LIMIT 100")
+
+            # Fetch closed trades (hesaba ozel)
+            c.execute("SELECT * FROM trades WHERE owner=? ORDER BY entry_time DESC LIMIT 100", (owner,))
             trade_rows = c.fetchall()
             trades = [dict(row) for row in trade_rows]
             
+            from services.statistics_engine import StatisticsEngine
+            performance = StatisticsEngine.get_trade_performance(owner)
             return jsonify({
                 "status": "success",
                 "equity_curve": sanitize_for_json(equity_curve),
-        "trades": sanitize_for_json(trades)
+                "trades": sanitize_for_json(trades),
+                "performance": sanitize_for_json(performance)
             })
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
@@ -1515,6 +2020,7 @@ def api_v8_radar_breakout():
     for sym, data in all_stats.items():
         bo = data.get("v8_breakout")
         if bo and bo.get("is_breakout"):
+            bo["symbol"] = sym
             bo["price"] = data.get("Daily_Close", 0.0)
             bo["change_pct"] = data.get("Change_Pct", 0.0)
             bo["volume"] = data.get("Volume", 0)
@@ -1535,6 +2041,7 @@ def api_v8_radar_discovery():
         disc = data.get("v8_discovery")
         if disc and disc.get("state") in ["READY", "PREPARING", "WATCH"]:
             # Combine some essential pricing data
+            disc["symbol"] = sym
             disc["price"] = data.get("Daily_Close", 0.0)
             disc["change_pct"] = data.get("Change_Pct", 0.0)
             disc["volume"] = data.get("Volume", 0)
@@ -1567,6 +2074,71 @@ def api_logs():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@app.route('/api/detective', methods=['GET'])
+def api_detective():
+    """PIYASA DEDEKTIFI: tum hisseler icin davranissal metrik satirlari."""
+    try:
+        from services.detective_engine import get_rows, start_background_loop
+        start_background_loop()  # gunicorn worker'larda garanti baslatma
+        data = get_rows()
+        safe_data = sanitize_for_json(data)
+        return jsonify({"status": safe_data.get("status", "ok"),
+                        "rows": safe_data.get("rows", []),
+                        "summary": safe_data.get("summary", {}),
+                        "built_at": safe_data.get("built_at"),
+                        "error": safe_data.get("error")})
+    except Exception as e:
+        import traceback
+        return jsonify({"status": "error", "message": str(e), "trace": traceback.format_exc()}), 500
+
+
+@app.route('/api/detective/detail/<symbol>', methods=['GET'])
+def api_detective_detail(symbol):
+    """Dedektif paneli: olay zinciri, ayni gecmis, karakter, hareket zinciri."""
+    try:
+        from services.detective_engine import get_detail
+        d = get_detail(symbol)
+        if not d:
+            return jsonify({"status": "error", "message": "Veri henüz hazır değil ya da sembol kapsamda değil."}), 404
+        return jsonify({"status": "success", "detail": sanitize_for_json(d)})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/dip_breakout', methods=['GET'])
+def api_dip_breakout():
+    """DIP & KIRILIM RADARI: akilli dip skoru (10 kriter), 3 asamali kirilim,
+    tuzak riski, dip-kirilim mesafesi ve kategori gruplari."""
+    try:
+        from services.dip_breakout_engine import get_rows, start_background_loop
+        start_background_loop()
+        d = get_rows()
+        # tani: yeni hisse tarayici durumu (0 donerse nedenini gormek icin)
+        diag = {}
+        try:
+            import yfinance
+            from services.universe_scanner import _cache as _usc
+            diag = {
+                "yfinance_version": getattr(yfinance, "__version__", "?"),
+                "scanner_built_at": str(_usc.get("built_at")),
+                "scanner_error": _usc.get("error"),
+                "scanner_count": len(_usc.get("new_listings") or []),
+                "scanner_universe": _usc.get("total_universe"),
+            }
+        except Exception as de:
+            diag = {"diag_error": str(de)}
+        safe = sanitize_for_json(d)
+        return jsonify({"status": "ok" if safe.get("rows") else "empty",
+                        "rows": safe.get("rows", []),
+                        "summary": safe.get("summary", {}),
+                        "built_at": safe.get("built_at"),
+                        "diag": diag,
+                        "error": safe.get("error")})
+    except Exception as e:
+        import traceback
+        return jsonify({"status": "error", "message": str(e), "trace": traceback.format_exc()}), 500
+
+
 if __name__ == "__main__":
 
     print("[SYSTEM] VarantRadar Pro Web Server Baslatiliyor...")
@@ -1580,6 +2152,15 @@ if __name__ == "__main__":
             daemon=True
         )
         t.start()
+        try:
+            start_live_data_collector()
+        except Exception as e:
+            print(f"[LIVE DATA] Baslatilamadi: {e}")
+        try:
+            from services.detective_engine import start_background_loop
+            start_background_loop()
+        except Exception as e:
+            print(f"[DEDEKTIF] Arka plan baslatilamadi: {e}")
 
     render_url = os.getenv("RENDER_EXTERNAL_URL")
 

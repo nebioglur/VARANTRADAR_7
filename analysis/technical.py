@@ -647,6 +647,10 @@ class TechnicalEngine(BaseEngine):
             avg_vol_20 = float(volume.iloc[-21:-1].mean()) if len(volume) > 20 else float(volume.iloc[:-1].mean())
             vol_multiplier = round(current_vol / avg_vol_20, 1) if avg_vol_20 > 0 else 1.0
             
+            if vol_multiplier < 1.5:
+                return None
+
+            
             if avg_vol_20 > 0:
                 if current_vol > avg_vol_20 * 2.5:
                     score += 25

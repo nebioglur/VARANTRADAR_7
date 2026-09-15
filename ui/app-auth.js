@@ -6,7 +6,34 @@
  *
  * Kullanim: window.VerdentAuthKit (Promise) -> { supabase, auth, session }
  */
+window.__vrAuthBooted = true;
+
 import { createVerdentAuth } from './vendor/verdent-auth/index.js';
+
+function showAuthError(msg) {
+    const box = document.getElementById('auth-error-box');
+    if (box) {
+        box.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + msg;
+        box.style.display = 'block';
+    }
+}
+
+/** Gizli/ozel pencerede localStorage engellenirse bellek-ici depoya duser. */
+function safeLocalStorage() {
+    try {
+        const t = '__vr_storage_test__';
+        window.localStorage.setItem(t, '1');
+        window.localStorage.removeItem(t);
+        return window.localStorage;
+    } catch (e) {
+        const mem = {};
+        return {
+            getItem: (k) => (k in mem ? mem[k] : null),
+            setItem: (k, v) => { mem[k] = String(v); },
+            removeItem: (k) => { delete mem[k]; },
+        };
+    }
+}
 
 async function loadAuthConfig() {
     const res = await fetch('/api/auth_config');
@@ -21,9 +48,15 @@ const kitPromise = (async () => {
             persistSession: true,
             autoRefreshToken: true,
             detectSessionInUrl: true,
+            storage: safeLocalStorage(),
         },
     });
-    const auth = createVerdentAuth({ supabase });
+    const auth = createVerdentAuth({ 
+        supabase,
+        oauth: {
+            authorizeUrl: cfg.supabase_url + '/auth/v1/authorize'
+        }
+    });
     return { supabase, auth, config: cfg };
 })();
 
@@ -59,68 +92,58 @@ async function openAuthModal(extraOptions) {
     }, extraOptions || {}));
 }
 
-function wireLoginPage(supabase, auth, session) {
-    if (session) {
-        syncServerSession(supabase).then(() => window.location.replace('/'));
-        return;
-    }
+/**
+ * Giris butonlarini KIT HAZIR OLMADAN hemen baglar:
+ * mobilde yavas baglanti/ozel pencere durumunda butonlar oluk Olmaz;
+ * tiklamada "Yukleniyor" gosterilir, hata olursa sayfada gorunur mesaj cikar.
+ */
+function bindAuthButtons() {
     const bind = (id, opts) => {
         const el = document.getElementById(id);
-        if (el) el.addEventListener('click', () => openAuthModal(opts));
+        if (!el) return;
+        el.addEventListener('click', async () => {
+            const original = el.innerHTML;
+            try {
+                el.disabled = true;
+                el.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Yükleniyor...';
+                await openAuthModal(opts);
+            } catch (e) {
+                console.error('[Auth] Modal acilamadi', e);
+                showAuthError('Giriş ekranı açılamadı. İnternet bağlantınızı kontrol edip sayfayı yenileyin. ' +
+                    '(Hata: ' + (e && e.message ? e.message : 'bilinmiyor') + ')');
+            } finally {
+                el.disabled = false;
+                el.innerHTML = original;
+            }
+        });
     };
     bind('btn-open-signin', {});
     bind('btn-open-signup', { initialView: 'signUp' });
     bind('btn-open-forgot', { initialView: 'forgotPassword' });
+}
 
-    // Inline e-posta / şifre formu
-    const form = document.getElementById('email-login-form');
-    const errorBox = document.getElementById('login-error');
-    const submitBtn = document.getElementById('btn-email-login');
-    if (form) {
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('login-email')?.value?.trim();
-            const password = document.getElementById('login-password')?.value;
-            if (!email || !password) {
-                if (errorBox) {
-                    errorBox.textContent = 'E-posta ve şifre gereklidir.';
-                    errorBox.style.display = 'block';
-                }
-                return;
-            }
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Giriş yapılıyor...';
-            }
-            if (errorBox) errorBox.style.display = 'none';
-            try {
-                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-                if (error) throw error;
-                if (!data.session) throw new Error('Oturum oluşturulamadı.');
-                await syncServerSession(supabase);
-                window.location.replace('/');
-            } catch (err) {
-                console.error('[Auth] E-posta giriş hatası', err);
-                if (errorBox) {
-                    errorBox.textContent = err.message || 'Giriş başarısız. Bilgilerinizi kontrol edin.';
-                    errorBox.style.display = 'block';
-                }
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="fa-solid fa-envelope"></i> E-POSTA İLE GİRİŞ YAP';
-                }
-            }
-        });
+function wireLoginPage(supabase, auth, session) {
+    if (session) {
+        // Zaten oturum var -> cookie oturumunu tazele, sonra ana uygulamaya gec.
+        // (Tarayici kapaninca Flask cookie'si silinir ama Supabase session
+        // localStorage'da yasar; once sync etmezsek / <-> /login dongusune girer.)
+        syncServerSession(supabase).then(() => window.location.replace('/'));
+        return;
     }
 }
 
 function wireMainApp(supabase, auth, session) {
-    if (session?.user) {
-        const emailEl = document.getElementById('user-chip-email');
-        if (emailEl) emailEl.textContent = session.user.email || 'Hesap';
-        const chip = document.getElementById('user-chip');
-        if (chip) chip.style.display = 'flex';
+    // Chip adi: Supabase oturumunda e-posta, klasik giriste /api/me
+    const emailEl = document.getElementById('user-chip-email');
+    if (session?.user?.email && emailEl) {
+        emailEl.textContent = session.user.email;
+    } else if (emailEl) {
+        fetch('/api/me').then(r => r.json()).then(d => {
+            if (d.status === 'success' && d.name) emailEl.textContent = d.name;
+        }).catch(() => {});
     }
+    const chip = document.getElementById('user-chip');
+    if (chip) chip.style.display = 'flex';
     const btn = document.getElementById('btn-signout');
     if (btn) {
         btn.addEventListener('click', async () => {
@@ -128,6 +151,11 @@ function wireMainApp(supabase, auth, session) {
             window.location.href = '/logout';
         });
     }
+}
+
+// Butonlari modul yuklenir yuklenmez bagla (login sayfasinda)
+if (document.getElementById('auth-login-card')) {
+    bindAuthButtons();
 }
 
 kitPromise.then(async ({ supabase, auth }) => {
@@ -148,4 +176,8 @@ kitPromise.then(async ({ supabase, auth }) => {
     });
 }).catch((e) => {
     console.error('[Auth] Baslatma hatasi', e);
+    if (document.getElementById('auth-login-card')) {
+        showAuthError('Oturum sistemi başlatılamadı: ' + (e && e.message ? e.message : e) +
+            '<br>Sayfayı yenileyip tekrar deneyin.');
+    }
 });

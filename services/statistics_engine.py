@@ -115,6 +115,73 @@ class StatisticsEngine:
         }
 
     @staticmethod
+    def get_trade_performance(owner: str, minimum_samples: int = 5) -> dict:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT strategy_name, pnl_val, pnl_pct, exit_time
+            FROM trades
+            WHERE owner=? AND exit_time IS NOT NULL AND pnl_val IS NOT NULL
+            ORDER BY exit_time ASC
+        """, (owner,))
+        trades = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+
+        buckets = {}
+        total_pnl = 0.0
+        peak_equity = 0.0
+        running_equity = 0.0
+        max_drawdown = 0.0
+        for trade in trades:
+            name = trade.get("strategy_name") or "Önceki kayıt / Model bilgisi yok"
+            bucket = buckets.setdefault(name, {"strategy_name": name, "trades": 0, "wins": 0, "losses": 0, "gross_profit": 0.0, "gross_loss": 0.0, "pnl_total": 0.0, "pnl_values": []})
+            pnl = float(trade.get("pnl_val") or 0.0)
+            bucket["trades"] += 1
+            bucket["pnl_total"] += pnl
+            bucket["pnl_values"].append(pnl)
+            total_pnl += pnl
+            running_equity += pnl
+            peak_equity = max(peak_equity, running_equity)
+            max_drawdown = max(max_drawdown, peak_equity - running_equity)
+            if pnl > 0:
+                bucket["wins"] += 1
+                bucket["gross_profit"] += pnl
+            elif pnl < 0:
+                bucket["losses"] += 1
+                bucket["gross_loss"] += abs(pnl)
+
+        strategies = []
+        for bucket in buckets.values():
+            trades_count = bucket["trades"]
+            wins = bucket["wins"]
+            losses = bucket["losses"]
+            gross_loss = bucket["gross_loss"]
+            strategies.append({
+                "strategy_name": bucket["strategy_name"],
+                "trades": trades_count,
+                "ready": trades_count >= minimum_samples,
+                "win_rate": round((wins / trades_count) * 100, 1) if trades_count else 0.0,
+                "avg_win": round(bucket["gross_profit"] / wins, 2) if wins else 0.0,
+                "avg_loss": round(-(gross_loss / losses), 2) if losses else 0.0,
+                "profit_factor": round(bucket["gross_profit"] / gross_loss, 2) if gross_loss else None,
+                "net_pnl": round(bucket["pnl_total"], 2)
+            })
+        strategies.sort(key=lambda item: (item["ready"], item["net_pnl"]), reverse=True)
+        wins = sum(1 for trade in trades if float(trade.get("pnl_val") or 0) > 0)
+        gross_profit = sum(max(0.0, float(trade.get("pnl_val") or 0)) for trade in trades)
+        gross_loss = sum(abs(min(0.0, float(trade.get("pnl_val") or 0))) for trade in trades)
+        return {
+            "total_trades": len(trades),
+            "ready": len(trades) >= minimum_samples,
+            "win_rate": round((wins / len(trades)) * 100, 1) if trades else 0.0,
+            "net_pnl": round(total_pnl, 2),
+            "profit_factor": round(gross_profit / gross_loss, 2) if gross_loss else None,
+            "max_drawdown_tl": round(max_drawdown, 2),
+            "minimum_samples": minimum_samples,
+            "strategies": strategies
+        }
+
+    @staticmethod
     def get_all_time_kpis(start_date: str = None, end_date: str = None, symbol_filter: str = None) -> dict:
         conn = get_connection()
         cursor = conn.cursor()
