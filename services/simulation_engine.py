@@ -436,6 +436,16 @@ class SimulationEngine:
                             'risk_amount': trade.get('risk_amount'),
                             'market_regime': trade.get('market_regime')
                         })
+
+                        # Telegram: TP1 otomatik kismi kâr alma emri bildirimi
+                        try:
+                            from services.telegram_bot import notify_sim_trade
+                            notify_sim_trade(sym, "SAT (TP1)", scale_out_price,
+                                             (net_profit / buy_vol) * 100,
+                                             "⚖️ TP1: Yarısı kâr alındı, stop maliyete çekildi (risk-free)",
+                                             str(current_time)[:10], completed_trades[-1])
+                        except Exception:
+                            pass
                             
                 if sell_price is not None:
                     trade['status'] = 'CLOSED'

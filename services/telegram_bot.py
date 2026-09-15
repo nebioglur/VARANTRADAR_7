@@ -227,11 +227,10 @@ def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.
         pass
         
     trade = trade or {}
-    # Telegram yalnızca VIP (100 puan) simülasyon işlemlerini alır.
-    # SimulationEngine trade kaydında puanı entry_score alanında taşır.
+    # Simülasyonun TÜM otomatik emirleri (AL, SAT, TP1, yeniden giriş, 17:50)
+    # Telegram'a bildirilir. VIP puan filtresi YOK — canlı portföy işlemleri
+    # buraya gelmez (yalnızca simulation_engine bu fonksiyonu çağırır).
     trade_score = trade.get("entry_score", trade.get("score", 0))
-    if float(trade_score or 0) < 100:
-        return True
     shares = trade.get('shares', 0)
     total_val = shares * price if shares else 0
     tp1 = trade.get('tp1_price', 0)
