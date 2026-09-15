@@ -114,11 +114,11 @@ def init_db():
     cursor.execute("""
         INSERT OR IGNORE INTO live_settings (key, value) VALUES ('live_cash', '100000.0')
     """)
-    # Tek seferlik migrasyon: mevcut bakiyeyi 100.000 TL'ye yukselt (her deploy'da sifirlanmasin)
-    cursor.execute("SELECT value FROM live_settings WHERE key='live_cash_migrated_100k'")
+    # Tek seferlik migrasyon: mevcut bakiyeyi 100.000 TL'ye yukselt
+    cursor.execute("SELECT value FROM live_settings WHERE key='mig_v1'")
     if cursor.fetchone() is None:
         cursor.execute("UPDATE live_settings SET value='100000.0' WHERE key='live_cash'")
-        cursor.execute("INSERT OR IGNORE INTO live_settings (key, value) VALUES ('live_cash_migrated_100k', '1')")
+        cursor.execute("INSERT OR IGNORE INTO live_settings (key, value) VALUES ('mig_v1', '1')")
 
     conn.commit()
     conn.close()

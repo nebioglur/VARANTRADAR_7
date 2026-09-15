@@ -1,18 +1,20 @@
 import requests
 import json
 import logging
+import os
 from typing import Optional
-
-# Telegram Bot Token ve Chat ID
-BOT_TOKEN = "8841122189:AAG4dMDnOS1hv9V_CD2mWCtsuz3Xf0x38tw"
-CHAT_ID = "6105241519"
+from config.settings import TELEGRAM_BOT_TOKEN as BOT_TOKEN, TELEGRAM_CHAT_ID as CHAT_ID
 
 logger = logging.getLogger(__name__)
 
 def send_telegram_message(text: str, parse_mode: str = "HTML") -> bool:
     """
-    Belirlenen Chat ID'ye Telegram üzerinden mesaj gönderir.
+    Belirlenen Chat ID'ye Telegram uzerinden mesaj gonderir.
     """
+    if not BOT_TOKEN or not CHAT_ID:
+        logger.warning("Telegram ayarlari eksik. Bildirim gonderilemedi.")
+        return False
+
     try:
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
         payload = {
@@ -25,45 +27,45 @@ def send_telegram_message(text: str, parse_mode: str = "HTML") -> bool:
         response_data = response.json()
         
         if response.status_code == 200 and response_data.get("ok"):
-            logger.info(f"Telegram mesajı başarıyla gönderildi: {text[:50]}...")
+            logger.info(f"Telegram mesaji basariyla gonderildi: {text[:50]}...")
             return True
         else:
-            logger.error(f"Telegram mesajı gönderilemedi! Hata: {response_data}")
+            logger.error(f"Telegram mesaji gonderilemedi! Hata: {response_data}")
             return False
             
     except Exception as e:
-        logger.error(f"Telegram API çağrısı sırasında hata oluştu: {str(e)}")
+        logger.error(f"Telegram API cagrisi sirasinda hata olustu: {str(e)}")
         return False
 
 def send_vip_signal(stock_data: dict) -> bool:
     """
-    100 AL puanına sahip elit hisseler için VIP sinyal mesajı oluşturur ve gönderir.
+    100 AL puanina sahip elit hisseler icin VIP sinyal mesaji olusturur ve gonderir.
     """
     symbol = stock_data.get("Symbol", "Bilinmiyor")
     price = stock_data.get("Price", 0)
     score = stock_data.get("Score", 0)
-    alpha = stock_data.get("Alpha_Str", "Nötr")
-    cmf = stock_data.get("Smart_Money", "Nötr")
+    alpha = stock_data.get("Alpha_Str", "Notr")
+    cmf = stock_data.get("Smart_Money", "Notr")
     squeeze = stock_data.get("Short_Squeeze", "Yok")
     domino = stock_data.get("Domino_Str", "Yok")
     
-    text = f"🚨 <b>VIP SİNYAL TESPİT EDİLDİ</b> 🚨\n\n"
+    text = f"🚨 <b>VIP SINYAL TESPIT EDILDI</b> 🚨\n\n"
     text += f"💎 <b>Hisse:</b> #{symbol}\n"
-    text += f"🔥 <b>AL Puanı:</b> {score}/100 (Kusursuz)\n"
-    text += f"💵 <b>Anlık Fiyat:</b> ₺{price}\n\n"
+    text += f"🔥 <b>AL Puani:</b> {score}/100 (Kusursuz)\n"
+    text += f"💵 <b>Anlik Fiyat:</b> ₺{price}\n\n"
     
     text += f"📊 <b>AR-GE Laboratuvar Verileri:</b>\n"
     text += f"🐺 <b>Alpha:</b> {alpha}\n"
-    text += f"💸 <b>Para Akışı:</b> {cmf}\n"
-    text += f"🧨 <b>Şort Durumu:</b> {squeeze}\n"
+    text += f"💸 <b>Para Akisi:</b> {cmf}\n"
+    text += f"🧨 <b>Sort Durumu:</b> {squeeze}\n"
     text += f"♟️ <b>Domino:</b> {domino}\n\n"
-    text += f"<i>Not: Bu hisse tüm teknik filtreleri geçerek 100 tam puan almıştır!</i>"
+    text += f"<i>Not: Bu hisse tum teknik filtreleri gecerek 100 tam puan almistir!</i>"
     
     return send_telegram_message(text)
 
 def send_batch_vip_signals(vip_list: list) -> bool:
     """
-    Birden fazla VIP hisseyi tek bir mesajda gönderir. En iyiden kötüye sıralar ve numaralandırır.
+    Birden fazla VIP hisseyi tek bir mesajda gonderir. En iyiden kotuye siralar ve numaralandirir.
     """
     if not vip_list:
         return False
@@ -74,76 +76,79 @@ def send_batch_vip_signals(vip_list: list) -> bool:
         sqz = d.get("Short_Squeeze", "")
         return (
             "Pozitif" in alpha and 
-            ("Giriş" in sm or "Akümülasyon" in sm) and 
-            ("Yükseliyor" in sqz or "Patlatma" in sqz)
+            ("Giris" in sm or "Akumulasyon" in sm) and 
+            ("Yukseliyor" in sqz or "Patlatma" in sqz)
         )
 
-    # Sıralama: Önce Super Green olanlar, sonra Puan 100 olduğu için Vol_Multiplier ve Hacim gibi değerlere göre
+    # Siralama: Once Super Green olanlar, sonra Puan 100 oldugu icin Vol_Multiplier ve Hacim gibi degerlere gore
     sorted_vips = sorted(
         vip_list,
         key=lambda x: (-1 if is_super_green(x) else 0, -x.get("Vol_Multiplier", 0), x.get("Distance_To_Ceiling_Pct", 99))
     )
     
-    text = f"🚨 <b>YENİ VIP SİNYALLERİ TESPİT EDİLDİ!</b> 🚨\n\n"
-    text += f"🏆 <b>GÜNÜN EN İYİ VIP HİSSELERİ (100 Puan)</b> 🏆\n\n"
+    text = f"🚨 <b>YENI VIP SINYALLERI TESPIT EDILDI!</b> 🚨\n\n"
+    text += f"🏆 <b>GUNUN EN IYI VIP HISSELERI (100 Puan)</b> 🏆\n\n"
     
     for idx, data in enumerate(sorted_vips, 1):
         symbol = data.get("Symbol", "Bilinmiyor")
         price = data.get("Price", 0)
-        alpha = data.get("Alpha_Str", "Nötr")
-        cmf = data.get("Smart_Money", "Nötr")
+        alpha = data.get("Alpha_Str", "Notr")
+        cmf = data.get("Smart_Money", "Notr")
         squeeze = data.get("Short_Squeeze", "Yok")
         domino = data.get("Domino_Str", "Yok")
         
         is_sg = is_super_green(data)
         
-        # İlk 5 hisseye özel görünüm veya Süper Kesişim
+        # Ilk 5 hisseye ozel gorunum veya Super Kesisim
         if is_sg:
-            text += f"🟢🚀 <b>{idx}. #{symbol} [SÜPER KESİŞİM]</b> (₺{price})\n"
-            text += f"   🐺 Alpha: <b>{alpha}</b> | 💸 Para Akışı: <b>{cmf}</b>\n"
-            text += f"   🧨 Şort: <b>{squeeze}</b> | ♟️ Domino: {domino}\n\n"
+            text += f"🟢🚀 <b>{idx}. #{symbol} [SUPER KESISIM]</b> (₺{price})\n"
+            text += f"   🐺 Alpha: <b>{alpha}</b> | 💸 Para Akisi: <b>{cmf}</b>\n"
+            text += f"   🧨 Sort: <b>{squeeze}</b> | ♟️ Domino: {domino}\n\n"
         elif idx <= 5:
             medals = {1: "🥇", 2: "🥈", 3: "🥉", 4: "🎖️", 5: "🏅"}
             medal = medals.get(idx, "💎")
             text += f"{medal} <b>{idx}. #{symbol}</b> (₺{price})\n"
-            text += f"   🐺 Alpha: {alpha} | 💸 Para Akışı: {cmf}\n"
-            text += f"   🧨 Şort: {squeeze} | ♟️ Domino: {domino}\n\n"
+            text += f"   🐺 Alpha: {alpha} | 💸 Para Akisi: {cmf}\n"
+            text += f"   🧨 Sort: <b>{squeeze}</b> | ♟️ Domino: {domino}\n\n"
         else:
-            # 6 ve sonrası daha sade bir görünüm
+            # 6 ve sonrasi daha sade bir gorunum
             text += f"🔹 <b>{idx}. #{symbol}</b> (₺{price})\n"
             
-    text += f"\n<i>Not: Bu hisseler tüm teknik filtreleri geçerek AR-GE sisteminden 100 tam puan almıştır!</i>"
+    text += f"\n<i>Not: Bu hisseler tum teknik filtreleri gecerek AR-GE sisteminden 100 tam puan almistir!</i>"
     
     return send_telegram_message(text)
 
 def send_simulation_report(total_trades: int, total_profit: float, return_pct: float) -> bool:
     """
-    Gün sonu simülasyon raporunu gönderir.
+    Gun sonu simulasyon raporunu gonderir.
     """
-    text = f"🧪 <b>Simülasyon Gün Sonu Raporu</b> 🧪\n\n"
+    text = f"🧪 <b>Simulasyon Gun Sonu Raporu</b> 🧪\n\n"
     
     if total_profit > 0:
-        text += f"✅ <b>Günün Kârı:</b> +{total_profit:,.2f} TL\n"
-        text += f"📈 <b>Getiri Oranı:</b> +%{return_pct:.2f}\n"
+        text += f"✅ <b>Gunun Kari:</b> +{total_profit:,.2f} TL\n"
+        text += f"📈 <b>Getiri Orani:</b> +%{return_pct:.2f}\n"
     else:
-        text += f"❌ <b>Günün Zararı:</b> {total_profit:,.2f} TL\n"
-        text += f"📉 <b>Getiri Oranı:</b> %{return_pct:.2f}\n"
+        text += f"❌ <b>Gunun Zarari:</b> {total_profit:,.2f} TL\n"
+        text += f"📉 <b>Getiri Orani:</b> %{return_pct:.2f}\n"
         
-    text += f"🛒 <b>Toplam İşlem:</b> {total_trades} adet al-sat\n\n"
-    text += f"<i>Sistem yarın için tekrar taranmaya hazır.</i>"
+    text += f"🛒 <b>Toplam Islem:</b> {total_trades} adet al-sat\n\n"
+    text += f"<i>Sistem yarin icin tekrar taranmaya hazir.</i>"
     
     return send_telegram_message(text)
 
 
-# ========== SESLİ AL/SAT UYARILARI ==========
+# ========== SESLI AL/SAT UYARILARI ==========
 import os as _os
 
 _ASSETS_DIR = _os.path.join(_os.path.dirname(__file__), "assets")
 
 
 def send_voice_alert(alert_type: str, caption: str) -> bool:
-    """Sesli uyarı gönderir: buy_alert / sell_alert mp3 + mesaj.
-    Ses dosyası yoksa düz mesaj fallback."""
+    """Sesli uyarI gonderir: buy_alert / sell_alert mp3 + mesaj.
+    Ses dosyasi yoksa duz mesaj fallback."""
+    if not BOT_TOKEN or not CHAT_ID:
+        return send_telegram_message(caption)
+
     file_map = {
         "buy": _os.path.join(_ASSETS_DIR, "buy_alert.mp3"),
         "sell": _os.path.join(_ASSETS_DIR, "sell_alert.mp3"),
@@ -173,8 +178,8 @@ def send_voice_alert(alert_type: str, caption: str) -> bool:
 
 
 def notify_buy(symbol: str, price: float, qty: int, source: str = "") -> bool:
-    """AL işlemi için sesli uyarı ('AL sinyali' sesi)."""
-    text = (f"🟢 <b>AL SİNYALİ</b>\n"
+    """AL islemi icin sesli uyari ('AL sinyali' sesi)."""
+    text = (f"🟢 <b>AL SINYALI</b>\n"
             f"📈 {symbol} — {qty} lot @ {price:.2f} TL\n"
             f"💰 Tutar: {qty * price:.2f} TL")
     if source:
@@ -183,9 +188,9 @@ def notify_buy(symbol: str, price: float, qty: int, source: str = "") -> bool:
 
 
 def notify_sell(symbol: str, price: float, pnl_val: float, pnl_pct: float, reason: str = "") -> bool:
-    """SAT işlemi için sesli uyarı ('SAT sinyali' sesi)."""
+    """SAT islemi icin sesli uyari ('SAT sinyali' sesi)."""
     emoji = "✅" if pnl_val >= 0 else "🔻"
-    text = (f"🔴 <b>SAT SİNYALİ</b>\n"
+    text = (f"🔴 <b>SAT SINYALI</b>\n"
             f"📉 {symbol} — {price:.2f} TL\n"
             f"{emoji} K/Z: {pnl_val:+.2f} TL ({pnl_pct:+.2f}%)")
     if reason:
