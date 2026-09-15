@@ -5,6 +5,7 @@ from data.providers.base_provider import BaseDataProvider
 from data.providers.yfinance_provider import YFinanceProvider
 from data.providers.finnhub_provider import FinnhubProvider
 from data.providers.isyatirim_provider import IsYatirimProvider
+from data.providers.twelvedata_provider import TwelveDataProvider
 from data.validation import DataValidator
 from data.cache import DataCache
 from data.health_monitor import DataHealthMonitor
@@ -49,6 +50,7 @@ class DataSourceManager:
             YFinanceProvider(),     # Priority 1: Primary
             FinnhubProvider(),      # Priority 2: Secondary
             IsYatirimProvider(),    # Priority 3: Backup (BIST günlük)
+            TwelveDataProvider(),   # Priority 4: Bağımsız 3. kanal (key ile)
         ]
         
         self.cache = DataCache()
@@ -76,26 +78,20 @@ class DataSourceManager:
     
     def _provider_chain(self, symbol: str, interval: str) -> List[BaseDataProvider]:
         """Kabiliyete göre akıllı kaynak sıralaması (sabit 1-2-3 yerine):
-        - BIST + günlük bar: IsYatirim (resmi kapanis/hacim) → YFinance → Finnhub
-        - BIST + gün içi bar: YFinance → Finnhub (IsYatirim gun ici vermez, atlanir)
-        - BIST dışı (FX/kripto/emtia): YFinance → Finnhub
+        - BIST + günlük bar: IsYatirim (resmi kapanis) → YFinance → TwelveData → Finnhub
+        - BIST + gün içi bar: YFinance → TwelveData → Finnhub (IsYatirim gun ici vermez)
+        - BIST dışı (FX/kripto/emtia): YFinance → TwelveData → Finnhub
+        TwelveData key yoksa bos doner, zincir zarar görmez.
         """
         by_name = {p.get_provider_name(): p for p in self.providers}
         is_bist = str(symbol).upper().endswith('.IS')
         is_daily = interval in ('1d', '1day', 'D')
 
         if is_bist and is_daily:
-            chain = [
-                by_name.get('IsYatirim API'),
-                by_name.get('YFinance API'),
-                by_name.get('Finnhub API'),
-            ]
+            order = ['IsYatirim API', 'YFinance API', 'TwelveData API', 'Finnhub API']
         else:
-            chain = [
-                by_name.get('YFinance API'),
-                by_name.get('Finnhub API'),
-            ]
-        return [p for p in chain if p is not None]
+            order = ['YFinance API', 'TwelveData API', 'Finnhub API']
+        return [by_name[n] for n in order if n in by_name]
 
     def fetch_validated(self, symbol: str, period: str = "6mo", interval: str = "1d") -> ValidatedDataResult:
         """
