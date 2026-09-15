@@ -17,6 +17,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- html2canvas for JPG / PNG export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- SweetAlert2 for Modern Modals -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
     
@@ -1145,8 +1147,8 @@
                 <!-- NEW TOGGLE FOR TODAY VS CUMULATIVE -->
                 <div style="display:flex; justify-content:center; margin-top: 1.5rem;">
                     <div style="display:flex; background: rgba(30,41,59,0.7); padding: 5px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
-                        <button id="stats-mode-daily-btn" onclick="switchStatsMode('daily')" style="background:transparent; border:none; color:var(--text-muted); padding: 8px 16px; border-radius: 6px; cursor:pointer; font-weight:600; font-size: 0.9rem; transition:all 0.3s ease;">Bugünün Özeti (Canlı)</button>
-                        <button id="stats-mode-cumulative-btn" onclick="switchStatsMode('cumulative')" style="background:var(--accent-purple); border:none; color:#fff; padding: 8px 16px; border-radius: 6px; cursor:pointer; font-weight:600; font-size: 0.9rem; transition:all 0.3s ease;">Kümülatif Başarı (Tüm Zamanlar)</button>
+                        <button id="stats-mode-daily-btn" onclick="switchStatsMode('daily')" style="background:var(--accent-purple); border:none; color:#fff; padding: 8px 16px; border-radius: 6px; cursor:pointer; font-weight:600; font-size: 0.9rem; transition:all 0.3s ease;">Bugünün Özeti (Canlı)</button>
+                        <button id="stats-mode-cumulative-btn" onclick="switchStatsMode('cumulative')" style="background:transparent; border:none; color:var(--text-muted); padding: 8px 16px; border-radius: 6px; cursor:pointer; font-weight:600; font-size: 0.9rem; transition:all 0.3s ease;">Kümülatif Başarı (Tüm Zamanlar)</button>
                     </div>
                 </div>
             </div>

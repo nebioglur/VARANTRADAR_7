@@ -1,3 +1,39 @@
+
+// --- Modern UI Overrides ---
+window.alert = function(message) {
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: 'Sistem Mesaji',
+            text: message,
+            icon: 'info',
+            background: '#1a1f2e',
+            color: '#fff',
+            confirmButtonColor: '#38bdf8'
+        });
+    } else {
+        console.log("Alert:", message);
+    }
+};
+
+window.modernConfirm = async function(message) {
+    if (typeof Swal !== 'undefined') {
+        const res = await Swal.fire({
+            title: 'Onay',
+            text: message,
+            icon: 'warning',
+            showCancelButton: true,
+            background: '#1a1f2e',
+            color: '#fff',
+            confirmButtonText: 'Evet',
+            cancelButtonText: 'Iptal',
+            confirmButtonColor: '#10b981',
+            cancelButtonColor: '#ef4444'
+        });
+        return res.isConfirmed;
+    }
+    return true; // Fallback
+};
+
 // ========== STATE MANAGEMENT ==========
 let acTimeout = null;
 let acSelectedIndex = -1;
@@ -625,7 +661,7 @@ async function analyzeSymbol() {
             }
             loadingEl.style.display = 'none';
             if (response.status !== 200 || data.status === "error") {
-                Swal.fire({title: 'Sistem Mesaji', text: "⛔ UPLINK ERROR\n\n" + (data.message || data.error, icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'}));
+                alert("⛔ UPLINK ERROR\n\n" + (data.message || data.error));
                 cancelLoadingAndGoBack();
                 return;
             }
@@ -638,7 +674,7 @@ async function analyzeSymbol() {
             return;
         }
         document.getElementById('loading').style.display = 'none';
-        Swal.fire({title: 'Sistem Mesaji', text: "CRITICAL ERROR: Connection lost.\n" + error, icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+        alert("CRITICAL ERROR: Connection lost.\n" + error);
         cancelLoadingAndGoBack();
     }
 }
@@ -2776,7 +2812,7 @@ async function exportAnalysisAsJPG() {
     if (!targetElement) return;
     
     if (typeof html2canvas === 'undefined') {
-        Swal.fire({title: 'Sistem Mesaji', text: 'Görsel kütüphanesi yüklenemedi. Lütfen sayfayı yenileyiniz.', icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+        alert('Görsel kütüphanesi yüklenemedi. Lütfen sayfayı yenileyiniz.');
         return;
     }
     
@@ -2807,7 +2843,7 @@ async function exportAnalysisAsJPG() {
         document.body.removeChild(downloadLink);
     } catch (err) {
         console.error("JPG Export Error:", err);
-        Swal.fire({title: 'Sistem Mesaji', text: "Görsel oluşturulurken bir hata oluştu: " + err.message, icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+        alert("Görsel oluşturulurken bir hata oluştu: " + err.message);
     } finally {
         if (btn) {
             btn.innerHTML = originalBtnText;
@@ -3087,11 +3123,11 @@ function openTavanAuditForDate(dateStr) {
             fetchTavanAuditData(dateStr);
         } else {
             console.error("tavan-audit-modal element not found in DOM!");
-            Swal.fire({title: 'Sistem Mesaji', text: "Sistem Hatası: Denetim penceresi bulunamadı.", icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+            alert("Sistem Hatası: Denetim penceresi bulunamadı.");
         }
     } catch(e) {
         console.error("Error opening audit modal:", e);
-        Swal.fire({title: 'Sistem Mesaji', text: "Hata: " + e.message, icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+        alert("Hata: " + e.message);
     }
 }
 
@@ -4180,15 +4216,15 @@ async function ltEditOrders(id, curTp, curSl, lastPrice) {
             body: JSON.stringify(body)
         });
         const data = await res.json();
-        Swal.fire({title: 'Sistem Mesaji', text: data.message || (data.status === 'success' ? 'Güncellendi' : 'Hata', icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'}));
+        alert(data.message || (data.status === 'success' ? 'Güncellendi' : 'Hata'));
         fetchLiveTerminal();
     } catch (e) {
-        Swal.fire({title: 'Sistem Mesaji', text: 'Bağlantı hatası', icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+        alert('Bağlantı hatası');
     }
 }
 
 async function ltClosePosition(id) {
-    if (!(await Swal.fire({title: 'Onay', text: 'Bu pozisyonu güncel fiyattan SATmak istediğinize emin misiniz?', icon: 'warning', showCancelButton: true, background: '#1a1f2e', color: '#fff', confirmButtonText: 'Evet', cancelButtonText: 'Iptal', confirmButtonColor: '#10b981', cancelButtonColor: '#ef4444'})).isConfirmed) return;
+    if (!(await window.modernConfirm('Bu pozisyonu güncel fiyattan SATmak istediğinize emin misiniz?')) return;
     try {
         const res = await fetch('/api/simulation/terminal/close', {
             method: 'POST',
@@ -4196,10 +4232,10 @@ async function ltClosePosition(id) {
             body: JSON.stringify({id: id})
         });
         const data = await res.json();
-        Swal.fire({title: 'Sistem Mesaji', text: data.message || (data.status === 'success' ? 'Kapatıldı' : 'Hata', icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'}));
+        alert(data.message || (data.status === 'success' ? 'Kapatıldı' : 'Hata'));
         fetchLiveTerminal();
     } catch (e) {
-        Swal.fire({title: 'Sistem Mesaji', text: 'Bağlantı hatası', icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+        alert('Bağlantı hatası');
     }
 }
 
@@ -4581,14 +4617,14 @@ function ltOnSymbolInput() {
 
 // ========== PORTFÖY SIFIRLAMA TALEBİ + YÖNETİCİ PANELİ ==========
 async function ltResetRequest() {
-    if (!(await Swal.fire({title: 'Onay', text: 'Portföy sıfırlama talebi yöneticiye gönderilecek.\n\nOnaylanırsa: tüm pozisyonlarınız ve işlem geçmişiniz silinir, bakiyeniz 100.000 ₺ olur.\n\nDevam edilsin mi?', icon: 'warning', showCancelButton: true, background: '#1a1f2e', color: '#fff', confirmButtonText: 'Evet', cancelButtonText: 'Iptal', confirmButtonColor: '#10b981', cancelButtonColor: '#ef4444'})).isConfirmed) return;
+    if (!(await window.modernConfirm('Portföy sıfırlama talebi yöneticiye gönderilecek.\n\nOnaylanırsa: tüm pozisyonlarınız ve işlem geçmişiniz silinir, bakiyeniz 100.000 ₺ olur.\n\nDevam edilsin mi?')) return;
     try {
         const res = await fetch('/api/portfolio/reset_request', {method: 'POST'});
         const data = await res.json();
-        Swal.fire({title: 'Sistem Mesaji', text: data.message || (data.status === 'success' ? 'Talep gönderildi' : 'Hata', icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'}));
+        alert(data.message || (data.status === 'success' ? 'Talep gönderildi' : 'Hata'));
         ltRefreshResetUI();
     } catch (e) {
-        Swal.fire({title: 'Sistem Mesaji', text: 'Bağlantı hatası', icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+        alert('Bağlantı hatası');
     }
 }
 
@@ -4642,7 +4678,7 @@ async function fetchAdminResetRequests() {
 }
 
 async function ltAdminDecide(id, action) {
-    if (!confirm(action === 'approve'
+    if (!(await window.modernConfirm(action === 'approve'
         ? 'Bu kullanıcının portföyü TAMAMEN SIFIRLANACAK (pozisyonlar, işlem geçmişi; bakiye 100.000 ₺). Onaylıyor musunuz?'
         : 'Bu sıfırlama talebi reddedilsin mi?')) return;
     try {
@@ -4652,11 +4688,11 @@ async function ltAdminDecide(id, action) {
             body: JSON.stringify({id: id, action: action})
         });
         const data = await res.json();
-        Swal.fire({title: 'Sistem Mesaji', text: data.message || (data.status === 'success' ? 'Tamam' : 'Hata', icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'}));
+        alert(data.message || (data.status === 'success' ? 'Tamam' : 'Hata'));
         fetchAdminResetRequests();
         fetchLiveTerminal();
     } catch (e) {
-        Swal.fire({title: 'Sistem Mesaji', text: 'Bağlantı hatası', icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+        alert('Bağlantı hatası');
     }
 }
 
@@ -4914,7 +4950,7 @@ async function runBacktest() {
         btn.disabled = false;
         
         if (data.status !== 'success') {
-            Swal.fire({title: 'Sistem Mesaji', text: 'Backtest Hatası: ' + data.message, icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+            alert('Backtest Hatası: ' + data.message);
             return;
         }
         
@@ -4972,7 +5008,7 @@ async function runBacktest() {
         console.error(err);
         loading.style.display = 'none';
         btn.disabled = false;
-        Swal.fire({title: 'Sistem Mesaji', text: 'Sunucu hatası: ' + err.message, icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+        alert('Sunucu hatası: ' + err.message);
     }
 }// ========== BACKTEST AUTOCOMPLETE LOGIC ==========
 const btSymbolInput = document.getElementById('bt-symbol');
@@ -5956,18 +5992,18 @@ window.showSR = function(sym, price, high, low) {
                 confirmButtonColor: '#3b82f6'
             });
         } else {
-            Swal.fire({title: 'Sistem Mesaji', text: sym + " Pivot Seviyeleri\\nFiyat: " + price.toFixed(2, icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'}) + "\\nG. Direnc: " + dR1.toFixed(2) + "\\nG. Destek: " + dS1.toFixed(2));
+            alert(sym + " Pivot Seviyeleri\\nFiyat: " + price.toFixed(2) + "\\nG. Direnc: " + dR1.toFixed(2) + "\\nG. Destek: " + dS1.toFixed(2));
         }
     } catch(e) {
         console.error("showSR error:", e);
-        Swal.fire({title: 'Sistem Mesaji', text: "Destek/Direnc gosterilirken hata: " + e.message, icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+        alert("Destek/Direnc gosterilirken hata: " + e.message);
     }
 };
 
 
 // Hizli islem fonksiyonu (Kartlardaki Al/Sat butonlari icin)
 async function quickTrade(symbol, action, qty, price, tp_price, sl_price) {
-    if (!(await Swal.fire({title: 'Onay', text: `Emin misiniz? ${symbol} icin ${action === 'buy' ? 'ALIS' : 'SATIS'} islemi portfoyunuze eklenecektir.`, icon: 'warning', showCancelButton: true, background: '#1a1f2e', color: '#fff', confirmButtonText: 'Evet', cancelButtonText: 'Iptal', confirmButtonColor: '#10b981', cancelButtonColor: '#ef4444'})).isConfirmed) return;
+    if (!(await window.modernConfirm(`Emin misiniz? ${symbol} icin ${action === 'buy' ? 'ALIS' : 'SATIS'} islemi portfoyunuze eklenecektir.`)) return;
     
     if (action === 'buy') {
         const payload = {
@@ -5985,13 +6021,13 @@ async function quickTrade(symbol, action, qty, price, tp_price, sl_price) {
             });
             const data = await res.json();
             if (data.status === 'success') {
-                Swal.fire({title: 'Sistem Mesaji', text: `Basarili! ${symbol} portfoye eklendi.`, icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+                alert(`Basarili! ${symbol} portfoye eklendi.`);
                 fetchLiveTerminal();
             } else {
-                Swal.fire({title: 'Sistem Mesaji', text: `Hata: ${data.message}`, icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+                alert(`Hata: ${data.message}`);
             }
         } catch (e) {
-            Swal.fire({title: 'Sistem Mesaji', text: `Sunucu hatasi: ${e}`, icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+            alert(`Sunucu hatasi: ${e}`);
         }
     } else if (action === 'sell') {
         // Sat butonu icin: Sembole gore portfoydeki acik pozisyonlari bulup kapat!
@@ -6003,13 +6039,13 @@ async function quickTrade(symbol, action, qty, price, tp_price, sl_price) {
             });
             const data = await res.json();
             if (data.status === 'success') {
-                Swal.fire({title: 'Sistem Mesaji', text: `Basarili! ${symbol} portfoyden satildi.`, icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+                alert(`Basarili! ${symbol} portfoyden satildi.`);
                 fetchLiveTerminal();
             } else {
-                Swal.fire({title: 'Sistem Mesaji', text: `Hata: ${data.message}`, icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+                alert(`Hata: ${data.message}`);
             }
         } catch (e) {
-            Swal.fire({title: 'Sistem Mesaji', text: `Sunucu hatasi: ${e}`, icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+            alert(`Sunucu hatasi: ${e}`);
         }
     }
 }
