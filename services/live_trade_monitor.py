@@ -225,22 +225,12 @@ def open_position(symbol, allocation=2000.0, tp_pct=5.0, sl_pct=3.0, trailing=Tr
                final_sl, final_tp,
                DEFAULT_TRAIL_PCT if trailing else 0,
                entry_price, source, live_price, now))
-    new_pos_id = c.lastrowid
     c.execute("UPDATE live_settings SET value = CAST(CAST(value AS DOUBLE PRECISION) - ? AS TEXT) WHERE key=?",
               (round(cost, 2), _cash_key(owner or DEFAULT_OWNER)))
     if c.rowcount == 0:
         _set_setting(_cash_key(owner or DEFAULT_OWNER), round(STARTING_CASH - cost, 2))
     conn.commit()
     conn.close()
-
-    # Telegram: canlı portföy AL bildirimi (bildirim hatasi islemi bozmasin)
-    try:
-        from services.telegram_bot import notify_live_trade
-        notify_live_trade(clean, "AL", entry_price, shares=shares,
-                          tp_price=final_tp, sl_price=final_sl,
-                          source=source, pos_id=new_pos_id, trade_time=now)
-    except Exception as _tg_err:
-        print(f"[LiveMonitor] Telegram AL bildirimi hatasi: {_tg_err}")
 
     return True, (f"ALINDI: {shares} lot {clean} @ {entry_price:.2f} TL "
                   f"(TP {final_tp:.2f} TL /%{disp_tp_pct:.1f} - SL {final_sl:.2f} TL/-%{disp_sl_pct:.1f})")
@@ -355,16 +345,6 @@ def close_position(pos_id, price=None, reason="MANUEL KAPATMA", owner=None):
 
     # Para kredisi YALNIZCA kapanisi kazanan tarafa yazilir (atomik toplama)
     _add_cash(row_owner, sell_volume - commission)
-
-    # Telegram: canlı portföy SAT bildirimi (manuel + otomatik TP/SL)
-    try:
-        from services.telegram_bot import notify_live_trade
-        notify_live_trade(symbol, "SAT", round(price, 2), shares=shares,
-                          entry_price=entry, pnl_val=pnl_val, pnl_pct=pnl_pct,
-                          reason=reason, source=row["source"] or "MANUAL",
-                          pos_id=pos_id, trade_time=now)
-    except Exception as _tg_err:
-        print(f"[LiveMonitor] Telegram SAT bildirimi hatasi: {_tg_err}")
 
     return True, (f"KAPANDI: {symbol} {pnl_val:+.2f} TL ({pnl_pct:+.2f}%) - {reason}")
 
