@@ -4892,7 +4892,7 @@ async function fetchLiveOrders() {
                         </div>
                     </div>
                     <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
-                        <button onclick="quickTrade('${order.symbol}', 'buy', ${order.shares}, ${order.entry_price}, ${order.tp1_price}, ${order.stop_price})" class="btn-primary" style="flex:1; background:var(--accent-green); color:#fff; border:none; padding:0.4rem; border-radius:4px; font-weight:bold; cursor:pointer;"><i class="fa-solid fa-cart-arrow-down"></i> Portfoye AL</button>
+                        <button onclick="preparePortfolioOrder(${JSON.stringify(order).replace(/"/g, '&quot;')})" class="btn-primary" style="flex:1; background:var(--accent-green); color:#fff; border:none; padding:0.4rem; border-radius:4px; font-weight:bold; cursor:pointer;"><i class="fa-solid fa-cart-arrow-down"></i> Portfoye AL</button>
                         <button onclick="quickTrade('${order.symbol}', 'sell', ${order.shares}, ${order.entry_price}, ${order.tp1_price}, ${order.stop_price})" class="btn-primary" style="flex:1; background:var(--accent-red); color:#fff; border:none; padding:0.4rem; border-radius:4px; font-weight:bold; cursor:pointer;"><i class="fa-solid fa-money-bill-wave"></i> Portfoyden SAT</button>
                     </div>
                 `;
@@ -5834,6 +5834,34 @@ function quickTradeBuy(sym) {
             symInput.dispatchEvent(new Event('input'));
         }
     }, 200);
+}
+
+function preparePortfolioOrder(order) {
+    const pfBtn = Array.from(document.querySelectorAll('.nav-btn')).find(
+        b => b.getAttribute('href') && b.getAttribute('href').includes('portfolio')
+    );
+    if (pfBtn) switchMainTab('portfolio', pfBtn);
+
+    setTimeout(() => {
+        const values = {
+            'lt-symbol': String(order.symbol || '').replace('.IS', ''),
+            'lt-price': Number(order.entry_price || 0).toFixed(2),
+            'lt-qty': String(order.shares || ''),
+            'lt-allocation': (Number(order.entry_price || 0) * Number(order.shares || 0)).toFixed(2),
+            'lt-tp-price': Number(order.tp1_price || 0).toFixed(2),
+            'lt-sl-price': Number(order.stop_price || 0).toFixed(2)
+        };
+        Object.entries(values).forEach(([id, value]) => {
+            const field = document.getElementById(id);
+            if (field) {
+                field.value = value;
+                field.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        });
+        document.getElementById('lt-msg').textContent = 'Emir bilgileri dolduruldu; AL butonuna sen basacaksın.';
+        document.getElementById('lt-msg').style.color = 'var(--accent-yellow)';
+        document.getElementById('lt-symbol')?.focus();
+    }, 250);
 }
 
 function renderSuper12Table() {
