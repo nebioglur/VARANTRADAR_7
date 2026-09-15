@@ -227,6 +227,9 @@ def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.
         pass
         
     trade = trade or {}
+    # Telegram yalnızca VIP (100 puan) simülasyon işlemlerini alır.
+    if float(trade.get("score", 0) or 0) < 100:
+        return True
     shares = trade.get('shares', 0)
     total_val = shares * price if shares else 0
     tp1 = trade.get('tp1_price', 0)
