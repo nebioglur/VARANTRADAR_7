@@ -519,6 +519,58 @@ def _background_scanner_impl():
         print(f"[BACKGROUND] Siradaki tarama icin {int(sleep_secs)} saniye bekleniyor...")
         time.sleep(sleep_secs)
 
+
+def simulation_loop():
+    """SIMULASYON SUREKLI ARKA PLAN DONGUSU:
+    - Piyasa saatlerinde (10:00 - 18:10) her 2 dakikada bir:
+      1) Gun icu 5 dakikalik barlar tazelenir (yalnizca sinyalli hisseler, hafif "5d")
+      2) Gunluk simulasyon guncel barlarla yeniden oynatilir
+    -> Hisse alinir alinmaz / satilir satilmaz Telegram bildirimi aninda gider
+       (notify_sim_trade icindeki gunluk tekil-anahtar mukerrer bildirimi engeller).
+    - Piyasa disinda saatte bir hafif calisir (17:50 nakit gecisi ve gun sonu
+      kapanisinin server restart olsa bile garanti edilmesi icin)."""
+    while True:
+        sleep_secs = 300.0
+        try:
+            now = datetime.now()
+            d_str = now.strftime("%Y-%m-%d")
+            t_open = now.replace(hour=10, minute=0, second=0, microsecond=0)
+            t_close = now.replace(hour=18, minute=10, second=0, microsecond=0)
+            in_market = t_open <= now <= t_close
+
+            if in_market:
+                try:
+                    from services.market_data import MarketDataManager
+                    MarketDataManager.fetch_and_store_intraday(d_str, period="5d")
+                except Exception as _md_err:
+                    print(f"[SIMLOOP] Intraday veri hatasi: {_md_err}")
+
+                try:
+                    from services.trade_database import get_connection as _get_conn
+                    with _get_conn() as _uc:
+                        _cur = _uc.cursor()
+                        _cur.execute("SELECT owner_key FROM app_users")
+                        _owners = [r["owner_key"] for r in _cur.fetchall()]
+                except Exception:
+                    _owners = []
+                if not _owners:
+                    _owners = ["local:nebioglur"]
+
+                for _owner in _owners:
+                    try:
+                        from services.simulation_engine import SimulationEngine
+                        SimulationEngine(owner=_owner).run_daily_simulation(d_str)
+                    except Exception as _sim_err:
+                        print(f"[SIMLOOP] Sim hatasi ({_owner}): {_sim_err}")
+
+                sleep_secs = 120.0
+            else:
+                sleep_secs = 3600.0
+        except Exception as e:
+            print(f"[SIMLOOP] Hata: {e}")
+            sleep_secs = 300.0
+        time.sleep(sleep_secs)
+
 # Varant Sembolleri (Örnek Liste - IS Warrant yapısı)
 # ⚠️ DİKKAT: Bu varant sembolleri eski vadeli (Temmuz 2024). Güncel vadeli sembollerle değiştirilmelidir.
 import warnings
@@ -2177,6 +2229,9 @@ if __name__ == "__main__":
             daemon=True
         )
         t.start()
+        # Simülasyon sürekli arka plan döngüsü (AL/SAT anında Telegram bildirimi)
+        t_sim = threading.Thread(target=simulation_loop, daemon=True, name="simulation-loop")
+        t_sim.start()
         try:
             start_live_data_collector()
         except Exception as e:
