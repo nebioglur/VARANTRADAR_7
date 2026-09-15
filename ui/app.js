@@ -3734,17 +3734,18 @@ let globalSimData = null;
 
 // Simülasyon sayfası otomatik yenileme: kullanıcı inceleyebilmesi için
 // durdurulabilir. Durdurulunca yalnızca "Şimdi Yenile" ile tazelenir.
-let simAutoRefresh = true;
+// Sayfa ilk açıldığında KAPALI başlar.
+let simAutoRefresh = false;
 
 function toggleSimAutoRefresh() {
     simAutoRefresh = !simAutoRefresh;
     const btn = document.getElementById('sim-auto-refresh-toggle');
     if (btn) {
         btn.innerHTML = simAutoRefresh
-            ? '<i class="fa-solid fa-pause"></i> Otomatik Yenileme: AÇIK'
-            : '<i class="fa-solid fa-play"></i> Otomatik Yenileme: KAPALI';
-        btn.style.borderColor = simAutoRefresh ? 'var(--border-color)' : 'var(--accent-yellow)';
-        btn.style.color = simAutoRefresh ? 'var(--text-main)' : 'var(--accent-yellow)';
+            ? '<i class="fa-solid fa-circle-check"></i> Otomatik Yenileme: AÇIK'
+            : '<i class="fa-solid fa-circle-pause"></i> Otomatik Yenileme: KAPALI';
+        btn.classList.toggle('on', simAutoRefresh);
+        btn.classList.toggle('off', !simAutoRefresh);
     }
 }
 
@@ -3888,8 +3889,13 @@ function enableTradeNotifications() {
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission().catch(() => {});
     }
+    const btn = document.getElementById('sim-notify-btn');
+    if (btn) {
+        btn.classList.add('on');
+        btn.innerHTML = '<i class="fa-solid fa-bell"></i> Sesli Bildirimler: AÇIK';
+    }
     const status = document.getElementById('sim-notify-status');
-    if (status) status.textContent = 'Bildirim ve ses aktif';
+    if (status) status.textContent = 'Ses + bildirim aktif';
 }
 
 function playTradeAlert(kind) {

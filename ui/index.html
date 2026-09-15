@@ -7,6 +7,23 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css?v=12?v=20260908_pro_tables">
+    <style>
+        .sim-toolbar { display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; }
+        .sim-pill {
+            padding:0.5rem 0.95rem; border-radius:999px; border:1px solid var(--border-color);
+            background:linear-gradient(145deg, rgba(30,41,59,0.6), rgba(15,23,42,0.9));
+            color:var(--text-main); cursor:pointer; font-size:0.78rem; font-weight:600;
+            display:inline-flex; align-items:center; gap:0.45rem; transition:all 0.2s ease; white-space:nowrap;
+        }
+        .sim-pill:hover { border-color:var(--accent-blue); color:#fff; transform:translateY(-1px); box-shadow:0 4px 12px rgba(56,189,248,0.18); }
+        .sim-pill.on  { border-color:rgba(34,197,94,0.6); color:#22c55e; background:linear-gradient(145deg, rgba(34,197,94,0.12), rgba(15,23,42,0.9)); }
+        .sim-pill.off { border-color:rgba(250,204,21,0.45); color:#facc15; }
+        .sim-pill-accent { border-color:rgba(56,189,248,0.45); color:#38bdf8; }
+        .sim-notify-badge {
+            font-size:0.72rem; padding:0.32rem 0.7rem; border-radius:999px;
+            background:rgba(100,116,139,0.15); color:var(--text-muted); border:1px solid rgba(100,116,139,0.3); white-space:nowrap;
+        }
+    </style>
     <!-- ApexCharts -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     
@@ -1549,14 +1566,6 @@
             <div style="margin-bottom:2rem; text-align: center;">
                 <h2 style="color:var(--accent-blue); font-size: 1.8rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-flask"></i> Gerçekçi Simülasyon Motoru</h2>
                 <p style="color:var(--text-muted); font-size: 0.95rem;">Tavan adaylarına yatırım yapan ve UZAK DUR sinyaliyle çıkış yapan test motoru.</p>
-                <div style="display:flex; justify-content:center; gap:0.6rem; margin-top:0.8rem; flex-wrap:wrap;">
-                    <button id="sim-auto-refresh-toggle" onclick="toggleSimAutoRefresh()" style="padding:0.45rem 1rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-main); cursor:pointer; font-size:0.85rem;">
-                        <i class="fa-solid fa-pause"></i> Otomatik Yenileme: AÇIK
-                    </button>
-                    <button onclick="refreshSimNow()" style="padding:0.45rem 1rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-main); cursor:pointer; font-size:0.85rem;">
-                        <i class="fa-solid fa-rotate-right"></i> Şimdi Yenile
-                    </button>
-                </div>
             </div>
 
             <!-- 4 KPI Cards row -->
@@ -1593,10 +1602,16 @@
             <div class="card" style="border:1px solid var(--border-color); background: var(--bg-card); box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
                 <div style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem; flex-wrap:wrap; margin-bottom:1.5rem;">
                     <h3 class="card-title" style="margin:0; font-size:1.2rem;"><i class="fa-solid fa-clock-rotate-left text-green"></i> İşlem Geçmişi (Trade Log)</h3>
-                    <div style="display:flex; align-items:center; gap:0.6rem;">
-                        <span id="sim-notify-status" style="font-size:0.75rem; color:var(--text-muted);">Bildirimler kapalı</span>
-                        <button type="button" class="btn-secondary" onclick="enableTradeNotifications()" style="padding:0.45rem 0.7rem;">
-                            <i class="fa-solid fa-bell"></i> Sesli Bildirimleri Aç
+                    <div class="sim-toolbar">
+                        <span id="sim-notify-status" class="sim-notify-badge">Bildirimler kapalı</span>
+                        <button type="button" id="sim-notify-btn" class="sim-pill" onclick="enableTradeNotifications()">
+                            <i class="fa-solid fa-bell"></i> Sesli Bildirimler
+                        </button>
+                        <button type="button" id="sim-auto-refresh-toggle" class="sim-pill off" onclick="toggleSimAutoRefresh()">
+                            <i class="fa-solid fa-circle-pause"></i> Otomatik Yenileme: KAPALI
+                        </button>
+                        <button type="button" class="sim-pill sim-pill-accent" onclick="refreshSimNow()">
+                            <i class="fa-solid fa-rotate-right"></i> Şimdi Yenile
                         </button>
                     </div>
                 </div>
@@ -2221,7 +2236,7 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="app.js?v=20260915_v27"></script>
+    <script src="app.js?v=20260915_v28"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js?v=20260913_v1"></script>
 </body>
