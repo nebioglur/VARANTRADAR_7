@@ -460,7 +460,6 @@ class TavanAuditTracker:
 
         sorted_dates = sorted(list(all_audits.keys()))
         
-        from datetime import datetime
         # Tarih filtreleme
         filtered_audits = {}
         for d, aud in all_audits.items():
