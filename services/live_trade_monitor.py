@@ -364,6 +364,13 @@ def close_position(pos_id, price=None, reason="MANUEL KAPATMA", owner=None):
 
 def monitor_once():
     """Acik pozisyonlari tarar, akilli TP/SL/trailing kurallarini uygular."""
+    # Piyasa saatleri kontrolu (10:00 - 18:15 arasi calisir).
+    # Pre-market veya kapanis sonrasi yanlis/gecikmeli fiyatlarla stop patlamasin!
+    from datetime import datetime
+    now = datetime.now()
+    if now.hour < 10 or (now.hour == 18 and now.minute > 15) or now.hour > 18:
+        return {"checked": 0, "closed": [], "msg": "Piyasa kapali (islem saati disi)"}
+
     conn = get_connection()
     c = conn.cursor()
     c.execute("SELECT * FROM live_positions WHERE status='OPEN'")
