@@ -5750,11 +5750,20 @@ function renderAllStocksTable() {
     });
     
     allStats.sort((a, b) => {
+        // Hacim Gucu sutununda once YESIL (pozitif) hisseler uste gelir,
+        // sonra hacim gucu degerine gore siralanir.
+        if (currentStocksSort.col === 'rel_vol') {
+            const grpA = a.change > 0 ? 1 : (a.change < 0 ? -1 : 0);
+            const grpB = b.change > 0 ? 1 : (b.change < 0 ? -1 : 0);
+            if (grpA !== grpB) return currentStocksSort.asc ? grpA - grpB : grpB - grpA;
+            if (a.rel_vol !== b.rel_vol) return currentStocksSort.asc ? a.rel_vol - b.rel_vol : b.rel_vol - a.rel_vol;
+            return 0;
+        }
         let valA = a[currentStocksSort.col];
         let valB = b[currentStocksSort.col];
         if (typeof valA === 'string') valA = valA.toLowerCase();
         if (typeof valB === 'string') valB = valB.toLowerCase();
-        
+
         if (valA < valB) return currentStocksSort.asc ? -1 : 1;
         if (valA > valB) return currentStocksSort.asc ? 1 : -1;
         return 0;
