@@ -134,6 +134,33 @@ class UniversalScanner:
         except Exception as e_gap:
             print(f"[SCANNER] Is Yatirim bos-doldurma hatasi: {e_gap}")
 
+        # ROTASYONLU RESMI FIYAT TAZELEME: Yahoo bayat kapanis verebiliyor.
+        # Her dongude ~150 sembol Is Yatirim'in resmi gunluk verisiyle
+        # uzerine yazilir; birkaç dongude tum BIST resmi fiyata yakinsar.
+        try:
+            n_all = len(symbols)
+            if n_all:
+                start_idx = getattr(self, "_iy_rotate_idx", 0) % n_all
+                rotate = symbols[start_idx:start_idx + 150]
+                self._iy_rotate_idx = (start_idx + len(rotate)) % n_all
+                from data.providers.isyatirim_provider import IsYatirimProvider
+                iy_rot = IsYatirimProvider()
+                refreshed = 0
+                for s in rotate:
+                    if not str(s).upper().endswith('.IS'):
+                        continue
+                    try:
+                        df_r = iy_rot.fetch_ohlcv(s, period="1y", interval="1d")
+                        if df_r is not None and not df_r.empty and len(df_r) >= 5:
+                            bulk_data[s] = df_r
+                            refreshed += 1
+                    except Exception:
+                        continue
+                if refreshed:
+                    print(f"[SCANNER] Is Yatirim rotasyonu: {refreshed} sembol resmi veriyle tazelendi (pencere {len(rotate)}).")
+        except Exception as e_rot:
+            print(f"[SCANNER] Is Yatirim rotasyon hatasi: {e_rot}")
+
         all_results = []
         
         for sym in symbols:
