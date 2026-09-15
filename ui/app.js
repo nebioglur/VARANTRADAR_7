@@ -5739,6 +5739,12 @@ function renderAllStocksTable() {
             }
         }
         
+        // Gün içi güç metrikleri
+        let intra = data.intraday_strength || {};
+        let intra_change = intra.intraday_change_pct || 0;
+        let hourly_flow = intra.hourly_flow || '-';
+        let acc_score = intra.accumulation_score || 0;
+        
         let tScore = 50;
         if (change > 0 && change <= 7) tScore += (change * 3);
         else if (change > 7) tScore += 20;
@@ -5768,7 +5774,10 @@ function renderAllStocksTable() {
             rel_vol: rVol,
             tavan_score: tScore,
             time: data.Time || '-',
-            state: state
+            state: state,
+            intra_change: intra_change,
+            hourly_flow: hourly_flow,
+            acc_score: acc_score
         };
     });
     
@@ -5791,6 +5800,9 @@ function renderAllStocksTable() {
         const relVolPct = (s.rel_vol * 100).toFixed(0);
         const relVolText = s.change > 0 ? `+ %${relVolPct}` : (s.change < 0 ? `- %${relVolPct}` : `%${relVolPct}`);
         
+        const intraColor = s.intra_change > 0 ? 'var(--accent-green)' : (s.intra_change < 0 ? 'var(--accent-red)' : 'var(--text-color)');
+        const intraSign = s.intra_change > 0 ? '+' : '';
+        const flowColor = s.hourly_flow === 'Toplanıyor' ? 'var(--accent-green)' : (s.hourly_flow === 'Satılıyor' ? 'var(--accent-red)' : 'var(--text-muted)');
         
         let p_val = (s.high + s.low + s.price) / 3;
         let dR1 = (2 * p_val) - s.low;
@@ -5826,6 +5838,8 @@ function renderAllStocksTable() {
                 <td style="font-weight:bold; cursor:pointer; color:var(--text-light);" onclick="openGraphicTab('${s.symbol}')">${sym}</td>
                 <td style="font-weight:600;">₺${s.price.toFixed(2)}</td>
                 <td style="color:${color}; font-weight:bold;">${sign}${s.change.toFixed(2)}%</td>
+                <td style="color:${intraColor}; font-weight:bold;">${intraSign}${s.intra_change.toFixed(2)}%</td>
+                <td style="color:${flowColor}; font-weight:bold;">${s.hourly_flow}</td>
                 <td style="color:var(--text-muted);">${volTLM}</td>
                 <td style="color:var(--text-muted);">${volLotM}</td>
                 <td style="color:${color}; font-weight:bold;">${relVolText}</td>

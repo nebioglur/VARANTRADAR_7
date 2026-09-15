@@ -382,6 +382,15 @@ def _background_scanner_impl():
                     res_1h = scanner.scan_pool_bulk_1h(BIST_SYMBOLS, daily_stats)
                     if res_1h and isinstance(res_1h, dict):
                         tavan_candidates = res_1h.get("tavan_adaylari", [])
+                        # Gün içi güç metriklerini mevcut all_symbols_stats'a entegre et
+                        intra_stats = res_1h.get("all_symbols_stats", {})
+                        existing_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
+                        for sym, stats in intra_stats.items():
+                            if sym in existing_stats:
+                                existing_stats[sym]["intraday_strength"] = stats.get("intraday_strength")
+                            else:
+                                existing_stats[sym] = stats
+                        GLOBAL_DASHBOARD_CACHE["all_symbols_stats"] = existing_stats
                         GLOBAL_DASHBOARD_CACHE["opportunities_1h"] = sanitize_for_json(res_1h.get("opportunities_1h", []))
                         GLOBAL_DASHBOARD_CACHE["tavan_adaylari"] = sanitize_for_json(tavan_candidates)
                         GLOBAL_DASHBOARD_CACHE["stay_away_1h"] = sanitize_for_json(res_1h.get("stay_away_1h", []))

@@ -8,6 +8,7 @@ import numpy as np
 from data.pipeline import DataPipeline
 from analysis.technical import TechnicalEngine
 from core.event_bus import EventBus
+from services.intraday_strength import IntradayStrengthAnalyzer
 
 # Yapay Zeka Favori 15 Hissesi (Kurumsal & Yüksek Momentumlu)
 AI_FAVORITES = [
@@ -435,6 +436,7 @@ class UniversalScanner:
         tavan_adaylari = []
         stay_away_1h = []
         vip_candidates = []
+        all_symbols_stats = {}
         
         for sym in symbols:
             df_raw = bulk_data.get(sym)
@@ -452,6 +454,14 @@ class UniversalScanner:
                 
             df['close'] = df['close'].ffill()
             df = df[required_cols]
+            
+            # Gün içi güç metriklerini hesapla (tüm semboller için)
+            try:
+                intra = IntradayStrengthAnalyzer.analyze(sym, df)
+                if intra:
+                    all_symbols_stats[sym] = {"intraday_strength": intra}
+            except Exception as e_intra:
+                print(f"[INTRADAY STRENGTH] {sym} hesaplanamadi: {e_intra}")
             
             # --- STRICT CUSTOM STRATEGY FILTER (AL / YÜKSELİŞ) ---
             is_match_al, bars_ago_al, _ = self.tech_engine.check_custom_strict_strategy(df, direction="AL")
@@ -512,7 +522,8 @@ class UniversalScanner:
         return {
             "opportunities_1h": opportunities,
             "stay_away_1h": stay_away_1h,
-            "tavan_adaylari": tavan_adaylari
+            "tavan_adaylari": tavan_adaylari,
+            "all_symbols_stats": all_symbols_stats
         }
 
     def _trigger_batch_vip_signals(self, vips: list):
