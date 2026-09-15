@@ -5708,7 +5708,7 @@ function _dtRenderDetail(panel, d) {
 // ========== /PİYASA DEDEKTİFİ ==========
 
 
-var currentStocksSort = { col: 'change', asc: false };
+var currentStocksSort = { col: 'opportunity', asc: false };
 var allStocksSearchTerm = '';
 var allStocksSearchBound = false;
 
@@ -5796,7 +5796,24 @@ function renderAllStocksTable() {
         if (state === 'BREAKOUT') tScore += 20;
         else if (state === 'PRE_BREAKOUT') tScore += 15;
         tScore = Math.min(Math.max(tScore, 0), 100);
-        
+
+        // ===== FIRSAT SKORU (0-100): "para su an nereye giriyor?" =====
+        // 1) Hacim gucu %35: 3x+ rel_vol tam puan
+        let opp = Math.min(rVol / 3, 1) * 35;
+        // 2) Gun ici guc %25: 0-4% arasi lineer
+        opp += Math.min(Math.max(intra_change, 0) / 4, 1) * 25;
+        // 3) Saatlik akis %15: Toplaniyor +15 / Satiyor -15
+        if (hourly_flow === 'Toplanıyor') opp += 15;
+        else if (hourly_flow === 'Satılıyor') opp = Math.max(0, opp - 15);
+        // 4) Teknik durum %15: breakout hazirliklari
+        if (state === 'BREAKOUT') opp += 15;
+        else if (state === 'PRE_BREAKOUT') opp += 10;
+        // 5) Tavan skoru %10
+        opp += (tScore / 100) * 10;
+        // 6) Asiri uzama cezasi: %7+ zaten kosmus
+        if (change > 7) opp = Math.max(0, opp - 10);
+        opp = Math.round(Math.min(opp, 100) * 10) / 10;
+
         return {
             symbol: sym,
             price: price,
@@ -5807,6 +5824,7 @@ function renderAllStocksTable() {
             volume_tl: volTL,
             rel_vol: rVol,
             tavan_score: tScore,
+            opportunity: opp,
             time: data.Time || '-',
             state: state,
             intra_change: intra_change,
@@ -5828,11 +5846,28 @@ function renderAllStocksTable() {
     }
 
     allStats.sort((a, b) => {
+        // FIRSAT SKORU katmanli siralama:
+        // 1. katman: yesiller once (kirmizi hicbir kosulda yesili gecemez)
+        // 2. katman: likit hisseler once (hacim < 50M TL alta duser)
+        // 3. katman: skor
+        if (currentStocksSort.col === 'opportunity') {
+            const gA = a.change > 0 ? 1 : 0, gB = b.change > 0 ? 1 : 0;
+            const lA = a.volume_tl >= 50e6 ? 1 : 0, lB = b.volume_tl >= 50e6 ? 1 : 0;
+            if (currentStocksSort.asc) {
+                if (gA !== gB) return gA - gB;
+                if (lA !== lB) return lA - lB;
+                return a.opportunity - b.opportunity;
+            }
+            if (gA !== gB) return gB - gA;
+            if (lA !== lB) return lB - lA;
+            return b.opportunity - a.opportunity;
+        }
+
         let valA = a[currentStocksSort.col];
         let valB = b[currentStocksSort.col];
         if (typeof valA === 'string') valA = valA.toLowerCase();
         if (typeof valB === 'string') valB = valB.toLowerCase();
-        
+
         if (valA < valB) return currentStocksSort.asc ? -1 : 1;
         if (valA > valB) return currentStocksSort.asc ? 1 : -1;
         return 0;
@@ -5876,11 +5911,19 @@ function renderAllStocksTable() {
                      '<div style="display:flex; justify-content:space-between;"><span style="color:var(--text-muted);">G:</span> <span><span style="color:var(--accent-red);">' + dS1.toFixed(2) + '(%'+dS1_p.toFixed(1)+')</span> / <span style="color:var(--accent-green);">' + dR1.toFixed(2) + '(+%'+dR1_p.toFixed(1)+')</span></span></div>' +
                      '</td>';
 
-          let scColor = '#ef4444'; 
-        if (s.tavan_score >= 80) scColor = '#22c55e'; 
-        else if (s.tavan_score >= 60) scColor = '#3b82f6'; 
-        else if (s.tavan_score >= 40) scColor = '#f97316'; 
-        let scoreBadge = `<span style="font-weight:900; padding:3px 10px; border-radius:12px; background:${scColor}22; color:${scColor}; border:1px solid ${scColor}66; min-width:35px; display:inline-block; text-align:center;">${s.tavan_score.toFixed(0)}</span>`;
+          let scColor = '#ef4444';
+        if (s.opportunity >= 75) scColor = '#22c55e';
+        else if (s.opportunity >= 55) scColor = '#3b82f6';
+        else if (s.opportunity >= 35) scColor = '#f97316';
+        const oppTitle = `Fırsat Skoru: ${s.opportunity}\n` +
+            `Hacim gücü: ${Math.min(s.rel_vol / 3, 1) * 35 | 0}/35\n` +
+            `Gün içi güç: ${Math.min(Math.max(s.intra_change, 0) / 4, 1) * 25 | 0}/25\n` +
+            `Saatlik akış: ${s.hourly_flow === 'Toplanıyor' ? 15 : (s.hourly_flow === 'Satılıyor' ? 0 : 7.5)}/15\n` +
+            `Teknik durum: ${s.state}\n` +
+            `Tavan skoru katkısı: ${s.tavan_score / 10 | 0}/10` +
+            (s.change > 7 ? '\n⚠️ %7+ aşırı uzama cezası uygulandı' : '') +
+            (s.volume_tl < 50e6 ? '\n⚠️ Düşük likidite (< 50M ₺) — sıralamada alta düşer' : '');
+        let scoreBadge = `<span title="${oppTitle}" style="font-weight:900; padding:3px 10px; border-radius:12px; background:${scColor}22; color:${scColor}; border:1px solid ${scColor}66; min-width:35px; display:inline-block; text-align:center; cursor:help;">${s.opportunity.toFixed(1)}</span>`;
         
         const sym = s.symbol.replace('.IS', '');
         let actionBtns = `<button onclick="quickTradeBuy('${sym}')" style="background:rgba(34,197,94,0.2); color:#22c55e; border:1px solid rgba(34,197,94,0.5); border-radius:4px; padding:3px 10px; cursor:pointer; font-weight:bold; font-size:0.75rem; margin-right:4px; transition:0.2s;" onmouseover="this.style.background='#22c55e'; this.style.color='#fff';" onmouseout="this.style.background='rgba(34,197,94,0.2)'; this.style.color='#22c55e';">AL</button>
