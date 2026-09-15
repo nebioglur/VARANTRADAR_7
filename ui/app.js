@@ -1,3 +1,39 @@
+
+// --- Modern UI Overrides ---
+window.alert = function(message) {
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: 'Sistem Mesaji',
+            text: message,
+            icon: 'info',
+            background: '#1a1f2e',
+            color: '#fff',
+            confirmButtonColor: '#38bdf8'
+        });
+    } else {
+        console.log("Alert:", message);
+    }
+};
+
+window.modernConfirm = async function(message) {
+    if (typeof Swal !== 'undefined') {
+        const res = await Swal.fire({
+            title: 'Onay',
+            text: message,
+            icon: 'warning',
+            showCancelButton: true,
+            background: '#1a1f2e',
+            color: '#fff',
+            confirmButtonText: 'Evet',
+            cancelButtonText: 'Iptal',
+            confirmButtonColor: '#10b981',
+            cancelButtonColor: '#ef4444'
+        });
+        return res.isConfirmed;
+    }
+    return true; // Fallback
+};
+
 // ========== STATE MANAGEMENT ==========
 async function vrAuthorizedFetch(resource, options = {}) {
     const headers = new Headers(options.headers || {});
@@ -641,7 +677,7 @@ async function analyzeSymbol() {
             }
             loadingEl.style.display = 'none';
             if (response.status !== 200 || data.status === "error") {
-                Swal.fire({title: 'Sistem Mesaji', text: "⛔ UPLINK ERROR\n\n" + (data.message || data.error), icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+                alert("⛔ UPLINK ERROR\n\n" + (data.message || data.error));
                 cancelLoadingAndGoBack();
                 return;
             }
@@ -654,7 +690,7 @@ async function analyzeSymbol() {
             return;
         }
         document.getElementById('loading').style.display = 'none';
-        Swal.fire({title: 'Sistem Mesaji', text: "CRITICAL ERROR: Connection lost.\n" + error, icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+        alert("CRITICAL ERROR: Connection lost.\n" + error);
         cancelLoadingAndGoBack();
     }
 }
@@ -2792,7 +2828,7 @@ async function exportAnalysisAsJPG() {
     if (!targetElement) return;
     
     if (typeof html2canvas === 'undefined') {
-        Swal.fire({title: 'Sistem Mesaji', text: 'Görsel kütüphanesi yüklenemedi. Lütfen sayfayı yenileyiniz.', icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+        alert('Görsel kütüphanesi yüklenemedi. Lütfen sayfayı yenileyiniz.');
         return;
     }
     
@@ -2823,7 +2859,7 @@ async function exportAnalysisAsJPG() {
         document.body.removeChild(downloadLink);
     } catch (err) {
         console.error("JPG Export Error:", err);
-        Swal.fire({title: 'Sistem Mesaji', text: "Görsel oluşturulurken bir hata oluştu: " + err.message, icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+        alert("Görsel oluşturulurken bir hata oluştu: " + err.message);
     } finally {
         if (btn) {
             btn.innerHTML = originalBtnText;
@@ -3103,11 +3139,11 @@ function openTavanAuditForDate(dateStr) {
             fetchTavanAuditData(dateStr);
         } else {
             console.error("tavan-audit-modal element not found in DOM!");
-            Swal.fire({title: 'Sistem Mesaji', text: "Sistem Hatası: Denetim penceresi bulunamadı.", icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+            alert("Sistem Hatası: Denetim penceresi bulunamadı.");
         }
     } catch(e) {
         console.error("Error opening audit modal:", e);
-        Swal.fire({title: 'Sistem Mesaji', text: "Hata: " + e.message, icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+        alert("Hata: " + e.message);
     }
 }
 
@@ -3750,18 +3786,17 @@ let globalSimData = null;
 
 // Simülasyon sayfası otomatik yenileme: kullanıcı inceleyebilmesi için
 // durdurulabilir. Durdurulunca yalnızca "Şimdi Yenile" ile tazelenir.
-// Sayfa ilk açıldığında KAPALI başlar.
-let simAutoRefresh = false;
+let simAutoRefresh = true;
 
 function toggleSimAutoRefresh() {
     simAutoRefresh = !simAutoRefresh;
     const btn = document.getElementById('sim-auto-refresh-toggle');
     if (btn) {
         btn.innerHTML = simAutoRefresh
-            ? '<i class="fa-solid fa-circle-check"></i> Otomatik Yenileme: AÇIK'
-            : '<i class="fa-solid fa-circle-pause"></i> Otomatik Yenileme: KAPALI';
-        btn.classList.toggle('on', simAutoRefresh);
-        btn.classList.toggle('off', !simAutoRefresh);
+            ? '<i class="fa-solid fa-pause"></i> Otomatik Yenileme: AÇIK'
+            : '<i class="fa-solid fa-play"></i> Otomatik Yenileme: KAPALI';
+        btn.style.borderColor = simAutoRefresh ? 'var(--border-color)' : 'var(--accent-yellow)';
+        btn.style.color = simAutoRefresh ? 'var(--text-main)' : 'var(--accent-yellow)';
     }
 }
 
@@ -3905,13 +3940,8 @@ function enableTradeNotifications() {
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission().catch(() => {});
     }
-    const btn = document.getElementById('sim-notify-btn');
-    if (btn) {
-        btn.classList.add('on');
-        btn.innerHTML = '<i class="fa-solid fa-bell"></i> Sesli Bildirimler: AÇIK';
-    }
     const status = document.getElementById('sim-notify-status');
-    if (status) status.textContent = 'Ses + bildirim aktif';
+    if (status) status.textContent = 'Bildirim ve ses aktif';
 }
 
 function playTradeAlert(kind) {
@@ -4179,40 +4209,17 @@ async function ltOpenPosition() {
 }
 
 async function ltEditOrders(id, curTp, curSl, lastPrice) {
-    const fmt = (v) => (v === null || v === undefined || isNaN(Number(v))) ? '' : Number(v).toFixed(2);
-    const { value: formValues } = await Swal.fire({
-        title: 'Emir Düzeltme',
-        html:
-            '<div style="text-align:left; width:100%;">' +
-            '<div style="display:flex; justify-content:space-between; align-items:center; background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.25); border-radius:8px; padding:8px 12px; margin-bottom:14px; font-size:0.85rem;">' +
-            '<span style="color:#94a3b8;">Anlık Fiyat</span>' +
-            '<b style="color:#38bdf8; font-size:1rem;">₺' + Number(lastPrice).toFixed(2) + '</b></div>' +
-            '<label for="swal-lt-tp" style="display:block; margin-bottom:6px; color:#22c55e; font-weight:700; font-size:0.8rem;">🎯 KÂR AL (₺)</label>' +
-            '<input id="swal-lt-tp" class="swal2-input" type="number" step="0.01" min="0" inputmode="decimal" placeholder="Mevcut: ₺' + fmt(curTp) + '" style="margin:0 0 14px; width:100%; background:#0f1420; border:1px solid #2a3245; color:#fff; border-radius:8px; height:2.6em; font-size:1rem;">' +
-            '<label for="swal-lt-sl" style="display:block; margin-bottom:6px; color:#ef4444; font-weight:700; font-size:0.8rem;">🛑 ZARAR KES (₺)</label>' +
-            '<input id="swal-lt-sl" class="swal2-input" type="number" step="0.01" min="0" inputmode="decimal" placeholder="Mevcut: ₺' + fmt(curSl) + '" style="margin:0; width:100%; background:#0f1420; border:1px solid #2a3245; color:#fff; border-radius:8px; height:2.6em; font-size:1rem;">' +
-            '<div style="margin-top:12px; font-size:0.75rem; color:#64748b; text-align:center;">Boş bırakırsan o emir değişmez.</div>' +
-            '</div>',
-        background: '#1a1f2e',
-        color: '#fff',
-        width: 380,
-        showCancelButton: true,
-        confirmButtonText: '<i class="fa-solid fa-floppy-disk"></i> Kaydet',
-        cancelButtonText: 'İptal',
-        confirmButtonColor: '#38bdf8',
-        cancelButtonColor: '#475569',
-        focusConfirm: false,
-        preConfirm: () => {
-            return {
-                tp: document.getElementById('swal-lt-tp').value.trim(),
-                sl: document.getElementById('swal-lt-sl').value.trim()
-            };
-        }
-    });
-    if (!formValues) return;
+    const tpInp = prompt(
+        'Yeni KÂR AL fiyatı (₺) — anlık: ' + Number(lastPrice).toFixed(2) + ' TL\n' +
+        'Boş bırakırsan değişmez. Mevcut: ' + Number(curTp).toFixed(2), '');
+    if (tpInp === null) return;
+    const slInp = prompt(
+        'Yeni ZARAR KES fiyatı (₺) — anlık: ' + Number(lastPrice).toFixed(2) + ' TL\n' +
+        'Boş bırakırsan değişmez. Mevcut: ' + Number(curSl).toFixed(2), '');
+    if (slInp === null) return;
 
-    const tpV = parseFloat(formValues.tp);
-    const slV = parseFloat(formValues.sl);
+    const tpV = parseFloat(tpInp);
+    const slV = parseFloat(slInp);
     const body = { id: id };
     if (!isNaN(tpV) && tpV > 0) body.tp_price = tpV;
     if (!isNaN(slV) && slV > 0) body.sl_price = slV;
@@ -4225,15 +4232,15 @@ async function ltEditOrders(id, curTp, curSl, lastPrice) {
             body: JSON.stringify(body)
         });
         const data = await res.json();
-        Swal.fire({title: 'Sistem Mesaji', text: data.message || (data.status === 'success' ? 'Güncellendi' : 'Hata'), icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+        alert(data.message || (data.status === 'success' ? 'Güncellendi' : 'Hata'));
         fetchLiveTerminal();
     } catch (e) {
-        Swal.fire({title: 'Sistem Mesaji', text: 'Bağlantı hatası', icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+        alert('Bağlantı hatası');
     }
 }
 
 async function ltClosePosition(id) {
-    if (!(await Swal.fire({title: 'Onay', text: 'Bu pozisyonu güncel fiyattan SATmak istediğinize emin misiniz?', icon: 'warning', showCancelButton: true, background: '#1a1f2e', color: '#fff', confirmButtonText: 'Evet', cancelButtonText: 'Iptal', confirmButtonColor: '#10b981', cancelButtonColor: '#ef4444'})).isConfirmed) return;
+    if (!(await window.modernConfirm('Bu pozisyonu güncel fiyattan SATmak istediğinize emin misiniz?')) return;
     try {
         const res = await fetch('/api/simulation/terminal/close', {
             method: 'POST',
@@ -4241,10 +4248,10 @@ async function ltClosePosition(id) {
             body: JSON.stringify({id: id})
         });
         const data = await res.json();
-        Swal.fire({title: 'Sistem Mesaji', text: data.message || (data.status === 'success' ? 'Kapatıldı' : 'Hata'), icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+        alert(data.message || (data.status === 'success' ? 'Kapatıldı' : 'Hata'));
         fetchLiveTerminal();
     } catch (e) {
-        Swal.fire({title: 'Sistem Mesaji', text: 'Bağlantı hatası', icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+        alert('Bağlantı hatası');
     }
 }
 
@@ -4626,14 +4633,14 @@ function ltOnSymbolInput() {
 
 // ========== PORTFÖY SIFIRLAMA TALEBİ + YÖNETİCİ PANELİ ==========
 async function ltResetRequest() {
-    if (!(await Swal.fire({title: 'Onay', text: 'Portföy sıfırlama talebi yöneticiye gönderilecek.\n\nOnaylanırsa: tüm pozisyonlarınız ve işlem geçmişiniz silinir, bakiyeniz 100.000 ₺ olur.\n\nDevam edilsin mi?', icon: 'warning', showCancelButton: true, background: '#1a1f2e', color: '#fff', confirmButtonText: 'Evet', cancelButtonText: 'Iptal', confirmButtonColor: '#10b981', cancelButtonColor: '#ef4444'})).isConfirmed) return;
+    if (!(await window.modernConfirm('Portföy sıfırlama talebi yöneticiye gönderilecek.\n\nOnaylanırsa: tüm pozisyonlarınız ve işlem geçmişiniz silinir, bakiyeniz 100.000 ₺ olur.\n\nDevam edilsin mi?')) return;
     try {
         const res = await fetch('/api/portfolio/reset_request', {method: 'POST'});
         const data = await res.json();
-        Swal.fire({title: 'Sistem Mesaji', text: data.message || (data.status === 'success' ? 'Talep gönderildi' : 'Hata'), icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+        alert(data.message || (data.status === 'success' ? 'Talep gönderildi' : 'Hata'));
         ltRefreshResetUI();
     } catch (e) {
-        Swal.fire({title: 'Sistem Mesaji', text: 'Bağlantı hatası', icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+        alert('Bağlantı hatası');
     }
 }
 
@@ -4687,7 +4694,7 @@ async function fetchAdminResetRequests() {
 }
 
 async function ltAdminDecide(id, action) {
-    if (!confirm(action === 'approve'
+    if (!(await window.modernConfirm(action === 'approve'
         ? 'Bu kullanıcının portföyü TAMAMEN SIFIRLANACAK (pozisyonlar, işlem geçmişi; bakiye 100.000 ₺). Onaylıyor musunuz?'
         : 'Bu sıfırlama talebi reddedilsin mi?')) return;
     try {
@@ -4697,11 +4704,11 @@ async function ltAdminDecide(id, action) {
             body: JSON.stringify({id: id, action: action})
         });
         const data = await res.json();
-        Swal.fire({title: 'Sistem Mesaji', text: data.message || (data.status === 'success' ? 'Tamam' : 'Hata'), icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+        alert(data.message || (data.status === 'success' ? 'Tamam' : 'Hata'));
         fetchAdminResetRequests();
         fetchLiveTerminal();
     } catch (e) {
-        Swal.fire({title: 'Sistem Mesaji', text: 'Bağlantı hatası', icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+        alert('Bağlantı hatası');
     }
 }
 
@@ -4908,7 +4915,7 @@ async function fetchLiveOrders() {
                         </div>
                     </div>
                     <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
-                        <button onclick="preparePortfolioOrder(${JSON.stringify(order).replace(/"/g, '&quot;')})" class="btn-primary" style="flex:1; background:var(--accent-green); color:#fff; border:none; padding:0.4rem; border-radius:4px; font-weight:bold; cursor:pointer;"><i class="fa-solid fa-cart-arrow-down"></i> Portfoye AL</button>
+                        <button onclick="quickTrade('${order.symbol}', 'buy', ${order.shares}, ${order.entry_price}, ${order.tp1_price}, ${order.stop_price})" class="btn-primary" style="flex:1; background:var(--accent-green); color:#fff; border:none; padding:0.4rem; border-radius:4px; font-weight:bold; cursor:pointer;"><i class="fa-solid fa-cart-arrow-down"></i> Portfoye AL</button>
                         <button onclick="quickTrade('${order.symbol}', 'sell', ${order.shares}, ${order.entry_price}, ${order.tp1_price}, ${order.stop_price})" class="btn-primary" style="flex:1; background:var(--accent-red); color:#fff; border:none; padding:0.4rem; border-radius:4px; font-weight:bold; cursor:pointer;"><i class="fa-solid fa-money-bill-wave"></i> Portfoyden SAT</button>
                     </div>
                 `;
@@ -4959,7 +4966,7 @@ async function runBacktest() {
         btn.disabled = false;
         
         if (data.status !== 'success') {
-            Swal.fire({title: 'Sistem Mesaji', text: 'Backtest Hatası: ' + data.message, icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+            alert('Backtest Hatası: ' + data.message);
             return;
         }
         
@@ -5017,7 +5024,7 @@ async function runBacktest() {
         console.error(err);
         loading.style.display = 'none';
         btn.disabled = false;
-        Swal.fire({title: 'Sistem Mesaji', text: 'Sunucu hatası: ' + err.message, icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+        alert('Sunucu hatası: ' + err.message);
     }
 }// ========== BACKTEST AUTOCOMPLETE LOGIC ==========
 const btSymbolInput = document.getElementById('bt-symbol');
@@ -5766,20 +5773,11 @@ function renderAllStocksTable() {
     });
     
     allStats.sort((a, b) => {
-        // Hacim Gucu sutununda once YESIL (pozitif) hisseler uste gelir,
-        // sonra hacim gucu degerine gore siralanir.
-        if (currentStocksSort.col === 'rel_vol') {
-            const grpA = a.change > 0 ? 1 : (a.change < 0 ? -1 : 0);
-            const grpB = b.change > 0 ? 1 : (b.change < 0 ? -1 : 0);
-            if (grpA !== grpB) return currentStocksSort.asc ? grpA - grpB : grpB - grpA;
-            if (a.rel_vol !== b.rel_vol) return currentStocksSort.asc ? a.rel_vol - b.rel_vol : b.rel_vol - a.rel_vol;
-            return 0;
-        }
         let valA = a[currentStocksSort.col];
         let valB = b[currentStocksSort.col];
         if (typeof valA === 'string') valA = valA.toLowerCase();
         if (typeof valB === 'string') valB = valB.toLowerCase();
-
+        
         if (valA < valB) return currentStocksSort.asc ? -1 : 1;
         if (valA > valB) return currentStocksSort.asc ? 1 : -1;
         return 0;
@@ -5850,34 +5848,6 @@ function quickTradeBuy(sym) {
             symInput.dispatchEvent(new Event('input'));
         }
     }, 200);
-}
-
-function preparePortfolioOrder(order) {
-    const pfBtn = Array.from(document.querySelectorAll('.nav-btn')).find(
-        b => b.getAttribute('href') && b.getAttribute('href').includes('portfolio')
-    );
-    if (pfBtn) switchMainTab('portfolio', pfBtn);
-
-    setTimeout(() => {
-        const values = {
-            'lt-symbol': String(order.symbol || '').replace('.IS', ''),
-            'lt-price': Number(order.entry_price || 0).toFixed(2),
-            'lt-qty': String(order.shares || ''),
-            'lt-allocation': (Number(order.entry_price || 0) * Number(order.shares || 0)).toFixed(2),
-            'lt-tp-price': Number(order.tp1_price || 0).toFixed(2),
-            'lt-sl-price': Number(order.stop_price || 0).toFixed(2)
-        };
-        Object.entries(values).forEach(([id, value]) => {
-            const field = document.getElementById(id);
-            if (field) {
-                field.value = value;
-                field.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-        });
-        document.getElementById('lt-msg').textContent = 'Emir bilgileri dolduruldu; AL butonuna sen basacaksın.';
-        document.getElementById('lt-msg').style.color = 'var(--accent-yellow)';
-        document.getElementById('lt-symbol')?.focus();
-    }, 250);
 }
 
 function renderSuper12Table() {
@@ -6038,18 +6008,18 @@ window.showSR = function(sym, price, high, low) {
                 confirmButtonColor: '#3b82f6'
             });
         } else {
-            Swal.fire({title: 'Sistem Mesaji', text: sym + " Pivot Seviyeleri\\nFiyat: " + price.toFixed(2) + "\\nG. Direnc: " + dR1.toFixed(2) + "\\nG. Destek: " + dS1.toFixed(2), icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+            alert(sym + " Pivot Seviyeleri\\nFiyat: " + price.toFixed(2) + "\\nG. Direnc: " + dR1.toFixed(2) + "\\nG. Destek: " + dS1.toFixed(2));
         }
     } catch(e) {
         console.error("showSR error:", e);
-        Swal.fire({title: 'Sistem Mesaji', text: "Destek/Direnc gosterilirken hata: " + e.message, icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+        alert("Destek/Direnc gosterilirken hata: " + e.message);
     }
 };
 
 
 // Hizli islem fonksiyonu (Kartlardaki Al/Sat butonlari icin)
 async function quickTrade(symbol, action, qty, price, tp_price, sl_price) {
-    if (!(await Swal.fire({title: 'Onay', text: `Emin misiniz? ${symbol} icin ${action === 'buy' ? 'ALIS' : 'SATIS'} islemi portfoyunuze eklenecektir.`, icon: 'warning', showCancelButton: true, background: '#1a1f2e', color: '#fff', confirmButtonText: 'Evet', cancelButtonText: 'Iptal', confirmButtonColor: '#10b981', cancelButtonColor: '#ef4444'})).isConfirmed) return;
+    if (!(await window.modernConfirm(`Emin misiniz? ${symbol} icin ${action === 'buy' ? 'ALIS' : 'SATIS'} islemi portfoyunuze eklenecektir.`)) return;
     
     if (action === 'buy') {
         const payload = {
@@ -6067,13 +6037,13 @@ async function quickTrade(symbol, action, qty, price, tp_price, sl_price) {
             });
             const data = await res.json();
             if (data.status === 'success') {
-                Swal.fire({title: 'Sistem Mesaji', text: `Basarili! ${symbol} portfoye eklendi.`, icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+                alert(`Basarili! ${symbol} portfoye eklendi.`);
                 fetchLiveTerminal();
             } else {
-                Swal.fire({title: 'Sistem Mesaji', text: `Hata: ${data.message}`, icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+                alert(`Hata: ${data.message}`);
             }
         } catch (e) {
-            Swal.fire({title: 'Sistem Mesaji', text: `Sunucu hatasi: ${e}`, icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+            alert(`Sunucu hatasi: ${e}`);
         }
     } else if (action === 'sell') {
         // Sat butonu icin: Sembole gore portfoydeki acik pozisyonlari bulup kapat!
@@ -6085,13 +6055,13 @@ async function quickTrade(symbol, action, qty, price, tp_price, sl_price) {
             });
             const data = await res.json();
             if (data.status === 'success') {
-                Swal.fire({title: 'Sistem Mesaji', text: `Basarili! ${symbol} portfoyden satildi.`, icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+                alert(`Basarili! ${symbol} portfoyden satildi.`);
                 fetchLiveTerminal();
             } else {
-                Swal.fire({title: 'Sistem Mesaji', text: `Hata: ${data.message}`, icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+                alert(`Hata: ${data.message}`);
             }
         } catch (e) {
-            Swal.fire({title: 'Sistem Mesaji', text: `Sunucu hatasi: ${e}`, icon: 'info', background: '#1a1f2e', color: '#fff', confirmButtonColor: '#38bdf8'});
+            alert(`Sunucu hatasi: ${e}`);
         }
     }
 }
