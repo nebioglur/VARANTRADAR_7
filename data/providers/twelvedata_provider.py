@@ -26,7 +26,8 @@ class TwelveDataProvider(BaseDataProvider):
 
     def __init__(self):
         super().__init__()
-        self.api_key = Vault.get_key("TWELVEDATA")
+        # ONCELIK: TWELVEDATA_API_KEY env degiskeni > kod icindeki yedek key
+        self.api_key = Vault.get_key("TWELVEDATA") or "effa0f8851a74ac68a145b3ab422b273"
         self._minute_window_start = 0.0
         self._minute_req_count = 0
 
@@ -79,7 +80,7 @@ class TwelveDataProvider(BaseDataProvider):
             "order": "ASC",
         }
         if is_bist:
-            params["exchange"] = "XIST"
+            params["exchange"] = "BIST"
 
         # Period -> bar sayisi tahmini
         days = {"1d": 2, "5d": 7, "1mo": 32, "3mo": 95, "6mo": 185, "1y": 370}.get(period, 32)
