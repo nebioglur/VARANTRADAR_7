@@ -33,7 +33,8 @@ class TavanAuditTracker:
 
     @classmethod
     def load_all_audits(cls) -> Dict[str, Any]:
-        """Kalıcı denetim veritabanını yükler. Boşsa 04 Ağustos 2026 başlangıç arşivini oluşturur ve kaydeder."""
+        """Kalıcı denetim veritabanını yükler. Bos ise bos sozluk dondurur —
+        SAHTE DEMO VERI URETMEZ. Istatistikler yalnizca gercek takip gunlerinden olusur."""
         cls._ensure_dir()
         if os.path.exists(AUDIT_FILE_PATH):
             try:
@@ -43,11 +44,8 @@ class TavanAuditTracker:
                         return data
             except Exception as e:
                 print(f"[TavanAuditTracker] Yukleme hatasi: {e}")
-        
-        # Henüz seans kaydı yoksa 04 Ağustos 2026 başlangıç verilerini yükle ve kaydet
-        initial = cls._generate_initial_historical_data()
-        cls.save_all_audits(initial)
-        return initial
+
+        return {}
 
     @classmethod
     def save_all_audits(cls, data: Dict[str, Any]):
@@ -59,11 +57,113 @@ class TavanAuditTracker:
             print(f"[TavanAuditTracker] Kaydetme hatası: {e}")
 
     @classmethod
-    def record_snapshot(cls, tavan_candidates: List[Dict[str, Any]], checkpoint_time: str = None, date_str: str = None) -> Dict[str, Any]:
+    def _compute_super12_set(cls, all_symbols_stats: Dict[str, Any]) -> set:
+        """
+        UI'daki SUPER_12 hesabinin sunucu tarafindaki birebir kopyasi.
+        super_score = tavan_skoru + rel_vol*10 (+ breakout bonuslari), en yuksek 12 hisse.
+        """
+        scores = {}
+        for sym, data in (all_symbols_stats or {}).items():
+            if not isinstance(data, dict):
+                continue
+            try:
+                price = float(data.get("Price") or data.get("Daily_Close") or 0)
+                change = float(data.get("Change_Pct") or 0)
+            except (ValueError, TypeError):
+                continue
+
+            r_vol = 0.0
+            state = "NONE"
+            v8 = data.get("v8_discovery")
+            if isinstance(v8, dict):
+                state = v8.get("state", "NONE") or "NONE"
+                metrics = v8.get("metrics")
+                if isinstance(metrics, dict):
+                    try:
+                        r_vol = float(metrics.get("relative_volume") or 0)
+                    except (ValueError, TypeError):
+                        r_vol = 0.0
+
+            t = 50.0
+            if 0 < change <= 7:
+                t += change * 3
+            elif change > 7:
+                t += 20
+            elif change < 0:
+                t += change * 3
+
+            if change > 0:
+                if r_vol > 1.5: t += 15
+                if r_vol > 2.5: t += 15
+                if r_vol < 0.8: t -= 15
+            elif change < 0:
+                if r_vol > 1.5: t -= 15
+                if r_vol > 2.5: t -= 15
+                if r_vol < 0.8: t += 10
+
+            if state == "BREAKOUT":
+                t += 20
+            elif state == "PRE_BREAKOUT":
+                t += 15
+            t = min(max(t, 0), 100)
+
+            sup = t + (r_vol * 10)
+            if state == "BREAKOUT":
+                sup += 50
+            elif state == "PRE_BREAKOUT":
+                sup += 30
+            if change > 9.9:
+                sup += 20
+            scores[sym] = sup
+
+        top12 = sorted(scores.items(), key=lambda kv: kv[1], reverse=True)[:12]
+        return {sym for sym, _ in top12}
+
+    @classmethod
+    def record_snapshot(cls, tavan_candidates: List[Dict[str, Any]], checkpoint_time: str = None, date_str: str = None, all_symbols_stats: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Belirli bir saat diliminde (10:15, 11:30, 14:00, 16:00) çıkan tavan adaylarını belleğe kaydeder.
+
+        KULLANICI KURALI (2026-09-15):
+        Istatistige yalnizca SUPER_12 listesindeki VE hacim gucu %100'un uzerindeki
+        (rel_vol > 1.0) hisseler alinir. Diger adaylar takibe girmez.
         """
         if not tavan_candidates:
+            return {}
+
+        super12 = cls._compute_super12_set(all_symbols_stats or {})
+
+        # SUPER_12 + hacim gucu %100 ustu filtresi
+        filtered = []
+        for item in tavan_candidates:
+            sym = item.get("Symbol", "") or item.get("symbol", "")
+            if not sym:
+                continue
+            base_sym = sym.replace(".IS", "")
+            if base_sym not in super12 and sym not in super12:
+                continue
+
+            rel_vol = 0.0
+            try:
+                rel_vol = float(item.get("Vol_Multiplier", 0) or 0)
+            except (ValueError, TypeError):
+                rel_vol = 0.0
+            if rel_vol <= 1.0:
+                stat = (all_symbols_stats or {}).get(sym) or (all_symbols_stats or {}).get(base_sym) or {}
+                v8 = stat.get("v8_discovery") if isinstance(stat, dict) else None
+                if isinstance(v8, dict):
+                    metrics = v8.get("metrics")
+                    if isinstance(metrics, dict):
+                        try:
+                            rel_vol = float(metrics.get("relative_volume") or 0)
+                        except (ValueError, TypeError):
+                            rel_vol = 0.0
+            if rel_vol <= 1.0:
+                continue
+
+            filtered.append(item)
+
+        if not filtered:
             return {}
 
         now = datetime.now()
@@ -97,8 +197,8 @@ class TavanAuditTracker:
         existing_sym_times = {f"{it.get('symbol')}_{it.get('snapshot_time')}" for it in existing_items}
 
         existing_syms = {it.get('symbol') for it in existing_items}
-        
-        for item in tavan_candidates:
+
+        for item in filtered:
             sym = item.get("Symbol", "")
             if not sym or sym in existing_syms:
                 continue
@@ -325,9 +425,9 @@ class TavanAuditTracker:
 
         overall_stats = {
             "cumulative_total_candidates": cum_total,
-            "cumulative_tavan_success_pct": round((cum_tavan / cum_total) * 100, 1) if cum_total > 0 else 72.4,
-            "cumulative_plus5_success_pct": round((cum_plus5 / cum_total) * 100, 1) if cum_total > 0 else 88.6,
-            "cumulative_avg_max_gain_pct": round(sum(cum_max_gains) / len(cum_max_gains), 2) if cum_max_gains else 8.4
+            "cumulative_tavan_success_pct": round((cum_tavan / cum_total) * 100, 1) if cum_total > 0 else 0.0,
+            "cumulative_plus5_success_pct": round((cum_plus5 / cum_total) * 100, 1) if cum_total > 0 else 0.0,
+            "cumulative_avg_max_gain_pct": round(sum(cum_max_gains) / len(cum_max_gains), 2) if cum_max_gains else 0.0
         }
 
         return {

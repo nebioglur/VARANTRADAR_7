@@ -390,7 +390,7 @@ def _background_scanner_impl():
                         # Belirli Saatlerdeki Tavan Listesi Bellek Kaydı & 18:10 Kapanış Denetimi
                         try:
                             from services.tavan_tracker import TavanAuditTracker
-                            TavanAuditTracker.record_snapshot(tavan_candidates)
+                            TavanAuditTracker.record_snapshot(tavan_candidates, all_symbols_stats=daily_stats)
                             TavanAuditTracker.update_daily_progress(daily_stats)
                             
                             # YENİ MİMARİ: SQLite'a sinyalleri ve market datasını kaydet

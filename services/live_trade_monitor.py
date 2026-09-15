@@ -15,7 +15,6 @@ import threading
 from datetime import datetime, time as dtime
 
 from services.trade_database import get_connection
-from services.telegram_bot import notify_buy, notify_sell
 
 COMMISSION = 0.0002
 TRAIL_ACTIVATION = 3.0   # +3% kazancta izleyen stop devreye girer
@@ -233,12 +232,6 @@ def open_position(symbol, allocation=2000.0, tp_pct=5.0, sl_pct=3.0, trailing=Tr
     conn.commit()
     conn.close()
 
-    # Telegram sesli AL uyarisi (hata islemi bloklamaz)
-    try:
-        notify_buy(clean, entry_price, shares, source)
-    except Exception:
-        pass
-
     return True, (f"ALINDI: {shares} lot {clean} @ {entry_price:.2f} TL "
                   f"(TP {final_tp:.2f} TL /%{disp_tp_pct:.1f} - SL {final_sl:.2f} TL/-%{disp_sl_pct:.1f})")
 
@@ -352,12 +345,6 @@ def close_position(pos_id, price=None, reason="MANUEL KAPATMA", owner=None):
 
     # Para kredisi YALNIZCA kapanisi kazanan tarafa yazilir (atomik toplama)
     _add_cash(row_owner, sell_volume - commission)
-
-    # Telegram sesli SAT uyarisi (hata islemi bloklamaz)
-    try:
-        notify_sell(symbol, price, pnl_val, pnl_pct, reason)
-    except Exception:
-        pass
 
     return True, (f"KAPANDI: {symbol} {pnl_val:+.2f} TL ({pnl_pct:+.2f}%) - {reason}")
 

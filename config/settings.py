@@ -38,9 +38,6 @@ MACRO_SYMBOLS = {
     "SILVER": "SI=F"
 }
 
-# Telegram Bot Configuration (Cloud Uyumu ve Güvenli Fallback Destekli)
-TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN") or os.environ.get("TELEGRAM_TOKEN") or "8841122189:AAG4dMDnOS1hv9V_CD2mWCtsuz3Xf0x38tw"
-TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID") or "6105241519"
-
-# Cloud Login Password
-APP_PASSWORD = os.environ.get("APP_PASSWORD", "nebioglur17")
+# Telegram Bot Configuration (Cloud uyumlu: degerler runtime ortam degiskeninden alinir)
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN") or os.environ.get("TELEGRAM_TOKEN")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
