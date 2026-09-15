@@ -74,6 +74,29 @@ class DataSourceManager:
         # Aynı zamanda kalıcı denetim (audit) günlüğüne yaz
         Auditor.log_event("SYSTEM_LOG", "ALL", {"message": message})
     
+    def _provider_chain(self, symbol: str, interval: str) -> List[BaseDataProvider]:
+        """Kabiliyete göre akıllı kaynak sıralaması (sabit 1-2-3 yerine):
+        - BIST + günlük bar: IsYatirim (resmi kapanis/hacim) → YFinance → Finnhub
+        - BIST + gün içi bar: YFinance → Finnhub (IsYatirim gun ici vermez, atlanir)
+        - BIST dışı (FX/kripto/emtia): YFinance → Finnhub
+        """
+        by_name = {p.get_provider_name(): p for p in self.providers}
+        is_bist = str(symbol).upper().endswith('.IS')
+        is_daily = interval in ('1d', '1day', 'D')
+
+        if is_bist and is_daily:
+            chain = [
+                by_name.get('IsYatirim API'),
+                by_name.get('YFinance API'),
+                by_name.get('Finnhub API'),
+            ]
+        else:
+            chain = [
+                by_name.get('YFinance API'),
+                by_name.get('Finnhub API'),
+            ]
+        return [p for p in chain if p is not None]
+
     def fetch_validated(self, symbol: str, period: str = "6mo", interval: str = "1d") -> ValidatedDataResult:
         """
         CFG-03.1 ALTIN KURAL: AI yanlış veri ile çalışmayacaktır.
@@ -104,8 +127,8 @@ class DataSourceManager:
                 validation_report=validation
             )
         
-        # ADIM 1-2: Provider zincirini dene (Priority sırasıyla)
-        for provider in sorted(self.providers, key=lambda p: p.get_priority()):
+        # ADIM 1-2: Provider zincirini dene (kabiliyete gore akilli sira)
+        for provider in self._provider_chain(symbol, interval):
             provider_name = provider.get_provider_name()
             self._log_event(f"{symbol}: {provider_name} deneniyor...")
             
