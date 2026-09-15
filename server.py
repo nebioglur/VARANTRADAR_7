@@ -1380,7 +1380,7 @@ def api_simulation_live_orders():
         for s in signals:
             score = float(s.get('score', 0))
             phase = str(s.get('morning_phase', ''))
-            if score >= 80 and "YATAY" not in phase and "NEGATİF" not in phase and "UZAK DUR" not in phase:
+            if score >= 80 and "NEGAT" not in phase and "UZAK DUR" not in phase:
                 valid_signals.append(s)
                 
         orders = []
