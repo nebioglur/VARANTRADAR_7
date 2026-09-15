@@ -5709,6 +5709,39 @@ function _dtRenderDetail(panel, d) {
 
 
 var currentStocksSort = { col: 'change', asc: false };
+var allStocksSearchTerm = '';
+var allStocksSearchBound = false;
+
+function normalizeAllStocksSearch(value) {
+    return String(value || '')
+        .toLocaleUpperCase('tr-TR')
+        .replace(/\.IS$/i, '')
+        .replace(/\s+/g, '')
+        .trim();
+}
+
+function bindAllStocksSearch() {
+    if (allStocksSearchBound) return;
+    const input = document.getElementById('all-stocks-search');
+    const clearBtn = document.getElementById('all-stocks-search-clear');
+    if (!input) return;
+    allStocksSearchBound = true;
+
+    const updateSearch = () => {
+        allStocksSearchTerm = normalizeAllStocksSearch(input.value);
+        if (clearBtn) clearBtn.style.display = allStocksSearchTerm ? 'block' : 'none';
+        renderAllStocksTable();
+    };
+    input.addEventListener('input', updateSearch);
+    input.addEventListener('search', updateSearch);
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            input.value = '';
+            input.focus();
+            updateSearch();
+        });
+    }
+}
 
 function sortAllStocks(col) {
     if (currentStocksSort.col === col) {
@@ -5723,6 +5756,7 @@ function sortAllStocks(col) {
 function renderAllStocksTable() {
     const tbody = document.getElementById('tb-all-stocks-home');
     if (!tbody || !globalDashboardData || !globalDashboardData.all_symbols_stats) return;
+    bindAllStocksSearch();
     
     let allStats = Object.entries(globalDashboardData.all_symbols_stats).map(([sym, data]) => {
         let price = data.Price || data.Daily_Close || 0;
@@ -5781,6 +5815,18 @@ function renderAllStocksTable() {
         };
     });
     
+    const allStatsTotal = allStats.length;
+    if (allStocksSearchTerm) {
+        allStats = allStats.filter(s => normalizeAllStocksSearch(s.symbol).includes(allStocksSearchTerm));
+    }
+
+    const countEl = document.getElementById('all-stocks-count');
+    if (countEl) {
+        countEl.textContent = allStocksSearchTerm
+            ? `${allStats.length}/${allStatsTotal} hisse`
+            : `${allStatsTotal} hisse`;
+    }
+
     allStats.sort((a, b) => {
         let valA = a[currentStocksSort.col];
         let valB = b[currentStocksSort.col];
@@ -5792,6 +5838,14 @@ function renderAllStocksTable() {
         return 0;
     });
     
+    if (!allStats.length) {
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding:1.5rem;">
+            <i class="fa-solid fa-magnifying-glass" style="margin-right:0.4rem;"></i>
+            “${allStocksSearchTerm}” ile eşleşen hisse bulunamadı.
+        </td></tr>`;
+        return;
+    }
+
     tbody.innerHTML = allStats.map(s => {
         const color = s.change > 0 ? 'var(--accent-green)' : (s.change < 0 ? 'var(--accent-red)' : 'var(--text-color)');
         const sign = s.change > 0 ? '+' : '';

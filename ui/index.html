@@ -226,9 +226,22 @@
             
                 
                 <div class="card glass-panel" id="radar-card-99" style="grid-column: 1 / -1; width: 100%;">
-                    <h3 style="color:var(--accent-blue); display:flex; justify-content:space-between; align-items:center;">
+                    <h3 style="color:var(--accent-blue); display:flex; justify-content:space-between; align-items:center; gap:0.75rem; flex-wrap:wrap;">
                         <span><i class="fa-solid fa-list"></i> Tüm Hisseler (BIST)</span>
-                        <span style="font-size:0.75rem; background:rgba(59,130,246,0.2); padding:3px 8px; border-radius:12px; color:#60a5fa; border:1px solid rgba(59,130,246,0.3);"><i class="fa-solid fa-arrows-up-down"></i> Scroll</span>
+                        <div style="display:flex; align-items:center; gap:0.5rem; margin-left:auto; flex-wrap:wrap; justify-content:flex-end;">
+                            <label for="all-stocks-search" style="position:relative; display:flex; align-items:center;">
+                                <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:10px; color:var(--text-muted); font-size:0.75rem; pointer-events:none;"></i>
+                                <input id="all-stocks-search" type="search" placeholder="Hisse ara: THYAO..." autocomplete="off"
+                                    aria-label="Tüm hisseler tablosunda ara"
+                                    style="width:190px; height:30px; padding:0.25rem 2rem 0.25rem 2rem; border:1px solid rgba(59,130,246,0.45); border-radius:8px; background:rgba(15,23,42,0.75); color:var(--text-main); outline:none; font-size:0.75rem;">
+                                <button id="all-stocks-search-clear" type="button" aria-label="Aramayı temizle"
+                                    style="display:none; position:absolute; right:5px; border:0; background:transparent; color:var(--text-muted); cursor:pointer; padding:3px 5px;">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </label>
+                            <span id="all-stocks-count" style="font-size:0.7rem; color:var(--text-muted); min-width:60px; text-align:right;"></span>
+                            <span style="font-size:0.75rem; background:rgba(59,130,246,0.2); padding:3px 8px; border-radius:12px; color:#60a5fa; border:1px solid rgba(59,130,246,0.3);"><i class="fa-solid fa-arrows-up-down"></i> Scroll</span>
+                        </div>
                     </h3>
                     <div class="table-scroll-wrapper" style="max-height:350px; overflow-y:auto; padding-right:5px; margin-top:10px;">
                         <table class="data-table" style="width:100%;">
@@ -2240,7 +2253,7 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="app.js?v=20260915_v32"></script>
+    <script src="app.js?v=20260915_v33"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js?v=20260913_v1"></script>
 </body>
