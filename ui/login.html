@@ -266,6 +266,33 @@
                 SİSTEME GİRİŞ YAP <i class="fa-solid fa-arrow-right-to-bracket"></i>
             </button>
 
+            <div class="separator" style="display:flex; align-items:center; gap:12px; margin:1.4rem 0; color:var(--text-muted); font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:1px;">
+                <span style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></span>
+                Veya e-posta ile devam et
+                <span style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></span>
+            </div>
+
+            <form id="email-login-form" class="verdent-inline-form" autocomplete="on">
+                <div class="form-group" style="margin-bottom:1rem;">
+                    <label for="login-email">E-posta Adresi</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-envelope"></i>
+                        <input type="email" id="login-email" class="form-control" placeholder="ornek@mail.com" required autocomplete="email">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom:1rem;">
+                    <label for="login-password">Şifre</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" id="login-password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+                    </div>
+                </div>
+                <div id="login-error" class="error-msg" style="display:none; margin-bottom:1rem;"></div>
+                <button type="submit" id="btn-email-login" class="btn-login" style="margin-top:0.5rem;">
+                    <i class="fa-solid fa-envelope"></i> E-POSTA İLE GİRİŞ YAP
+                </button>
+            </form>
+
             <button type="button" id="btn-open-signup" class="btn-secondary">
                 <i class="fa-solid fa-user-plus"></i> Hesap Oluştur
             </button>

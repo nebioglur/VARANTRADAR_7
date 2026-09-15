@@ -10,10 +10,9 @@ Komisyon: %0.04 (islem basi, cift yonlu) - sim motoru ile ayni.
 """
 import time
 import threading
-from datetime import datetime, time as dtime
+from datetime import datetime
 
 from services.trade_database import get_connection
-from services.telegram_bot import notify_buy, notify_sell
 
 COMMISSION = 0.0004
 TRAIL_ACTIVATION = 3.0   # +3% kazancta izleyen stop devreye girer
@@ -161,12 +160,6 @@ def open_position(symbol, allocation=2000.0, tp_pct=5.0, sl_pct=3.0, trailing=Tr
     conn.commit()
     conn.close()
 
-    # Telegram sesli AL uyarisi (hata islemi bloklamaz)
-    try:
-        notify_buy(clean, entry_price, shares, source)
-    except Exception:
-        pass
-
     return True, (f"ALINDI: {shares} lot {clean} @ {entry_price:.2f} TL "
                   f"(TP %{tp_pct:.1f} / SL -%{sl_pct:.1f})")
 
@@ -212,12 +205,6 @@ def close_position(pos_id, price=None, reason="MANUEL KAPATMA"):
     conn.commit()
     conn.close()
 
-    # Telegram sesli SAT uyarisi (hata islemi bloklamaz)
-    try:
-        notify_sell(symbol, price, pnl_val, pnl_pct, reason)
-    except Exception:
-        pass
-
     return True, (f"KAPANDI: {symbol} {pnl_val:+.2f} TL ({pnl_pct:+.2f}%) - {reason}")
 
 
@@ -234,7 +221,6 @@ def monitor_once():
 
     now = datetime.now()
     d_str = now.strftime("%Y-%m-%d")
-    session_over = now.time() >= dtime(18, 10)
 
     symbols = list({r["symbol"] for r in open_positions})
     prices = _bulk_prices(symbols)
@@ -258,9 +244,9 @@ def monitor_once():
         hwm = float(row["high_water"] or entry)
         trailing_active = bool(row["trailing_active"])
 
-        if session_over:
-            reason = "⏱ GÜN SONU OTOMATİK KAPANIŞ"
-        elif price <= stop_price:
+        # NOT: Portfoy (canli islem terminali) saat 18:10'da otomatik kapanmaz.
+        # Bu kural yalnizca simulasyonda gecerlidir.
+        if price <= stop_price:
             if trailing_active:
                 reason = "🔒 İZLEYEN STOP KİLİDİ (Kâr korundu)"
             else:

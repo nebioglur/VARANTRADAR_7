@@ -61,9 +61,6 @@ async function openAuthModal(extraOptions) {
 
 function wireLoginPage(supabase, auth, session) {
     if (session) {
-        // Zaten oturum var -> cookie oturumunu tazele, sonra ana uygulamaya gec.
-        // (Tarayici kapaninca Flask cookie'si silinir ama Supabase session
-        // localStorage'da yasar; once sync etmezsek / <-> /login dongusune girer.)
         syncServerSession(supabase).then(() => window.location.replace('/'));
         return;
     }
@@ -74,6 +71,47 @@ function wireLoginPage(supabase, auth, session) {
     bind('btn-open-signin', {});
     bind('btn-open-signup', { initialView: 'signUp' });
     bind('btn-open-forgot', { initialView: 'forgotPassword' });
+
+    // Inline e-posta / şifre formu
+    const form = document.getElementById('email-login-form');
+    const errorBox = document.getElementById('login-error');
+    const submitBtn = document.getElementById('btn-email-login');
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email')?.value?.trim();
+            const password = document.getElementById('login-password')?.value;
+            if (!email || !password) {
+                if (errorBox) {
+                    errorBox.textContent = 'E-posta ve şifre gereklidir.';
+                    errorBox.style.display = 'block';
+                }
+                return;
+            }
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Giriş yapılıyor...';
+            }
+            if (errorBox) errorBox.style.display = 'none';
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+                if (!data.session) throw new Error('Oturum oluşturulamadı.');
+                await syncServerSession(supabase);
+                window.location.replace('/');
+            } catch (err) {
+                console.error('[Auth] E-posta giriş hatası', err);
+                if (errorBox) {
+                    errorBox.textContent = err.message || 'Giriş başarısız. Bilgilerinizi kontrol edin.';
+                    errorBox.style.display = 'block';
+                }
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-envelope"></i> E-POSTA İLE GİRİŞ YAP';
+                }
+            }
+        });
+    }
 }
 
 function wireMainApp(supabase, auth, session) {

@@ -3,6 +3,7 @@ from datetime import datetime, time, timedelta
 import json
 from services.trade_database import get_connection
 from services.market_data import MarketDataManager
+from services.telegram_bot import notify_buy, notify_sell
 
 class SimulationEngine:
     """
@@ -175,6 +176,39 @@ class SimulationEngine:
         sorted_times = sorted(list(all_times))
         
         for current_time in sorted_times:
+            # === SİMÜLASYON: 17:50 SONRASI ZORUNLU NAKİT GEÇİŞ ===
+            # Kullanıcı isteği: Simülasyonda 17:50-18:00 arasında mutlaka nakite geç.
+            # Bu kural sadece simülasyona özeldir; portföy (canlı terminal) bundan etkilenmez.
+            if current_time.time() >= time(17, 50):
+                for trade in [t for t in active_trades if t['status'] == 'OPEN']:
+                    sym = trade['symbol']
+                    df = dfs.get(sym)
+                    if df is not None and current_time in df.index:
+                        row = df.loc[current_time]
+                        close = float(row['Close'])
+                    else:
+                        close = trade['entry_price']
+                    trade['status'] = 'CLOSED'
+                    trade['exit_time'] = str(current_time)
+                    trade['exit_price'] = close
+                    buy_volume = trade['shares'] * trade['entry_price']
+                    sell_volume = trade['shares'] * close
+                    commission = (buy_volume + sell_volume) * 0.0004
+                    gross_pnl = trade['shares'] * (close - trade['entry_price'])
+                    trade['pnl_val'] = gross_pnl - commission
+                    trade['pnl_pct'] = (trade['pnl_val'] / buy_volume) * 100 if buy_volume > 0 else 0
+                    trade['exit_reason'] = "🌙 17:50 ZORUNLU NAKİT GEÇİŞ"
+                    completed_trades.append(trade)
+                    # VIP hisselerde (100 puan) Telegram sesli SAT uyarisi
+                    if trade.get('score', 0) >= 100:
+                        try:
+                            notify_sell(sym, close, trade['pnl_val'], trade['pnl_pct'], reason="SIMULASYON-VIP 17:50 Nakit Geçiş")
+                        except Exception:
+                            pass
+                    current_cash += sell_volume - commission
+                # Bu saatten sonra yeni işlem yapma
+                break
+
             # 1. SATIŞLARI KONTROL ET (Zincir Emirler - OCO)
             for trade in [t for t in active_trades if t['status'] == 'OPEN']:
                 sym = trade['symbol']
@@ -247,6 +281,12 @@ class SimulationEngine:
                             'pnl_pct': (net_profit / buy_vol) * 100,
                             'exit_reason': "⚖️ ÇELİK TP1 (YARISI SATILDI)"
                         })
+                        # VIP hisselerde (100 puan) Telegram sesli SAT uyarisi
+                        if trade.get('score', 0) >= 100:
+                            try:
+                                notify_sell(sym, scale_out_price, net_profit, (net_profit / buy_vol) * 100 if buy_vol > 0 else 0, reason="SIMULASYON-VIP TP1")
+                            except Exception:
+                                pass
                             
                 if sell_price is not None:
                     trade['status'] = 'CLOSED'
@@ -265,6 +305,13 @@ class SimulationEngine:
                         
                     trade['exit_reason'] = reason
                     completed_trades.append(trade)
+                    
+                    # VIP hisselerde (100 puan) Telegram sesli SAT uyarisi
+                    if trade.get('score', 0) >= 100:
+                        try:
+                            notify_sell(sym, sell_price, trade['pnl_val'], trade['pnl_pct'], reason=f"SIMULASYON-VIP {reason}")
+                        except Exception:
+                            pass
                     
                     if "STOP" in reason:
                         stopped_out_symbols.add(sym)
@@ -315,7 +362,8 @@ class SimulationEngine:
                             entry_price = raw_entry * 1.0015
                             shares = int(allocation // entry_price)
                             if shares > 0:
-                                current_cash -= (shares * entry_price) * 1.0004 
+                                current_cash -= (shares * entry_price) * 1.0004
+                                signal_score = int(float(s.get('score', 0)))
                                 active_trades.append({
                                     'symbol': sym,
                                     'entry_time': str(current_time),
@@ -327,8 +375,15 @@ class SimulationEngine:
                                     'shares': shares,
                                     'status': 'OPEN',
                                     'scaled_out': False,
-                                    'is_reentry': False
+                                    'is_reentry': False,
+                                    'score': signal_score
                                 })
+                                # VIP hisselerde (100 puan) Telegram sesli AL uyarısı
+                                if signal_score >= 100:
+                                    try:
+                                        notify_buy(sym, entry_price, shares, source="SIMULASYON-VIP")
+                                    except Exception:
+                                        pass
             for s in to_remove:
                 if s in pending_signals:
                     pending_signals.remove(s)
@@ -375,19 +430,27 @@ class SimulationEngine:
                                     shares = int(allocation // entry_price)
                                     if shares > 0:
                                         current_cash -= (shares * entry_price) * 1.0004
+                                        signal_score = int(float(sig.get('score', 0)))
                                         active_trades.append({
                                             'symbol': sym,
                                             'entry_time': str(current_time),
                                             'entry_price': entry_price,
-                                            'ceiling_target': entry_price * 1.10, 
+                                            'ceiling_target': entry_price * 1.10,
                                             'stop_price': entry_price * 0.97,
                                             'tp1_price': entry_price * 1.05,
                                             'tp2_price': entry_price * 1.10,
                                             'shares': shares,
                                             'status': 'OPEN',
                                             'scaled_out': False,
-                                            'is_reentry': True
+                                            'is_reentry': True,
+                                            'score': signal_score
                                         })
+                                        # VIP hisselerde (100 puan) Telegram sesli AL uyarisi
+                                        if signal_score >= 100:
+                                            try:
+                                                notify_buy(sym, entry_price, shares, source="SIMULASYON-VIP")
+                                            except Exception:
+                                                pass
                                         stopped_out_symbols.remove(sym)
 
         for trade in [t for t in active_trades if t['status'] == 'OPEN']:
@@ -410,6 +473,12 @@ class SimulationEngine:
                 else:
                     trade['exit_reason'] = "⏱️ GÜN SONU KAPANAN"
                 completed_trades.append(trade)
+                # VIP hisselerde (100 puan) Telegram sesli SAT uyarisi
+                if trade.get('score', 0) >= 100:
+                    try:
+                        notify_sell(sym, close, trade['pnl_val'], trade['pnl_pct'], reason=f"SIMULASYON-VIP {trade['exit_reason']}")
+                    except Exception:
+                        pass
 
         self._save_trades(date_str, completed_trades)
         print(f"[SimEngine] {date_str} için ÇELİK SİSTEM tamamlandı. İşlem Sayısı: {len(completed_trades)}")
