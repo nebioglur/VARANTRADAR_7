@@ -4240,7 +4240,7 @@ async function ltEditOrders(id, curTp, curSl, lastPrice) {
 }
 
 async function ltClosePosition(id) {
-    if (!(await window.modernConfirm('Bu pozisyonu güncel fiyattan SATmak istediğinize emin misiniz?')) return;
+    if (!(await window.modernConfirm('Bu pozisyonu güncel fiyattan SATmak istediğinize emin misiniz?'))) return;
     try {
         const res = await fetch('/api/simulation/terminal/close', {
             method: 'POST',
@@ -4633,7 +4633,7 @@ function ltOnSymbolInput() {
 
 // ========== PORTFÖY SIFIRLAMA TALEBİ + YÖNETİCİ PANELİ ==========
 async function ltResetRequest() {
-    if (!(await window.modernConfirm('Portföy sıfırlama talebi yöneticiye gönderilecek.\n\nOnaylanırsa: tüm pozisyonlarınız ve işlem geçmişiniz silinir, bakiyeniz 100.000 ₺ olur.\n\nDevam edilsin mi?')) return;
+    if (!(await window.modernConfirm('Portföy sıfırlama talebi yöneticiye gönderilecek.\n\nOnaylanırsa: tüm pozisyonlarınız ve işlem geçmişiniz silinir, bakiyeniz 100.000 ₺ olur.\n\nDevam edilsin mi?'))) return;
     try {
         const res = await fetch('/api/portfolio/reset_request', {method: 'POST'});
         const data = await res.json();
@@ -4696,7 +4696,7 @@ async function fetchAdminResetRequests() {
 async function ltAdminDecide(id, action) {
     if (!(await window.modernConfirm(action === 'approve'
         ? 'Bu kullanıcının portföyü TAMAMEN SIFIRLANACAK (pozisyonlar, işlem geçmişi; bakiye 100.000 ₺). Onaylıyor musunuz?'
-        : 'Bu sıfırlama talebi reddedilsin mi?')) return;
+        : 'Bu sıfırlama talebi reddedilsin mi?'))) return;
     try {
         const res = await fetch('/api/admin/reset_requests/decide', {
             method: 'POST',
@@ -6019,7 +6019,7 @@ window.showSR = function(sym, price, high, low) {
 
 // Hizli islem fonksiyonu (Kartlardaki Al/Sat butonlari icin)
 async function quickTrade(symbol, action, qty, price, tp_price, sl_price) {
-    if (!(await window.modernConfirm(`Emin misiniz? ${symbol} icin ${action === 'buy' ? 'ALIS' : 'SATIS'} islemi portfoyunuze eklenecektir.`)) return;
+    if (!(await window.modernConfirm(`Emin misiniz? ${symbol} icin ${action === 'buy' ? 'ALIS' : 'SATIS'} islemi portfoyunuze eklenecektir.`))) return;
     
     if (action === 'buy') {
         const payload = {
