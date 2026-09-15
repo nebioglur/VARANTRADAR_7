@@ -96,7 +96,9 @@ def load_dashboard_cache():
                 data = json.load(f)
                 today_str = datetime.now().strftime("%Y-%m-%d")
                 if data.get("cache_date") != today_str:
-                    return {} # DONT LOAD YESTERDAY'S DATA!
+                    # Dunku veri COPE ATILMAZ: son bilinen kapanisla tablo dolu baslar.
+                    # Ilk basarili tarama verileri ve cache_date'i gunceller.
+                    print(f"[CACHE] onceki gunun cache'i yuklendi ({len(data.get('all_symbols_stats', {}))} hisse, tarih {data.get('cache_date')}) - yeni tarama ile guncellenecek")
                 return data
     except Exception:
         pass
@@ -347,9 +349,18 @@ def _background_scanner_impl():
                 if "v8_market_regime" in GLOBAL_DASHBOARD_CACHE:
                     results["v8_market_regime"] = GLOBAL_DASHBOARD_CACHE["v8_market_regime"]
 
+                # Sembol istatistikleri TAM DEGISTIRILMEZ, onceki veriyle BIRLESTIRILIR:
+                # kismi taramalar onceki kapsamayi silmesin (606 -> 48 gibi kuculmeler olmasin).
+                _prev_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {}) if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else {}
+                if not isinstance(_prev_stats, dict):
+                    _prev_stats = {}
+                _merged_stats = dict(_prev_stats)
+                _merged_stats.update(sanitize_for_json(results.get("all_symbols_stats", {})))
+                results["all_symbols_stats"] = _merged_stats
+
                 GLOBAL_DASHBOARD_CACHE = sanitize_for_json(results)
                 save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
-                print("[BACKGROUND] Günlük veriler güncellendi. 1h taraması başlıyor...")
+                print(f"[BACKGROUND] Günlük veriler güncellendi ({stats_count} yeni, toplam {len(_merged_stats)} hisse). 1h taraması başlıyor...")
             elif results and isinstance(results, dict) and stats_count > 0:
                 # Kısmi veri geldi: Sembol istatistiklerini mevcut cache ile birleştir,
                 # kapsama alanı sonraki döngülerde kademeli olarak büyüsün.

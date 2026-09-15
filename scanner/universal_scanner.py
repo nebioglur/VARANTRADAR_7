@@ -114,7 +114,26 @@ class UniversalScanner:
         
         # Toplu indirme: EMA200 hesaplayabilmek için en az 1y (1 yıl) veri çekiyoruz
         bulk_data = self._bulk_download_chunked(symbols, period="1y", interval="1d")
-        
+
+        # Yahoo'dan gelmeyen semboller Is Yatirim ile doldurulur (resmi gunluk kapanis,
+        # key'siz). Kapak: dongu basina 150 sembol (kota dostu).
+        try:
+            missing = [s for s in symbols if bulk_data.get(s) is None]
+            if missing:
+                cap = missing[:150]
+                print(f"[SCANNER] {len(missing)} sembol Yahoo'dan gelmedi; ilk {len(cap)} tanesi Is Yatirim ile dolduruluyor...")
+                from data.providers.isyatirim_provider import IsYatirimProvider
+                iy = IsYatirimProvider()
+                for s in cap:
+                    try:
+                        df_iy = iy.fetch_ohlcv(s, period="1y", interval="1d")
+                        if df_iy is not None and not df_iy.empty and len(df_iy) >= 5:
+                            bulk_data[s] = df_iy
+                    except Exception:
+                        continue
+        except Exception as e_gap:
+            print(f"[SCANNER] Is Yatirim bos-doldurma hatasi: {e_gap}")
+
         all_results = []
         
         for sym in symbols:
