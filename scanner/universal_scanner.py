@@ -230,6 +230,27 @@ class UniversalScanner:
         for r in all_results:
             sym = r["Symbol"]
             if "Daily_EMA50" in r and "Daily_EMA200" in r:
+                # Günlük veriden gün içi güç metrikleri (1h taraması gelene kadar fallback)
+                try:
+                    today_open = float(r.get("Daily_Open", 0))
+                    today_close = float(r.get("Daily_Close", 0))
+                    today_high = float(r.get("High", today_close))
+                    today_low = float(r.get("Low", today_close))
+                    if today_open > 0:
+                        intra_change_pct = ((today_close - today_open) / today_open) * 100
+                    else:
+                        intra_change_pct = 0.0
+                    intra_fallback = {
+                        "session_open": round(today_open, 2),
+                        "current_price": round(today_close, 2),
+                        "intraday_change_pct": round(intra_change_pct, 2),
+                        "session_high": round(today_high, 2),
+                        "session_low": round(today_low, 2),
+                        "hourly_flow": "-"
+                    }
+                except Exception:
+                    intra_fallback = {"intraday_change_pct": 0.0, "hourly_flow": "-"}
+
                 all_symbols_stats[sym] = {
                     "Daily_EMA50": r["Daily_EMA50"],
                     "Daily_EMA200": r["Daily_EMA200"],
@@ -243,7 +264,8 @@ class UniversalScanner:
                     "v8_discovery": r.get("v8_discovery"),
                     "v8_breakout": r.get("v8_breakout"),
                     "v8_execution": r.get("v8_execution"),
-                    "v8_varrant": r.get("v8_varrant")
+                    "v8_varrant": r.get("v8_varrant"),
+                    "intraday_strength": intra_fallback
                 }
                 
         print("[SCANNER] Bulk analiz tamamlandı ve kategorize edildi.")
@@ -328,6 +350,7 @@ class UniversalScanner:
         tech_result["Price"] = round(close_today, 2)
         tech_result["High"] = round(float(df['high'].iloc[-1]), 2)
         tech_result["Low"] = round(float(df['low'].iloc[-1]), 2)
+        tech_result["Daily_Open"] = round(open_today, 2)
         
         
         # --- V8 DISCOVERY ---

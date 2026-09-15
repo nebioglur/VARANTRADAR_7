@@ -506,19 +506,17 @@ def _background_scanner_impl():
             import datetime
             now = datetime.datetime.now()
             t_10 = now.replace(hour=10, minute=0, second=0, microsecond=0)
-            t_1758 = now.replace(hour=17, minute=58, second=0, microsecond=0)
+            t_1810 = now.replace(hour=18, minute=10, second=0, microsecond=0)
             
-            if now < t_10:
-                return (t_10 - now).total_seconds()
+            # Piyasa saatleri icinde (10:00 - 18:10) her 10 dakika
+            if t_10 <= now <= t_1810:
+                return 600.0
             
-            if now < t_1758:
-                return min(600.0, (t_1758 - now).total_seconds())
-                
-            t_tomorrow_10 = t_10 + datetime.timedelta(days=1)
-            return (t_tomorrow_10 - now).total_seconds()
+            # Piyasa disinda her saat (test/gece gelistirme icin)
+            return 3600.0
             
         sleep_secs = get_next_run_seconds()
-        print(f"[BACKGROUND] Sradaki tarama icin {int(sleep_secs)} saniye bekleniyor... (Akilli Zamanlayici: 10:00-17:58)")
+        print(f"[BACKGROUND] Siradaki tarama icin {int(sleep_secs)} saniye bekleniyor...")
         time.sleep(sleep_secs)
 
 # Varant Sembolleri (Örnek Liste - IS Warrant yapısı)
