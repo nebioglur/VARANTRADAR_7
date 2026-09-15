@@ -197,6 +197,80 @@ def notify_sell(symbol: str, price: float, pnl_val: float, pnl_pct: float, reaso
         text += f"\nℹ️ {reason}"
     return send_voice_alert("sell", text)
 
+def notify_live_trade(symbol: str, action: str, price: float, shares: int = 0,
+                      entry_price: float = None, pnl_val: float = None, pnl_pct: float = None,
+                      reason: str = "", tp_price: float = None, sl_price: float = None,
+                      source: str = "", pos_id=None, trade_time: str = "") -> bool:
+    """Canlı portföy (manuel + otomatik TP/SL) işlemleri için ayrıntılı Telegram bildirimi.
+    VIP filtresi YOK: canlı portföydeki her gerçek işlem bildirilir."""
+    import json, os
+    from datetime import datetime
+    if not trade_time:
+        trade_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    date_str = trade_time[:10]
+
+    cache_file = "data/sent_live_alerts.json"
+    cache = {}
+    if os.path.exists(cache_file):
+        try:
+            with open(cache_file, "r", encoding="utf-8") as f_c:
+                cache = json.load(f_c)
+        except Exception:
+            pass
+    if cache.get("date") != date_str:
+        cache = {"date": date_str, "alerts": []}
+
+    alert_key = f"LIVE_{pos_id if pos_id is not None else symbol}_{action}_{price:.2f}"
+    if alert_key in cache["alerts"]:
+        return True
+    cache["alerts"].append(alert_key)
+    try:
+        with open(cache_file, "w", encoding="utf-8") as f_c:
+            json.dump(cache, f_c)
+    except Exception:
+        pass
+
+    shares = int(shares or 0)
+    total_val = shares * price if shares else 0
+
+    if "AL" in action:
+        text = "💼 <b>PORTFÖY AL</b>\n\n"
+        text += "📈 <b>" + symbol + "</b> @ " + f"{price:.2f}" + " TL\n"
+        text += "📦 <b>Lot Sayisi:</b> " + str(shares) + " Lot\n"
+        text += "💰 <b>Toplam Tutar:</b> " + f"{total_val:.2f}" + " TL\n"
+        if tp_price:
+            tp_pct = ((tp_price - price) / price * 100) if price else 0
+            text += "🎯 <b>Kar Al (TP):</b> " + f"{tp_price:.2f}" + " TL (+%" + f"{tp_pct:.1f}" + ")\n"
+        if sl_price:
+            sl_pct = ((price - sl_price) / price * 100) if price else 0
+            text += "🛑 <b>Stop Sat (SL):</b> " + f"{sl_price:.2f}" + " TL (-%" + f"{sl_pct:.1f}" + ")\n"
+        if source:
+            text += f"🔎 <b>Kaynak:</b> {source}\n"
+        text += f"🕒 <b>Saat:</b> {trade_time}\n"
+        if reason:
+            text += "\n💡 <b>Neden:</b> " + reason
+        return send_telegram_message(text)
+
+    emoji = "🟢" if (pnl_val or 0) >= 0 else "🔻"
+    entry = entry_price or 0
+    text = "💼 <b>PORTFÖY SAT</b>\n\n"
+    text += "📉 <b>" + symbol + "</b> @ " + f"{price:.2f}" + " TL\n"
+    if entry:
+        text += "📌 <b>Alış Fiyatı:</b> " + f"{entry:.2f}" + " TL\n"
+    text += "📦 <b>Lot Sayisi:</b> " + str(shares) + " Lot\n"
+    text += "💰 <b>Çıkış Tutarı:</b> " + f"{total_val:.2f}" + " TL\n\n"
+    if pnl_val is not None:
+        text += emoji + " <b>K/Z (Tutar):</b> " + f"{pnl_val:+.2f}" + " TL\n"
+    if pnl_pct is not None:
+        text += emoji + " <b>K/Z (%):</b> %" + f"{pnl_pct:+.2f}" + "\n"
+    if source and "AUTO" in str(source).upper():
+        text += f"⚙️ <b>Tip:</b> Otomatik (TP/SL)\n"
+    text += f"🕒 <b>Satış Saati:</b> {trade_time}\n"
+    if reason:
+        text += "\n💡 <b>Neden:</b> " + reason
+    return send_telegram_message(text)
+
+
 def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.0, reason: str = "", date_str: str = "", trade: dict = None) -> bool:
     import json, os
     from datetime import datetime
