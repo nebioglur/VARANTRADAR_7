@@ -2089,12 +2089,14 @@ def api_simulation_send_telegram():
         )
         
         for t in trades:
-            t_icon = "🟢" if t['pnl'] >= 0 else "🔴"
+            pnl = float(t.get('pnl', t.get('pnl_val', 0)) or 0)
+            pnl_pct = float(t.get('pnl_pct', 0) or 0)
+            t_icon = "🟢" if pnl >= 0 else "🔴"
             msg += (
                 f"▪️ <b>#{t['symbol']}</b> - {t['shares']} Lot\n"
                 f"   └ <i>Alış:</i> {t['buy_price']:.2f} ₺ ⏱️ {t.get('buy_time', '10:15')}\n"
                 f"   └ <i>Satış:</i> {t['sell_price']:.2f} ₺ ⏱️ {t.get('sell_time', 'Zirve')}\n"
-                f"   └ <i>K/Z:</i> {t_icon} {t['pnl']:,.2f} ₺ (%{t['pnl_pct']:.2f})\n\n"
+                f"   └ <i>K/Z:</i> {t_icon} {pnl:,.2f} ₺ (%{pnl_pct:.2f})\n\n"
             )
             
         msg += f"🤖 <i>VarantRadar Pro Simülasyon Motoru</i>"
