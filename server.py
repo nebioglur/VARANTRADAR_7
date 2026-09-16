@@ -678,9 +678,19 @@ def verify_supabase_token(token: str):
                 return user_id
     except urllib.error.HTTPError as e:
         body = e.read().decode('utf-8', 'ignore')
-        print(f"[AUTH] Supabase user endpoint dogrulamasi basarisiz: {e.code} {body[:200]}")
+        msg = f"[AUTH] Supabase HTTPError: {e.code} {body[:200]}"
+        print(msg)
+        try:
+            with open('data/system_logs.txt', 'a', encoding='utf-8') as f:
+                import datetime; f.write(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}\n")
+        except: pass
     except Exception as e:
-        print(f"[AUTH] Supabase user endpoint dogrulamasi basarisiz: {e}")
+        msg = f"[AUTH] Supabase Exception: {e}"
+        print(msg)
+        try:
+            with open('data/system_logs.txt', 'a', encoding='utf-8') as f:
+                import datetime; f.write(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}\n")
+        except: pass
     return None
 
 def _migrate_legacy_owner_data(new_owner: str, email: str):
@@ -806,14 +816,26 @@ def upsert_app_user(owner_key, email=None, display_name=None):
 
 @app.route('/api/auth/session', methods=['POST'])
 def api_auth_session():
-    """Supabase oturumunu Flask cookie oturumuna senkronize eder."""
+    def log_auth(m):
+        try:
+            with open('data/system_logs.txt', 'a', encoding='utf-8') as f:
+                import datetime
+                f.write(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [AUTH-DEBUG] {m}\n")
+        except: pass
+        print("[AUTH-DEBUG]", m)
+
+    log_auth("api_auth_session basladi")
     auth_header = request.headers.get('Authorization', '')
     if not auth_header.startswith('Bearer '):
+        log_auth("Missing bearer token")
         return jsonify({"status": "error", "message": "Missing bearer token"}), 401
     token = auth_header[7:].strip()
+    log_auth(f"Token alindi, ilk 10 hane: {token[:10]}...")
     user_id = verify_supabase_token(token)
     if not user_id:
+        log_auth("verify_supabase_token None dondu (gecersiz token)")
         return jsonify({"status": "error", "message": "Invalid or expired token"}), 401
+    log_auth(f"Token gecerli, user_id: {user_id}")
     # E-postayi JWT payload'indan oku (token zaten dogrulandi)
     email = None
     try:
