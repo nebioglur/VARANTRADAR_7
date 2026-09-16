@@ -267,6 +267,58 @@ def notify_sell(symbol: str, price: float, pnl_val: float, pnl_pct: float, reaso
         text += f"\nℹ️ {reason}"
     return send_voice_alert("sell", text)
 
+_SR_CACHE = {}  # sembol -> (timestamp, (destek1, destek2, direnc1, direnc2, pivot))
+_SR_TTL = 1800.0  # 30 dk
+
+
+def get_support_resistance(symbol: str):
+    """Sembol icin klasik pivot destek/direnc seviyelerini hesaplar.
+    Donus: (S1, S2, R1, R2, Pivot) veya None. 30 dk cache'lenir; hata
+    durumunda None doner ve bildirim gonderimi engellenmez."""
+    clean = (symbol or "").replace(".IS", "").replace(".is", "").upper().strip()
+    if not clean:
+        return None
+    now = _time.time()
+    cached = _SR_CACHE.get(clean)
+    if cached and now - cached[0] < _SR_TTL:
+        return cached[1]
+
+    try:
+        import yfinance as yf
+        hist = yf.Ticker(clean + ".IS").history(period="3mo", interval="1d")
+        if hist is None or len(hist) < 5:
+            _SR_CACHE[clean] = (now, None)
+            return None
+        h = float(hist["High"].iloc[-1])
+        l = float(hist["Low"].iloc[-1])
+        c = float(hist["Close"].iloc[-1])
+        pivot = (h + l + c) / 3.0
+        r1 = 2 * pivot - l
+        s1 = 2 * pivot - h
+        r2 = pivot + (h - l)
+        s2 = pivot - (h - l)
+        data = (round(s1, 2), round(s2, 2), round(r1, 2), round(r2, 2), round(pivot, 2))
+        _SR_CACHE[clean] = (now, data)
+        return data
+    except Exception as e:
+        logger.warning(f"Destek/direnc hesaplanamadi ({clean}): {e}")
+        _SR_CACHE[clean] = (now, None)
+        return None
+
+
+def _sr_text_block(symbol: str) -> str:
+    """Bildirim mesajlari icin destek/direnc bolumu (bos string = bilgi yok)."""
+    sr = get_support_resistance(symbol)
+    if not sr:
+        return ""
+    s1, s2, r1, r2, piv = sr
+    return (
+        f"📐 <b>Destek Seviyeleri:</b> S1 {s1:.2f} TL / S2 {s2:.2f} TL\n"
+        f"📐 <b>Direnç Seviyeleri:</b> R1 {r1:.2f} TL / R2 {r2:.2f} TL\n"
+        f"⚖️ <b>Pivot:</b> {piv:.2f} TL\n"
+    )
+
+
 def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.0, reason: str = "", date_str: str = "", trade: dict = None) -> bool:
     import json, os
     from datetime import datetime
@@ -323,6 +375,7 @@ def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.
         text += "💰 <b>Toplam Tutar:</b> " + f"{total_val:.2f}" + " TL\n\n"
         text += "🎯 <b>Kar Al (TP):</b> " + f"{tp1:.2f}" + " TL (+%" + f"{tp_pct:.1f}" + ")\n"
         text += "🛑 <b>Stop Sat (SL):</b> " + f"{sl:.2f}" + " TL (-%" + f"{sl_pct:.1f}" + ")\n"
+        text += _sr_text_block(symbol)
         text += f"🏆 <b>VIP Puanı:</b> {float(trade_score):.0f}/100\n"
         if entry_time:
             text += f"🕒 <b>Alış Saati:</b> {entry_time}\n"
@@ -345,6 +398,11 @@ def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.
         text += "📌 <b>Alış Fiyatı:</b> " + f"{float(entry):.2f}" + " TL\n"
         text += "📦 <b>Lot Sayisi:</b> " + str(shares) + " Lot\n"
         text += "💰 <b>Cikis Tutari:</b> " + f"{total_val:.2f}" + " TL\n\n"
+        if tp1 and entry:
+            text += "🎯 <b>Kar Al (TP):</b> " + f"{tp1:.2f}" + " TL (+%" + f"{tp_pct:.1f}" + ")\n"
+        if sl and entry:
+            text += "🛑 <b>Stop Sat (SL):</b> " + f"{sl:.2f}" + " TL (-%" + f"{sl_pct:.1f}" + ")\n"
+        text += _sr_text_block(symbol)
         text += emoji + " <b>K/Z (Tutar):</b> " + f"{pnl_val:+.2f}" + " TL\n"
         text += emoji + " <b>K/Z (%):</b> %" + f"{pnl_pct:+.2f}" + "\n"
         text += f"🏆 <b>VIP Puanı:</b> {float(trade_score):.0f}/100\n"
