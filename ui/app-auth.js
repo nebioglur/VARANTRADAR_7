@@ -145,6 +145,23 @@ async function openAuthModal(extraOptions) {
             reportAuthEvent('WIDGET ' + (context?.action || 'unknown') + ': ' +
                 (error && error.message ? error.message : error));
         },
+        // Google akisini araci (cloud-oauth) yerine dogrudan projenin
+        // GoTrue'su ile tam-sayfa PKCE OAuth olarak calistir. Aracin
+        // popup web-message akisi baska proje imzali token dondurup
+        // "invalid JWT: signature is invalid" hatasi veriyordu.
+        onOAuthSubmit: async () => {
+            reportAuthEvent('GOOGLE tam-sayfa PKCE OAuth basliyor');
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: window.location.origin + '/' },
+            });
+            if (error) {
+                reportAuthEvent('GOOGLE redirect hatasi: ' + error.message);
+                throw error; // widget hata kutusunda gosterir
+            }
+            // Basarili: tarayici Google'a yonlendirildi, donecek.
+            await new Promise(() => {}); // yonlendirme sirasinda modal kilitli kalsin
+        },
         onSuccess: async () => {
             reportAuthEvent('OAUTH BASARILI, session sync basliyor');
             await syncServerSession(supabase);
@@ -231,6 +248,13 @@ kitPromise.then(async ({ supabase, auth }) => {
     }
 
     supabase.auth.onAuthStateChange((event) => {
+        if (event === 'SIGNED_IN' && isLoginPage) {
+            // PKCE donusunda code degisimi bitince tetiklenir -> cookie
+            // oturumunu kurup ana uygulamaya gec.
+            syncServerSession(supabase).then((ok) => {
+                if (ok) window.location.replace('/');
+            });
+        }
         if (event === 'SIGNED_OUT' && !isLoginPage) {
             window.location.href = '/logout';
         }
