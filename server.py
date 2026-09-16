@@ -2085,7 +2085,7 @@ def api_simulation_send_telegram():
             f"📋 <b>GÜN İÇİ İŞLEMLER:</b>\n"
         )
         
-        for t in day_data['trades']:
+        for t in trades:
             t_icon = "🟢" if t['pnl'] >= 0 else "🔴"
             msg += (
                 f"▪️ <b>#{t['symbol']}</b> - {t['shares']} Lot\n"
