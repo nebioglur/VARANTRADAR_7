@@ -666,6 +666,7 @@ def verify_supabase_token(token: str):
             headers={
                 "Authorization": f"Bearer {token}",
                 "apikey": SUPABASE_PUBLISHABLE_KEY,
+                "User-Agent": "VarantRadar-Server/1.0 (Mozilla/5.0)",
             },
             method="GET",
         )
