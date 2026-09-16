@@ -93,7 +93,7 @@ const kitPromise = (async () => {
             detectSessionInUrl: true,
             // Render tarayicisinda eski Supabase projesinin token anahtari
             // ayni isimle kalabildigi icin yeni projeye ayri depo kullan.
-            storageKey: 'vr-auth-pf565ccea3c6a9b19d28e-v3',
+            storageKey: 'vr-auth-pf565ccea3c6a9b19d28e-v4',
             storage: safeLocalStorage(),
         },
     });
@@ -141,6 +141,10 @@ async function openAuthModal(extraOptions) {
     auth.openSignInModal(Object.assign({
         redirectTo: window.location.origin + '/',
         locale: 'tr',
+        onError: (error, context) => {
+            reportAuthEvent('WIDGET ' + (context?.action || 'unknown') + ': ' +
+                (error && error.message ? error.message : error));
+        },
         onSuccess: async () => {
             reportAuthEvent('OAUTH BASARILI, session sync basliyor');
             await syncServerSession(supabase);
