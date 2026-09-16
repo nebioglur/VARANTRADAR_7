@@ -7,7 +7,7 @@
  * Kullanim: window.VerdentAuthKit (Promise) -> { supabase, auth, session }
  */
 window.__vrAuthBooted = true;
-window.__VR_AUTH_JS_VERSION = '20260916_v7';
+window.__VR_AUTH_JS_VERSION = '20260916_v8';
 
 import { createVerdentAuth } from './vendor/verdent-auth/index.js';
 
@@ -172,7 +172,10 @@ async function openAuthModal(extraOptions) {
             reportAuthEvent('GOOGLE tam-sayfa PKCE OAuth basliyor');
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
-                options: { redirectTo: window.location.origin + '/' },
+                // Donus login sayfasina: orada code degisimi + cookie sync
+                // yapilip ana uygulamaya geciliyor (ana sayfa oturum kapisi
+                // code parametresini yolda dusurebilir).
+                options: { redirectTo: window.location.origin + '/login?oauth=return' },
             });
             if (error) {
                 reportAuthEvent('GOOGLE redirect hatasi: ' + error.message);

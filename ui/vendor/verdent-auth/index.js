@@ -424,10 +424,10 @@ function renderAuthFlow(options, windowRef, container, uiOptions, onAuthenticate
                 currentEmail = email;
                 renderEmailLogin();
             },
-            onOAuthSubmit: async () => {
+            onOAuthSubmit: resolvedUIOptions.onOAuthSubmit ?? (async () => {
                 const result = await signInWithOAuth(options, { provider: 'google', redirectTo });
                 await complete(result);
-            },
+            }),
         }));
     };
     const renderEmailLogin = () => {
