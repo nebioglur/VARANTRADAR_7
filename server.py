@@ -613,8 +613,13 @@ from flask import request, Response, session, redirect, jsonify, render_template
 app.secret_key = os.environ.get('SECRET_KEY', 'varant_pro_ultra_secret_2026_xyz')
 
 # --- Verdent-Managed Supabase Auth (public browser config) ---
-SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://supabase-api-prod.verdent.ai/p/pf565ccea3c6a9b19d28e')
-SUPABASE_PUBLISHABLE_KEY = os.environ.get('SUPABASE_PUBLISHABLE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoyMTA1MTI2MzA2LCJpYXQiOjE3ODk1MDcxMDYsImlzcyI6InN1cGFiYXNlIiwicHJvamVjdF9yZWYiOiJwZjU2NWNjZWEzYzZhOWIxOWQyOGUiLCJyb2xlIjoiYW5vbiJ9.cG_7QJGV7r0n7JIrvsSb2G1lnGwHg14TAJM0koDOq28')
+# AUTH KAYNAGI (Verdent-managed Supabase Auth) — bilinçli olarak env override KULLANMAZ:
+# Render ortaminda eski proje env'leri kaldiysa bile giris her zaman AKTIF projeyle calisir.
+# (Eski proje JWT anahtarlari gecersizlesti -> "invalid JWT signature" hatasinin kökü.)
+AUTH_SUPABASE_URL = 'https://supabase-api-prod.verdent.ai/p/pf565ccea3c6a9b19d28e'
+AUTH_SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoyMTA1MTI2MzA2LCJpYXQiOjE3ODk1MDcxMDYsImlzcyI6InN1cGFiYXNlIiwicHJvamVjdF9yZWYiOiJwZjU2NWNjZWEzYzZhOWIxOWQyOGUiLCJyb2xlIjoiYW5vbiJ9.cG_7QJGV7r0n7JIrvsSb2G1lnGwHg14TAJM0koDOq28'
+SUPABASE_URL = AUTH_SUPABASE_URL
+SUPABASE_PUBLISHABLE_KEY = AUTH_SUPABASE_PUBLISHABLE_KEY
 
 _jwks_client = None
 

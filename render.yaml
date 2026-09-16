@@ -6,7 +6,7 @@ services:
     startCommand: python server.py
     envVars:
       - key: SUPABASE_URL
-        value: https://kfslwkmrnjqxirzhfmbn.supabase.co
+        value: https://supabase-api-prod.verdent.ai/p/pf565ccea3c6a9b19d28e
       - key: SUPABASE_PUBLISHABLE_KEY
         sync: false
       - key: DATABASE_URL
