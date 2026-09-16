@@ -7,7 +7,7 @@
  * Kullanim: window.VerdentAuthKit (Promise) -> { supabase, auth, session }
  */
 window.__vrAuthBooted = true;
-window.__VR_AUTH_JS_VERSION = '20260916_v8';
+window.__VR_AUTH_JS_VERSION = '20260916_v9';
 
 import { createVerdentAuth } from './vendor/verdent-auth/index.js';
 
@@ -260,19 +260,12 @@ if (document.getElementById('auth-login-card')) {
 
 kitPromise.then(async ({ supabase, auth }) => {
     const isLoginPage = !!document.getElementById('auth-login-card');
-    const { data } = await supabase.auth.getSession();
-    const session = data?.session || null;
 
-    if (isLoginPage) {
-        wireLoginPage(supabase, auth, session);
-    } else {
-        wireMainApp(supabase, auth, session);
-    }
-
-    supabase.auth.onAuthStateChange((event) => {
+    // PKCE donusu dahil tum oturum olaylarini yakalamak icin abonelik
+    // getSession'dan ONCE yapilir (yoksa olay kacabilir).
+    supabase.auth.onAuthStateChange((event, sess) => {
+        reportAuthEvent('EVENT ' + event + (sess?.user ? ' user=' + sess.user.email : ''));
         if (event === 'SIGNED_IN' && isLoginPage) {
-            // PKCE donusunda code degisimi bitince tetiklenir -> cookie
-            // oturumunu kurup ana uygulamaya gec.
             syncServerSession(supabase).then((ok) => {
                 if (ok) window.location.replace('/');
             });
@@ -281,6 +274,52 @@ kitPromise.then(async ({ supabase, auth }) => {
             window.location.href = '/logout';
         }
     });
+
+    // Google donusu teshisi: GoTrue'nun bize ne dondugunu gunlige yaz.
+    try {
+        const u = new URL(window.location.href);
+        const hasCode = !!u.searchParams.get('code');
+        const err = u.searchParams.get('error');
+        const errDesc = u.searchParams.get('error_description');
+        const hasHash = (u.hash || '').includes('access_token');
+        if (hasCode || err || hasHash) {
+            reportAuthEvent('RETURN code=' + (hasCode ? 'var' : 'yok') +
+                ' error=' + (err || '-') +
+                (errDesc ? ' desc=' + errDesc.slice(0, 120) : '') +
+                ' hashToken=' + (hasHash ? 'var' : 'yok') +
+                ' oauth=' + (u.searchParams.get('oauth') || '-'));
+        }
+    } catch (e) { /* yoksay */ }
+
+    const { data } = await supabase.auth.getSession();
+    const session = data?.session || null;
+
+    if (isLoginPage) {
+        wireLoginPage(supabase, auth, session);
+        // URL'de code vardi ama oturum kurulamadiysa: degisimi elle dene,
+        // gercek hatayi gunlige yaz ki kok nedeni gorelim.
+        const u = new URL(window.location.href);
+        const code = u.searchParams.get('code');
+        if (code && !session) {
+            setTimeout(async () => {
+                try {
+                    const again = await supabase.auth.getSession();
+                    if (again.data?.session) return;
+                    reportAuthEvent('RETURN code vardi ama session yok; elle exchange deneniyor');
+                    const r = await supabase.auth.exchangeCodeForSession(code);
+                    reportAuthEvent('MANUEL exchange: ' + (r.error ? r.error.message : 'OK'));
+                    if (!r.error) {
+                        const ok = await syncServerSession(supabase);
+                        if (ok) window.location.replace('/');
+                    }
+                } catch (e) {
+                    reportAuthEvent('MANUEL exchange istisna: ' + (e && e.message ? e.message : e));
+                }
+            }, 1500);
+        }
+    } else {
+        wireMainApp(supabase, auth, session);
+    }
 }).catch((e) => {
     console.error('[Auth] Baslatma hatasi', e);
     reportAuthEvent('BASLATMA hatasi: ' + (e && e.message ? e.message : e));
