@@ -917,7 +917,7 @@ def api_auth_session():
 def require_auth():
     if request.method == 'OPTIONS': return
     
-    allowed = ['/login', '/logout', '/api/ping', '/api/auth_config', '/api/auth/session', '/api/client_log']
+    allowed = ['/login', '/logout', '/api/ping', '/api/auth_config', '/api/auth/session', '/api/client_log', '/api/logs']
     if request.path in allowed or request.path.startswith('/api/dashboard_init'): return
     
     # Allow static assets for login page
