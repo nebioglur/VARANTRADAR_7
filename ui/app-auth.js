@@ -7,7 +7,7 @@
  * Kullanim: window.VerdentAuthKit (Promise) -> { supabase, auth, session }
  */
 window.__vrAuthBooted = true;
-window.__VR_AUTH_JS_VERSION = '20260916_v12';
+window.__VR_AUTH_JS_VERSION = '20260916_v13';
 
 import { createVerdentAuth } from './vendor/verdent-auth/index.js';
 
@@ -255,6 +255,31 @@ function wireLoginPage(supabase, auth, session) {
         // localStorage'da yasar; once sync etmezsek / <-> /login dongusune girer.)
         syncServerSession(supabase).then(() => window.location.replace('/'));
         return;
+    }
+
+    // Dogrudan Google girisi (Verdent widget popup'ini bypass eder)
+    const gBtn = document.getElementById('btn-google-direct');
+    if (gBtn && !gBtn.__vrBound) {
+        gBtn.__vrBound = true;
+        gBtn.addEventListener('click', async () => {
+            gBtn.disabled = true;
+            reportAuthEvent('DIRECT GOOGLE buton tiklandi');
+            try {
+                const { error } = await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: { redirectTo: window.location.origin + '/login?oauth=return' },
+                });
+                if (error) {
+                    reportAuthEvent('DIRECT GOOGLE hatasi: ' + error.message);
+                    showAuthError(error.message);
+                    gBtn.disabled = false;
+                }
+            } catch (e) {
+                reportAuthEvent('DIRECT GOOGLE istisna: ' + (e && e.message ? e.message : e));
+                showAuthError('Google girişi başlatılamadı.');
+                gBtn.disabled = false;
+            }
+        });
     }
 }
 
