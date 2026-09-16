@@ -78,6 +78,9 @@ const kitPromise = (async () => {
             persistSession: true,
             autoRefreshToken: true,
             detectSessionInUrl: true,
+            // Render tarayicisinda eski Supabase projesinin token anahtari
+            // ayni isimle kalabildigi icin yeni projeye ayri depo kullan.
+            storageKey: 'vr-auth-pf565ccea3c6a9b19d28e-v3',
             storage: safeLocalStorage(),
         },
     });
