@@ -7,7 +7,7 @@
  * Kullanim: window.VerdentAuthKit (Promise) -> { supabase, auth, session }
  */
 window.__vrAuthBooted = true;
-window.__VR_AUTH_JS_VERSION = '20260916_v10';
+window.__VR_AUTH_JS_VERSION = '20260916_v11';
 
 import { createVerdentAuth } from './vendor/verdent-auth/index.js';
 
@@ -134,10 +134,13 @@ const kitPromise = (async () => {
 window.VerdentAuthKit = kitPromise;
 
 /** Cookie oturumunu Supabase access token ile senkronize eder. */
-async function syncServerSession(supabase) {
+async function syncServerSession(supabase, sessionOverride) {
     try {
-        const { data } = await supabase.auth.getSession();
-        const token = data?.session?.access_token;
+        let token = sessionOverride?.access_token || null;
+        if (!token) {
+            const { data } = await supabase.auth.getSession();
+            token = data?.session?.access_token || null;
+        }
         if (!token) return false;
         const res = await fetch('/api/auth/session', {
             method: 'POST',
@@ -294,6 +297,22 @@ kitPromise.then(async ({ supabase, auth }) => {
                 ' oauth=' + (u.searchParams.get('oauth') || '-'));
         }
     } catch (e) { /* yoksay */ }
+
+    // GOOGLE DONUSU — elle hash isleme: supabase-js hash token'larini
+    // yutmiyorsa token'i dogrudan yakalayip sunucu cookie oturumuna cevir.
+    try {
+        const hp = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const at = hp.get('access_token');
+        if (at) {
+            reportAuthEvent('HASH TOKEN yakalandi, sunucu oturumu kuruluyor');
+            const ok = await syncServerSession(supabase, { access_token: at });
+            reportAuthEvent('HASH TOKEN sync: ' + (ok ? 'OK' : 'BASARISIZ'));
+            if (ok) {
+                window.location.replace('/');
+                return; // yonlendirildik, diger adimlara gerek yok
+            }
+        }
+    } catch (e) { reportAuthEvent('HASH TOKEN istisna: ' + (e && e.message ? e.message : e)); }
 
     const { data } = await supabase.auth.getSession();
     const session = data?.session || null;
