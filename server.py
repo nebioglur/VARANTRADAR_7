@@ -676,6 +676,7 @@ def _decode_jwt_unverified(token: str):
         return None
 
 def _supabase_user_from_endpoint(base_url: str, token: str, apikey):
+    import urllib.request
     headers = {
         "Authorization": f"Bearer {token}",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
@@ -701,6 +702,7 @@ def verify_supabase_token(token: str):
     import hashlib
     import time as _time
     import urllib.request
+    import urllib.error
     token_hash = hashlib.sha256(token.encode('utf-8')).hexdigest()
     now = _time.time()
     cached = _user_token_cache.get(token_hash)
