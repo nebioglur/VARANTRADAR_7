@@ -632,26 +632,7 @@ def _get_jwks_client():
 _user_token_cache = {}
 
 def verify_supabase_token(token: str):
-    """Supabase access token'ini dogrular; gecerliyse user_id (sub) dondurur.
-    1) JWKS ile yerel imza dogrulamasi (anahtar mevcutsa)
-    2) Fallback: Supabase /auth/v1/user ucu (JWKS bos veya ES256 uyumsuzsa)
-    """
-    # 1) Yerel JWKS dogrulamasi
-    try:
-        import jwt
-        signing_key = _get_jwks_client().get_signing_key_from_jwt(token)
-        payload = jwt.decode(
-            token,
-            signing_key.key,
-            algorithms=["ES256", "RS256"],
-            audience="authenticated",
-            leeway=30,
-        )
-        return payload.get("sub")
-    except Exception:
-        pass
-
-    # 2) Supabase auth ucu ile dogrulama (sonuc kisa sure cache'lenir)
+    """Supabase access token'ini dogrular; gecerliyse user_id (sub) dondurur."""
     import hashlib
     import time as _time
     import urllib.request
@@ -659,14 +640,14 @@ def verify_supabase_token(token: str):
     now = _time.time()
     cached = _user_token_cache.get(token_hash)
     if cached and cached[1] > now:
-        return cached[0]
+        return cached[0], None
     try:
         req = urllib.request.Request(
             f"{SUPABASE_URL}/auth/v1/user",
             headers={
                 "Authorization": f"Bearer {token}",
                 "apikey": SUPABASE_PUBLISHABLE_KEY,
-                "User-Agent": "VarantRadar-Server/1.0 (Mozilla/5.0)",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
             },
             method="GET",
         )
@@ -676,23 +657,13 @@ def verify_supabase_token(token: str):
             user_id = user.get("id") or user.get("sub")
             if user_id:
                 _user_token_cache[token_hash] = (user_id, now + 120)
-                return user_id
+                return user_id, None
+            return None, "Kullanici ID bulunamadi"
     except urllib.error.HTTPError as e:
         body = e.read().decode('utf-8', 'ignore')
-        msg = f"[AUTH] Supabase HTTPError: {e.code} {body[:200]}"
-        print(msg)
-        try:
-            with open('data/system_logs.txt', 'a', encoding='utf-8') as f:
-                import datetime; f.write(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}\n")
-        except: pass
+        return None, f"HTTP {e.code} - {body[:100]}"
     except Exception as e:
-        msg = f"[AUTH] Supabase Exception: {e}"
-        print(msg)
-        try:
-            with open('data/system_logs.txt', 'a', encoding='utf-8') as f:
-                import datetime; f.write(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}\n")
-        except: pass
-    return None
+        return None, f"Exception: {e}"
 
 def _migrate_legacy_owner_data(new_owner: str, email: str):
     """Ayni e-postayla eski Supabase projesinde acilan (sb:...) hesaplarin
@@ -832,10 +803,10 @@ def api_auth_session():
         return jsonify({"status": "error", "message": "Missing bearer token"}), 401
     token = auth_header[7:].strip()
     log_auth(f"Token alindi, ilk 10 hane: {token[:10]}...")
-    user_id = verify_supabase_token(token)
+    user_id, err_msg = verify_supabase_token(token)
     if not user_id:
-        log_auth("verify_supabase_token None dondu (gecersiz token)")
-        return jsonify({"status": "error", "message": "Invalid or expired token"}), 401
+        log_auth(f"verify_supabase_token basarisiz: {err_msg}")
+        return jsonify({"status": "error", "message": f"Token dogrulanmadi: {err_msg}"}), 401
     log_auth(f"Token gecerli, user_id: {user_id}")
     # E-postayi JWT payload'indan oku (token zaten dogrulandi)
     email = None
@@ -897,8 +868,6 @@ def login():
             flag = '<script>window.VR_CLASSIC_ONLY=1;</script>'
             if '<head>' in html:
                 html = html.replace('<head>', '<head>' + flag, 1)
-            else:
-                html = flag + html
         # Login HTML'i tarayici cache'ine takilirsa eski auth kodu calismaya
         # devam eder (Render'da "invalid JWT" donucusunun sebeplerinden biri).
         resp = make_response(html)
@@ -1478,8 +1447,9 @@ def api_varant_simulator():
 
 @app.route('/api/ping', methods=['GET'])
 def api_ping():
-    """Keep-alive ucu: hicbir harici veri cagrisi yapmaz, Render uyumasini engeller."""
-    return jsonify({"status": "alive", "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
+    """Uygulamanin calistigini dogrulamak icin basit health-check."""
+    import os
+    return jsonify({"status": "alive", "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "cwd": os.getcwd()})
 
 @app.route('/api/health', methods=['GET'])
 def api_health():
