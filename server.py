@@ -654,28 +654,31 @@ def verify_supabase_token(token: str):
     # 2) Supabase auth ucu ile dogrulama (sonuc kisa sure cache'lenir)
     import hashlib
     import time as _time
+    import urllib.request
     token_hash = hashlib.sha256(token.encode('utf-8')).hexdigest()
     now = _time.time()
     cached = _user_token_cache.get(token_hash)
     if cached and cached[1] > now:
         return cached[0]
     try:
-        import requests
-        resp = requests.get(
+        req = urllib.request.Request(
             f"{SUPABASE_URL}/auth/v1/user",
-            params={"apikey": SUPABASE_PUBLISHABLE_KEY},
             headers={
                 "Authorization": f"Bearer {token}",
                 "apikey": SUPABASE_PUBLISHABLE_KEY,
             },
-            timeout=10,
+            method="GET",
         )
-        if resp.status_code == 200:
-            user = resp.json()
+        req.add_header("Content-Type", "application/json")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            user = json.loads(resp.read().decode('utf-8'))
             user_id = user.get("id") or user.get("sub")
             if user_id:
                 _user_token_cache[token_hash] = (user_id, now + 120)
                 return user_id
+    except urllib.error.HTTPError as e:
+        body = e.read().decode('utf-8', 'ignore')
+        print(f"[AUTH] Supabase user endpoint dogrulamasi basarisiz: {e.code} {body[:200]}")
     except Exception as e:
         print(f"[AUTH] Supabase user endpoint dogrulamasi basarisiz: {e}")
     return None
