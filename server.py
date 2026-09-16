@@ -685,6 +685,39 @@ def verify_supabase_token(token: str):
         print(f"[AUTH] Supabase user endpoint dogrulamasi basarisiz: {e}")
     return None
 
+def _migrate_legacy_owner_data(new_owner: str, email: str):
+    """Ayni e-postayla eski Supabase projesinde acilan (sb:...) hesaplarin
+    simulasyon/portfoy verisini yeni oturum sahibine tasir (yeni hesaba veri
+    yoksa, eski hesapta varsa). Auth projesi degisiminde veri kaybini onler."""
+    if not email:
+        return
+    try:
+        from services.trade_database import get_connection
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("SELECT owner_key FROM app_users WHERE email=? AND owner_key<>? AND owner_key LIKE 'sb:%'",
+                  (email, new_owner))
+        legacy = [(r[0] if not hasattr(r, 'keys') else r['owner_key']) for r in c.fetchall()]
+        if not legacy:
+            conn.close()
+            return
+        for lg in legacy:
+            for table in ('trades', 'equity_log', 'live_positions'):
+                try:
+                    c.execute(f"SELECT COUNT(*) FROM {table} WHERE owner=?", (new_owner,))
+                    has_new = (c.fetchone()[0] or 0) > 0
+                    c.execute(f"SELECT COUNT(*) FROM {table} WHERE owner=?", (lg,))
+                    has_legacy = (c.fetchone()[0] or 0) > 0
+                    if has_legacy and not has_new:
+                        c.execute(f"UPDATE {table} SET owner=? WHERE owner=?", (new_owner, lg))
+                        print(f"[AUTH] Veri gocu: {table} {lg} -> {new_owner}")
+                except Exception as _t_err:
+                    continue
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"[AUTH] Veri gocu hatasi: {e}")
+
 @app.route('/api/auth_config', methods=['GET'])
 def api_auth_config():
     """Tarayici icin genel (public) auth yapilandirmasi."""
@@ -753,6 +786,11 @@ def api_auth_session():
         pass
     owner = f"sb:{user_id}"
     upsert_app_user(owner, email=email, display_name=email)
+    # Auth projesi degisimi sonrasi ayni e-postanin eski hesap verisini tasimal
+    try:
+        _migrate_legacy_owner_data(owner, email)
+    except Exception as _mig_err:
+        print(f"[AUTH] Goc cagri hatasi: {_mig_err}")
     session['logged_in'] = True
     session['supabase_user_id'] = user_id
     return jsonify({"status": "success", "user_id": user_id})
