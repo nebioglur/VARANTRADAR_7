@@ -7,8 +7,26 @@
  * Kullanim: window.VerdentAuthKit (Promise) -> { supabase, auth, session }
  */
 window.__vrAuthBooted = true;
+window.__VR_AUTH_JS_VERSION = '20260916_v7';
 
 import { createVerdentAuth } from './vendor/verdent-auth/index.js';
+
+// Surum bekcisi: sekmede ESKI modul kaliptursa (sayfa long-acik kalirsa)
+// HTML'deki script ?v= ile karsilastir, farkliysa bir kez zorla yenile.
+try {
+    const tag = document.querySelector('script[src*="app-auth.js"]');
+    const m = tag ? tag.src.match(/v=([^&]+)/) : null;
+    const htmlVer = m ? m[1] : '';
+    const seen = safeLocalStorageGet('vr_auth_js_ver');
+    if (htmlVer && seen && seen !== htmlVer && !sessionStorage.getItem('vr_auth_reloaded')) {
+        sessionStorage.setItem('vr_auth_reloaded', '1');
+        location.reload();
+    }
+    if (htmlVer) safeLocalStorageSet('vr_auth_js_ver', htmlVer);
+} catch (e) { /* yoksay */ }
+
+function safeLocalStorageGet(k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } }
+function safeLocalStorageSet(k, v) { try { window.localStorage.setItem(k, v); } catch (e) { /* yoksay */ } }
 
 /** Tarayici tarafindaki auth hatalarini sunucu gunlugune raporla (teşhis icin). */
 function reportAuthEvent(msg) {
@@ -81,6 +99,7 @@ async function loadAuthConfig() {
 }
 
 const kitPromise = (async () => {
+    reportAuthEvent('BOOT auth-js ' + window.__VR_AUTH_JS_VERSION);
     const cfg = await loadAuthConfig();
     // Aktif proje referansini URL'nin son parcasindan al (…/p/pf565…)
     let activeRef = '';
