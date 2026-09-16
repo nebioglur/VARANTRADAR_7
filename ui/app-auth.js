@@ -8,6 +8,8 @@
  */
 window.__vrAuthBooted = true;
 window.__VR_AUTH_JS_VERSION = '20260916_v13';
+// Supabase-js URL'deki hash'i (access_token) biz okumadan temizleyebilir, bu yuzden yedekliyoruz.
+window.__vr_initial_hash = window.location.hash;
 
 import { createVerdentAuth } from './vendor/verdent-auth/index.js';
 
@@ -345,7 +347,8 @@ kitPromise.then(async ({ supabase, auth }) => {
     // GOOGLE DONUSU — elle hash isleme: supabase-js hash token'larini
     // yutmiyorsa token'i dogrudan yakalayip sunucu cookie oturumuna cevir.
     try {
-        const hp = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const rawHash = window.__vr_initial_hash || window.location.hash;
+        const hp = new URLSearchParams(rawHash.replace(/^#/, ''));
         const at = hp.get('access_token');
         if (at) {
             reportAuthEvent('HASH TOKEN yakalandi, sunucu oturumu kuruluyor');
