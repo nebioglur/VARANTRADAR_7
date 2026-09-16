@@ -2093,9 +2093,9 @@ def api_simulation_send_telegram():
             pnl_pct = float(t.get('pnl_pct', 0) or 0)
             t_icon = "🟢" if pnl >= 0 else "🔴"
             msg += (
-                f"▪️ <b>#{t['symbol']}</b> - {t['shares']} Lot\n"
-                f"   └ <i>Alış:</i> {t['buy_price']:.2f} ₺ ⏱️ {t.get('buy_time', '10:15')}\n"
-                f"   └ <i>Satış:</i> {t['sell_price']:.2f} ₺ ⏱️ {t.get('sell_time', 'Zirve')}\n"
+                f"▪️ <b>#{t.get('symbol', t.get('ticker', '-'))}</b> - {t.get('shares', t.get('quantity', 0))} Lot\n"
+                f"   └ <i>Alış:</i> {float(t.get('buy_price', t.get('entry_price', 0)) or 0):.2f} ₺ ⏱️ {t.get('buy_time', '10:15')}\n"
+                f"   └ <i>Satış:</i> {float(t.get('sell_price', t.get('exit_price', 0)) or 0):.2f} ₺ ⏱️ {t.get('sell_time', 'Zirve')}\n"
                 f"   └ <i>K/Z:</i> {t_icon} {pnl:,.2f} ₺ (%{pnl_pct:.2f})\n\n"
             )
             
