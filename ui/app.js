@@ -1872,23 +1872,48 @@ async function fetchDashboardData() {
         const data = await response.json();
         
         if (data && data.status === 'success') {
+            const marketWarning = document.getElementById('market-closed-warning');
+            const marketDetail = document.getElementById('market-closed-warning-detail');
+            const marketOpen = data.market?.is_open === true && data.data_fresh === true;
+            if (marketWarning) {
+                marketWarning.style.display = marketOpen ? 'none' : 'block';
+            }
+            if (marketDetail && data.market) {
+                marketDetail.textContent =
+                    `${data.market.local_time} (${data.market.timezone}) — ` +
+                    `Eski bellekteki fiyat ve sinyaller yatırım kararı için gösterilmiyor. ` +
+                    `${data.market.next_session}.`;
+            }
+            if (!marketOpen) {
+                document.querySelectorAll('#home-wrapper tbody').forEach((tbody) => {
+                    tbody.innerHTML =
+                        `<tr><td colspan="20" style="text-align:center; padding:1.5rem; color:#fde68a;">` +
+                        `<i class="fa-solid fa-lock"></i> Piyasa kapalı — eski fiyat ve sinyal verisi gösterilmiyor.</td></tr>`;
+                });
+            }
             setElText('total-analyzed-counter', `RADAR BUGÜNE KADAR ${data.total_analyzed || 0} VERİYİ ANALİZ ETTİ`);
             const shieldEl = document.getElementById('shield-status');
             if (shieldEl) {
-                const chg = data.xu100_change || 0;
-                if (chg <= -1.0) {
-                    shieldEl.innerHTML = `<span style="color:#ef4444; font-size:1.1rem;"><i class="fa-solid fa-triangle-exclamation"></i> Ayı (%100 Nakit)</span>`;
-                } else if (chg <= 0.0) {
-                    shieldEl.innerHTML = `<span style="color:var(--accent-yellow); font-size:1.1rem;"><i class="fa-solid fa-scale-balanced"></i> Dalgalı (%60 Nakit)</span>`;
+                if (!marketOpen) {
+                    shieldEl.innerHTML = `<span style="color:var(--accent-yellow); font-size:1.1rem;"><i class="fa-solid fa-lock"></i> Piyasa Kapalı — Eski Veri Yok</span>`;
                 } else {
+                    const chg = data.xu100_change || 0;
+                    if (chg <= -1.0) {
+                    shieldEl.innerHTML = `<span style="color:#ef4444; font-size:1.1rem;"><i class="fa-solid fa-triangle-exclamation"></i> Ayı (%100 Nakit)</span>`;
+                    } else if (chg <= 0.0) {
+                    shieldEl.innerHTML = `<span style="color:var(--accent-yellow); font-size:1.1rem;"><i class="fa-solid fa-scale-balanced"></i> Dalgalı (%60 Nakit)</span>`;
+                    } else {
                     shieldEl.innerHTML = `<span style="color:var(--accent-green); font-size:1.1rem;"><i class="fa-solid fa-arrow-trend-up"></i> Boğa (%30 Nakit)</span>`;
+                    }
                 }
             }
 
             
             // Son tarama saatini ekranda göster
             const lastUpdated = data.last_updated || "Bilinmiyor";
-            const timeHTML = `<i class="fa-solid fa-clock"></i> Son Tarama: ${lastUpdated}`;
+            const timeHTML = marketOpen
+                ? `<i class="fa-solid fa-clock"></i> Son Tarama: ${lastUpdated}`
+                : `<i class="fa-solid fa-lock"></i> Piyasa kapalı — canlı tarama yok`;
             const timeEl1 = document.getElementById('last-scan-time');
             if (timeEl1) timeEl1.innerHTML = timeHTML;
             const timeEl2 = document.getElementById('arge-last-scan');

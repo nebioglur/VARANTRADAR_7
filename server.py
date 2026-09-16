@@ -132,6 +132,40 @@ def save_dashboard_cache(data):
 
 GLOBAL_DASHBOARD_CACHE = load_dashboard_cache()
 
+def bist_market_status(now=None):
+    """BIST seans durumunu Türkiye yerel saatine göre döndürür.
+
+    Eski günlük cache verisi piyasa kapalıyken güncel fiyat gibi sunulmaz.
+    Hafta sonu ve 10:00-18:10 dışındaki zamanlar kapalı kabul edilir.
+    """
+    now = now or datetime.now()
+    is_weekday = now.weekday() < 5
+    open_at = now.replace(hour=10, minute=0, second=0, microsecond=0)
+    close_at = now.replace(hour=18, minute=10, second=0, microsecond=0)
+    is_open = is_weekday and open_at <= now <= close_at
+    return {
+        "is_open": is_open,
+        "label": "AÇIK" if is_open else "KAPALI",
+        "local_time": now.strftime("%Y-%m-%d %H:%M:%S"),
+        "timezone": "Europe/Istanbul",
+        "next_session": "Hafta içi 10:00-18:10 (Türkiye saati)"
+    }
+
+def market_safe_dashboard_data(data, market_open):
+    """Piyasa kapalıyken fiyat/sinyal taşıyan eski veriyi UI'dan çıkarır."""
+    safe = dict(data or {})
+    if market_open:
+        return safe
+    for key in (
+        "all_symbols_stats", "opportunities", "opportunities_1h",
+        "tavan_adaylari", "stay_away_1h", "signals_5m",
+        "super12", "radar_results", "high_probability"
+    ):
+        if key in safe:
+            safe[key] = [] if key != "all_symbols_stats" else {}
+    safe["market_data_suppressed"] = True
+    return safe
+
 
 # === VERITABANI TABLOLARINI OLUŞTUR (Simülasyon Motoru için) ===
 try:
@@ -1276,14 +1310,15 @@ def api_dashboard_init():
     from datetime import datetime
     today_str = datetime.now().strftime("%Y-%m-%d")
     global GLOBAL_DASHBOARD_CACHE
-    # NOT: Bayat cache BURADA SILINMEZ. Onceki gunun kapanislari tabloyu dolu
-    # tutar; ilk basarili tarama verileri ve cache_date'i gunceller.
+    market = bist_market_status()
 
     try:
         start_live_data_collector()
     except Exception:
         pass
-    clean_cache = sanitize_for_json(GLOBAL_DASHBOARD_CACHE)
+    clean_cache = sanitize_for_json(
+        market_safe_dashboard_data(GLOBAL_DASHBOARD_CACHE, market["is_open"])
+    )
     
     total = len(BIST_SYMBOLS) if 'BIST_SYMBOLS' in globals() else 550
     # Add a bit of dynamic feeling or just return the static max
@@ -1301,7 +1336,10 @@ def api_dashboard_init():
         "total_analyzed": total,
         "dashboard_data": clean_cache or {},
         "xu100_change": get_xu100_change(),
-        "last_updated": last_updated
+        "last_updated": last_updated,
+        "market": market,
+        "data_fresh": bool(market["is_open"]),
+        "stale_data_suppressed": not market["is_open"]
     })
 
 @app.route('/api/pool_info', methods=['GET'])
