@@ -152,18 +152,8 @@ def bist_market_status(now=None):
     }
 
 def market_safe_dashboard_data(data, market_open):
-    """Piyasa kapalıyken fiyat/sinyal taşıyan eski veriyi UI'dan çıkarır."""
+    """Piyasa kapaliyken veriyi oldugu gibi gosterir."""
     safe = dict(data or {})
-    if market_open:
-        return safe
-    for key in (
-        "all_symbols_stats", "opportunities", "opportunities_1h",
-        "tavan_adaylari", "stay_away_1h", "signals_5m",
-        "super12", "radar_results", "high_probability"
-    ):
-        if key in safe:
-            safe[key] = [] if key != "all_symbols_stats" else {}
-    safe["market_data_suppressed"] = True
     return safe
 
 
