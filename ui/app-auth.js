@@ -7,7 +7,7 @@
  * Kullanim: window.VerdentAuthKit (Promise) -> { supabase, auth, session }
  */
 window.__vrAuthBooted = true;
-window.__VR_AUTH_JS_VERSION = '20260916_v9';
+window.__VR_AUTH_JS_VERSION = '20260916_v10';
 
 import { createVerdentAuth } from './vendor/verdent-auth/index.js';
 
@@ -110,6 +110,10 @@ const kitPromise = (async () => {
             persistSession: true,
             autoRefreshToken: true,
             detectSessionInUrl: true,
+            // GoTrue bu projede OAuth donusunu implicit (URL hash token)
+            // olarak veriyor; istemci PKCE code'u beklerse token'lari yok
+            // sayip login'e geri donuyor. Akisi implicit'a sabitle.
+            flowType: 'implicit',
             // Render tarayicisinda eski Supabase projesinin token anahtari
             // ayni isimle kalabildigi icin yeni projeye ayri depo kullan.
             storageKey: 'vr-auth-pf565ccea3c6a9b19d28e-v4',
