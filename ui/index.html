@@ -1635,6 +1635,9 @@
                         <button type="button" id="sim-notify-btn" class="sim-pill" onclick="enableTradeNotifications()">
                             <i class="fa-solid fa-bell"></i> Sesli Bildirimler
                         </button>
+                        <button type="button" id="tg-settings-btn" class="sim-pill" onclick="toggleTelegramSettings()">
+                            <i class="fa-brands fa-telegram"></i> Telegram
+                        </button>
                         <button type="button" id="sim-auto-refresh-toggle" class="sim-pill off" onclick="toggleSimAutoRefresh()">
                             <i class="fa-solid fa-circle-pause"></i> Otomatik Yenileme: KAPALI
                         </button>
@@ -1642,6 +1645,30 @@
                             <i class="fa-solid fa-rotate-right"></i> Şimdi Yenile
                         </button>
                     </div>
+                </div>
+                <div id="tg-settings-panel" style="display:none; border:1px solid rgba(41,163,255,0.35); border-radius:10px; padding:1rem 1.25rem; margin-bottom:1.25rem; background:rgba(30,41,59,0.6);">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem; flex-wrap:wrap; margin-bottom:0.75rem;">
+                        <strong style="color:var(--text-main);"><i class="fa-brands fa-telegram" style="color:#29a3ff;"></i> Telegram Bildirim Ayarları</strong>
+                        <span id="tg-status-badge" class="sim-notify-badge">Durum kontrol ediliyor...</span>
+                    </div>
+                    <p style="color:var(--text-muted); font-size:0.82rem; margin-bottom:0.9rem;">
+                        Simülasyon AL/SAT işlemleri, saat detaylarıyla bu Telegram kanalına gider. Bot tokenı ve Chat ID'yi kaydedin; ayarlar kalıcıdır.
+                    </p>
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:0.75rem; margin-bottom:0.9rem;">
+                        <input type="text" id="tg-token-input" placeholder="Bot Token (örn. 123456:AAH...)" autocomplete="off"
+                               style="width:100%; padding:0.55rem 0.75rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-base); color:var(--text-main); font-size:0.85rem;">
+                        <input type="text" id="tg-chat-input" placeholder="Chat ID (örn. 123456789)" autocomplete="off"
+                               style="width:100%; padding:0.55rem 0.75rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-base); color:var(--text-main); font-size:0.85rem;">
+                    </div>
+                    <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+                        <button type="button" class="sim-pill sim-pill-accent" onclick="saveTelegramSettings()">
+                            <i class="fa-solid fa-floppy-disk"></i> Kaydet
+                        </button>
+                        <button type="button" class="sim-pill" onclick="testTelegramSettings()">
+                            <i class="fa-solid fa-paper-plane"></i> Test Mesajı Gönder
+                        </button>
+                    </div>
+                    <div id="tg-settings-msg" style="margin-top:0.6rem; font-size:0.82rem; display:none;"></div>
                 </div>
                 <div class="table-scroll-wrapper" style="max-height: 500px; overflow-y: auto;">
                     <table class="data-table" style="width:100%; border-collapse: separate; border-spacing: 0;">
@@ -2264,7 +2291,7 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="app.js?v=20260915_v34"></script>
+    <script src="app.js?v=20260916_v35"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js?v=20260916_v13"></script>
 </body>

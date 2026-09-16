@@ -2,37 +2,106 @@ import requests
 import json
 import logging
 import os
+import time as _time
 from typing import Optional
 from config.settings import TELEGRAM_BOT_TOKEN as BOT_TOKEN, TELEGRAM_CHAT_ID as CHAT_ID
 
 logger = logging.getLogger(__name__)
 
+# ========== KIMLIK BILGISI COZUMLEME ==========
+# Sıra: env degiskenleri -> kalici veritabani (live_settings) -> yerel sqlite settings.
+# Render'da env tanimli olmasa bile uygulamadan kaydedilen ayarlar kullanilir.
+_CRED_CACHE = {"token": None, "chat_id": None, "ts": 0.0}
+_CRED_TTL = 60.0
+
+
+def _read_persistent_setting(key: str) -> Optional[str]:
+    try:
+        from services.trade_database import get_connection
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("SELECT value FROM live_settings WHERE key=?", (key,))
+        row = c.fetchone()
+        conn.close()
+        if row:
+            try:
+                return row["value"]
+            except (TypeError, KeyError, IndexError):
+                return row[0] if isinstance(row, (tuple, list)) else None
+    except Exception:
+        pass
+    try:
+        from database.db_manager import DBManager
+        return DBManager().get_setting(key)
+    except Exception:
+        return None
+
+
+def get_telegram_credentials(force: bool = False):
+    now = _time.time()
+    if not force and _CRED_CACHE["token"] and now - _CRED_CACHE["ts"] < _CRED_TTL:
+        return _CRED_CACHE["token"], _CRED_CACHE["chat_id"]
+    token = os.environ.get("TELEGRAM_BOT_TOKEN") or os.environ.get("TELEGRAM_TOKEN")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    if not token:
+        token = _read_persistent_setting("telegram_token")
+    if not chat_id:
+        chat_id = _read_persistent_setting("telegram_chat_id")
+    if token and "BURAYA_" in str(token):
+        token = None
+    _CRED_CACHE["token"] = str(token).strip() if token else None
+    _CRED_CACHE["chat_id"] = str(chat_id).strip() if chat_id else None
+    _CRED_CACHE["ts"] = now
+    return _CRED_CACHE["token"], _CRED_CACHE["chat_id"]
+
+
+def set_telegram_credentials(token: str, chat_id: str) -> bool:
+    """Telegram ayarlarini kalici veritabanina kaydeder (deploy'lar arasi korunur)."""
+    try:
+        from services.trade_database import get_connection
+        conn = get_connection()
+        c = conn.cursor()
+        for k, v in (("telegram_token", token), ("telegram_chat_id", chat_id)):
+            c.execute("INSERT INTO live_settings (key, value) VALUES (?, ?) "
+                      "ON CONFLICT(key) DO UPDATE SET value=excluded.value", (k, str(v).strip()))
+        conn.commit()
+        conn.close()
+        get_telegram_credentials(force=True)
+        logger.info("Telegram ayarlari kalici olarak kaydedildi.")
+        return True
+    except Exception as e:
+        logger.error(f"Telegram ayarlari kaydedilemedi: {e}")
+        return False
+
+
 def send_telegram_message(text: str, parse_mode: str = "HTML") -> bool:
     """
     Belirlenen Chat ID'ye Telegram uzerinden mesaj gonderir.
     """
-    if not BOT_TOKEN or not CHAT_ID:
-        logger.warning("Telegram ayarlari eksik. Bildirim gonderilemedi.")
+    bot_token, chat_id = get_telegram_credentials()
+    if not bot_token or not chat_id:
+        logger.error("Telegram ayarlari eksik (env + veritabani bos). Bildirim gonderilemedi! "
+                     "Uygulamadan Telegram ayarlarini kaydedin.")
         return False
 
     try:
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
         payload = {
-            "chat_id": CHAT_ID,
+            "chat_id": chat_id,
             "text": text,
             "parse_mode": parse_mode
         }
-        
+
         response = requests.post(url, json=payload, timeout=10)
         response_data = response.json()
-        
+
         if response.status_code == 200 and response_data.get("ok"):
             logger.info(f"Telegram mesaji basariyla gonderildi: {text[:50]}...")
             return True
         else:
             logger.error(f"Telegram mesaji gonderilemedi! Hata: {response_data}")
             return False
-            
+
     except Exception as e:
         logger.error(f"Telegram API cagrisi sirasinda hata olustu: {str(e)}")
         return False
@@ -146,7 +215,8 @@ _ASSETS_DIR = _os.path.join(_os.path.dirname(__file__), "assets")
 def send_voice_alert(alert_type: str, caption: str) -> bool:
     """Sesli uyarI gonderir: buy_alert / sell_alert mp3 + mesaj.
     Ses dosyasi yoksa duz mesaj fallback."""
-    if not BOT_TOKEN or not CHAT_ID:
+    bot_token, chat_id = get_telegram_credentials()
+    if not bot_token or not chat_id:
         return send_telegram_message(caption)
 
     file_map = {
@@ -158,11 +228,11 @@ def send_voice_alert(alert_type: str, caption: str) -> bool:
         return send_telegram_message(caption)
 
     try:
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendAudio"
+        url = f"https://api.telegram.org/bot{bot_token}/sendAudio"
         with open(path, "rb") as f:
             response = requests.post(
                 url,
-                data={"chat_id": CHAT_ID, "caption": caption, "parse_mode": "HTML"},
+                data={"chat_id": chat_id, "caption": caption, "parse_mode": "HTML"},
                 files={"audio": (_os.path.basename(path), f, "audio/mpeg")},
                 timeout=20,
             )

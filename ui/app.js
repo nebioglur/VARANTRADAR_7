@@ -3804,6 +3804,85 @@ function refreshSimNow() {
     fetchSimulationData();
 }
 
+// ========== TELEGRAM BILDIRIM AYARLARI ==========
+function toggleTelegramSettings() {
+    const panel = document.getElementById('tg-settings-panel');
+    if (!panel) return;
+    const show = panel.style.display === 'none';
+    panel.style.display = show ? 'block' : 'none';
+    if (show) refreshTelegramStatus();
+}
+
+function _tgShowMsg(text, ok) {
+    const box = document.getElementById('tg-settings-msg');
+    if (!box) return;
+    box.style.display = 'block';
+    box.innerHTML = (ok ? '<span style="color:var(--accent-green);">✅ ' : '<span style="color:#ef4444;">⚠️ ') + text + '</span>';
+}
+
+function _tgSetBadge(configured, masked) {
+    const badge = document.getElementById('tg-status-badge');
+    if (!badge) return;
+    if (configured) {
+        badge.textContent = 'Bağlı' + (masked ? ' (' + masked + ')' : '');
+        badge.style.color = 'var(--accent-green)';
+    } else {
+        badge.textContent = 'Ayarlanmamış — bildirimler gitmiyor';
+        badge.style.color = 'var(--accent-yellow)';
+    }
+}
+
+async function refreshTelegramStatus() {
+    try {
+        const res = await fetch('/api/telegram/settings?t=' + Date.now());
+        const data = await res.json();
+        if (data.status === 'success') {
+            _tgSetBadge(data.configured, data.chat_id_masked);
+        } else {
+            _tgSetBadge(false, null);
+        }
+    } catch (e) {
+        _tgSetBadge(false, null);
+    }
+}
+
+async function saveTelegramSettings() {
+    const token = (document.getElementById('tg-token-input')?.value || '').trim();
+    const chatId = (document.getElementById('tg-chat-input')?.value || '').trim();
+    if (!token || !chatId) {
+        _tgShowMsg('Bot token ve Chat ID alanlarını doldurun.', false);
+        return;
+    }
+    try {
+        const res = await fetch('/api/telegram/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: token, chat_id: chatId })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            _tgShowMsg('Ayarlar kaydedildi. Artık simülasyon AL/SAT bildirimleri Telegram\'a gidecek.', true);
+            _tgSetBadge(true, data.chat_id_masked);
+        } else {
+            _tgShowMsg('Kaydedilemedi: ' + (data.message || 'bilinmeyen hata'), false);
+        }
+    } catch (e) {
+        _tgShowMsg('Bağlantı hatası: ' + e.message, false);
+    }
+}
+
+async function testTelegramSettings() {
+    _tgShowMsg('Test mesajı gönderiliyor...', true);
+    try {
+        const res = await fetch('/api/telegram/test', { method: 'POST' });
+        const data = await res.json();
+        _tgShowMsg(data.message || (data.status === 'success' ? 'Gönderildi.' : 'Başarısız.'), data.status === 'success');
+        if (data.status === 'success') refreshTelegramStatus();
+    } catch (e) {
+        _tgShowMsg('Bağlantı hatası: ' + e.message, false);
+    }
+}
+
 async function fetchSimulationData() {
     const tbody = document.getElementById('sim-trade-log-tbody');
     if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> İşlem Geçmişi Yükleniyor...</td></tr>';

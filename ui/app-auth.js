@@ -141,15 +141,20 @@ async function syncServerSession(supabase, sessionOverride) {
             const { data } = await supabase.auth.getSession();
             token = data?.session?.access_token || null;
         }
-        if (!token) return false;
+        if (!token) {
+            reportAuthEvent('SESSION_SYNC token bulunamadi');
+            return false;
+        }
+        reportAuthEvent('SESSION_SYNC token uzunlugu ' + token.length);
         const res = await fetch('/api/auth/session', {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + token },
         });
         if (!res.ok) {
+            const body = await res.text().catch(() => '');
+            reportAuthEvent('SESSION_SYNC ' + res.status + ' body=' + body.slice(0, 120));
             // Sunucu token'i dogrulayamadiysa istemcideki oturum bozuktur:
             // temizle ki widget her acilista ayni hatayi tekrarlamasin.
-            reportAuthEvent('SESSION_SYNC ' + res.status);
             try { await supabase.auth.signOut(); } catch (e) { /* yoksay */ }
             return false;
         }

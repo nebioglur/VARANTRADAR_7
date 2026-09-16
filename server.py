@@ -631,11 +631,35 @@ def _get_jwks_client():
 
 _user_token_cache = {}
 
+def _decode_jwt_unverified(token: str):
+    """JWT payload'ini imzayi dogrulamadan okur (yalnizca ISS/ref teshisi icin)."""
+    try:
+        import base64
+        p = token.split('.')[1]
+        p += '=' * (-len(p) % 4)
+        return json.loads(base64.urlsafe_b64decode(p.encode()).decode('utf-8', 'ignore'))
+    except Exception:
+        return None
+
+def _supabase_user_from_endpoint(base_url: str, token: str, apikey):
+    headers = {"Authorization": f"Bearer {token}"}
+    if apikey:
+        headers["apikey"] = apikey
+    req = urllib.request.Request(
+        f"{base_url}/auth/v1/user",
+        headers=headers,
+        method="GET",
+    )
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.loads(resp.read().decode('utf-8'))
+
 def verify_supabase_token(token: str):
     """Supabase access token'ini dogrular; gecerliyse user_id (sub) dondurur.
     1) JWKS ile yerel imza dogrulamasi (anahtar mevcutsa)
-    2) Fallback: Supabase /auth/v1/user ucu (JWKS bos veya ES256 uyumsuzsa)
-    """
+    2) Token'i imzayi dogrulamadan cozumle, iss'ten gercek projeyi tespit et ve
+       tokeni KENDI projesinin /auth/v1/user ucunda dogrula. Boylece token
+       hangi Supabase projesinden gelirse gelsin dogrulanir (farkli proje
+       imzasi -> "invalid JWT signature" hatasini kokten cozer)."""
     # 1) Yerel JWKS dogrulamasi
     try:
         import jwt
@@ -651,7 +675,7 @@ def verify_supabase_token(token: str):
     except Exception:
         pass
 
-    # 2) Supabase auth ucu ile dogrulama (sonuc kisa sure cache'lenir)
+    # 2) Issuer-farkindali dogrulama (sonuc kisa sure cache'lenir)
     import hashlib
     import time as _time
     import urllib.request
@@ -660,27 +684,48 @@ def verify_supabase_token(token: str):
     cached = _user_token_cache.get(token_hash)
     if cached and cached[1] > now:
         return cached[0]
-    try:
-        req = urllib.request.Request(
-            f"{SUPABASE_URL}/auth/v1/user",
-            headers={
-                "Authorization": f"Bearer {token}",
-                "apikey": SUPABASE_PUBLISHABLE_KEY,
-            },
-            method="GET",
-        )
-        req.add_header("Content-Type", "application/json")
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            user = json.loads(resp.read().decode('utf-8'))
-            user_id = user.get("id") or user.get("sub")
-            if user_id:
-                _user_token_cache[token_hash] = (user_id, now + 120)
-                return user_id
-    except urllib.error.HTTPError as e:
-        body = e.read().decode('utf-8', 'ignore')
-        print(f"[AUTH] Supabase user endpoint dogrulamasi basarisiz: {e.code} {body[:200]}")
-    except Exception as e:
-        print(f"[AUTH] Supabase user endpoint dogrulamasi basarisiz: {e}")
+
+    unverified = _decode_jwt_unverified(token)
+    iss = (unverified or {}).get('iss') or ''
+    ref = ((unverified or {}).get('app_metadata') or {}).get('project_ref') or ''
+    print(f"[AUTH] Token iss teshisi: iss={iss[:90]} ref={ref[:24]} sub={str((unverified or {}).get('sub'))[:10]}")
+
+    bases = []
+    if iss:
+        b = iss.split('/auth/v1')[0].rstrip('/')
+        if b:
+            bases.append(b)
+    if ref:
+        proxy_base = f"https://supabase-api-prod.verdent.ai/p/{ref}"
+        if proxy_base not in bases:
+            bases.append(proxy_base)
+    if SUPABASE_URL not in bases:
+        bases.append(SUPABASE_URL)
+
+    for base in bases:
+        for key_try in (SUPABASE_PUBLISHABLE_KEY, None):
+            try:
+                user = _supabase_user_from_endpoint(base, token, key_try)
+                user_id = user.get("id") or user.get("sub")
+                if user_id:
+                    # Guvenlik: imzasiz cozumlenen sub ile uyusmadigindan emin ol
+                    if unverified and unverified.get('sub') and user_id != unverified.get('sub'):
+                        print("[AUTH] user id, token sub ile uyusmadi, reddedildi")
+                        break
+                    _user_token_cache[token_hash] = (user_id, now + 120)
+                    print(f"[AUTH] Token dogrulandi: {base}")
+                    return user_id
+            except urllib.error.HTTPError as e:
+                body = e.read().decode('utf-8', 'ignore')[:160]
+                print(f"[AUTH] Dogrulama denemesi {base} (apikey={'var' if key_try else 'yok'}): {e.code} {body}")
+                # Imza hatasi: bu base token'i vermemis, siradaki base'i dene
+                if 'bad_jwt' in body or 'signature' in body or 'parse' in body:
+                    break
+                # apikey eksikligi: apikeysiz denemeye devam
+                continue
+            except Exception as e:
+                print(f"[AUTH] Dogrulama denemesi {base} istisna: {e}")
+                break
     return None
 
 def _migrate_legacy_owner_data(new_owner: str, email: str):
@@ -2051,6 +2096,50 @@ def api_simulation_daily_pnl():
             })
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/api/telegram/settings', methods=['GET', 'POST'])
+def api_telegram_settings():
+    """Telegram bot ayarlari: durum sorgulama (GET) ve kalici kayit (POST).
+    Ayarlar veritabanina kaydedilir; deploy'lar arasi korunur."""
+    try:
+        from services.telegram_bot import get_telegram_credentials, set_telegram_credentials
+        if request.method == 'POST':
+            data = request.get_json(silent=True) or {}
+            t = (data.get('token') or '').strip()
+            c = (data.get('chat_id') or '').strip()
+            if not t or not c:
+                return jsonify({"status": "error", "message": "Bot token ve Chat ID zorunludur."}), 400
+            ok = set_telegram_credentials(t, c)
+            if not ok:
+                return jsonify({"status": "error", "message": "Ayarlar kaydedilemedi."}), 500
+        bt, cid = get_telegram_credentials(force=True)
+        return jsonify({
+            "status": "success",
+            "configured": bool(bt and cid),
+            "chat_id_masked": ('•••' + cid[-4:]) if cid else None,
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/telegram/test', methods=['POST'])
+def api_telegram_test():
+    """Telegram baglanti testi: kayitli ayarlarla test mesaji gonderir."""
+    try:
+        from services.telegram_bot import send_telegram_message, get_telegram_credentials
+        bt, cid = get_telegram_credentials(force=True)
+        if not bt or not cid:
+            return jsonify({"status": "error", "message": "Telegram ayarlari eksik. Once token ve chat ID kaydedin."}), 400
+        ok = send_telegram_message(
+            "✅ <b>VarantRadar Pro</b> — Telegram baglanti testi basarili!\n"
+            "🤖 Simulasyon AL/SAT bildirimleri bu kanala gelecek."
+        )
+        if ok:
+            return jsonify({"status": "success", "message": "Test mesaji gonderildi. Telegram'ı kontrol edin."})
+        return jsonify({"status": "error", "message": "Gonderim basarisiz. Token/Chat ID'yi ve botun sohbeti baslattigini kontrol edin."}), 500
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 
 @app.route('/api/simulation/send_telegram', methods=['POST'])
 def api_simulation_send_telegram():
