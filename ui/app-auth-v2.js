@@ -143,12 +143,17 @@ async function syncServerSession(supabase, sessionOverride) {
             const { data } = await supabase.auth.getSession();
             token = data?.session?.access_token || null;
         }
-        if (!token) return false;
+        if (!token) {
+            alert("Sunucuya gonderilecek token bulunamadi!");
+            return false;
+        }
         const res = await fetch('/api/auth/session', {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + token },
         });
         if (!res.ok) {
+            const txt = await res.text();
+            alert("Sunucu oturumu reddetti! Status: " + res.status + " Cevap: " + txt);
             // Sunucu token'i dogrulayamadiysa istemcideki oturum bozuktur:
             // temizle ki widget her acilista ayni hatayi tekrarlamasin.
             reportAuthEvent('SESSION_SYNC ' + res.status);
@@ -357,9 +362,14 @@ kitPromise.then(async ({ supabase, auth }) => {
             if (ok) {
                 window.location.replace('/');
                 return; // yonlendirildik, diger adimlara gerek yok
+            } else {
+                alert("Oturum dogrulanamadi! Sunucu tarafi yetkilendirme basarisiz oldu. Lutfen sistem yoneticisine bildirin.");
             }
         }
-    } catch (e) { reportAuthEvent('HASH TOKEN istisna: ' + (e && e.message ? e.message : e)); }
+    } catch (e) {
+        alert("Oturum isleme hatasi: " + (e && e.message ? e.message : e));
+        reportAuthEvent('HASH TOKEN istisna: ' + (e && e.message ? e.message : e));
+    }
 
     const { data } = await supabase.auth.getSession();
     const session = data?.session || null;
