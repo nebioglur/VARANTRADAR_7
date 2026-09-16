@@ -917,7 +917,7 @@ def api_auth_session():
 def require_auth():
     if request.method == 'OPTIONS': return
     
-    allowed = ['/login', '/logout', '/api/ping', '/api/auth_config', '/api/auth/session', '/api/client_log', '/api/logs']
+    allowed = ['/login', '/logout', '/api/ping', '/api/auth_config', '/api/auth/session', '/api/client_log', '/api/system_logs_read']
     if request.path in allowed or request.path.startswith('/api/dashboard_init'): return
     
     # Allow static assets for login page
@@ -1534,8 +1534,8 @@ def api_varant_simulator():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-@app.route('/api/logs', methods=['GET'])
-def api_logs():
+@app.route('/api/system_logs_read', methods=['GET'])
+def api_system_logs_read():
     """Gecici log okuma ucu"""
     try:
         with open('data/system_logs.txt', 'r', encoding='utf-8') as f:
