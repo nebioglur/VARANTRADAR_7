@@ -729,6 +729,46 @@ def api_auth_config():
         "locale": "tr"
     })
 
+@app.route('/api/client_log', methods=['POST'])
+def api_client_log():
+    """Tarayici tarafindan gelen auth/istisna bildirimlerini sistem gunlugune yazar."""
+    try:
+        data = request.get_json(silent=True) or {}
+        msg = str(data.get('m') or '').replace('\n', ' ')[:500]
+        if msg:
+            with open('data/system_logs.txt', 'a', encoding='utf-8') as f:
+                stamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                f.write(f"[{stamp}] [CLIENT] {msg}\n")
+    except Exception:
+        pass
+    return jsonify({"status": "ok"})
+
+
+@app.route('/robots.txt')
+def robots_txt():
+    body = ("User-agent: *\n"
+            "Allow: /\n"
+            "Disallow: /api/\n\n"
+            "Sitemap: https://varantradar-7.onrender.com/sitemap.xml\n")
+    resp = make_response(body)
+    resp.headers["Content-Type"] = "text/plain; charset=utf-8"
+    resp.headers["Cache-Control"] = "public, max-age=86400"
+    return resp
+
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    body = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+            '  <url><loc>https://varantradar-7.onrender.com/</loc>'
+            '<changefreq>daily</changefreq><priority>1.0</priority></url>\n'
+            '</urlset>\n')
+    resp = make_response(body)
+    resp.headers["Content-Type"] = "application/xml; charset=utf-8"
+    resp.headers["Cache-Control"] = "public, max-age=3600"
+    return resp
+
+
 # ========== HESAP BAZLI PORTFOY (OWNER) YONETIMI ==========
 def get_owner_key():
     """Oturum sahibinin portfoy anahtarini dondurur:
@@ -834,7 +874,13 @@ def login():
                 html = html.replace('<head>', '<head>' + flag, 1)
             else:
                 html = flag + html
-        return html
+        # Login HTML'i tarayici cache'ine takilirsa eski auth kodu calismaya
+        # devam eder (Render'da "invalid JWT" donucusunun sebeplerinden biri).
+        resp = make_response(html)
+        resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+        return resp
     except:
         return "login.html bulunamadi", 404
 

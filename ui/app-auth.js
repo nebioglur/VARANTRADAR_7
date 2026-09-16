@@ -10,7 +10,20 @@ window.__vrAuthBooted = true;
 
 import { createVerdentAuth } from './vendor/verdent-auth/index.js';
 
+/** Tarayici tarafindaki auth hatalarini sunucu gunlugune raporla (teşhis icin). */
+function reportAuthEvent(msg) {
+    try {
+        fetch('/api/client_log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ m: '[AUTH-WEB] ' + String(msg).slice(0, 400) }),
+            keepalive: true,
+        }).catch(() => {});
+    } catch (e) { /* yoksay */ }
+}
+
 function showAuthError(msg) {
+    reportAuthEvent('HATA GOSTERILDI: ' + msg.replace(/<[^>]+>/g, ' '));
     const box = document.getElementById('auth-error-box');
     if (box) {
         box.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + msg;
@@ -110,11 +123,13 @@ async function syncServerSession(supabase) {
         if (!res.ok) {
             // Sunucu token'i dogrulayamadiysa istemcideki oturum bozuktur:
             // temizle ki widget her acilista ayni hatayi tekrarlamasin.
+            reportAuthEvent('SESSION_SYNC ' + res.status);
             try { await supabase.auth.signOut(); } catch (e) { /* yoksay */ }
             return false;
         }
         return true;
     } catch (e) {
+        reportAuthEvent('SESSION_SYNC istisna: ' + (e && e.message ? e.message : e));
         console.warn('[Auth] Session sync hatasi', e);
         return false;
     }
@@ -127,6 +142,7 @@ async function openAuthModal(extraOptions) {
         redirectTo: window.location.origin + '/',
         locale: 'tr',
         onSuccess: async () => {
+            reportAuthEvent('OAUTH BASARILI, session sync basliyor');
             await syncServerSession(supabase);
             window.location.replace('/');
         },
@@ -217,6 +233,7 @@ kitPromise.then(async ({ supabase, auth }) => {
     });
 }).catch((e) => {
     console.error('[Auth] Baslatma hatasi', e);
+    reportAuthEvent('BASLATMA hatasi: ' + (e && e.message ? e.message : e));
     if (document.getElementById('auth-login-card')) {
         showAuthError('Oturum sistemi başlatılamadı: ' + (e && e.message ? e.message : e) +
             '<br>Sayfayı yenileyip tekrar deneyin.');
