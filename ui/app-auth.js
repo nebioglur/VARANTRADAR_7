@@ -35,6 +35,32 @@ function safeLocalStorage() {
     }
 }
 
+/**
+ * AKTIF PROJE DIŞI oturum verilerini temizler.
+ * Auth projesi değişince tarayıcıda eski projenin token'ları kalır; widget
+ * bunları yeni projenin GoTrue'suna gönderir -> "invalid JWT: signature is
+ * invalid" hatası. Aktif proje referansı uyuşmayan her auth depo kaydı silinir.
+ */
+function purgeForeignAuthStorage(activeRef) {
+    try {
+        const ls = safeLocalStorage();
+        if (typeof ls.length !== 'number') return; // bellek-içi depo: gerek yok
+        const doomed = [];
+        for (let i = 0; i < ls.length; i++) {
+            const k = ls.key(i);
+            if (!k) continue;
+            const kl = k.toLowerCase();
+            if (kl.includes('-auth-token') || kl.includes('auth.token') || kl.includes('verdent-auth')) {
+                if (!k.includes(activeRef)) doomed.push(k);
+            }
+        }
+        doomed.forEach((k) => {
+            try { ls.removeItem(k); } catch (e) { /* yoksay */ }
+        });
+        if (doomed.length) console.info('[Auth] Eski proje oturum verisi temizlendi:', doomed.length, 'kayıt');
+    } catch (e) { /* yoksay */ }
+}
+
 async function loadAuthConfig() {
     const res = await fetch('/api/auth_config');
     if (!res.ok) throw new Error('auth_config yüklenemedi: ' + res.status);
@@ -43,6 +69,10 @@ async function loadAuthConfig() {
 
 const kitPromise = (async () => {
     const cfg = await loadAuthConfig();
+    // Aktif proje referansini URL'nin son parcasindan al (…/p/pf565…)
+    let activeRef = '';
+    try { activeRef = (cfg.supabase_url || '').split('/').filter(Boolean).pop() || ''; } catch (e) {}
+    purgeForeignAuthStorage(activeRef);
     const supabase = window.supabase.createClient(cfg.supabase_url, cfg.publishable_key, {
         auth: {
             persistSession: true,
@@ -72,7 +102,13 @@ async function syncServerSession(supabase) {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + token },
         });
-        return res.ok;
+        if (!res.ok) {
+            // Sunucu token'i dogrulayamadiysa istemcideki oturum bozuktur:
+            // temizle ki widget her acilista ayni hatayi tekrarlamasin.
+            try { await supabase.auth.signOut(); } catch (e) { /* yoksay */ }
+            return false;
+        }
+        return true;
     } catch (e) {
         console.warn('[Auth] Session sync hatasi', e);
         return false;
