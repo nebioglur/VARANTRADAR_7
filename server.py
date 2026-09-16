@@ -725,6 +725,7 @@ def api_auth_config():
         "status": "success",
         "supabase_url": SUPABASE_URL,
         "publishable_key": SUPABASE_PUBLISHABLE_KEY,
+        "oauth_initiate_url": "https://cloud-oauth.verdent.ai/app/initiate",
         "locale": "tr"
     })
 

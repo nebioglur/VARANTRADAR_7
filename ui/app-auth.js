@@ -81,10 +81,12 @@ const kitPromise = (async () => {
             storage: safeLocalStorage(),
         },
     });
-    const auth = createVerdentAuth({ 
+    const auth = createVerdentAuth({
         supabase,
         oauth: {
-            authorizeUrl: cfg.supabase_url + '/auth/v1/authorize'
+            // Google OAuth web-message akisini Verdent yonetir; dogrudan
+            // GoTrue authorize ucu popup'a beklenen token mesajini gondermez.
+            authorizeUrl: cfg.oauth_initiate_url || 'https://cloud-oauth.verdent.ai/app/initiate'
         }
     });
     return { supabase, auth, config: cfg };
