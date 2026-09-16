@@ -7,7 +7,7 @@
  * Kullanim: window.VerdentAuthKit (Promise) -> { supabase, auth, session }
  */
 window.__vrAuthBooted = true;
-window.__VR_AUTH_JS_VERSION = '20260916_v11';
+window.__VR_AUTH_JS_VERSION = '20260916_v12';
 
 import { createVerdentAuth } from './vendor/verdent-auth/index.js';
 
@@ -164,6 +164,25 @@ async function syncServerSession(supabase, sessionOverride) {
 /** Modal acar; basarili giriste Flask cookie oturumunu kurup ana sayfaya doner. */
 async function openAuthModal(extraOptions) {
     const { supabase, auth } = await kitPromise;
+    if (!window.__vrGoogleCaptureInstalled) {
+        window.__vrGoogleCaptureInstalled = true;
+        document.addEventListener('click', async (event) => {
+            const button = event.target?.closest?.('button');
+            const label = button?.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() || '';
+            if (!button || !label.includes('google')) return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            reportAuthEvent('GOOGLE button capture: popup bypass, direct OAuth');
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: window.location.origin + '/login?oauth=return' },
+            });
+            if (error) {
+                reportAuthEvent('DIRECT GOOGLE hatasi: ' + error.message);
+                showAuthError(error.message);
+            }
+        }, true);
+    }
     auth.openSignInModal(Object.assign({
         redirectTo: window.location.origin + '/',
         locale: 'tr',
