@@ -724,6 +724,7 @@ def verify_supabase_token(token: str):
     if SUPABASE_URL not in bases:
         bases.append(SUPABASE_URL)
 
+    last_error = "yok"
     for base in bases:
         for key_try in (SUPABASE_PUBLISHABLE_KEY, None):
             try:
@@ -739,16 +740,15 @@ def verify_supabase_token(token: str):
                     return user_id, None
             except urllib.error.HTTPError as e:
                 body = e.read().decode('utf-8', 'ignore')[:160]
-                print(f"[AUTH] Dogrulama denemesi {base} (apikey={'var' if key_try else 'yok'}): {e.code} {body}")
+                last_error = f"{e.code} {body}"
+                print(f"[AUTH] Dogrulama denemesi {base} (apikey={'var' if key_try else 'yok'}): {last_error}")
                 # Imza hatasi: bu base token'i vermemis, siradaki base'i dene
-                if 'bad_jwt' in body or 'signature' in body or 'parse' in body:
-                    break
-                # apikey eksikligi: apikeysiz denemeye devam
                 continue
             except Exception as e:
-                print(f"[AUTH] Dogrulama denemesi {base} istisna: {e}")
+                last_error = f"istisna: {e}"
+                print(f"[AUTH] Dogrulama denemesi {base} {last_error}")
                 break
-    return None, f"Token dogrulanamadi (iss={iss[:60] or 'yok'})"
+    return None, f"Token dogrulanamadi (iss={iss[:60] or 'yok'}) - Son hata: {last_error}"
 
 def _migrate_legacy_owner_data(new_owner: str, email: str):
     """Ayni e-postayla eski Supabase projesinde acilan (sb:...) hesaplarin
