@@ -612,7 +612,7 @@ app.secret_key = os.environ.get('SECRET_KEY', 'varant_pro_ultra_secret_2026_xyz'
 # Render ortaminda eski proje env'leri kaldiysa bile giris her zaman AKTIF projeyle calisir.
 # (Eski proje JWT anahtarlari gecersizlesti -> "invalid JWT signature" hatasinin kökü.)
 AUTH_SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://kfslwkmrnjqxirzhfmbn.supabase.co")
-SUPABASE_PUBLISHABLE_KEY = os.environ.get("SUPABASE_ANON_KEY", "sb_publishable_RP_ouZJiDHK_PA_3o1dmfg_G5BgAuzl")
+SUPABASE_PUBLISHABLE_KEY = os.environ.get("SUPABASE_PUBLISHABLE_KEY", "sb_publishable_RP_ouZJiDHK_PA_3o1dmfg_G5BgAuzl")
 SUPABASE_URL = AUTH_SUPABASE_URL
 SUPABASE_PUBLISHABLE_KEY = SUPABASE_PUBLISHABLE_KEY
 
