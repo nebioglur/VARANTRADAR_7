@@ -1534,6 +1534,16 @@ def api_varant_simulator():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/api/logs', methods=['GET'])
+def api_logs():
+    """Gecici log okuma ucu"""
+    try:
+        with open('data/system_logs.txt', 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        return Response("".join(lines[-100:]), mimetype='text/plain')
+    except Exception as e:
+        return str(e)
+
 @app.route('/api/ping', methods=['GET'])
 def api_ping():
     """Uygulamanin calistigini dogrulamak icin basit health-check."""
