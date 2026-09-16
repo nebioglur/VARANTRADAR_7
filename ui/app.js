@@ -1881,21 +1881,14 @@ async function fetchDashboardData() {
             if (marketDetail && data.market) {
                 marketDetail.textContent =
                     `${data.market.local_time} (${data.market.timezone}) — ` +
-                    `Eski bellekteki fiyat ve sinyaller yatırım kararı için gösterilmiyor. ` +
+                    `Kapanış fiyatları ve sinyalleri gösteriliyor. ` +
                     `${data.market.next_session}.`;
-            }
-            if (!marketOpen) {
-                document.querySelectorAll('#home-wrapper tbody').forEach((tbody) => {
-                    tbody.innerHTML =
-                        `<tr><td colspan="20" style="text-align:center; padding:1.5rem; color:#fde68a;">` +
-                        `<i class="fa-solid fa-lock"></i> Piyasa kapalı — eski fiyat ve sinyal verisi gösterilmiyor.</td></tr>`;
-                });
             }
             setElText('total-analyzed-counter', `RADAR BUGÜNE KADAR ${data.total_analyzed || 0} VERİYİ ANALİZ ETTİ`);
             const shieldEl = document.getElementById('shield-status');
             if (shieldEl) {
                 if (!marketOpen) {
-                    shieldEl.innerHTML = `<span style="color:var(--accent-yellow); font-size:1.1rem;"><i class="fa-solid fa-lock"></i> Piyasa Kapalı — Eski Veri Yok</span>`;
+                    shieldEl.innerHTML = `<span style="color:var(--accent-yellow); font-size:1.1rem;"><i class="fa-solid fa-lock"></i> Piyasa Kapalı — Kapanış Fiyatları</span>`;
                 } else {
                     const chg = data.xu100_change || 0;
                     if (chg <= -1.0) {
@@ -1913,7 +1906,7 @@ async function fetchDashboardData() {
             const lastUpdated = data.last_updated || "Bilinmiyor";
             const timeHTML = marketOpen
                 ? `<i class="fa-solid fa-clock"></i> Son Tarama: ${lastUpdated}`
-                : `<i class="fa-solid fa-lock"></i> Piyasa kapalı — canlı tarama yok`;
+                : `<i class="fa-solid fa-lock"></i> Piyasa kapalı — Kapanış Verisi`;
             const timeEl1 = document.getElementById('last-scan-time');
             if (timeEl1) timeEl1.innerHTML = timeHTML;
             const timeEl2 = document.getElementById('arge-last-scan');
