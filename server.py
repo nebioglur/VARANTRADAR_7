@@ -611,10 +611,10 @@ app.secret_key = os.environ.get('SECRET_KEY', 'varant_pro_ultra_secret_2026_xyz'
 # AUTH KAYNAGI (Verdent-managed Supabase Auth) — bilinçli olarak env override KULLANMAZ:
 # Render ortaminda eski proje env'leri kaldiysa bile giris her zaman AKTIF projeyle calisir.
 # (Eski proje JWT anahtarlari gecersizlesti -> "invalid JWT signature" hatasinin kökü.)
-AUTH_SUPABASE_URL = 'https://supabase-api-prod.verdent.ai/p/pf565ccea3c6a9b19d28e'
-AUTH_SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoyMTA1MTI2MzA2LCJpYXQiOjE3ODk1MDcxMDYsImlzcyI6InN1cGFiYXNlIiwicHJvamVjdF9yZWYiOiJwZjU2NWNjZWEzYzZhOWIxOWQyOGUiLCJyb2xlIjoiYW5vbiJ9.cG_7QJGV7r0n7JIrvsSb2G1lnGwHg14TAJM0koDOq28'
+AUTH_SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://kfslwkmrnjqxirzhfmbn.supabase.co")
+SUPABASE_PUBLISHABLE_KEY = os.environ.get("SUPABASE_PUBLISHABLE_KEY", "sb_publishable_RP_ouZJiDHK_PA_3o1dmfg_G5BgAuzl")
 SUPABASE_URL = AUTH_SUPABASE_URL
-SUPABASE_PUBLISHABLE_KEY = AUTH_SUPABASE_PUBLISHABLE_KEY
+SUPABASE_PUBLISHABLE_KEY = SUPABASE_PUBLISHABLE_KEY
 
 _jwks_client = None
 
@@ -642,7 +642,10 @@ def _decode_jwt_unverified(token: str):
         return None
 
 def _supabase_user_from_endpoint(base_url: str, token: str, apikey):
-    headers = {"Authorization": f"Bearer {token}"}
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    }
     if apikey:
         headers["apikey"] = apikey
     req = urllib.request.Request(
@@ -654,28 +657,13 @@ def _supabase_user_from_endpoint(base_url: str, token: str, apikey):
         return json.loads(resp.read().decode('utf-8'))
 
 def verify_supabase_token(token: str):
-    """Supabase access token'ini dogrular; gecerliyse user_id (sub) dondurur.
-    1) JWKS ile yerel imza dogrulamasi (anahtar mevcutsa)
-    2) Token'i imzayi dogrulamadan cozumle, iss'ten gercek projeyi tespit et ve
-       tokeni KENDI projesinin /auth/v1/user ucunda dogrula. Boylece token
-       hangi Supabase projesinden gelirse gelsin dogrulanir (farkli proje
-       imzasi -> "invalid JWT signature" hatasini kokten cozer)."""
-    # 1) Yerel JWKS dogrulamasi
-    try:
-        import jwt
-        signing_key = _get_jwks_client().get_signing_key_from_jwt(token)
-        payload = jwt.decode(
-            token,
-            signing_key.key,
-            algorithms=["ES256", "RS256"],
-            audience="authenticated",
-            leeway=30,
-        )
-        return payload.get("sub")
-    except Exception:
-        pass
-
-    # 2) Issuer-farkindali dogrulama (sonuc kisa sure cache'lenir)
+    """Supabase access token'ini dogrular.
+    Donus: (user_id, hata_mesaji). Basarida hata_mesaji=None.
+    Token imzayi dogrulamadan cozulup iss'ten gercek proje tespit edilir ve
+    token KENDI projesinin /auth/v1/user ucunda dogrulanir; olmazsa iss'ten
+    turetilen diger proje adreslerinde denenir. Boylece token hangi Supabase
+    projesinden gelirse gelsin dogrulanir (farkli proje imzasi -> "invalid
+    JWT signature" hatasinin kok nedeni cozulur)."""
     import hashlib
     import time as _time
     import urllib.request
@@ -683,7 +671,7 @@ def verify_supabase_token(token: str):
     now = _time.time()
     cached = _user_token_cache.get(token_hash)
     if cached and cached[1] > now:
-        return cached[0]
+        return cached[0], None
 
     unverified = _decode_jwt_unverified(token)
     iss = (unverified or {}).get('iss') or ''
@@ -714,7 +702,7 @@ def verify_supabase_token(token: str):
                         break
                     _user_token_cache[token_hash] = (user_id, now + 120)
                     print(f"[AUTH] Token dogrulandi: {base}")
-                    return user_id
+                    return user_id, None
             except urllib.error.HTTPError as e:
                 body = e.read().decode('utf-8', 'ignore')[:160]
                 print(f"[AUTH] Dogrulama denemesi {base} (apikey={'var' if key_try else 'yok'}): {e.code} {body}")
@@ -726,7 +714,7 @@ def verify_supabase_token(token: str):
             except Exception as e:
                 print(f"[AUTH] Dogrulama denemesi {base} istisna: {e}")
                 break
-    return None
+    return None, f"Token dogrulanamadi (iss={iss[:60] or 'yok'})"
 
 def _migrate_legacy_owner_data(new_owner: str, email: str):
     """Ayni e-postayla eski Supabase projesinde acilan (sb:...) hesaplarin
@@ -851,14 +839,26 @@ def upsert_app_user(owner_key, email=None, display_name=None):
 
 @app.route('/api/auth/session', methods=['POST'])
 def api_auth_session():
-    """Supabase oturumunu Flask cookie oturumuna senkronize eder."""
+    def log_auth(m):
+        try:
+            with open('data/system_logs.txt', 'a', encoding='utf-8') as f:
+                import datetime
+                f.write(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [AUTH-DEBUG] {m}\n")
+        except: pass
+        print("[AUTH-DEBUG]", m)
+
+    log_auth("api_auth_session basladi")
     auth_header = request.headers.get('Authorization', '')
     if not auth_header.startswith('Bearer '):
+        log_auth("Missing bearer token")
         return jsonify({"status": "error", "message": "Missing bearer token"}), 401
     token = auth_header[7:].strip()
-    user_id = verify_supabase_token(token)
+    log_auth(f"Token alindi, ilk 10 hane: {token[:10]}...")
+    user_id, err_msg = verify_supabase_token(token)
     if not user_id:
-        return jsonify({"status": "error", "message": "Invalid or expired token"}), 401
+        log_auth(f"verify_supabase_token basarisiz: {err_msg}")
+        return jsonify({"status": "error", "message": f"Token dogrulanmadi: {err_msg}"}), 401
+    log_auth(f"Token gecerli, user_id: {user_id}")
     # E-postayi JWT payload'indan oku (token zaten dogrulandi)
     email = None
     try:
@@ -898,10 +898,10 @@ def require_auth():
         # Dogrudan Bearer token ile gelen API istekleri (script/araclar icin)
         auth_header = request.headers.get('Authorization', '')
         if request.path.startswith('/api/') and auth_header.startswith('Bearer '):
-            user_id = verify_supabase_token(auth_header[7:].strip())
-            if user_id:
+            _uid, _uerr = verify_supabase_token(auth_header[7:].strip())
+            if _uid:
                 session['logged_in'] = True
-                session['supabase_user_id'] = user_id
+                session['supabase_user_id'] = _uid
                 return
         if request.path.startswith('/api/'):
             return jsonify({"status": "error", "message": "Unauthorized"}), 401
@@ -919,8 +919,6 @@ def login():
             flag = '<script>window.VR_CLASSIC_ONLY=1;</script>'
             if '<head>' in html:
                 html = html.replace('<head>', '<head>' + flag, 1)
-            else:
-                html = flag + html
         # Login HTML'i tarayici cache'ine takilirsa eski auth kodu calismaya
         # devam eder (Render'da "invalid JWT" donucusunun sebeplerinden biri).
         resp = make_response(html)
@@ -1500,8 +1498,9 @@ def api_varant_simulator():
 
 @app.route('/api/ping', methods=['GET'])
 def api_ping():
-    """Keep-alive ucu: hicbir harici veri cagrisi yapmaz, Render uyumasini engeller."""
-    return jsonify({"status": "alive", "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
+    """Uygulamanin calistigini dogrulamak icin basit health-check."""
+    import os
+    return jsonify({"status": "alive", "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "cwd": os.getcwd()})
 
 @app.route('/api/health', methods=['GET'])
 def api_health():

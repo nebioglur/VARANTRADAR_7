@@ -144,19 +144,19 @@ async function syncServerSession(supabase, sessionOverride) {
             token = data?.session?.access_token || null;
         }
         if (!token) {
-            reportAuthEvent('SESSION_SYNC token bulunamadi');
+            alert("Sunucuya gonderilecek token bulunamadi!");
             return false;
         }
-        reportAuthEvent('SESSION_SYNC token uzunlugu ' + token.length);
         const res = await fetch('/api/auth/session', {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + token },
         });
         if (!res.ok) {
-            const body = await res.text().catch(() => '');
-            reportAuthEvent('SESSION_SYNC ' + res.status + ' body=' + body.slice(0, 120));
+            const txt = await res.text();
+            alert("Sunucu oturumu reddetti! Status: " + res.status + " Cevap: " + txt);
             // Sunucu token'i dogrulayamadiysa istemcideki oturum bozuktur:
             // temizle ki widget her acilista ayni hatayi tekrarlamasin.
+            reportAuthEvent('SESSION_SYNC ' + res.status);
             try { await supabase.auth.signOut(); } catch (e) { /* yoksay */ }
             return false;
         }
@@ -353,8 +353,16 @@ kitPromise.then(async ({ supabase, auth }) => {
     // yutmiyorsa token'i dogrudan yakalayip sunucu cookie oturumuna cevir.
     try {
         const rawHash = window.__vr_initial_hash || window.location.hash;
-        const hp = new URLSearchParams(rawHash.replace(/^#/, ''));
-        const at = hp.get('access_token');
+        const hashStr = rawHash.replace(/^#/, '');
+        let at = null;
+        hashStr.split('&').forEach(p => {
+            const idx = p.indexOf('=');
+            if (idx > -1) {
+                const k = p.substring(0, idx);
+                const v = p.substring(idx + 1);
+                if (k === 'access_token') at = decodeURIComponent(v);
+            }
+        });
         if (at) {
             reportAuthEvent('HASH TOKEN yakalandi, sunucu oturumu kuruluyor');
             const ok = await syncServerSession(supabase, { access_token: at });
@@ -362,9 +370,14 @@ kitPromise.then(async ({ supabase, auth }) => {
             if (ok) {
                 window.location.replace('/');
                 return; // yonlendirildik, diger adimlara gerek yok
+            } else {
+                alert("Oturum dogrulanamadi! Sunucu tarafi yetkilendirme basarisiz oldu. Lutfen sistem yoneticisine bildirin.");
             }
         }
-    } catch (e) { reportAuthEvent('HASH TOKEN istisna: ' + (e && e.message ? e.message : e)); }
+    } catch (e) {
+        alert("Oturum isleme hatasi: " + (e && e.message ? e.message : e));
+        reportAuthEvent('HASH TOKEN istisna: ' + (e && e.message ? e.message : e));
+    }
 
     const { data } = await supabase.auth.getSession();
     const session = data?.session || null;
