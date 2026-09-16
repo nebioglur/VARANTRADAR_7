@@ -353,8 +353,16 @@ kitPromise.then(async ({ supabase, auth }) => {
     // yutmiyorsa token'i dogrudan yakalayip sunucu cookie oturumuna cevir.
     try {
         const rawHash = window.__vr_initial_hash || window.location.hash;
-        const hp = new URLSearchParams(rawHash.replace(/^#/, ''));
-        const at = hp.get('access_token');
+        const hashStr = rawHash.replace(/^#/, '');
+        let at = null;
+        hashStr.split('&').forEach(p => {
+            const idx = p.indexOf('=');
+            if (idx > -1) {
+                const k = p.substring(0, idx);
+                const v = p.substring(idx + 1);
+                if (k === 'access_token') at = decodeURIComponent(v);
+            }
+        });
         if (at) {
             reportAuthEvent('HASH TOKEN yakalandi, sunucu oturumu kuruluyor');
             const ok = await syncServerSession(supabase, { access_token: at });
