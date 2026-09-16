@@ -847,6 +847,10 @@ def require_auth():
     if request.path.endswith('.css') or request.path.endswith('.js') or request.path.endswith('.png') or request.path.endswith('.woff2'):
         return
 
+    # Arama motorlari dosyalari oturum kapisi disinda (SEO)
+    if request.path in ('/robots.txt', '/sitemap.xml'):
+        return
+
     if not session.get('logged_in'):
         # Dogrudan Bearer token ile gelen API istekleri (script/araclar icin)
         auth_header = request.headers.get('Authorization', '')
