@@ -88,17 +88,35 @@ CACHE_FILE = "dashboard_cache.json"
 
 
 def load_dashboard_cache():
-    import os, json
+    import json, os
     from datetime import datetime
+    
+    # Once DB'den (kalici veritabanindan) yuklemeyi dene
+    try:
+        from services.trade_database import get_connection
+        with get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT value FROM live_settings WHERE key = 'dashboard_cache'")
+            row = cur.fetchone()
+            if row and row["value"]:
+                data = json.loads(row["value"])
+                today_str = datetime.now().strftime("%Y-%m-%d")
+                if data.get("cache_date") != today_str:
+                    print(f"[CACHE] DB'den onceki gunun cache'i yuklendi ({len(data.get('all_symbols_stats', {}))} hisse, tarih {data.get('cache_date')}) - yeni tarama ile guncellenecek")
+                else:
+                    print(f"[CACHE] DB'den BUGUNUN cache'i yuklendi ({len(data.get('all_symbols_stats', {}))} hisse, tarih {data.get('cache_date')})")
+                return data
+    except Exception as e:
+        print(f"[CACHE] DB yukleme hatasi: {e}")
+        
+    # Eger DB bos ise (veya hata verdiyse), dosyadan yuklemeyi dene
     try:
         if os.path.exists(CACHE_FILE):
             with open(CACHE_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 today_str = datetime.now().strftime("%Y-%m-%d")
                 if data.get("cache_date") != today_str:
-                    # Dunku veri COPE ATILMAZ: son bilinen kapanisla tablo dolu baslar.
-                    # Ilk basarili tarama verileri ve cache_date'i gunceller.
-                    print(f"[CACHE] onceki gunun cache'i yuklendi ({len(data.get('all_symbols_stats', {}))} hisse, tarih {data.get('cache_date')}) - yeni tarama ile guncellenecek")
+                    print(f"[CACHE] DOSYADAN onceki gunun cache'i yuklendi ({len(data.get('all_symbols_stats', {}))} hisse, tarih {data.get('cache_date')})")
                 return data
     except Exception:
         pass
@@ -121,12 +139,32 @@ def sync_to_github():
         print(f"[GITHUB ERROR] {e}")
 
 def save_dashboard_cache(data):
+    import time, json
     try:
-        import time
         data["cache_timestamp"] = time.time()
         clean = sanitize_for_json(data)
+        json_str = json.dumps(clean, ensure_ascii=False)
+        
+        # 1. Veritabanina (kalici) kaydet
+        try:
+            from services.trade_database import get_connection
+            with get_connection() as conn:
+                cur = conn.cursor()
+                # Once kayit var mi kontrol et (SQLite ve Postgres ortak syntax)
+                cur.execute("SELECT key FROM live_settings WHERE key = 'dashboard_cache'")
+                exists = cur.fetchone()
+                if exists:
+                    cur.execute("UPDATE live_settings SET value = ? WHERE key = 'dashboard_cache'", (json_str,))
+                else:
+                    cur.execute("INSERT INTO live_settings (key, value) VALUES ('dashboard_cache', ?)", (json_str,))
+                conn.commit()
+                print("[CACHE] Veritabanina basariyla kaydedildi.")
+        except Exception as db_err:
+            print(f"[CACHE] DB kayit hatasi: {db_err}")
+            
+        # 2. Dosyaya (gecici) kaydet
         with open(CACHE_FILE, "w", encoding="utf-8") as f:
-            json.dump(clean, f, ensure_ascii=False, indent=2)
+            f.write(json_str)
     except Exception as e:
         print(f"Cache save error: {e}")
 
