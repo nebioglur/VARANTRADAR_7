@@ -147,16 +147,17 @@ def save_dashboard_cache(data):
         
         # 1. Veritabanina (kalici) kaydet
         try:
-            from services.trade_database import get_connection
+            from services.trade_database import get_connection, IS_PG
+            placeholder = "%s" if IS_PG else "?"
             with get_connection() as conn:
                 cur = conn.cursor()
-                # Once kayit var mi kontrol et (SQLite ve Postgres ortak syntax)
+                # Once kayit var mi kontrol et
                 cur.execute("SELECT key FROM live_settings WHERE key = 'dashboard_cache'")
                 exists = cur.fetchone()
                 if exists:
-                    cur.execute("UPDATE live_settings SET value = ? WHERE key = 'dashboard_cache'", (json_str,))
+                    cur.execute(f"UPDATE live_settings SET value = {placeholder} WHERE key = 'dashboard_cache'", (json_str,))
                 else:
-                    cur.execute("INSERT INTO live_settings (key, value) VALUES ('dashboard_cache', ?)", (json_str,))
+                    cur.execute(f"INSERT INTO live_settings (key, value) VALUES ('dashboard_cache', {placeholder})", (json_str,))
                 conn.commit()
                 print("[CACHE] Veritabanina basariyla kaydedildi.")
         except Exception as db_err:
