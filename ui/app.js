@@ -1862,8 +1862,10 @@ window.onload = function() {
     });
 };
 
-// ===== MANUEL TARAMA BUTONU =====
+// ===== MANUEL TARAMA BUTONU (Arka Plan + İptal + Detaylı Progress) =====
 let _manualScanPolling = null;
+let _scanStartTime = null;
+let _scanElapsedTimer = null;
 
 async function triggerManualScan() {
     const btn = document.getElementById('manual-scan-btn');
@@ -1880,87 +1882,188 @@ async function triggerManualScan() {
         const data = await response.json();
         
         if (response.status === 409) {
-            // Zaten çalışıyor
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
-                    icon: 'warning',
-                    title: 'Tarama Devam Ediyor',
-                    text: data.message || 'Tarama zaten çalışıyor, lütfen bekleyin.',
-                    timer: 3000,
-                    showConfirmButton: false,
-                    background: '#1e1e2e',
-                    color: '#cdd6f4'
+                    icon: 'warning', title: 'Tarama Devam Ediyor',
+                    text: data.message || 'Tarama zaten çalışıyor.',
+                    timer: 3000, showConfirmButton: false,
+                    background: '#1e1e2e', color: '#cdd6f4'
                 });
             }
             _resetManualScanBtn();
             return;
         }
         
-        // Başarıyla başlatıldı - progress izlemeye başla
-        if (typeof Swal !== 'undefined') {
-            Swal.fire({
-                icon: 'info',
-                title: '<i class="fa-solid fa-satellite-dish"></i> Manuel Tarama Başlatıldı',
-                html: '<div id="scan-progress-text" style="font-size:0.95rem; color:#94a3b8;">Tüm BIST hisseleri taranıyor...</div>',
-                showConfirmButton: false,
-                allowOutsideClick: false,
-                background: '#1e1e2e',
-                color: '#cdd6f4',
-                didOpen: () => { Swal.showLoading(); }
-            });
-        }
+        // Panel'i göster
+        _showScanPanel();
+        _scanStartTime = Date.now();
         
-        // Durumu 3 saniyede bir kontrol et
+        // Geçen süre sayacı (her saniye)
+        _scanElapsedTimer = setInterval(() => {
+            const el = document.getElementById('scan-elapsed');
+            if (el && _scanStartTime) {
+                const secs = Math.floor((Date.now() - _scanStartTime) / 1000);
+                const m = Math.floor(secs / 60);
+                const s = secs % 60;
+                el.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+            }
+        }, 1000);
+        
+        // Durumu 2 saniyede bir kontrol et
         _manualScanPolling = setInterval(async () => {
             try {
                 const statusRes = await vrAuthorizedFetch('/api/manual_scan_status?t=' + Date.now());
                 const statusData = await statusRes.json();
-                
-                // Progress metnini güncelle
-                const progressEl = document.getElementById('scan-progress-text');
-                if (progressEl && statusData.progress) {
-                    progressEl.textContent = statusData.progress;
-                }
+                _updateScanPanel(statusData);
                 
                 if (!statusData.running) {
-                    // Tarama bitti
-                    clearInterval(_manualScanPolling);
-                    _manualScanPolling = null;
+                    _stopScanPolling();
                     
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({
-                            icon: 'success',
-                            title: '✅ Tarama Tamamlandı!',
-                            html: `Tüm BIST hisseleri başarıyla tarandı.<br><small style="color:#94a3b8;">Başlangıç: ${statusData.started_at || '?'} → Bitiş: ${statusData.finished_at || '?'}</small>`,
-                            timer: 4000,
-                            showConfirmButton: false,
-                            background: '#1e1e2e',
-                            color: '#cdd6f4'
-                        });
+                    const wasCancelled = statusData.phase === 'İptal Edildi';
+                    const hadError = statusData.phase === 'Hata';
+                    
+                    if (wasCancelled) {
+                        _setScanPanelResult('warning', 'Tarama iptal edildi.');
+                    } else if (hadError) {
+                        _setScanPanelResult('error', statusData.progress || 'Tarama hatası!');
+                    } else {
+                        _setScanPanelResult('success', 
+                            `✅ Tamamlandı! (${statusData.started_at} → ${statusData.finished_at})` +
+                            ` — ${statusData.scanned_symbols || 0} hisse tarandı`);
                     }
                     
                     // Dashboard verisini yenile
                     fetchDashboardData();
                     _resetManualScanBtn();
+                    
+                    // 8 saniye sonra paneli gizle
+                    setTimeout(() => { _hideScanPanel(); }, 8000);
                 }
             } catch (pollErr) {
                 console.error('[MANUEL TARA] Status poll hatası:', pollErr);
             }
-        }, 3000);
+        }, 2000);
         
     } catch (err) {
         console.error('[MANUEL TARA] Hata:', err);
         if (typeof Swal !== 'undefined') {
             Swal.fire({
-                icon: 'error',
-                title: 'Hata',
+                icon: 'error', title: 'Hata',
                 text: 'Manuel tarama başlatılamadı: ' + err.message,
-                background: '#1e1e2e',
-                color: '#cdd6f4'
+                background: '#1e1e2e', color: '#cdd6f4'
             });
         }
         _resetManualScanBtn();
     }
+}
+
+async function cancelManualScan() {
+    const cancelBtn = document.getElementById('scan-cancel-btn');
+    if (cancelBtn) {
+        cancelBtn.disabled = true;
+        cancelBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> İptal ediliyor...';
+    }
+    try {
+        await vrAuthorizedFetch('/api/manual_scan_cancel', { method: 'POST' });
+    } catch (e) {
+        console.error('[MANUEL TARA] İptal hatası:', e);
+    }
+}
+
+function _showScanPanel() {
+    const panel = document.getElementById('manual-scan-panel');
+    if (panel) {
+        panel.style.display = 'block';
+        // Reset values
+        const bar = document.getElementById('scan-progress-bar');
+        if (bar) bar.style.width = '0%';
+        const pct = document.getElementById('scan-percent-text');
+        if (pct) pct.textContent = '%0';
+        const detail = document.getElementById('scan-progress-detail');
+        if (detail) detail.textContent = 'Başlatılıyor...';
+        const phase = document.getElementById('scan-phase-text');
+        if (phase) phase.innerHTML = '<i class="fa-solid fa-satellite-dish fa-pulse"></i> Tarama başlatıldı...';
+        const elapsed = document.getElementById('scan-elapsed');
+        if (elapsed) elapsed.textContent = '0:00';
+        // Reset found counts
+        ['tavan','1h','5m','mtf'].forEach(k => {
+            const el = document.getElementById('scan-found-' + k);
+            if (el) el.textContent = '0';
+        });
+        // Reset cancel button
+        const cancelBtn = document.getElementById('scan-cancel-btn');
+        if (cancelBtn) { cancelBtn.disabled = false; cancelBtn.innerHTML = '<i class="fa-solid fa-stop"></i> İptal'; }
+    }
+}
+
+function _hideScanPanel() {
+    const panel = document.getElementById('manual-scan-panel');
+    if (panel) panel.style.display = 'none';
+}
+
+function _updateScanPanel(d) {
+    // Progress bar
+    const bar = document.getElementById('scan-progress-bar');
+    if (bar) bar.style.width = (d.percent || 0) + '%';
+    
+    // Percent text
+    const pct = document.getElementById('scan-percent-text');
+    if (pct) pct.textContent = '%' + (d.percent || 0);
+    
+    // Phase text
+    const phase = document.getElementById('scan-phase-text');
+    if (phase) {
+        const phaseIcon = d.phase_num === 1 ? 'fa-download' : d.phase_num === 2 ? 'fa-chart-line' : d.phase_num === 3 ? 'fa-signal' : d.phase_num === 4 ? 'fa-bolt-lightning' : 'fa-satellite-dish';
+        phase.innerHTML = `<i class="fa-solid ${phaseIcon} fa-pulse"></i> Faz ${d.phase_num || 0}/${d.total_phases || 4}: ${d.phase || ''}`;
+    }
+    
+    // Detail text
+    const detail = document.getElementById('scan-progress-detail');
+    if (detail) detail.textContent = d.progress || '';
+    
+    // Elapsed from server
+    if (d.elapsed) {
+        const el = document.getElementById('scan-elapsed');
+        if (el) {
+            const m = Math.floor(d.elapsed / 60);
+            const s = d.elapsed % 60;
+            el.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+        }
+    }
+    
+    // Found stats
+    const stats = {tavan: d.found_tavan, '1h': d.found_1h, '5m': d.found_5m, mtf: d.found_mtf};
+    for (const [k, v] of Object.entries(stats)) {
+        const el = document.getElementById('scan-found-' + k);
+        if (el) el.textContent = v || 0;
+    }
+}
+
+function _setScanPanelResult(type, message) {
+    const phase = document.getElementById('scan-phase-text');
+    const bar = document.getElementById('scan-progress-bar');
+    const cancelBtn = document.getElementById('scan-cancel-btn');
+    
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    
+    if (type === 'success') {
+        if (phase) phase.innerHTML = '<i class="fa-solid fa-circle-check" style="color:#22c55e;"></i> ' + message;
+        if (phase) phase.style.color = '#22c55e';
+        if (bar) bar.style.background = 'linear-gradient(90deg,#22c55e,#4ade80)';
+    } else if (type === 'warning') {
+        if (phase) phase.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b;"></i> ' + message;
+        if (phase) phase.style.color = '#f59e0b';
+        if (bar) bar.style.background = '#f59e0b';
+    } else {
+        if (phase) phase.innerHTML = '<i class="fa-solid fa-circle-xmark" style="color:#ef4444;"></i> ' + message;
+        if (phase) phase.style.color = '#ef4444';
+        if (bar) bar.style.background = '#ef4444';
+    }
+}
+
+function _stopScanPolling() {
+    if (_manualScanPolling) { clearInterval(_manualScanPolling); _manualScanPolling = null; }
+    if (_scanElapsedTimer) { clearInterval(_scanElapsedTimer); _scanElapsedTimer = null; }
 }
 
 function _resetManualScanBtn() {
