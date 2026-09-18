@@ -1730,6 +1730,125 @@ window.onload = function() {
     });
 };
 
+// ===== MANUEL TARAMA BUTONU (Arka Plan + İptal + Detaylı Progress) =====
+let _manualScanPolling = null;
+let _scanStartTime = null;
+let _scanElapsedTimer = null;
+
+async function triggerManualScan() {
+    const btn = document.getElementById('manual-scan-btn');
+    if (!btn) return;
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+    btn.style.cursor = 'not-allowed';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Taranıyor...';
+    
+    try {
+        const response = await fetch('/api/manual_scan', { method: 'POST' });
+        const data = await response.json();
+        
+        if (response.status === 409) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ icon: 'warning', title: 'Tarama Devam Ediyor', text: data.message || 'Tarama zaten çalışıyor.', timer: 3000, showConfirmButton: false, background: '#1e1e2e', color: '#cdd6f4' });
+            }
+            _resetManualScanBtn();
+            return;
+        }
+        
+        _showScanPanel();
+        _scanStartTime = Date.now();
+        
+        _scanElapsedTimer = setInterval(() => {
+            const el = document.getElementById('scan-elapsed');
+            if (el && _scanStartTime) {
+                const secs = Math.floor((Date.now() - _scanStartTime) / 1000);
+                el.textContent = `${Math.floor(secs / 60)}:${(secs % 60).toString().padStart(2, '0')}`;
+            }
+        }, 1000);
+        
+        _manualScanPolling = setInterval(async () => {
+            try {
+                const statusRes = await fetch('/api/manual_scan_status?t=' + Date.now());
+                const statusData = await statusRes.json();
+                _updateScanPanel(statusData);
+                
+                if (!statusData.running) {
+                    _stopScanPolling();
+                    const wasCancelled = statusData.phase === 'İptal Edildi';
+                    const hadError = statusData.phase === 'Hata';
+                    if (wasCancelled) { _setScanPanelResult('warning', 'Tarama iptal edildi.'); }
+                    else if (hadError) { _setScanPanelResult('error', statusData.progress || 'Tarama hatası!'); }
+                    else { _setScanPanelResult('success', `✅ Tamamlandı! (${statusData.started_at} → ${statusData.finished_at}) — ${statusData.scanned_symbols || 0} hisse tarandı`); }
+                    fetchDashboardData();
+                    _resetManualScanBtn();
+                    setTimeout(() => { _hideScanPanel(); }, 8000);
+                }
+            } catch (pollErr) { console.error('[MANUEL TARA] Status poll hatası:', pollErr); }
+        }, 2000);
+        
+    } catch (err) {
+        console.error('[MANUEL TARA] Hata:', err);
+        if (typeof Swal !== 'undefined') { Swal.fire({ icon: 'error', title: 'Hata', text: 'Manuel tarama başlatılamadı: ' + err.message, background: '#1e1e2e', color: '#cdd6f4' }); }
+        _resetManualScanBtn();
+    }
+}
+
+async function cancelManualScan() {
+    const cancelBtn = document.getElementById('scan-cancel-btn');
+    if (cancelBtn) { cancelBtn.disabled = true; cancelBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> İptal ediliyor...'; }
+    try { await fetch('/api/manual_scan_cancel', { method: 'POST' }); } catch (e) { console.error('[MANUEL TARA] İptal hatası:', e); }
+}
+
+function _showScanPanel() {
+    const panel = document.getElementById('manual-scan-panel');
+    if (panel) {
+        panel.style.display = 'block';
+        const bar = document.getElementById('scan-progress-bar'); if (bar) bar.style.width = '0%';
+        const pct = document.getElementById('scan-percent-text'); if (pct) pct.textContent = '%0';
+        const detail = document.getElementById('scan-progress-detail'); if (detail) detail.textContent = 'Başlatılıyor...';
+        const phase = document.getElementById('scan-phase-text'); if (phase) phase.innerHTML = '<i class="fa-solid fa-satellite-dish fa-pulse"></i> Tarama başlatıldı...';
+        const elapsed = document.getElementById('scan-elapsed'); if (elapsed) elapsed.textContent = '0:00';
+        ['tavan','1h','5m','mtf'].forEach(k => { const el = document.getElementById('scan-found-' + k); if (el) el.textContent = '0'; });
+        const cancelBtn = document.getElementById('scan-cancel-btn'); if (cancelBtn) { cancelBtn.disabled = false; cancelBtn.innerHTML = '<i class="fa-solid fa-stop"></i> İptal'; }
+    }
+}
+function _hideScanPanel() { const panel = document.getElementById('manual-scan-panel'); if (panel) panel.style.display = 'none'; }
+
+function _updateScanPanel(d) {
+    const bar = document.getElementById('scan-progress-bar'); if (bar) bar.style.width = (d.percent || 0) + '%';
+    const pct = document.getElementById('scan-percent-text'); if (pct) pct.textContent = '%' + (d.percent || 0);
+    const phase = document.getElementById('scan-phase-text');
+    if (phase) {
+        const icon = d.phase_num === 1 ? 'fa-download' : d.phase_num === 2 ? 'fa-chart-line' : d.phase_num === 3 ? 'fa-signal' : d.phase_num === 4 ? 'fa-bolt-lightning' : 'fa-satellite-dish';
+        phase.innerHTML = `<i class="fa-solid ${icon} fa-pulse"></i> Faz ${d.phase_num || 0}/${d.total_phases || 4}: ${d.phase || ''}`;
+    }
+    const detail = document.getElementById('scan-progress-detail'); if (detail) detail.textContent = d.progress || '';
+    if (d.elapsed) { const el = document.getElementById('scan-elapsed'); if (el) el.textContent = `${Math.floor(d.elapsed / 60)}:${(d.elapsed % 60).toString().padStart(2, '0')}`; }
+    const stats = {tavan: d.found_tavan, '1h': d.found_1h, '5m': d.found_5m, mtf: d.found_mtf};
+    for (const [k, v] of Object.entries(stats)) { const el = document.getElementById('scan-found-' + k); if (el) el.textContent = v || 0; }
+}
+
+function _setScanPanelResult(type, message) {
+    const phase = document.getElementById('scan-phase-text');
+    const bar = document.getElementById('scan-progress-bar');
+    const cancelBtn = document.getElementById('scan-cancel-btn');
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    if (type === 'success') { if (phase) { phase.innerHTML = '<i class="fa-solid fa-circle-check" style="color:#22c55e;"></i> ' + message; phase.style.color = '#22c55e'; } if (bar) bar.style.background = 'linear-gradient(90deg,#22c55e,#4ade80)'; }
+    else if (type === 'warning') { if (phase) { phase.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b;"></i> ' + message; phase.style.color = '#f59e0b'; } if (bar) bar.style.background = '#f59e0b'; }
+    else { if (phase) { phase.innerHTML = '<i class="fa-solid fa-circle-xmark" style="color:#ef4444;"></i> ' + message; phase.style.color = '#ef4444'; } if (bar) bar.style.background = '#ef4444'; }
+}
+
+function _stopScanPolling() {
+    if (_manualScanPolling) { clearInterval(_manualScanPolling); _manualScanPolling = null; }
+    if (_scanElapsedTimer) { clearInterval(_scanElapsedTimer); _scanElapsedTimer = null; }
+}
+
+function _resetManualScanBtn() {
+    const btn = document.getElementById('manual-scan-btn');
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer'; btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Manuel Tara'; }
+}
+// ===== MANUEL TARAMA SONU =====
+
 async function fetchDashboardData() {
     try {
         const response = await fetch('/api/dashboard_init?t=' + Date.now());

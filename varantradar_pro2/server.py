@@ -679,6 +679,139 @@ def api_scan_all():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+# --- MANUEL TARAMA (Kullanıcı butonu ile tetiklenir) ---
+_manual_scan_lock = threading.Lock()
+_manual_scan_status = {
+    "running": False, "cancel_requested": False,
+    "phase": "", "phase_num": 0, "total_phases": 4, "percent": 0,
+    "progress": "", "started_at": None, "start_ts": None, "finished_at": None,
+    "elapsed": 0, "total_symbols": 0, "scanned_symbols": 0,
+    "found_tavan": 0, "found_1h": 0, "found_5m": 0, "found_mtf": 0,
+}
+
+def _run_manual_scan():
+    global GLOBAL_DASHBOARD_CACHE
+    from datetime import datetime
+    import time as _time
+    
+    _manual_scan_status["running"] = True
+    _manual_scan_status["cancel_requested"] = False
+    _manual_scan_status["started_at"] = datetime.now().strftime("%H:%M:%S")
+    _manual_scan_status["start_ts"] = _time.time()
+    _manual_scan_status["finished_at"] = None
+    _manual_scan_status["total_symbols"] = len(BIST_SYMBOLS)
+    for k in ["scanned_symbols","found_tavan","found_1h","found_5m","found_mtf"]:
+        _manual_scan_status[k] = 0
+    
+    def _update(pn, phase, pct, txt=""):
+        elapsed = int(_time.time() - _manual_scan_status["start_ts"])
+        _manual_scan_status.update({"phase_num": pn, "phase": phase, "percent": pct, "progress": txt or phase, "elapsed": elapsed})
+    
+    def _cancelled():
+        return _manual_scan_status.get("cancel_requested", False)
+    
+    try:
+        pipeline = DataPipeline()
+        scanner = UniversalScanner(pipeline)
+        
+        # FAZ 1: Günlük
+        _update(1, "Günlük Veriler", 5, f"Günlük veriler indiriliyor... (0/{len(BIST_SYMBOLS)} hisse)")
+        if _cancelled(): _update(0, "İptal Edildi", 0, "İptal edildi."); return
+        results = scanner.scan_pool_bulk(BIST_SYMBOLS)
+        if isinstance(results, dict): results["cache_date"] = datetime.now().strftime("%Y-%m-%d")
+        stats_count = len(results.get("all_symbols_stats", {})) if isinstance(results, dict) else 0
+        _manual_scan_status["scanned_symbols"] = stats_count
+        _update(1, "Günlük Veriler", 40, f"Günlük tamamlandı ({stats_count} hisse)")
+        
+        if results and isinstance(results, dict) and stats_count > 0:
+            if isinstance(GLOBAL_DASHBOARD_CACHE, dict):
+                for key in ["opportunities_1h","tavan_adaylari","stay_away_1h","signals_5m","v8_market_regime","mtf_results"]:
+                    if key in GLOBAL_DASHBOARD_CACHE: results[key] = GLOBAL_DASHBOARD_CACHE[key]
+                _prev = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
+                if isinstance(_prev, dict):
+                    _m = dict(_prev); _m.update(sanitize_for_json(results.get("all_symbols_stats", {}))); results["all_symbols_stats"] = _m
+            GLOBAL_DASHBOARD_CACHE = sanitize_for_json(results)
+            save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
+        
+        if _cancelled(): _update(0, "İptal Edildi", 40, "İptal edildi (Faz 1 sonrası)."); return
+        
+        # FAZ 2: 1h
+        _update(2, "1h Fırsatlar", 45, "1h fırsatlar taranıyor...")
+        daily_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {}) if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else {}
+        try:
+            res_1h = scanner.scan_pool_bulk_1h(BIST_SYMBOLS, daily_stats)
+            if res_1h and isinstance(res_1h, dict):
+                opp_1h = res_1h.get("opportunities_1h", []); tavan_list = res_1h.get("tavan_adaylari", [])
+                GLOBAL_DASHBOARD_CACHE["opportunities_1h"] = sanitize_for_json(opp_1h)
+                GLOBAL_DASHBOARD_CACHE["tavan_adaylari"] = sanitize_for_json(tavan_list)
+                GLOBAL_DASHBOARD_CACHE["stay_away_1h"] = sanitize_for_json(res_1h.get("stay_away_1h", []))
+                save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
+                _manual_scan_status["found_1h"] = len(opp_1h); _manual_scan_status["found_tavan"] = len(tavan_list)
+                _update(2, "1h Fırsatlar", 70, f"1h tamamlandı — {len(opp_1h)} fırsat, {len(tavan_list)} tavan")
+        except Exception as e_1h:
+            _update(2, "1h Fırsatlar", 70, f"1h hatası: {str(e_1h)[:60]}")
+        
+        if _cancelled(): _update(0, "İptal Edildi", 70, "İptal edildi (Faz 2 sonrası)."); return
+        
+        # FAZ 3: 5m
+        _update(3, "5m Sinyaller", 72, "5m sinyaller taranıyor...")
+        try:
+            valid = [s for s in BIST_SYMBOLS if s in daily_stats]
+            if valid:
+                fast_5m = scanner.scan_pool_bulk_5m(valid)
+                GLOBAL_DASHBOARD_CACHE["signals_5m"] = sanitize_for_json(fast_5m)
+                save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
+                _manual_scan_status["found_5m"] = len(fast_5m) if isinstance(fast_5m, list) else 0
+                _update(3, "5m Sinyaller", 85, f"5m tamamlandı — {_manual_scan_status['found_5m']} sinyal")
+        except Exception as e_5m:
+            _update(3, "5m Sinyaller", 85, f"5m hatası: {str(e_5m)[:60]}")
+        
+        if _cancelled(): _update(0, "İptal Edildi", 85, "İptal edildi (Faz 3 sonrası)."); return
+        
+        # FAZ 4: MTF
+        _update(4, "MTF İvme", 88, "MTF taranıyor...")
+        try:
+            from services.mtf_scanner import MTFScanner
+            mtf_results = MTFScanner.scan_pool(YILDIZ_SYMBOLS, max_symbols=200)
+            GLOBAL_DASHBOARD_CACHE["mtf_results"] = sanitize_for_json(mtf_results)
+            save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
+            _manual_scan_status["found_mtf"] = len(mtf_results)
+            _update(4, "MTF İvme", 100, f"MTF tamamlandı — {len(mtf_results)} hisse")
+        except Exception as e_mtf:
+            _update(4, "MTF İvme", 100, f"MTF hatası: {str(e_mtf)[:60]}")
+        
+        _manual_scan_status.update({"percent": 100, "phase": "Tamamlandı", "progress": "✅ Tüm taramalar tamamlandı!", "finished_at": datetime.now().strftime("%H:%M:%S"), "elapsed": int(_time.time() - _manual_scan_status["start_ts"])})
+    except Exception as e:
+        _manual_scan_status.update({"progress": f"Hata: {str(e)}", "phase": "Hata"})
+        import traceback; traceback.print_exc()
+    finally:
+        _manual_scan_status["running"] = False
+
+@app.route('/api/manual_scan', methods=['POST'])
+def api_manual_scan():
+    if _manual_scan_status["running"]:
+        return jsonify({"status": "already_running", "message": "Tarama zaten devam ediyor...", "progress": _manual_scan_status["progress"]}), 409
+    if not _manual_scan_lock.acquire(blocking=False):
+        return jsonify({"status": "locked", "message": "Başka bir tarama bekliyor."}), 409
+    try:
+        t = threading.Thread(target=_run_manual_scan, daemon=True, name="manual-scan"); t.start()
+        return jsonify({"status": "started", "message": "Manuel tarama başlatıldı!", "total_symbols": len(BIST_SYMBOLS)})
+    finally:
+        _manual_scan_lock.release()
+
+@app.route('/api/manual_scan_status', methods=['GET'])
+def api_manual_scan_status():
+    return jsonify({k: _manual_scan_status.get(k) for k in ["running","cancel_requested","phase","phase_num","total_phases","percent","progress","started_at","finished_at","elapsed","total_symbols","scanned_symbols","found_tavan","found_1h","found_5m","found_mtf"]})
+
+@app.route('/api/manual_scan_cancel', methods=['POST'])
+def api_manual_scan_cancel():
+    if not _manual_scan_status["running"]:
+        return jsonify({"status": "not_running", "message": "Aktif tarama yok."}), 400
+    _manual_scan_status["cancel_requested"] = True
+    _manual_scan_status["progress"] = "İptal ediliyor..."
+    return jsonify({"status": "cancelled", "message": "Tarama iptal isteği gönderildi."})
+# --- MANUEL TARAMA SONU ---
+
 @app.route('/api/scan_fx', methods=['GET'])
 def api_scan_fx():
     pool = FX_SYMBOLS

@@ -66,7 +66,36 @@
             </div>
 
             <div style="grid-column: 1 / -1; margin-bottom: 1rem; text-align: center;">
-                <span style="font-size: 1.1rem; font-weight: bold; color: var(--accent-green); background: rgba(34,197,94,0.1); padding:0.5rem 1rem; border-radius:20px; border:1px solid rgba(34,197,94,0.3);" id="total-analyzed-counter">RADAR BUGÜNE KADAR 0 VERİYİ ANALİZ ETTİ</span>
+                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
+                    <span style="font-size: 1rem; font-weight: bold; color: var(--accent-green); background: rgba(34,197,94,0.1); padding:0.4rem 0.9rem; border-radius:20px; border:1px solid rgba(34,197,94,0.3);" id="total-analyzed-counter">RADAR BUGÜNE KADAR 0 VERİYİ ANALİZ ETTİ</span>
+                    <div style="display:flex; align-items:center; gap:0.6rem;">
+                        <span style="font-size: 0.85rem; color: var(--text-muted);" id="last-scan-time"><i class="fa-solid fa-clock"></i> Son Tarama: Bekleniyor...</span>
+                        <button type="button" id="manual-scan-btn" onclick="triggerManualScan()" style="font-size:0.8rem; font-weight:700; color:#fff; background:linear-gradient(135deg,#f59e0b,#ef4444); border:none; padding:0.35rem 0.9rem; border-radius:16px; cursor:pointer; display:inline-flex; align-items:center; gap:0.35rem; box-shadow:0 2px 8px rgba(245,158,11,0.4); transition:all 0.2s;" onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 4px 14px rgba(245,158,11,0.6)'" onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 2px 8px rgba(245,158,11,0.4)'"><i class="fa-solid fa-rotate"></i> Manuel Tara</button>
+                    </div>
+                    <!-- MANUEL TARAMA ARKA PLAN PROGRESS PANELİ -->
+                    <div id="manual-scan-panel" style="display:none; width:100%; max-width:520px; background:rgba(30,30,46,0.95); border:1px solid rgba(139,92,246,0.4); border-radius:12px; padding:0.7rem 1rem; text-align:left; box-shadow:0 4px 20px rgba(0,0,0,0.4);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+                            <span id="scan-phase-text" style="font-size:0.8rem; font-weight:600; color:#818cf8;"><i class="fa-solid fa-satellite-dish"></i> Taranıyor...</span>
+                            <div style="display:flex; align-items:center; gap:0.5rem;">
+                                <span id="scan-elapsed" style="font-size:0.75rem; color:var(--text-muted);">0:00</span>
+                                <button type="button" id="scan-cancel-btn" onclick="cancelManualScan()" style="font-size:0.7rem; font-weight:600; color:#ef4444; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); padding:0.2rem 0.5rem; border-radius:8px; cursor:pointer;" onmouseover="this.style.background='rgba(239,68,68,0.3)'" onmouseout="this.style.background='rgba(239,68,68,0.15)'"><i class="fa-solid fa-stop"></i> İptal</button>
+                            </div>
+                        </div>
+                        <div style="width:100%; height:8px; background:rgba(255,255,255,0.1); border-radius:4px; overflow:hidden; margin-bottom:0.4rem;">
+                            <div id="scan-progress-bar" style="width:0%; height:100%; background:linear-gradient(90deg,#f59e0b,#22c55e); border-radius:4px; transition:width 0.5s ease;"></div>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span id="scan-progress-detail" style="font-size:0.75rem; color:var(--text-muted);">Başlatılıyor...</span>
+                            <span id="scan-percent-text" style="font-size:0.75rem; font-weight:700; color:#f59e0b;">%0</span>
+                        </div>
+                        <div id="scan-found-stats" style="display:flex; gap:0.6rem; margin-top:0.4rem; flex-wrap:wrap;">
+                            <span style="font-size:0.7rem; color:#ef4444;"><i class="fa-solid fa-rocket"></i> Tavan: <b id="scan-found-tavan">0</b></span>
+                            <span style="font-size:0.7rem; color:#22c55e;"><i class="fa-solid fa-bolt"></i> 1h Fırsat: <b id="scan-found-1h">0</b></span>
+                            <span style="font-size:0.7rem; color:#38bdf8;"><i class="fa-solid fa-signal"></i> 5m Sinyal: <b id="scan-found-5m">0</b></span>
+                            <span style="font-size:0.7rem; color:#a78bfa;"><i class="fa-solid fa-bolt-lightning"></i> MTF: <b id="scan-found-mtf">0</b></span>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <!-- MULTI-TABLE GRID -->
