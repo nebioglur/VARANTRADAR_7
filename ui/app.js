@@ -1846,7 +1846,7 @@ window.onload = function() {
     
     fetchDashboardData();
     // Her 5 saniyede bir arka plandaki scanner'in bitip bitmediğini kontrol et
-    dashboardPollInterval = setInterval(fetchDashboardData, 5000);
+    dashboardPollInterval = setInterval(fetchDashboardData, 60000);
     
     // KULLANICI İSTEĞİ: TABLOYA ÇİFT TIKLAYINCA TAM TABLOYU TEK GÖSTER
     document.querySelectorAll('#radar-cards-grid .card').forEach(card => {

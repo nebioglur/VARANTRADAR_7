@@ -704,6 +704,32 @@ ALL_SYMBOLS = [s.replace('.IS','') for s in BIST_SYMBOLS] + [w.replace('.IS','')
 from analysis.technical import TechnicalEngine
 
 app = Flask(__name__, static_folder='ui', static_url_path='')
+
+import gzip
+import io
+from flask import request
+
+@app.after_request
+def compress_response(response):
+    accept_encoding = request.headers.get('Accept-Encoding', '')
+    if 'gzip' not in accept_encoding.lower():
+        return response
+    if response.status_code < 200 or response.status_code >= 300:
+        return response
+    if 'Content-Encoding' in response.headers:
+        return response
+    if response.content_length is not None and response.content_length < 500:
+        return response
+        
+    gzip_buffer = io.BytesIO()
+    with gzip.GzipFile(mode='wb', fileobj=gzip_buffer) as gzip_file:
+        gzip_file.write(response.get_data())
+    
+    response.set_data(gzip_buffer.getvalue())
+    response.headers['Content-Encoding'] = 'gzip'
+    response.headers['Content-Length'] = len(response.get_data())
+    return response
+
 CORS(app)
 
 # ============ SESSION AUTH (GÜVENLİK) ============
