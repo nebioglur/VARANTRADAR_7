@@ -1862,6 +1862,118 @@ window.onload = function() {
     });
 };
 
+// ===== MANUEL TARAMA BUTONU =====
+let _manualScanPolling = null;
+
+async function triggerManualScan() {
+    const btn = document.getElementById('manual-scan-btn');
+    if (!btn) return;
+    
+    // Butonu devre dışı bırak
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+    btn.style.cursor = 'not-allowed';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Taranıyor...';
+    
+    try {
+        const response = await vrAuthorizedFetch('/api/manual_scan', { method: 'POST' });
+        const data = await response.json();
+        
+        if (response.status === 409) {
+            // Zaten çalışıyor
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Tarama Devam Ediyor',
+                    text: data.message || 'Tarama zaten çalışıyor, lütfen bekleyin.',
+                    timer: 3000,
+                    showConfirmButton: false,
+                    background: '#1e1e2e',
+                    color: '#cdd6f4'
+                });
+            }
+            _resetManualScanBtn();
+            return;
+        }
+        
+        // Başarıyla başlatıldı - progress izlemeye başla
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'info',
+                title: '<i class="fa-solid fa-satellite-dish"></i> Manuel Tarama Başlatıldı',
+                html: '<div id="scan-progress-text" style="font-size:0.95rem; color:#94a3b8;">Tüm BIST hisseleri taranıyor...</div>',
+                showConfirmButton: false,
+                allowOutsideClick: false,
+                background: '#1e1e2e',
+                color: '#cdd6f4',
+                didOpen: () => { Swal.showLoading(); }
+            });
+        }
+        
+        // Durumu 3 saniyede bir kontrol et
+        _manualScanPolling = setInterval(async () => {
+            try {
+                const statusRes = await vrAuthorizedFetch('/api/manual_scan_status?t=' + Date.now());
+                const statusData = await statusRes.json();
+                
+                // Progress metnini güncelle
+                const progressEl = document.getElementById('scan-progress-text');
+                if (progressEl && statusData.progress) {
+                    progressEl.textContent = statusData.progress;
+                }
+                
+                if (!statusData.running) {
+                    // Tarama bitti
+                    clearInterval(_manualScanPolling);
+                    _manualScanPolling = null;
+                    
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: '✅ Tarama Tamamlandı!',
+                            html: `Tüm BIST hisseleri başarıyla tarandı.<br><small style="color:#94a3b8;">Başlangıç: ${statusData.started_at || '?'} → Bitiş: ${statusData.finished_at || '?'}</small>`,
+                            timer: 4000,
+                            showConfirmButton: false,
+                            background: '#1e1e2e',
+                            color: '#cdd6f4'
+                        });
+                    }
+                    
+                    // Dashboard verisini yenile
+                    fetchDashboardData();
+                    _resetManualScanBtn();
+                }
+            } catch (pollErr) {
+                console.error('[MANUEL TARA] Status poll hatası:', pollErr);
+            }
+        }, 3000);
+        
+    } catch (err) {
+        console.error('[MANUEL TARA] Hata:', err);
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'error',
+                title: 'Hata',
+                text: 'Manuel tarama başlatılamadı: ' + err.message,
+                background: '#1e1e2e',
+                color: '#cdd6f4'
+            });
+        }
+        _resetManualScanBtn();
+    }
+}
+
+function _resetManualScanBtn() {
+    const btn = document.getElementById('manual-scan-btn');
+    if (btn) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+        btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Manuel Tara';
+    }
+}
+// ===== MANUEL TARAMA SONU =====
+
 async function fetchDashboardData() {
     try {
         const response = await fetch('/api/dashboard_init?t=' + Date.now());

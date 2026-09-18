@@ -146,7 +146,10 @@
             <div style="grid-column: 1 / -1; margin-bottom: 0.8rem; text-align: center;">
                 <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
                     <span style="font-size: 1rem; font-weight: bold; color: var(--accent-green); background: rgba(34,197,94,0.1); padding:0.4rem 0.9rem; border-radius:20px; border:1px solid rgba(34,197,94,0.3);" id="total-analyzed-counter">RADAR BUGÜNE KADAR 0 VERİYİ ANALİZ ETTİ</span>
-                    <span style="font-size: 0.85rem; color: var(--text-muted);" id="last-scan-time"><i class="fa-solid fa-clock"></i> Son Tarama: Bekleniyor...</span>
+                    <div style="display:flex; align-items:center; gap:0.6rem;">
+                        <span style="font-size: 0.85rem; color: var(--text-muted);" id="last-scan-time"><i class="fa-solid fa-clock"></i> Son Tarama: Bekleniyor...</span>
+                        <button type="button" id="manual-scan-btn" onclick="triggerManualScan()" style="font-size:0.8rem; font-weight:700; color:#fff; background:linear-gradient(135deg,#f59e0b,#ef4444); border:none; padding:0.35rem 0.9rem; border-radius:16px; cursor:pointer; display:inline-flex; align-items:center; gap:0.35rem; box-shadow:0 2px 8px rgba(245,158,11,0.4); transition:all 0.2s;" onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 4px 14px rgba(245,158,11,0.6)'" onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 2px 8px rgba(245,158,11,0.4)'"><i class="fa-solid fa-rotate"></i> Manuel Tara</button>
+                    </div>
                 </div>
             </div>
             
