@@ -269,7 +269,7 @@ def start_live_data_collector():
                                             # Ayrıca değişim yüzdesini de güncelleyebiliriz
                                             prev = float(row["Open"]) if "Open" in row else None
                                             if prev and not math.isnan(prev) and prev > 0:
-                                                GLOBAL_DASHBOARD_CACHE["all_symbols_stats"][sym]["Change %"] = round(((close_px - prev) / prev) * 100, 2)
+                                                GLOBAL_DASHBOARD_CACHE["all_symbols_stats"][sym]["Change_Pct"] = round(((close_px - prev) / prev) * 100, 2)
                                             updates += 1
                                     except Exception:
                                         pass
