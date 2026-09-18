@@ -6242,10 +6242,12 @@ function renderAllStocksTable() {
                           <button onclick="quickTradeBuy('${sym}')" style="background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid rgba(239,68,68,0.5); border-radius:4px; padding:3px 10px; cursor:pointer; font-weight:bold; font-size:0.75rem; transition:0.2s;" onmouseover="this.style.background='#ef4444'; this.style.color='#fff';" onmouseout="this.style.background='rgba(239,68,68,0.2)'; this.style.color='#ef4444';">SAT</button>
                           <button onclick="showSR('${sym}', ${s.price}, ${s.high}, ${s.low})" style="background:rgba(59,130,246,0.2); color:#3b82f6; border:1px solid rgba(59,130,246,0.5); border-radius:4px; padding:3px 6px; cursor:pointer; font-weight:bold; font-size:0.7rem; transition:0.2s;" onmouseover="this.style.background='#3b82f6'; this.style.color='#fff';" onmouseout="this.style.background='rgba(59,130,246,0.2)'; this.style.color='#3b82f6';" title="Destek ve Direnc Seviyeleri">D/D</button>`;
         
+        let prevClose = s.price / (1 + (s.change / 100));
         return `
             <tr>
                 <td style="font-weight:bold; cursor:pointer; color:var(--text-light);" onclick="openGraphicTab('${s.symbol}')">${sym}</td>
                 <td style="font-weight:600;">₺${s.price.toFixed(2)}</td>
+                <td style="color:var(--text-muted);">₺${prevClose.toFixed(2)}</td>
                 <td style="color:${color}; font-weight:bold;">${sign}${s.change.toFixed(2)}%</td>
                 <td style="color:${intraColor}; font-weight:bold;">${intraSign}${s.intra_change.toFixed(2)}%</td>
                 <td style="color:${flowColor}; font-weight:bold;">${s.hourly_flow}</td>
