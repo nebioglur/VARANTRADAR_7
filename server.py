@@ -814,7 +814,7 @@ def verify_supabase_token(token: str):
     bases = []
     if iss:
         b = iss.split('/auth/v1')[0].rstrip('/')
-        if b:
+        if b and b.startswith("http"):
             bases.append(b)
     if ref:
         proxy_base = f"https://supabase-api-prod.verdent.ai/p/{ref}"
