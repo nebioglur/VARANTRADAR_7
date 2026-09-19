@@ -4406,6 +4406,11 @@ async function fetchLiveTerminal() {
 
 // KAR AL / ZARAR KES: yuzde <-> fiyat senkronu (anlik fiyata gore)
 function _ltQuotePrice() {
+    const inputEl = document.getElementById('lt-price');
+    if (inputEl && inputEl.value) {
+        const v = parseFloat(inputEl.value.replace(',', '.'));
+        if (v > 0) return v;
+    }
     const q = document.getElementById('lq-price');
     if (!q) return null;
     const v = parseFloat((q.textContent || '').replace(/[^\d.,]/g, '').replace(',', '.'));
@@ -4929,6 +4934,11 @@ function ltOnSymbolInput() {
         }
         
         ltUpdateQty();
+        
+        // TP ve SL'yi yeni fiyata gore guncelle
+        ltSyncFromPct('tp');
+        ltSyncFromPct('sl');
+        
         _ltSyncing = false;
     });
 
