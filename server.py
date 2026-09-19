@@ -1270,7 +1270,11 @@ def v8_dashboard():
 
 @app.route("/")
 def index():
-    response = make_response(send_from_directory("ui", "index.html"))
+    try:
+        response = make_response(send_from_directory('ui', 'index.html'))
+    except Exception as e:
+        import traceback
+        return f'<pre>{traceback.format_exc()}</pre>', 500
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
