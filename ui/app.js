@@ -6368,6 +6368,7 @@ function renderSuper12Table() {
         };
     });
     
+    allStats = allStats.filter(s => s.volume_tl >= 50000000);
     allStats.sort((a, b) => b.super_score - a.super_score);
     const top12 = allStats.slice(0, 12);
     
@@ -6527,3 +6528,5 @@ async function quickTrade(symbol, action, qty, price, tp_price, sl_price) {
         }
     }
 }
+
+

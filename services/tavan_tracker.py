@@ -68,7 +68,11 @@ class TavanAuditTracker:
                 continue
             try:
                 price = float(data.get("Price") or data.get("Daily_Close") or 0)
-                change = float(data.get("Change_Pct") or 0)
+                change = float(data.get('Change_Pct') or 0)
+                vol_lot = float(data.get('Volume') or 0)
+                vol_tl = price * vol_lot
+                if vol_tl < 50000000:
+                    continue
             except (ValueError, TypeError):
                 continue
 
@@ -1187,3 +1191,4 @@ class TavanAuditTracker:
         }
 
         return history
+
