@@ -1136,7 +1136,7 @@ body {
    ============================================================ */
 
 /* ---- PC: her tabloya sabit baslik, zebra, hizali sayilar ---- */
-.table-scroll-wrapper { position: relative; }
+.table-scroll-wrapper { position: relative; overflow-x: auto; width: 100%; }
 
 .data-table thead th {
     position: sticky;
