@@ -6,6 +6,7 @@ import time
 import threading
 import time
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 # Render (Linux) üzerinde saat dilimini Türkiye (UTC+3) yapmak için
 if hasattr(time, 'tzset'):
@@ -177,7 +178,7 @@ def bist_market_status(now=None):
     Eski günlük cache verisi piyasa kapalıyken güncel fiyat gibi sunulmaz.
     Hafta sonu ve 10:00-18:10 dışındaki zamanlar kapalı kabul edilir.
     """
-    now = now or datetime.now()
+    now = now or datetime.now(ZoneInfo("Europe/Istanbul"))
     is_weekday = now.weekday() < 5
     open_at = now.replace(hour=10, minute=0, second=0, microsecond=0)
     close_at = now.replace(hour=18, minute=10, second=0, microsecond=0)
@@ -229,7 +230,7 @@ def start_live_data_collector():
         from services.market_data import MarketDataManager
         while True:
             try:
-                now = _dt.now()
+                now = _dt.now(ZoneInfo("Europe/Istanbul"))
                 weekday = now.weekday() < 5
                 t = now.time()
                 in_session = t >= _dt.strptime("09:50", "%H:%M").time() and t <= _dt.strptime("18:15", "%H:%M").time()
@@ -250,7 +251,7 @@ def start_live_data_collector():
                             
                             syms_to_fetch = [s + ".IS" if not s.endswith(".IS") else s for s in BIST_SYMBOLS]
                             # Hızlı 1 günlük indirme
-                            fast_data = _yf.download(syms_to_fetch, period="1d", interval="1d", threads=True, progress=False)
+                            fast_data = _yf.download(syms_to_fetch, period="1d", interval="5m", threads=True, progress=False)
                             
                             updates = 0
                             for sym in BIST_SYMBOLS:
@@ -620,7 +621,8 @@ def _background_scanner_impl():
         # Kullanici ozel kural: 10:00'da kesin, 17:58'de kesin, arada 10 dk aralikla
         def get_next_run_seconds():
             import datetime
-            now = datetime.datetime.now()
+            from zoneinfo import ZoneInfo
+            now = datetime.datetime.now(ZoneInfo("Europe/Istanbul"))
             t_10 = now.replace(hour=10, minute=0, second=0, microsecond=0)
             t_1810 = now.replace(hour=18, minute=10, second=0, microsecond=0)
             
@@ -646,7 +648,7 @@ def simulation_loop():
     while True:
         sleep_secs = 120.0
         try:
-            now = datetime.now()
+            now = datetime.now(ZoneInfo("Europe/Istanbul"))
             d_str = now.strftime("%Y-%m-%d")
             t_open = now.replace(hour=10, minute=0, second=0, microsecond=0)
             t_close = now.replace(hour=18, minute=10, second=0, microsecond=0)
@@ -935,7 +937,7 @@ def upsert_app_user(owner_key, email=None, display_name=None):
     """Giris yapan hesabi app_users tablosuna kaydeder/gunceller."""
     try:
         from services.trade_database import get_connection
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        now = datetime.now(ZoneInfo("Europe/Istanbul")).strftime("%Y-%m-%d %H:%M:%S")
         conn = get_connection()
         c = conn.cursor()
         c.execute("""INSERT INTO app_users (owner_key, email, display_name, created_at, last_login)
@@ -1371,7 +1373,7 @@ def api_quote():
                 h = yf.Ticker(clean + ".IS").history(period="1d", interval="5m")
                 if h is not None and not h.empty:
                     price = float(h["Close"].iloc[-1])
-            hd = yf.Ticker(clean + ".IS").history(period="5d", interval="1d")
+            hd = yf.Ticker(clean + ".IS").history(period="5d", interval="5m")
             if hd is not None and len(hd) >= 1:
                 closes = [float(x) for x in hd["Close"].tolist()]
                 if price is None:
@@ -1999,7 +2001,8 @@ def api_simulation_live_orders():
         
         # SAATLİK TUZAK (FAKEOUT) FİLTRESİ
         import datetime
-        now_time = datetime.datetime.now().time()
+        from zoneinfo import ZoneInfo
+        now_time = datetime.datetime.now(ZoneInfo("Europe/Istanbul")).time()
         lunch_start = datetime.time(12, 30)
         lunch_end = datetime.time(14, 0)
         # Öğle tatili civarındaki sığ hacimli hareketleri filtrele
@@ -2217,7 +2220,7 @@ def api_portfolio_reset_request():
         if c.fetchone():
             conn.close()
             return jsonify({"status": "error", "message": "Zaten bekleyen bir sıfırlama talebiniz var."}), 400
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        now = datetime.now(ZoneInfo("Europe/Istanbul")).strftime("%Y-%m-%d %H:%M:%S")
         c.execute("INSERT INTO reset_requests (owner_key, status, created_at) VALUES (?, 'PENDING', ?)", (owner, now))
         conn.commit()
         conn.close()
@@ -2319,7 +2322,7 @@ def api_admin_reset_decide():
             conn.close()
             return jsonify({"status": "error", "message": "Talep bulunamadı (zaten işlenmiş olabilir)"}), 404
         owner = row["owner_key"]
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        now = datetime.now(ZoneInfo("Europe/Istanbul")).strftime("%Y-%m-%d %H:%M:%S")
         if action == 'approve':
             reset_portfolio(owner)
             c.execute("UPDATE reset_requests SET status='APPROVED', processed_at=? WHERE id=?", (now, req_id))

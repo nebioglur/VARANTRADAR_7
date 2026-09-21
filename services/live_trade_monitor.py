@@ -210,7 +210,8 @@ def open_position(symbol, allocation=2000.0, tp_pct=5.0, sl_pct=3.0, trailing=Tr
 
     conn = get_connection()
     c = conn.cursor()
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    from zoneinfo import ZoneInfo
+    now = datetime.now(ZoneInfo("Europe/Istanbul")).strftime("%Y-%m-%d %H:%M:%S")
     d_str = now[:10]
     final_tp = round(tp_price, 2) if tp_price else round(entry_price * (1 + tp_pct / 100.0), 2)
     final_sl = round(sl_price, 2) if sl_price else round(entry_price * (1 - sl_pct / 100.0), 2)
@@ -325,7 +326,8 @@ def close_position(pos_id, price=None, reason="MANUEL KAPATMA", owner=None):
     pnl_val = (shares * (price - entry)) - commission
     pnl_pct = (pnl_val / (shares * entry)) * 100 if entry > 0 else 0
 
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    from zoneinfo import ZoneInfo
+    now = datetime.now(ZoneInfo("Europe/Istanbul")).strftime("%Y-%m-%d %H:%M:%S")
 
     # Atomik sahiplenme: status='OPEN' iken kapat; baska bir sunucu
     #bizden once kapattiysa rowcount=0 doner ve HICBIR SEY yazmayiz.
@@ -354,7 +356,8 @@ def monitor_once():
     # Piyasa saatleri kontrolu (10:00 - 18:15 arasi calisir).
     # Pre-market veya kapanis sonrasi yanlis/gecikmeli fiyatlarla stop patlamasin!
     from datetime import datetime
-    now = datetime.now()
+    from zoneinfo import ZoneInfo
+    now = datetime.now(ZoneInfo("Europe/Istanbul"))
     if now.hour < 10 or (now.hour == 18 and now.minute > 15) or now.hour > 18:
         return {"checked": 0, "closed": [], "msg": "Piyasa kapali (islem saati disi)"}
 
@@ -367,7 +370,8 @@ def monitor_once():
     if not open_positions:
         return {"checked": 0, "closed": []}
 
-    now = datetime.now()
+    from zoneinfo import ZoneInfo
+    now = datetime.now(ZoneInfo("Europe/Istanbul"))
     d_str = now.strftime("%Y-%m-%d")
     # Canli portfoyde acik pozisyonlar gun sonu zorla KAPANMAZ; gecede acik
     # kalabilir (ertesi gun stop/kar-al izlemeye devam eder).
