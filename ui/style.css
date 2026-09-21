@@ -1482,3 +1482,13 @@ body.light-mode .data-table tbody tr:nth-child(even) td {
 body.light-mode .data-table tbody tr:hover td {
     background-color: #f1f5f9 !important;
 }
+
+@media (min-width: 851px) {
+    .data-table {
+        min-width: 1050px !important;
+    }
+    .data-table thead th {
+        background: #0f172a !important; /* solid background so sticky works properly */
+        opacity: 1 !important;
+    }
+}
