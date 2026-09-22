@@ -608,7 +608,7 @@ with tab_portfolio:
                         # Risk Dağılımı (MCR) - Eşit Ağırlıklı Varsayım
                         st.write("**Risk Dağılımı (Marginal Contribution to Risk - Eşit Ağırlık)**")
                         equal_weights = {sym: 1.0/len(corr_symbols) for sym in corr_symbols}
-                        cov_matrix = price_df.pct_change().dropna().cov() * 252 # Yıllıklaştırılmış
+                        cov_matrix = price_df.pct_change(fill_method=None).dropna().cov() * 252 # Yıllıklaştırılmış
                         
                         risk_contrib = AttributionEngine.calculate_risk_contribution(equal_weights, cov_matrix)
                         if risk_contrib:

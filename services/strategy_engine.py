@@ -66,7 +66,7 @@ class StrategyEngine:
         Modül 1 & 11: Nihai İşlem ve Strateji Kararı
         """
         action = "AL" if ai_score >= 50 else "SAT"
-        volatility = df_analyzed['close'].pct_change().std() if not df_analyzed.empty else 0.02
+        volatility = df_analyzed['close'].pct_change(fill_method=None).std() if not df_analyzed.empty else 0.02
         rsi = df_analyzed['rsi'].iloc[-1] if 'rsi' in df_analyzed.columns else 50
         
         trade_type = self.determine_trade_type(ai_score, volatility, rsi)

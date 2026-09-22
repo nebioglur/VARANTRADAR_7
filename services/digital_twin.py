@@ -16,7 +16,7 @@ class DigitalMarketTwin:
             return {"status": "Yetersiz Veri", "survivability_score": 0}
             
         current_price = df['close'].iloc[-1]
-        daily_returns = df['close'].pct_change().dropna()
+        daily_returns = df['close'].pct_change(fill_method=None).dropna()
         
         # Monte Carlo Simülasyonu (Gelecek 30 gün için 100 farklı senaryo)
         days = 30

@@ -37,7 +37,7 @@ class LiquidityEngine:
         # Piyasa Etkisi (Market Impact / Slippage Estimate) - Basit bir karekök modeli (Amihud benzeri)
         # Slippage = c * volatility * sqrt(OrderSize / ADV)
         # c = Sabit katsayı (Genelde 0.1 - 0.5 arası)
-        volatility = df['close'].pct_change().std()
+        volatility = df['close'].pct_change(fill_method=None).std()
         
         # Pozisyon büyüklüğünün hacme oranı
         participation_rate = position_size_cash / adv_cash

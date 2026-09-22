@@ -349,13 +349,13 @@ class AIDecisionEngine:
         if len(current_pattern) < 14:
             return {"Similar_Date": "Yetersiz Veri", "Similarity_Score": 0, "Outcome": "Belirsiz"}
             
-        current_pct = pd.Series(current_pattern).pct_change().fillna(0).values
+        current_pct = pd.Series(current_pattern).pct_change(fill_method=None).fillna(0).values
         
         best_score = -1
         best_idx = 0
         
         closes = df['close'].values
-        pct_changes = df['close'].pct_change().fillna(0).values
+        pct_changes = df['close'].pct_change(fill_method=None).fillna(0).values
         
         # Son 30 günü arama dışı bırak
         for i in range(14, len(closes) - 30):
@@ -387,7 +387,7 @@ class AIDecisionEngine:
             return {"Volatility": 0, "Drawdown": 0, "Beta": 1.0}
             
         # Volatilite (Yıllıklandırılmış 252 iş günü)
-        pct_change = df['close'].pct_change().dropna()
+        pct_change = df['close'].pct_change(fill_method=None).dropna()
         volatility = pct_change.std() * np.sqrt(252) * 100
         
         # Drawdown (Son 1 yıl veya veri boyutu kadar)

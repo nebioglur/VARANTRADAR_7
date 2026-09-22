@@ -97,7 +97,7 @@ class MTFScanner:
                 vol15   = df15["Volume"] if "Volume" in df15.columns else df15["volume"]
 
                 # Kumulatif 15m ivme (son 10 mum)
-                cum_ret = close15.pct_change().tail(10).sum() * 100
+                cum_ret = close15.pct_change(fill_method=None).tail(10).sum() * 100
                 avg_vol = float(vol15.tail(20).mean())
                 cur_vol = float(vol15.iloc[-1])
                 vol_surge = (cur_vol / avg_vol) if avg_vol > 0 else 0

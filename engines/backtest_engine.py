@@ -26,7 +26,7 @@ class BacktestEngine:
         bt_df['position'] = positions
         
         # Getiriler (Returns)
-        bt_df['asset_returns'] = bt_df['close'].pct_change()
+        bt_df['asset_returns'] = bt_df['close'].pct_change(fill_method=None)
         
         # İşlem Gecikmesi (Signal delay): Sinyal geldiği günün kapanışından (veya ertesi gün açılış) işleme girilir.
         # Basitlik için sinyal sonrası (shift(1)) getiriyi hesaplıyoruz.

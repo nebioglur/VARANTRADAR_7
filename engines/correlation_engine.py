@@ -17,7 +17,7 @@ class CorrelationEngine:
         if price_df.empty or len(price_df.columns) < 2:
             return pd.DataFrame()
             
-        returns = price_df.pct_change().dropna()
+        returns = price_df.pct_change(fill_method=None).dropna()
         return returns.corr(method=method)
 
     @staticmethod
@@ -26,7 +26,7 @@ class CorrelationEngine:
         if price_df.empty or asset1 not in price_df.columns or asset2 not in price_df.columns:
             return pd.Series(dtype=float)
             
-        returns = price_df.pct_change().dropna()
+        returns = price_df.pct_change(fill_method=None).dropna()
         return returns[asset1].rolling(window=window).corr(returns[asset2])
 
     @staticmethod

@@ -13,7 +13,7 @@ class RiskEngine:
             return {"Volatility": 0, "Drawdown": 0, "Beta": 1.0, "Risk_Level": "Yüksek (Veri Yetersiz)"}
             
         # Volatilite (Yıllıklandırılmış 252 iş günü)
-        pct_change = df['close'].pct_change().dropna()
+        pct_change = df['close'].pct_change(fill_method=None).dropna()
         volatility = pct_change.std() * np.sqrt(252) * 100
         
         # Drawdown (Son 1 yıl veya veri boyutu kadar)

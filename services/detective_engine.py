@@ -227,8 +227,8 @@ def _analyze(sym, df5, df1d, bench5, bench1d, now):
     p_close = pv["close"].loc[past_mask, live_slots].astype(float)
 
     vol_z = _z_vs_baseline(t_vol, p_vol)
-    px_ret = t_close.pct_change()
-    ret_z = _z_vs_baseline(t_close.pct_change() * 100, p_close.pct_change() * 100)
+    px_ret = t_close.pct_change(fill_method=None)
+    ret_z = _z_vs_baseline(t_close.pct_change(fill_method=None) * 100, p_close.pct_change(fill_method=None) * 100)
 
     last_i = len(live_slots) - 1
     recent_vol_z = vol_z.iloc[-6:].max()
@@ -578,7 +578,7 @@ def _character(sym):
     df = d.get("df1d") if d else None
     if df is None or len(df) < 60:
         return None
-    r = df["Close"].pct_change().dropna() * 100
+    r = df["Close"].pct_change(fill_method=None).dropna() * 100
     volat = float(min(100, r.std() / 0.06 * 100))
     big = r[r > 3]
     ani = float(min(100, (r.abs() > 4).mean() * 100 * 3))

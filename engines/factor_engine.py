@@ -18,7 +18,7 @@ class FactorEngine:
         if df.empty or len(df) < 252:
             return {"error": "Faktör analizi için en az 1 yıllık (252 gün) veri gereklidir."}
             
-        returns = df['close'].pct_change().dropna()
+        returns = df['close'].pct_change(fill_method=None).dropna()
         
         # 1. Momentum Factor (12-aylık getiri, son 1 ay hariç - klasik Fama-French momentum)
         # Basitleştirilmiş: Son 1 Yıl Getirisi - Son 1 Ay Getirisi
