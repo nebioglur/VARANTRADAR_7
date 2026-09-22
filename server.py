@@ -1470,7 +1470,7 @@ def api_scan_mtf():
 @app.route('/api/scan', methods=['GET'])
 def api_scan():
     """Hisse Radarı: BIST30 listesini tarar."""
-    pool = BIST_SYMBOLS
+    pool = BIST30_SYMBOLS
     try:
         pipeline = DataPipeline()
         scanner = UniversalScanner(pipeline)

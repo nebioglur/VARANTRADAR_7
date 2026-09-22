@@ -476,11 +476,21 @@ async function scanHomeOpportunities() {
     else if (currentHomeOppsTab === 'yildiz') endpoint = '/api/scan_yildiz';
     else if (currentHomeOppsTab === 'all') endpoint = '/api/scan_all';
     
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
+    
     try {
-        const res = await fetch(endpoint);
+        const res = await fetch(endpoint, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        
+        if (!res.ok) {
+            const errText = await res.text().catch(() => 'Bilinmeyen sunucu hatası');
+            throw new Error(`Sunucu ${res.status}: ${errText.slice(0, 120)}`);
+        }
+        
         const data = await res.json();
         
-        if (data.status === 'success' && data.results.length > 0) {
+        if (data.status === 'success' && data.results && data.results.length > 0) {
             contentBox.innerHTML = ""; // clear
             
             // Get top 3
@@ -509,10 +519,16 @@ async function scanHomeOpportunities() {
                 `;
             });
         } else {
-            contentBox.innerHTML = `<p style="color:var(--accent-red); text-align:center;">Fırsat bulunamadı veya bir hata oluştu.</p>`;
+            const msg = data.message || 'Fırsat bulunamadı veya bir hata oluştu.';
+            contentBox.innerHTML = `<p style="color:var(--accent-red); text-align:center;">${escapeHtml(msg)}</p>`;
         }
     } catch (e) {
-        contentBox.innerHTML = `<p style="color:var(--accent-red); text-align:center;">Bağlantı hatası: ${e.message}</p>`;
+        clearTimeout(timeoutId);
+        const isAbort = e.name === 'AbortError';
+        const msg = isAbort
+            ? 'Tarama 25 saniyede tamamlanamadı. Lütfen daha küçük bir havuz (BIST30/BIST50) deneyin veya arka plan taramasının bitmesini bekleyin.'
+            : e.message;
+        contentBox.innerHTML = `<p style="color:var(--accent-red); text-align:center;">${escapeHtml(msg)}</p>`;
     }
 }
 
@@ -1753,16 +1769,27 @@ async function startRadar(type) {
     if (loadingEl) loadingEl.style.display = 'block';
     if (resultsEl && (!tbodyEl || !tbodyEl.children.length)) resultsEl.style.display = 'none';
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
+
     try {
-        const response = await fetch(endpoint);
+        const response = await fetch(endpoint, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            const errText = await response.text().catch(() => 'Bilinmeyen sunucu hatası');
+            throw new Error(`Sunucu ${response.status}: ${errText.slice(0, 120)}`);
+        }
+
         const data = await response.json();
 
         if (loadingEl) loadingEl.style.display = 'none';
         if (resultsEl) resultsEl.style.display = 'table';
         if (tbodyEl) tbodyEl.innerHTML = '';
 
-        if (!data.results || data.results.length === 0) {
-            if (tbodyEl) tbodyEl.innerHTML = `<tr><td colspan='4' style='text-align:center; color: var(--text-muted); padding:2rem;'><i class="fa-solid fa-circle-exclamation text-yellow" style="font-size:1.5rem; display:block; margin-bottom:8px;"></i>Bu kategoride henüz güçlü sinyal oluşmadı. Sistem piyasayı izlemeye devam ediyor.</td></tr>`;
+        if (data.status !== 'success' || !data.results || data.results.length === 0) {
+            const msg = data.message || 'Bu kategoride henüz güçlü sinyal oluşmadı. Sistem piyasayı izlemeye devam ediyor.';
+            if (tbodyEl) tbodyEl.innerHTML = `<tr><td colspan='4' style='text-align:center; color: var(--text-muted); padding:2rem;'><i class="fa-solid fa-circle-exclamation text-yellow" style="font-size:1.5rem; display:block; margin-bottom:8px;"></i>${escapeHtml(msg)}</td></tr>`;
             return;
         }
 
@@ -1802,10 +1829,25 @@ async function startRadar(type) {
         });
 
     } catch (error) {
+        clearTimeout(timeoutId);
         if (loadingEl) loadingEl.style.display = 'none';
-        if (tbodyEl) tbodyEl.innerHTML = `<tr><td colspan='4' class="text-red text-center" style="padding:1.5rem;">Tarama sırasında bağlantı hatası: ${error.message || error}</td></tr>`;
+        const isAbort = error.name === 'AbortError';
+        const msg = isAbort
+            ? 'Tarama 25 saniyede tamamlanamadı. Lütfen piyasa yoğunluğunu azaltmak için BIST30/BIST50 taramasını deneyin veya arka plan taramasının bitmesini bekleyin.'
+            : `Tarama sırasında bağlantı hatası: ${error.message || error}`;
+        if (tbodyEl) tbodyEl.innerHTML = `<tr><td colspan='4' class="text-red text-center" style="padding:1.5rem;">${escapeHtml(msg)}</td></tr>`;
         if (resultsEl) resultsEl.style.display = 'table';
     }
+}
+
+function escapeHtml(text) {
+    if (text == null) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 // ========== FAZ 6: BULK DASHBOARD & INITIALIZATION ==========
@@ -1845,8 +1887,8 @@ window.onload = function() {
     }
     
     fetchDashboardData();
-    // Her 5 saniyede bir arka plandaki scanner'in bitip bitmediğini kontrol et
-    dashboardPollInterval = setInterval(fetchDashboardData, 60000);
+    // Veri boşsa hızlı yeniden denemek için 15 sn, dolunca 30 sn'ye geçer
+    dashboardPollInterval = setInterval(fetchDashboardData, 15000);
     
     // KULLANICI İSTEĞİ: TABLOYA ÇİFT TIKLAYINCA TAM TABLOYU TEK GÖSTER
     document.querySelectorAll('#radar-cards-grid .card').forEach(card => {
@@ -2138,19 +2180,18 @@ async function fetchDashboardData() {
                 // Render all categories
                 renderAllDashboardTables();
                 
+                // Arka plandaki periyodik güncellemeleri yakalamak için 30 saniyede bir kontrol et
                 if (dashboardPollInterval) {
                     clearInterval(dashboardPollInterval);
-                    dashboardPollInterval = null;
-                    // Arka plandaki periyodik güncellemeleri yakalamak için 30 saniyede bir kontrol et
-                    setInterval(fetchDashboardData, 30000);
                 }
+                dashboardPollInterval = setInterval(fetchDashboardData, 30000);
             } else {
                 console.log('[DASHBOARD] Veri henüz boş veya tarama devam ediyor...');
                 // Hâlâ boşsa kullanıcıyı bilgilendir
-                ["tb-signals-5m", "tb-tavan-adaylari", "tb-opportunities-1h", "tb-stay-away-1h", "tb-opportunities", "tb-gainers", "tb-losers", "tb-favorites", "tb-high_volume", "tb-low_volume"].forEach(id => {
+                ["tb-signals-5m", "tb-tavan-adaylari", "tb-opportunities-1h", "tb-stay-away-1h", "tb-opportunities", "tb-gainers", "tb-losers", "tb-favorites", "tb-high_volume", "tb-low_volume", "tb-all-stocks-home"].forEach(id => {
                     const tbody = document.getElementById(id);
-                    if (tbody && (tbody.innerText.includes("Taran") || tbody.innerHTML.includes("Taran"))) {
-                        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;" class="text-muted">Piyasa kapalı veya tarama devam ediyor (00:00-09:00 arası veri bulunmayabilir).</td></tr>`;
+                    if (tbody && (tbody.innerText.includes("Taran") || tbody.innerHTML.includes("Taran") || tbody.innerText.includes("yükleniyor"))) {
+                        tbody.innerHTML = `<tr><td colspan="11" style="text-align: center;" class="text-muted">Piyasa kapalı veya tarama devam ediyor (00:00-09:00 arası veri bulunmayabilir).</td></tr>`;
                     }
                 });
             }
@@ -6196,7 +6237,7 @@ function renderAllStocksTable() {
     });
     
     if (!allStats.length) {
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding:1.5rem;">
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; color:var(--text-muted); padding:1.5rem;">
             <i class="fa-solid fa-magnifying-glass" style="margin-right:0.4rem;"></i>
             “${allStocksSearchTerm}” ile eşleşen hisse bulunamadı.
         </td></tr>`;
