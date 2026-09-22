@@ -800,8 +800,15 @@ def get_rows():
         }
 
 
+_loop_started = False
 def start_background_loop():
-    """Her 5 dakikada bir tazele (piyasa acikken); kapaliyken 30 dk'da bir."""
+    """Her 5 dakikada bir tazele (piyasa acikken); kapaliyken 30 dk'da bir.
+    Istem basina birden fazla dongu thread'i baslamasin."""
+    global _loop_started
+    if _loop_started:
+        return
+    _loop_started = True
+
     def _loop():
         while True:
             try:

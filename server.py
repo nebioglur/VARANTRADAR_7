@@ -2592,21 +2592,31 @@ def api_simulation_send_telegram():
 import time
 XU100_CACHE = {"change": 0.0, "last_updated": 0}
 
+_xu100_refreshing = False
 def get_xu100_change():
-    global XU100_CACHE
+    """5 dk cache. Tazeleme arka planda yapilir; dashboard senkron beklemez."""
+    global XU100_CACHE, _xu100_refreshing
     now = time.time()
-    if now - XU100_CACHE['last_updated'] > 300: # 5 min cache
-        try:
-            import yfinance as yf
-            hist = yf.Ticker('XU100.IS').history(period='5d')
-            if len(hist) >= 2:
-                c1 = hist['Close'].iloc[-2]
-                c2 = hist['Close'].iloc[-1]
-                chg = ((c2 - c1) / c1) * 100
-                XU100_CACHE['change'] = chg
-                XU100_CACHE['last_updated'] = now
-        except Exception as e:
-            pass
+    if now - XU100_CACHE['last_updated'] > 300 and not _xu100_refreshing:
+        _xu100_refreshing = True
+
+        def _refresh():
+            global XU100_CACHE, _xu100_refreshing
+            try:
+                import yfinance as yf
+                hist = yf.Ticker('XU100.IS').history(period='5d')
+                if len(hist) >= 2:
+                    c1 = hist['Close'].iloc[-2]
+                    c2 = hist['Close'].iloc[-1]
+                    chg = ((c2 - c1) / c1) * 100
+                    XU100_CACHE['change'] = chg
+                    XU100_CACHE['last_updated'] = time.time()
+            except Exception:
+                pass
+            finally:
+                _xu100_refreshing = False
+
+        threading.Thread(target=_refresh, daemon=True).start()
     return XU100_CACHE['change']
 
 
