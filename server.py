@@ -344,10 +344,19 @@ def _background_scanner_impl():
         today_str = datetime.now().strftime("%Y-%m-%d")
         
         # 1. Tavan Adayları Bildirimleri (Aynı gün sadece 1 kez gönder)
+        # KULLANICI İSTEĞİ: "Erken Kopuş" / "DAĞ" / kekliği / tavan radarı bildirimleri iptal
         for tavan in results.get("tavan_adaylari", []):
             sym = tavan.get("Symbol")
             if sym and sent_tavan.get(sym) != today_str:
-                notif.send_tavan_alert(sym, tavan.get("Score", 0), tavan.get("Report", ""), tavan.get("Position"), extra=tavan)
+                phase = str(tavan.get("Phase_Badge", ""))
+                score = tavan.get("Score", 0)
+                # Erken / DAĞ / kekliği / tavan radarı gibi spam bildirimler iptal
+                skip_keywords = ["Erken", "DAĞ", "kek", "tavan radar", "Erken Kopuş"]
+                if any(k.lower() in phase.lower() for k in skip_keywords):
+                    print(f"[BACKGROUND] Telegram tavan bildirimi atlandi ({sym}): {phase}")
+                    sent_tavan[sym] = today_str
+                    continue
+                notif.send_tavan_alert(sym, score, tavan.get("Report", ""), tavan.get("Position"), extra=tavan)
                 sent_tavan[sym] = today_str
                 time.sleep(0.5) # Telegram API rate limit önlemi
                 

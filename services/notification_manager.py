@@ -110,10 +110,15 @@ class NotificationManager:
 
     def send_tavan_alert(self, symbol: str, score: int, reason: str, position: dict = None, extra: dict = None) -> bool:
         """Yüksek Tavan Olasılığı tespit edildiğinde profesyonel detaylı şablonla tetiklenir."""
+        extra = extra or {}
+        phase = str(extra.get("Phase_Badge", ""))
+        # KULLANICI İSTEĞİ: Erken / DAĞ / kekliği / tavan radarı gibi spam tavan bildirimleri iptal
+        skip_keywords = ["Erken", "DAĞ", "kek", "tavan radar", "Erken Kopuş"]
+        if any(k.lower() in phase.lower() for k in skip_keywords):
+            return True
         if score < 100:
             return True  # Kullanıcı isteği: Yalnızca VIP (score >= 100) mesajlar gitsin
         
-        extra = extra or {}
         clean_sym = symbol.replace(".IS", "").upper()
         
         # Fiyat Bilgisi
