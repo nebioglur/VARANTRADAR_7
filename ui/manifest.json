@@ -1,6 +1,6 @@
 {
-  "name": "VARANTRADAR PRO — BIST Fintech Terminali",
-  "short_name": "VARANTRADAR",
+  "name": "HisseRadar — BIST Hisse Tarayıcı ve Fintech Terminali",
+  "short_name": "HisseRadar",
   "description": "BIST hisselerini hacim gücü, gün içi akış ve teknik kırılımlara göre tarayan varant radarı ve fintech terminali.",
   "lang": "tr",
   "dir": "ltr",
@@ -11,14 +11,40 @@
   "orientation": "any",
   "background_color": "#131314",
   "theme_color": "#131314",
-  "categories": ["finance", "business"],
+  "categories": [
+    "finance",
+    "business"
+  ],
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ],
   "shortcuts": [
-    { "name": "Giriş", "url": "/login" }
+    {
+      "name": "Giriş",
+      "url": "/login"
+    }
   ]
 }
