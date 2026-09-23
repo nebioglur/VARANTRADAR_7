@@ -6123,13 +6123,26 @@ function sortAllStocks(col) {
         currentStocksSort.col = col;
         currentStocksSort.asc = (col === 'symbol');
     }
+    updateAllStocksSortBtn();
     renderAllStocksTable();
+}
+
+function updateAllStocksSortBtn() {
+    const label = document.getElementById('all-stocks-sort-label');
+    const btn = document.getElementById('all-stocks-sort-btn');
+    if (!label || !btn) return;
+    const active = currentStocksSort.col === 'opportunity';
+    const arrow = active ? (currentStocksSort.asc ? '↑' : '↓') : '↕';
+    label.textContent = `Puan ${arrow}`;
+    btn.style.background = active ? 'rgba(59,130,246,0.38)' : 'rgba(59,130,246,0.2)';
+    btn.style.borderColor = active ? '#60a5fa' : 'rgba(59,130,246,0.3)';
 }
 
 function renderAllStocksTable() {
     const tbody = document.getElementById('tb-all-stocks-home');
     if (!tbody || !globalDashboardData || !globalDashboardData.all_symbols_stats) return;
     bindAllStocksSearch();
+    updateAllStocksSortBtn();
     
     let allStats = Object.entries(globalDashboardData.all_symbols_stats).map(([sym, data]) => {
         let price = data.Price || data.Daily_Close || 0;

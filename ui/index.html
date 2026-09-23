@@ -288,7 +288,11 @@
                                 </button>
                             </label>
                             <span id="all-stocks-count" style="font-size:0.7rem; color:var(--text-muted); min-width:60px; text-align:right;"></span>
-                            <span style="font-size:0.75rem; background:rgba(59,130,246,0.2); padding:3px 8px; border-radius:12px; color:#60a5fa; border:1px solid rgba(59,130,246,0.3);"><i class="fa-solid fa-arrows-up-down"></i> Scroll</span>
+                            <button id="all-stocks-sort-btn" type="button" onclick="sortAllStocks('opportunity')"
+                                title="Puan'a göre sırala: 1. tık büyükten küçüğe, 2. tık küçükten büyüğe"
+                                style="font-size:0.75rem; background:rgba(59,130,246,0.2); padding:3px 8px; border-radius:12px; color:#60a5fa; border:1px solid rgba(59,130,246,0.3); cursor:pointer;">
+                                <i class="fa-solid fa-arrows-up-down"></i> <span id="all-stocks-sort-label">Puan ↓</span>
+                            </button>
                         </div>
                     </h3>
                     <div class="table-scroll-wrapper" style="max-height:350px; overflow-y:auto; overflow-x:auto; padding-right:5px; margin-top:10px;">
@@ -304,7 +308,7 @@
                                     <th style="cursor:pointer;" onclick="sortAllStocks('volume_tl')">Hacim(TL) ↕</th>
                                     <th style="cursor:pointer;" onclick="sortAllStocks('volume_lot')">Hacim(Lot) ↕</th>
                                     <th style="cursor:pointer;" onclick="sortAllStocks('rel_vol')">Hacim Gücü % ↕</th>
-                                    <th style="cursor:pointer;" onclick="sortAllStocks('opportunity')">⭐ Fırsat Skoru ↕</th>
+                                    <th style="cursor:pointer;" onclick="sortAllStocks('opportunity')">⭐ PUAN ↕</th>
                                     <th>İşlem</th>
                                 </tr>
                             </thead>
@@ -2330,7 +2334,7 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="app.js?v=20260922_v5_tarama_fix"></script>
+    <script src="app.js?v=20260924_v9_puan_sort"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js?v=20260916_v13"></script>
 </body>
