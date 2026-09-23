@@ -69,45 +69,66 @@ class MarketDataManager:
 
         # Yahoo Finance bazen 5m vermeyebilir eski tarihler için, 1mo içinde verir.
         try:
-            # interval = 5m
-            data = yf.download(symbols, period=period, interval="5m", group_by='ticker', threads=False, progress=False)
-            
-            # Parsing yfinance dataframe
-            for sym in symbols:
-                if len(symbols) == 1:
-                    df = data
-                else:
-                    if hasattr(data.columns, 'levels') and sym in data.columns.levels[0]:
-                        df = data[sym]
-                    else:
-                        continue
-                        
-                df = df.dropna(how='all')
-                if df.empty:
+            # interval = 5m; BUYUK tek istek (98 sembol) Yahoo'da ~30dk geriye
+            # dusuk veri dondurdugu icin 10'lu parcalar halinde indiriliyor
+            # (parcalar taze; tek istek ~2-3sn).
+            insert_sql = """
+                INSERT INTO market_data (date_str, timestamp, symbol, open, high, low, close, volume)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(timestamp, symbol) DO NOTHING
+            """
+            all_rows = []
+            chunk_size = 10
+            for ci in range(0, len(symbols), chunk_size):
+                chunk = symbols[ci:ci + chunk_size]
+                try:
+                    data = yf.download(chunk, period=period, interval="5m", group_by='ticker', threads=True, progress=False)
+                except Exception:
                     continue
-                    
-                for idx_time, row in df.iterrows():
-                    # idx_time timezone aware datetime
-                    idx_date = idx_time.strftime("%Y-%m-%d")
-                    # Sadece ilgili günün verisini kaydet
-                    if idx_date != date_str:
-                        continue
-                        
-                    timestamp_str = str(idx_time)
-                    _open = float(row['Open'])
-                    _high = float(row['High'])
-                    _low = float(row['Low'])
-                    _close = float(row['Close'])
-                    _vol = float(row['Volume'])
-                    
+                if data is None or data.empty:
+                    continue
+                if len(chunk) == 1:
+                    data = {chunk[0]: data}
+
+                for sym in chunk:
                     try:
-                        cursor.execute("""
-                            INSERT INTO market_data (date_str, timestamp, symbol, open, high, low, close, volume)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                            ON CONFLICT(timestamp, symbol) DO NOTHING
-                        """, (date_str, timestamp_str, sym, _open, _high, _low, _close, _vol))
-                    except Exception as e:
-                        pass
+                        if len(chunk) == 1:
+                            df = data[sym]
+                        else:
+                            if hasattr(data.columns, 'levels') and sym in data.columns.levels[0]:
+                                df = data[sym]
+                            else:
+                                continue
+                    except Exception:
+                        continue
+
+                    df = df.dropna(how='all')
+                    if df.empty:
+                        continue
+
+                    for idx_time, row in df.iterrows():
+                        # idx_time timezone aware datetime
+                        idx_date = idx_time.strftime("%Y-%m-%d")
+                        # Sadece ilgili günün verisini kaydet
+                        if idx_date != date_str:
+                            continue
+
+                        _open = row['Open']
+                        _high = row['High']
+                        _low = row['Low']
+                        _close = row['Close']
+                        _vol = row['Volume']
+                        if not (pd.notna(_open) and pd.notna(_close)):
+                            continue
+
+                        all_rows.append((date_str, str(idx_time), sym, float(_open), float(_high), float(_low), float(_close), float(_vol)))
+
+            # TEK executemany ile yaz (satir-satır INSERT uzak DB'de dakikalar aliyordu)
+            if all_rows:
+                try:
+                    cursor.executemany(insert_sql, all_rows)
+                except Exception:
+                    pass
         except Exception as e:
             print(f"[MarketData] YF indirme hatası: {e}")
             

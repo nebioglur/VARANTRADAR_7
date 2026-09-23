@@ -2452,22 +2452,25 @@ function renderAllDashboardTables() {
                 let phaseTxtColor = phaseColor === 'red' ? 'var(--accent-red)' : (phaseColor === 'yellow' ? 'var(--accent-yellow)' : 'var(--accent-green)');
                 let phaseIcon = phaseColor === 'red' ? 'fa-lock' : (phaseColor === 'yellow' ? 'fa-bolt' : 'fa-seedling');
                 let phaseTooltip = phaseBadge.includes("KİLİTLEME") ? "Tavana kilitlenme aşaması. Alım riski yüksek." : (phaseBadge.includes("İVMELENME") ? "Hacimle birlikte sert yukarı momentum başladı." : "Trendin başlangıcı. Yüksek kazanç potansiyeli.");
-                let evreStr = `<span title="${phaseTooltip}" style="background:${phaseBg}; color:${phaseTxtColor}; padding:3px 7px; border-radius:4px; font-weight:700; font-size:0.72rem; white-space:nowrap; cursor:help;"><i class="fa-solid ${phaseIcon}"></i> ${phaseBadge}</span>`;
-                
+                let evreChips = [`<span title="${phaseTooltip}" style="background:${phaseBg}; color:${phaseTxtColor}; padding:3px 7px; border-radius:4px; font-weight:700; font-size:0.72rem; white-space:nowrap; cursor:help;"><i class="fa-solid ${phaseIcon}"></i> ${phaseBadge}</span>`];
+
                 // 🛡️ Anti-Trap Shield (Tuzak Önleme Rozeti) & Teyit Skoru
                 if (res.Anti_Trap_Badge) {
                     let atColor = res.Anti_Trap_Color || '#10b981';
                     let atBg = atColor === '#10b981' ? 'rgba(16, 185, 129, 0.15)' : (atColor === '#ef4444' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(234, 179, 8, 0.15)');
-                    evreStr += `<div style="margin-top:3px;"><span title="Tuzak Kalkanı: Kurumsal para girişi ve mum formasyonu ile alım onayı." style="background:${atBg}; color:${atColor}; border:1px solid ${atColor}; padding:2px 5px; border-radius:3px; font-size:0.68rem; font-weight:700; white-space:nowrap; cursor:help;">${res.Anti_Trap_Badge}</span></div>`;
+                    evreChips.push(`<span title="Tuzak Kalkanı: Kurumsal para girişi ve mum formasyonu ile alım onayı." style="background:${atBg}; color:${atColor}; border:1px solid ${atColor}; padding:2px 5px; border-radius:3px; font-size:0.68rem; font-weight:700; white-space:nowrap; cursor:help;">${res.Anti_Trap_Badge}</span>`);
                 }
 
                 if (res.ORB_Breakout) {
-                    evreStr += `<div style="margin-top:2px;"><span title="Açılış Aralığı Kırılımı (ORB): Hisse günün ilk saatlerindeki tepe noktasını hacimli şekilde yukarı kırdı." style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; border:1px solid #38bdf8; padding:1px 4px; border-radius:3px; font-size:0.66rem; font-weight:700; cursor:help;"><i class="fa-solid fa-bullseye"></i> ORB Açılış Kırılımı</span></div>`;
+                    evreChips.push(`<span title="Açılış Aralığı Kırılımı (ORB): Hisse günün ilk saatlerindeki tepe noktasını hacimli şekilde yukarı kırdı." style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; border:1px solid #38bdf8; padding:1px 4px; border-radius:3px; font-size:0.66rem; font-weight:700; white-space:nowrap; cursor:help;"><i class="fa-solid fa-bullseye"></i> ORB</span>`);
                 }
 
                 if (res.V_Reversal) {
-                    evreStr += `<div style="margin-top:3px;"><span title="V-Dönüş: Gün içi dip seviyesinden çok hızlı ve güçlü bir şekilde toparlanıp ivme kazandı." style="background:rgba(168, 85, 247, 0.2); color:#c084fc; padding:2px 5px; border-radius:3px; font-size:0.68rem; font-weight:700; cursor:help;"><i class="fa-solid fa-bolt-lightning"></i> V-Dönüş +%${(res.V_Power||0).toFixed(1)}</span></div>`;
+                    evreChips.push(`<span title="V-Dönüş: Gün içi dip seviyesinden çok hızlı ve güçlü bir şekilde toparlanıp ivme kazandı." style="background:rgba(168, 85, 247, 0.2); color:#c084fc; padding:2px 5px; border-radius:3px; font-size:0.68rem; font-weight:700; white-space:nowrap; cursor:help;"><i class="fa-solid fa-bolt-lightning"></i> V +%${(res.V_Power||0).toFixed(1)}</span>`);
                 }
+
+                // Tüm evre/kalkan rozetleri tek yatay satırda
+                let evreStr = `<div style="display:flex; flex-wrap:wrap; gap:3px; align-items:center; justify-content:center;">${evreChips.join('')}</div>`;
                 
                 // Tavan Fiyatı, Kalan % ve ETA
                 let tavanPVal = res.Ceiling_Price || (res.Position && res.Position.TP2 ? res.Position.TP2 : null);
@@ -2480,31 +2483,37 @@ function renderAllDashboardTables() {
                 }
                 let tavanP = tavanPVal ? "₺" + parseFloat(tavanPVal).toFixed(2) : "-";
                 let etaVal = res.ETA || (res.Position ? res.Position.Projection : "-");
-                let tavanStr = `<div style="font-size:0.88rem; font-weight:700; color:var(--accent-green); font-family:monospace;">${tavanP}</div>
-                                <div style="font-size:0.75rem; color:var(--text-muted);">Kalan: <b style="color:var(--accent-blue);">+${distPct}%</b></div>
-                                <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;" title="Tahmini Tavan Saati"><i class="fa-regular fa-clock"></i> ${etaVal}</div>`;
+                // Kompakt tek satır: hedef · kalan · ETA
+                let tavanStr = `<div style="display:flex; flex-wrap:wrap; gap:4px; align-items:center; justify-content:center; white-space:nowrap;">
+                                <span style="font-size:0.88rem; font-weight:700; color:var(--accent-green); font-family:monospace;">${tavanP}</span>
+                                <span style="font-size:0.72rem; color:var(--text-muted);">Kalan: <b style="color:var(--accent-blue);">+${distPct}%</b></span>
+                                <span style="font-size:0.7rem; color:var(--text-muted);" title="Tahmini Tavan Saati"><i class="fa-regular fa-clock"></i> ${etaVal}</span>
+                            </div>`;
                 
                 // Hacim Katlama & Mum Gücü & VWAP & Domino
                 let volM = res.Vol_Multiplier !== undefined && !isNaN(parseFloat(res.Vol_Multiplier)) ? parseFloat(res.Vol_Multiplier).toFixed(1) : "1.0";
                 let volColor = volM >= 2.5 ? 'var(--accent-green)' : (volM >= 1.5 ? 'var(--accent-yellow)' : 'var(--text-muted)');
-                let hacimStr = `<span style="color:${volColor}; font-weight:700; font-size:0.75rem;"><i class="fa-solid fa-fire"></i> ${volM}x Hacim</span>`;
-                
+                let hacimChips = [`<span style="color:${volColor}; font-weight:700; font-size:0.75rem; white-space:nowrap;"><i class="fa-solid fa-fire"></i> ${volM}x</span>`];
+
                 if (res.VWAP) {
-                    hacimStr += `<div style="font-size:0.68rem; color:var(--text-muted); margin-top:2px;" title="Hacim Ağırlıklı Ortalama Fiyat">⚖️ VWAP: ₺${parseFloat(res.VWAP).toFixed(2)}</div>`;
+                    hacimChips.push(`<span style="font-size:0.68rem; color:var(--text-muted); white-space:nowrap;" title="Hacim Ağırlıklı Ortalama Fiyat">⚖️ ₺${parseFloat(res.VWAP).toFixed(2)}</span>`);
                 }
 
                 if (res.Breakdown_Risk) {
-                    hacimStr += `<br><span style="background:rgba(239, 68, 68, 0.25); color:var(--accent-red); padding:1px 5px; border-radius:3px; font-size:0.68rem; font-weight:800;"><i class="fa-solid fa-triangle-exclamation"></i> ÇÖZÜLME RİSKİ</span>`;
+                    hacimChips.push(`<span style="background:rgba(239, 68, 68, 0.25); color:var(--accent-red); padding:1px 5px; border-radius:3px; font-size:0.68rem; font-weight:800; white-space:nowrap;"><i class="fa-solid fa-triangle-exclamation"></i> ÇÖZÜLME</span>`);
                 } else if (res.Trap_Risk) {
-                    hacimStr += `<br><span style="background:rgba(239, 68, 68, 0.2); color:var(--accent-red); padding:1px 5px; border-radius:3px; font-size:0.68rem; font-weight:700;"><i class="fa-solid fa-triangle-exclamation"></i> Tuzak Riski</span>`;
+                    hacimChips.push(`<span style="background:rgba(239, 68, 68, 0.2); color:var(--accent-red); padding:1px 5px; border-radius:3px; font-size:0.68rem; font-weight:700; white-space:nowrap;"><i class="fa-solid fa-triangle-exclamation"></i> Tuzak</span>`);
                 } else if (res.Candle_Strength && res.Candle_Strength.includes('Marubozu')) {
-                    hacimStr += `<br><span style="background:rgba(16, 185, 129, 0.2); color:var(--accent-green); padding:1px 5px; border-radius:3px; font-size:0.68rem; font-weight:700;"><i class="fa-solid fa-dumbbell"></i> Boğa Gücü</span>`;
+                    hacimChips.push(`<span style="background:rgba(16, 185, 129, 0.2); color:var(--accent-green); padding:1px 5px; border-radius:3px; font-size:0.68rem; font-weight:700; white-space:nowrap;"><i class="fa-solid fa-dumbbell"></i> Boğa</span>`);
                 }
-                
+
                 if (res.Domino_Sector && res.Domino_Peers && res.Domino_Peers.length > 0) {
                     let pStr = res.Domino_Peers.slice(0, 2).map(p => '#' + p).join(' ');
-                    hacimStr += `<div style="font-size:0.68rem; color:#94a3b8; margin-top:2px;" title="Sektörel Domino Kardeş Hisseleri"><i class="fa-solid fa-chess-knight"></i> ${res.Domino_Sector}: ${pStr}</div>`;
+                    hacimChips.push(`<span style="font-size:0.68rem; color:#94a3b8; white-space:nowrap;" title="Sektörel Domino Kardeş Hisseleri"><i class="fa-solid fa-chess-knight"></i> ${res.Domino_Sector}: ${pStr}</span>`);
                 }
+
+                // Tüm hacim/VWAP bilgileri tek yatay satırda
+                let hacimStr = `<div style="display:flex; flex-wrap:wrap; gap:4px; align-items:center; justify-content:center;">${hacimChips.join('')}</div>`;
                 
                 // SADE GORUNUM: hukum + tek satir rozetler + hedef/stop
                 let sigQ = res.Signal_Quality || `${scoreValue}/100`;
@@ -2541,31 +2550,32 @@ function renderAllDashboardTables() {
                 let chips = [];
                 if (res.Teyit_Score) {
                     let tc = res.Teyit_Score >= 80 ? '#10b981' : (res.Teyit_Score >= 60 ? '#facc15' : '#ef4444');
-                    chips.push(`<span title="Kurumsal para + mum teyit skoru" style="border:1px solid ${tc}; color:${tc}; padding:1px 6px; border-radius:4px; font-size:0.7rem; font-weight:700;">Teyit %${res.Teyit_Score}</span>`);
+                    chips.push(`<span title="Kurumsal para + mum teyit skoru" style="border:1px solid ${tc}; color:${tc}; padding:1px 6px; border-radius:4px; font-size:0.7rem; font-weight:700; white-space:nowrap;">Teyit %${res.Teyit_Score}</span>`);
                 }
-                chips.push(`<span title="Risk seviyesi (RSI bazli)" style="color:${risk_color}; font-size:0.72rem; font-weight:700;">Risk: ${risk_level}</span>`);
-                chips.push(`<span title="Kurumsal para yönü" style="color:${sm_color}; font-size:0.72rem; font-weight:700;">🐋 ${smart_money}</span>`);
+                chips.push(`<span title="Risk seviyesi (RSI bazli)" style="color:${risk_color}; font-size:0.72rem; font-weight:700; white-space:nowrap;">Risk: ${risk_level}</span>`);
+                chips.push(`<span title="Kurumsal para yönü" style="color:${sm_color}; font-size:0.72rem; font-weight:700; white-space:nowrap;">🐋 ${smart_money}</span>`);
                 if (res.FOMO_Level) {
-                    chips.push(`<span title="FOMO ${res.FOMO_Score ? res.FOMO_Score.toFixed(1) : ''}" style="color:${res.FOMO_Color || 'var(--text-muted)'}; font-size:0.72rem; font-weight:700;">🔥 ${res.FOMO_Level}</span>`);
+                    chips.push(`<span title="FOMO ${res.FOMO_Score ? res.FOMO_Score.toFixed(1) : ''}" style="color:${res.FOMO_Color || 'var(--text-muted)'}; font-size:0.72rem; font-weight:700; white-space:nowrap;">🔥 ${res.FOMO_Level}</span>`);
                 }
-                scoreStr += `<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:5px;">${chips.join('')}</div>`;
+                if (res.Streak_Score) {
+                    chips.push(`<span style="color:#38bdf8; font-size:0.68rem; white-space:nowrap;" title="Çift Tavan İhtimali"><i class="fa-solid fa-link"></i> %${res.Streak_Score} Seri</span>`);
+                }
+                if (res.Warrant_Match) {
+                    chips.push(`<span style="background:rgba(234, 179, 8, 0.2); color:#facc15; padding:1px 4px; border-radius:3px; font-size:0.68rem; font-weight:700; white-space:nowrap;" title="${res.Warrant_Match.Desc}"><i class="fa-solid fa-crosshairs"></i> Varant: ${res.Warrant_Match.Leverage} (+%${res.Warrant_Match.Potential_Gain_Pct})</span>`);
+                }
+
+                // Tüm AI/Teyit çipleri tek yatay satırda
+                let scoreStrChips = `<div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center; justify-content:center; margin-top:4px;">${chips.join('')}</div>`;
 
                 let p_val_sade = parseFloat(res.Price || 0);
                 if (p_val_sade > 0) {
-                    scoreStr += `<div style="font-size:0.78rem; margin-top:6px; font-family:monospace; white-space:nowrap;" title="Otomatik hedef ve stop (+%5 / -%3)">
+                    scoreStrChips += `<div style="font-size:0.78rem; margin-top:4px; font-family:monospace; white-space:nowrap;" title="Otomatik hedef ve stop (+%5 / -%3)">
                         <span style="color:#22c55e;">●</span> Hedef <b>₺${(p_val_sade * 1.05).toFixed(2)}</b>
                         <span style="color:var(--text-muted);"> | </span>
                         <span style="color:#ef4444;">●</span> Stop <b>₺${(p_val_sade * 0.97).toFixed(2)}</b>
                     </div>`;
                 }
-
-                if (res.Streak_Score) {
-                    scoreStr += `<div style="font-size:0.68rem; color:#38bdf8;" title="Çift Tavan İhtimali"><i class="fa-solid fa-link"></i> %${res.Streak_Score} Seri</div>`;
-                }
-                
-                if (res.Warrant_Match) {
-                    scoreStr += `<div style="margin-top:2px;"><span style="background:rgba(234, 179, 8, 0.2); color:#facc15; padding:1px 4px; border-radius:3px; font-size:0.68rem; font-weight:700;" title="${res.Warrant_Match.Desc}"><i class="fa-solid fa-crosshairs"></i> Varant: ${res.Warrant_Match.Leverage} (+%${res.Warrant_Match.Potential_Gain_Pct})</span></div>`;
-                }
+                scoreStr += scoreStrChips;
                 
                 tr.innerHTML = `
                     <td style="color:var(--text-main);font-weight:700;">${symStr}</td>
