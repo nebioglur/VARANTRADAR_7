@@ -177,6 +177,87 @@ class TavanAuditTracker:
         return {sym for sym, _ in top12}
 
     @classmethod
+    def _compute_opportunity_score(cls, stat: Dict[str, Any]) -> float:
+        """UI'daki 'Fırsat Skoru' (0-100) hesabinin sunucu tarafindaki birebir kopyasi.
+        app.js renderAllStocksTable icerisindeki formule denktir:
+        hacim gucu %35 + gun ici guc %25 + saatlik akis %15 + teknik durum %15 + tavan skoru %10 - uzama cezasi."""
+        if not isinstance(stat, dict):
+            return 0.0
+        try:
+            price = float(stat.get("Price") or stat.get("Daily_Close") or 0)
+        except (ValueError, TypeError):
+            price = 0.0
+        try:
+            change = float(stat.get("Change_Pct") or 0)
+        except (ValueError, TypeError):
+            change = 0.0
+
+        r_vol = 0.0
+        state = "NONE"
+        v8 = stat.get("v8_discovery")
+        if isinstance(v8, dict):
+            state = v8.get("state") or "NONE"
+            metrics = v8.get("metrics")
+            if isinstance(metrics, dict):
+                try:
+                    r_vol = float(metrics.get("relative_volume") or 0)
+                except (ValueError, TypeError):
+                    r_vol = 0.0
+
+        intra = stat.get("intraday_strength") or {}
+        if not isinstance(intra, dict):
+            intra = {}
+        try:
+            intra_change = float(intra.get("intraday_change_pct") or 0)
+        except (ValueError, TypeError):
+            intra_change = 0.0
+        hourly_flow = intra.get("hourly_flow") or "-"
+
+        # Tavan skoru (UI ile ayni)
+        t_score = 50.0
+        if 0 < change <= 7:
+            t_score += change * 3
+        elif change > 7:
+            t_score += 20
+        elif change < 0:
+            t_score += change * 3
+        if change > 0:
+            if r_vol > 1.5:
+                t_score += 15
+            if r_vol > 2.5:
+                t_score += 15
+            if r_vol < 0.8:
+                t_score -= 15
+        elif change < 0:
+            if r_vol > 1.5:
+                t_score -= 15
+            if r_vol > 2.5:
+                t_score -= 15
+            if r_vol < 0.8:
+                t_score += 10
+        if state == "BREAKOUT":
+            t_score += 20
+        elif state == "PRE_BREAKOUT":
+            t_score += 15
+        t_score = max(0.0, min(t_score, 100.0))
+
+        # Firsat skoru
+        opp = min(r_vol / 3.0, 1.0) * 35.0
+        opp += min(max(intra_change, 0.0) / 4.0, 1.0) * 25.0
+        if hourly_flow == "Toplanıyor":
+            opp += 15.0
+        elif hourly_flow == "Satılıyor":
+            opp = max(0.0, opp - 15.0)
+        if state == "BREAKOUT":
+            opp += 15.0
+        elif state == "PRE_BREAKOUT":
+            opp += 10.0
+        opp += (t_score / 100.0) * 10.0
+        if change > 7:
+            opp = max(0.0, opp - 10.0)
+        return round(min(opp, 100.0), 1)
+
+    @classmethod
     def record_snapshot(cls, tavan_candidates: List[Dict[str, Any]], checkpoint_time: str = None, date_str: str = None, all_symbols_stats: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Belirli bir saat diliminde (10:15, 11:30, 14:00, 16:00) çıkan tavan adaylarını belleğe kaydeder.
@@ -216,6 +297,13 @@ class TavanAuditTracker:
                         except (ValueError, TypeError):
                             rel_vol = 0.0
             if rel_vol <= 1.0:
+                continue
+
+            # KULLANICI KURALI (2026-09-23): Istatistige yalnizca firsat skoru 60'in
+            # uzerindeki hisseler alinir. Skor, UI'daki formulin sunucu kopyasiyla hesaplanir.
+            stat_for_score = (all_symbols_stats or {}).get(sym) or (all_symbols_stats or {}).get(base_sym) or {}
+            opp_score = cls._compute_opportunity_score(stat_for_score)
+            if opp_score <= 60.0:
                 continue
 
             filtered.append(item)
