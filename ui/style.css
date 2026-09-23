@@ -1506,7 +1506,8 @@ body.light-mode .data-table tbody tr:hover td {
     .data-table tbody td { white-space: normal; }
     /* sayisal kisalarda bozulma olmasin */
     .data-table td[style*="monospace"] { white-space: nowrap; }
-    #radar-cards-grid .table-scroll-wrapper { overflow-x: hidden; }
+    /* MASAUSTUNDE YATAY CUBUK YOK: inline overflow:auto'yu da ezer */
+    .table-scroll-wrapper { overflow-x: hidden !important; }
 }
 
 /* Tavan Radari tablosu: rozet/chip hucreleri daraltir, ortalama hizalanir */
