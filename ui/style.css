@@ -1508,6 +1508,14 @@ body.light-mode .data-table tbody tr:hover td {
     .data-table td[style*="monospace"] { white-space: nowrap; }
     /* MASAUSTUNDE YATAY CUBUK YOK: inline overflow:auto'yu da ezer */
     .table-scroll-wrapper { overflow-x: hidden !important; }
+
+    /* TUM HISSELER (11 kolon): sabit duzen — kolonlar 100% genisligi esit paylasir,
+       boylece dar masaustu pencerelerinde de 11 kolonun TAMAMI gorunur (kesilme yok) */
+    #radar-card-99 .data-table { table-layout: fixed !important; }
+    #radar-card-99 .data-table thead th,
+    #radar-card-99 .data-table tbody td { padding: 5px 6px; word-break: break-word; }
+    #radar-card-99 .data-table tbody td:nth-child(6),
+    #radar-card-99 .data-table tbody td:nth-child(11) { white-space: normal; }
 }
 
 /* Tavan Radari tablosu: rozet/chip hucreleri daraltir, ortalama hizalanir */
