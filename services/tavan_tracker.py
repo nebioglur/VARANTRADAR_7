@@ -32,10 +32,60 @@ class TavanAuditTracker:
         pass
 
     @classmethod
+    def _db_load(cls) -> Optional[Dict[str, Any]]:
+        """Postgres (live_settings) tablosundan arsivi yukler. Render restart'larinda
+        dosya sistemi temizlendigi icin kalici kaynak DB'dir."""
+        try:
+            from services.trade_database import get_connection, IS_PG
+            placeholder = "%s" if IS_PG else "?"
+            with get_connection() as conn:
+                cur = conn.cursor()
+                cur.execute(f"SELECT value FROM live_settings WHERE key = %s" if IS_PG
+                            else "SELECT value FROM live_settings WHERE key = ?", ("tavan_daily_audit",))
+                row = cur.fetchone()
+                if row and row[0]:
+                    return json.loads(row[0])
+        except Exception as e:
+            print(f"[TavanAuditTracker] DB yukleme hatasi (dosyaya dusuluyor): {e}")
+        return None
+
+    @classmethod
+    def _db_save(cls, data: Dict[str, Any]):
+        """Arsivi Postgres live_settings tablosuna kaydeder (kalici)."""
+        try:
+            from services.trade_database import get_connection, IS_PG
+            placeholder = "%s" if IS_PG else "?"
+            with get_connection() as conn:
+                cur = conn.cursor()
+                cur.execute(f"SELECT key FROM live_settings WHERE key = %s" if IS_PG
+                            else "SELECT key FROM live_settings WHERE key = ?", ("tavan_daily_audit",))
+                exists = cur.fetchone()
+                if exists:
+                    cur.execute(f"UPDATE live_settings SET value = {placeholder} WHERE key = 'tavan_daily_audit'",
+                                (json.dumps(data, ensure_ascii=False),))
+                else:
+                    cur.execute(f"INSERT INTO live_settings (key, value) VALUES ('tavan_daily_audit', {placeholder})",
+                                (json.dumps(data, ensure_ascii=False),))
+                conn.commit()
+        except Exception as e:
+            print(f"[TavanAuditTracker] DB kayit hatasi (sadece dosyada): {e}")
+
+    @classmethod
     def load_all_audits(cls) -> Dict[str, Any]:
-        """Kalıcı denetim veritabanını yükler. Bos ise bos sozluk dondurur —
-        SAHTE DEMO VERI URETMEZ. Istatistikler yalnizca gercek takip gunlerinden olusur."""
+        """Kalıcı denetim veritabanını yükler. Once DB (kalici), sonra dosya.
+        Bos ise bos sozluk dondurur — SAHTE DEMO VERI URETMEZ."""
         cls._ensure_dir()
+        # 1. Kalici kaynak: Postgres
+        db_data = cls._db_load()
+        if db_data and isinstance(db_data, dict) and len(db_data) > 0:
+            # Dosyayi da guncel tut (hizli erisim icin yerel cache)
+            try:
+                with open(AUDIT_FILE_PATH, "w", encoding="utf-8") as f:
+                    json.dump(db_data, f, ensure_ascii=False)
+            except Exception:
+                pass
+            return db_data
+        # 2. Yerel dosya (Render'da gecici, local'de kalici)
         if os.path.exists(AUDIT_FILE_PATH):
             try:
                 with open(AUDIT_FILE_PATH, "r", encoding="utf-8") as f:
@@ -50,11 +100,14 @@ class TavanAuditTracker:
     @classmethod
     def save_all_audits(cls, data: Dict[str, Any]):
         cls._ensure_dir()
+        # 1. Dosyaya yaz (yerel cache)
         try:
             with open(AUDIT_FILE_PATH, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
         except Exception as e:
             print(f"[TavanAuditTracker] Kaydetme hatası: {e}")
+        # 2. Postgres'e yaz (Render restart'larine karsi kalici)
+        cls._db_save(data)
 
     @classmethod
     def _compute_super12_set(cls, all_symbols_stats: Dict[str, Any]) -> set:
