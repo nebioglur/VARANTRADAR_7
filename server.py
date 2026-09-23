@@ -1015,8 +1015,8 @@ def require_auth():
     if request.path.endswith('.css') or request.path.endswith('.js') or request.path.endswith('.png') or request.path.endswith('.woff2'):
         return
 
-    # Arama motorlari dosyalari oturum kapisi disinda (SEO)
-    if request.path in ('/robots.txt', '/sitemap.xml'):
+    # Arama motorlari + PWA dosyalari oturum kapisi disinda
+    if request.path in ('/robots.txt', '/sitemap.xml', '/manifest.json', '/sw.js', '/icons/icon-192.png', '/icons/icon-512.png'):
         return
 
     if not session.get('logged_in'):
