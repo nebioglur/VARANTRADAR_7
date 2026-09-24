@@ -1114,6 +1114,16 @@ def require_auth():
             return jsonify({"status": "error", "message": "Unauthorized"}), 401
         return redirect('/login')
 
+def _base_url():
+    """Gelen istege gore canonical base URL uretir (proxy'den gelen hostu korur)."""
+    host = request.headers.get('X-Forwarded-Host', request.host)
+    scheme = request.headers.get('X-Forwarded-Proto', request.scheme)
+    # Verdent/Render proxy'de http gelirse disariya https olarak cikar
+    if scheme == 'http' and not host.startswith('localhost'):
+        scheme = 'https'
+    return f"{scheme}://{host}"
+
+
 @app.route('/login', methods=['GET'])
 def login():
     # Giris artık tarayici tarafinda Verdent-managed Supabase Auth ile yapilir
@@ -1122,6 +1132,7 @@ def login():
     try:
         with open('ui/login.html', 'r', encoding='utf-8') as f:
             html = f.read()
+        html = html.replace('{{BASE_URL}}', _base_url())
         if os.environ.get('CLASSIC_ONLY') == '1':
             flag = '<script>window.VR_CLASSIC_ONLY=1;</script>'
             if '<head>' in html:
@@ -1342,7 +1353,10 @@ def v8_dashboard():
 @app.route("/")
 def index():
     try:
-        response = make_response(send_from_directory('ui', 'index.html'))
+        with open('ui/index.html', 'r', encoding='utf-8') as f:
+            html = f.read()
+        html = html.replace('{{BASE_URL}}', _base_url())
+        response = make_response(html)
     except Exception as e:
         import traceback
         return f'<pre>{traceback.format_exc()}</pre>', 500
@@ -1987,7 +2001,7 @@ def api_system_logs_read():
 def api_ping():
     """Uygulamanin calistigini dogrulamak icin basit health-check."""
     import os
-    return jsonify({"status": "alive", "build": "20260924_render_url_fix_v4", "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "cwd": os.getcwd()})
+    return jsonify({"status": "alive", "build": "20260924_canonical_dynamic_v5", "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "cwd": os.getcwd()})
 
 @app.route('/api/cache_status', methods=['GET'])
 def api_cache_status():
