@@ -309,12 +309,29 @@ def start_live_data_collector():
                                             updates += 1
                                     except Exception:
                                         pass
-                                        
-                            if updates > 0:
+
+                            # CACHE GENELI YEDEK CAPA: Yahoo satiri gelmeyen semboller
+                            # icin cache'teki Price ile Daily_Close (onceki gun resmi
+                            # kapanisi) farkindan degisim uretilir. Yahoo tamamen
+                            # engelliyse bile degisimler dolmus olur.
+                            _fixed = 0
+                            for _sym, _row in GLOBAL_DASHBOARD_CACHE["all_symbols_stats"].items():
+                                if not isinstance(_row, dict):
+                                    continue
+                                if _row.get("Change_Pct") in (0, 0.0, None):
+                                    try:
+                                        _p = float(_row.get("Price") or 0)
+                                        _c = float(_row.get("Daily_Close") or 0)
+                                        if _p > 0 and _c > 0 and abs(_p - _c) / _c > 0.002:
+                                            _row["Change_Pct"] = round(((_p - _c) / _c) * 100, 2)
+                                            _fixed += 1
+                                    except Exception:
+                                        continue
+                            if updates > 0 or _fixed > 0:
                                 from datetime import datetime as _dt
                                 GLOBAL_DASHBOARD_CACHE["cache_date"] = _dt.now().strftime("%Y-%m-%d")
                                 save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
-                                print(f"[LIVE DATA] {updates} hissenin canlı fiyatları Dashboard'a yansıtıldı!")
+                                print(f"[LIVE DATA] {updates} hissenin canlı fiyatları Dashboard'a yansıtıldı! ({_fixed} sembol cache-ici yedek capa ile dolduruldu)")
                     except Exception as fast_err:
                         print(f"[LIVE DATA] Hızlı güncelleme hatası: {fast_err}")
             except Exception as e_outer:
