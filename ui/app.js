@@ -6081,7 +6081,7 @@ function _dtRenderDetail(panel, d) {
 // ========== /PİYASA DEDEKTİFİ ==========
 
 
-var currentStocksSort = { col: 'opportunity', asc: false };
+var currentStocksSort = { col: 'rel_vol', asc: false };
 var allStocksSearchTerm = '';
 var allStocksSearchBound = false;
 
@@ -6136,6 +6136,16 @@ function updateAllStocksSortBtn() {
     label.textContent = `Puan ${arrow}`;
     btn.style.background = active ? 'rgba(59,130,246,0.38)' : 'rgba(59,130,246,0.2)';
     btn.style.borderColor = active ? '#60a5fa' : 'rgba(59,130,246,0.3)';
+
+    // Hacim Gücü oku her zaman aktif sütunun yönünü gösterir.
+    // Varsayılan sıra: +%1000 > +%120 > 0 > -%20000.
+    document.querySelectorAll('[data-all-stocks-sort]').forEach(header => {
+        const col = header.dataset.allStocksSort;
+        const isActive = currentStocksSort.col === col;
+        const arrowEl = header.querySelector('.all-stocks-sort-arrow');
+        if (arrowEl) arrowEl.textContent = isActive ? (currentStocksSort.asc ? '↑' : '↓') : '↕';
+        header.style.color = isActive ? '#60a5fa' : '';
+    });
 }
 
 function renderAllStocksTable() {

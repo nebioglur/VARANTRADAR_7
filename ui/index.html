@@ -302,16 +302,16 @@
                         <table class="data-table" style="width:100%;">
                             <thead>
                                 <tr>
-                                    <th style="cursor:pointer;" onclick="sortAllStocks('symbol')">Hisse ↕</th>
-                                    <th style="cursor:pointer;" onclick="sortAllStocks('price')">Fiyat ↕</th>
-                                    <th style="cursor:pointer;" onclick="sortAllStocks('close')">Önc. Kapanış ↕</th>
-                                    <th style="cursor:pointer;" onclick="sortAllStocks('change')">Değişim ↕</th>
-                                    <th style="cursor:pointer;" onclick="sortAllStocks('intra_change')">Gün İçi Güç % ↕</th>
-                                    <th style="cursor:pointer;" onclick="sortAllStocks('hourly_flow')">Saatlik Akış ↕</th>
-                                    <th style="cursor:pointer;" onclick="sortAllStocks('volume_tl')">Hacim(TL) ↕</th>
-                                    <th style="cursor:pointer;" onclick="sortAllStocks('volume_lot')">Hacim(Lot) ↕</th>
-                                    <th style="cursor:pointer;" onclick="sortAllStocks('rel_vol')">Hacim Gücü % ↕</th>
-                                    <th style="cursor:pointer;" onclick="sortAllStocks('opportunity')">⭐ PUAN ↕</th>
+                                    <th data-all-stocks-sort="symbol" style="cursor:pointer;" onclick="sortAllStocks('symbol')">Hisse <span class="all-stocks-sort-arrow">↕</span></th>
+                                    <th data-all-stocks-sort="price" style="cursor:pointer;" onclick="sortAllStocks('price')">Fiyat <span class="all-stocks-sort-arrow">↕</span></th>
+                                    <th data-all-stocks-sort="close" style="cursor:pointer;" onclick="sortAllStocks('close')">Önc. Kapanış <span class="all-stocks-sort-arrow">↕</span></th>
+                                    <th data-all-stocks-sort="change" style="cursor:pointer;" onclick="sortAllStocks('change')">Değişim <span class="all-stocks-sort-arrow">↕</span></th>
+                                    <th data-all-stocks-sort="intra_change" style="cursor:pointer;" onclick="sortAllStocks('intra_change')">Gün İçi Güç % <span class="all-stocks-sort-arrow">↕</span></th>
+                                    <th data-all-stocks-sort="hourly_flow" style="cursor:pointer;" onclick="sortAllStocks('hourly_flow')">Saatlik Akış <span class="all-stocks-sort-arrow">↕</span></th>
+                                    <th data-all-stocks-sort="volume_tl" style="cursor:pointer;" onclick="sortAllStocks('volume_tl')">Hacim(TL) <span class="all-stocks-sort-arrow">↕</span></th>
+                                    <th data-all-stocks-sort="volume_lot" style="cursor:pointer;" onclick="sortAllStocks('volume_lot')">Hacim(Lot) <span class="all-stocks-sort-arrow">↕</span></th>
+                                    <th data-all-stocks-sort="rel_vol" style="cursor:pointer;" onclick="sortAllStocks('rel_vol')" title="Pozitif hacim gücü büyükten küçüğe, sonra 0, sonra negatifler">Hacim Gücü % <span class="all-stocks-sort-arrow">↓</span></th>
+                                    <th data-all-stocks-sort="opportunity" style="cursor:pointer;" onclick="sortAllStocks('opportunity')">⭐ PUAN <span class="all-stocks-sort-arrow">↕</span></th>
                                     <th>İşlem</th>
                                 </tr>
                             </thead>
