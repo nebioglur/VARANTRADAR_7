@@ -86,6 +86,28 @@ def save_stats(stats):
         print(f"Stats save error: {e}")
 
 CACHE_FILE = "dashboard_cache.json"
+CACHE_MAX_AGE_MINUTES = 30  # Piyasa acikken cache bu sureden eski ise 'data_fresh=false'
+
+
+def _cache_is_stale(data):
+    """Cache'in ne kadar eski oldugunu kontrol eder."""
+    from datetime import datetime
+    if not isinstance(data, dict) or not data:
+        return True, "cache bos"
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    cache_date = data.get("cache_date")
+    if cache_date != today_str:
+        return True, f"onceki gunun cache'i ({cache_date})"
+    ts = data.get("cache_timestamp")
+    if ts:
+        try:
+            age_min = (datetime.now().timestamp() - float(ts)) / 60
+            if age_min > CACHE_MAX_AGE_MINUTES:
+                return True, f"cache {int(age_min)} dk eski"
+            return False, f"cache {int(age_min)} dk oncesi"
+        except Exception:
+            pass
+    return False, "yas bilinmiyor"
 
 
 def load_dashboard_cache():
@@ -101,11 +123,11 @@ def load_dashboard_cache():
             row = cur.fetchone()
             if row and row["value"]:
                 data = json.loads(row["value"])
-                today_str = datetime.now().strftime("%Y-%m-%d")
-                if data.get("cache_date") != today_str:
-                    print(f"[CACHE] DB'den onceki gunun cache'i yuklendi ({len(data.get('all_symbols_stats', {}))} hisse, tarih {data.get('cache_date')}) - yeni tarama ile guncellenecek")
-                else:
-                    print(f"[CACHE] DB'den BUGUNUN cache'i yuklendi ({len(data.get('all_symbols_stats', {}))} hisse, tarih {data.get('cache_date')})")
+                stale, reason = _cache_is_stale(data)
+                if stale:
+                    print(f"[CACHE] DB'den {reason} yuklendi ({len(data.get('all_symbols_stats', {}))} hisse) - taze tarama baslayacak")
+                    return {}
+                print(f"[CACHE] DB'den BUGUNUN cache'i yuklendi ({len(data.get('all_symbols_stats', {}))} hisse, tarih {data.get('cache_date')})")
                 return data
     except Exception as e:
         print(f"[CACHE] DB yukleme hatasi: {e}")
@@ -115,9 +137,11 @@ def load_dashboard_cache():
         if os.path.exists(CACHE_FILE):
             with open(CACHE_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                today_str = datetime.now().strftime("%Y-%m-%d")
-                if data.get("cache_date") != today_str:
-                    print(f"[CACHE] DOSYADAN onceki gunun cache'i yuklendi ({len(data.get('all_symbols_stats', {}))} hisse, tarih {data.get('cache_date')})")
+                stale, reason = _cache_is_stale(data)
+                if stale:
+                    print(f"[CACHE] DOSYADAN {reason} yuklendi ({len(data.get('all_symbols_stats', {}))} hisse) - taze tarama baslayacak")
+                    return {}
+                print(f"[CACHE] DOSYADAN BUGUNUN cache'i yuklendi ({len(data.get('all_symbols_stats', {}))} hisse, tarih {data.get('cache_date')})")
                 return data
     except Exception:
         pass
@@ -1060,7 +1084,7 @@ def api_auth_session():
 def require_auth():
     if request.method == 'OPTIONS': return
     
-    allowed = ['/login', '/logout', '/api/ping', '/api/auth_config', '/api/auth/session', '/api/client_log', '/api/system_logs_read']
+    allowed = ['/login', '/logout', '/api/ping', '/api/auth_config', '/api/auth/session', '/api/client_log', '/api/system_logs_read', '/api/cache_status']
     if request.path in allowed or request.path.startswith('/api/dashboard_init'): return
     
     # Allow static assets for login page
@@ -1471,13 +1495,27 @@ def api_dashboard_init():
     # Add a bit of dynamic feeling or just return the static max
     total = len(BIST_SYMBOLS)
     
-    last_updated = "Bilinmiyor"
-    import os
+    import os, time
     from datetime import datetime
-    if os.path.exists("dashboard_cache.json"):
+    
+    # Gercek cache yasina gore freshness belirle
+    cache_ts = None
+    if isinstance(GLOBAL_DASHBOARD_CACHE, dict):
+        cache_ts = GLOBAL_DASHBOARD_CACHE.get("cache_timestamp")
+    
+    last_updated = "Bilinmiyor"
+    if cache_ts:
+        try:
+            last_updated = datetime.fromtimestamp(float(cache_ts)).strftime("%H:%M")
+        except Exception:
+            last_updated = "Bilinmiyor"
+    elif os.path.exists("dashboard_cache.json"):
         mtime = os.path.getmtime("dashboard_cache.json")
         last_updated = datetime.fromtimestamp(mtime).strftime("%H:%M")
-        
+    
+    stale, stale_reason = _cache_is_stale(GLOBAL_DASHBOARD_CACHE)
+    data_fresh = market["is_open"] and (not stale)
+    
     return jsonify({
         "status": "success",
         "total_analyzed": total,
@@ -1485,8 +1523,9 @@ def api_dashboard_init():
         "xu100_change": get_xu100_change(),
         "last_updated": last_updated,
         "market": market,
-        "data_fresh": bool(market["is_open"]),
-        "stale_data_suppressed": not market["is_open"]
+        "data_fresh": data_fresh,
+        "stale_data_suppressed": stale,
+        "stale_reason": stale_reason if stale else None
     })
 
 @app.route('/api/pool_info', methods=['GET'])
@@ -1942,7 +1981,76 @@ def api_system_logs_read():
 def api_ping():
     """Uygulamanin calistigini dogrulamak icin basit health-check."""
     import os
-    return jsonify({"status": "alive", "build": "20260924_degsim_capa_v2", "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "cwd": os.getcwd()})
+    return jsonify({"status": "alive", "build": "20260924_render_eski_veri_fix_v3", "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "cwd": os.getcwd()})
+
+@app.route('/api/cache_status', methods=['GET'])
+def api_cache_status():
+    """Dashboard cache'inin yasini ve durumunu dondurur."""
+    global GLOBAL_DASHBOARD_CACHE
+    stale, reason = _cache_is_stale(GLOBAL_DASHBOARD_CACHE)
+    cache_ts = GLOBAL_DASHBOARD_CACHE.get("cache_timestamp") if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else None
+    cache_date = GLOBAL_DASHBOARD_CACHE.get("cache_date") if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else None
+    stats_count = len(GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})) if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else 0
+    return jsonify({
+        "status": "success",
+        "stale": stale,
+        "reason": reason,
+        "cache_date": cache_date,
+        "cache_timestamp": cache_ts,
+        "symbols_cached": stats_count,
+        "cache_max_age_minutes": CACHE_MAX_AGE_MINUTES
+    })
+
+@app.route('/api/force_refresh', methods=['POST'])
+def api_force_refresh():
+    """Yetkili kullanici cache'i temizler ve BIST50 hizli taramasi baslatir."""
+    global GLOBAL_DASHBOARD_CACHE
+    # Kimlik kontrolu: session veya klasik login
+    user = None
+    try:
+        if 'user' in session:
+            user = session['user']
+        else:
+            auth_header = request.headers.get('Authorization', '')
+            if auth_header.startswith('Bearer '):
+                token = auth_header.split(' ', 1)[1]
+                from services.supabase_client import verify_token
+                user = verify_token(token)
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"yetki hatasi: {e}"}), 401
+
+    if not user:
+        return jsonify({"status": "error", "message": "yetkisiz"}), 401
+
+    try:
+        # Cache'i bosalt
+        old_count = len(GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})) if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else 0
+        GLOBAL_DASHBOARD_CACHE = {}
+        save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
+        print(f"[FORCE REFRESH] Cache temizlendi (onceki {old_count} sembol). Hizli BIST50 taramasi basliyor...")
+
+        # Hizli BIST50 taramasi baslat (kullaniciyi beklemeden)
+        from config.bist_symbols import BIST50_SYMBOLS
+        from scanner.universal_scanner import UniversalScanner
+        from data.data_pipeline import DataPipeline
+        pipeline = DataPipeline()
+        scanner = UniversalScanner(pipeline)
+        fast_results = scanner.scan_pool_bulk(BIST50_SYMBOLS)
+        from datetime import datetime
+        fast_results["cache_date"] = datetime.now().strftime("%Y-%m-%d")
+        GLOBAL_DASHBOARD_CACHE = sanitize_for_json(fast_results)
+        save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
+        print(f"[FORCE REFRESH] BIST50 taramasi tamamlandi ({len(GLOBAL_DASHBOARD_CACHE.get('all_symbols_stats', {}))} sembol)")
+
+        return jsonify({
+            "status": "success",
+            "message": "Cache temizlendi ve BIST50 taramasi yapildi",
+            "symbols": len(GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {}))
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/health', methods=['GET'])
 def api_health():
