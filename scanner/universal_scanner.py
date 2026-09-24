@@ -339,7 +339,21 @@ class UniversalScanner:
                 
         df['close'] = df['close'].ffill()
         df = df[required_cols]
-        
+
+        # Hacimsiz/tekrar eden kuyruk satirlari degisimi duzlestiriyor:
+        # bos gunluk kismi satirlari ve ayni gune ait kopyalari at.
+        try:
+            vol_num = pd.to_numeric(df['volume'], errors='coerce').fillna(0)
+            valid_df = df[vol_num > 0]
+            if len(valid_df) >= 5:
+                df = valid_df
+        except Exception:
+            pass
+        try:
+            df = df[~df.index.duplicated(keep='last')]
+        except Exception:
+            pass
+
         # Günlük değişim hesapla
         close_today = float(df['close'].iloc[-1])
         close_yday = float(df['close'].iloc[-2]) if len(df) > 1 else close_today

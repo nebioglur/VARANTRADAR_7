@@ -248,11 +248,15 @@ def start_live_data_collector():
                             print("[LIVE DATA] Hızlı fiyat güncellemesi başlatılıyor...")
                             import yfinance as _yf
                             from config.bist_symbols import BIST_SYMBOLS
-                            
+
                             syms_to_fetch = [s + ".IS" if not s.endswith(".IS") else s for s in BIST_SYMBOLS]
                             # Hızlı 1 günlük indirme
                             fast_data = _yf.download(syms_to_fetch, period="1d", interval="5m", threads=True, progress=False)
-                            
+                            # Onceki gun resmi kapanisi (degisim capasi)
+                            daily_data = _yf.download(syms_to_fetch, period="5d", interval="1d", threads=True, progress=False)
+
+                            from datetime import datetime as _dt_cls
+                            today_str = _dt_cls.now().strftime("%Y-%m-%d")
                             updates = 0
                             for sym in BIST_SYMBOLS:
                                 sym_is = sym + ".IS" if not sym.endswith(".IS") else sym
@@ -263,14 +267,31 @@ def start_live_data_collector():
                                             row = fast_data.iloc[-1]
                                         else:
                                             row = fast_data.xs(sym_is, level=1, axis=1).iloc[-1] if hasattr(fast_data.columns, 'levels') else fast_data[sym_is].iloc[-1]
-                                        
+
                                         close_px = float(row["Close"])
                                         if not math.isnan(close_px):
                                             GLOBAL_DASHBOARD_CACHE["all_symbols_stats"][sym]["Price"] = round(close_px, 2)
-                                            # Ayrıca değişim yüzdesini de güncelleyebiliriz
-                                            prev = float(row["Open"]) if "Open" in row else None
-                                            if prev and not math.isnan(prev) and prev > 0:
-                                                GLOBAL_DASHBOARD_CACHE["all_symbols_stats"][sym]["Change_Pct"] = round(((close_px - prev) / prev) * 100, 2)
+                                            # DEGISIM DOGRU CAPA: onceki gunun resmi kapanisina gore.
+                                            # (Eski kod son 5dk mumun acilis-kapanis deltasi aliyordu
+                                            #  -> cogu hisse 5dk'da yatay kaldigi icin 0.00 gorunuyordu.)
+                                            try:
+                                                if len(syms_to_fetch) == 1:
+                                                    d_closes = daily_data["Close"].dropna()
+                                                    d_dates = daily_data.index.strftime("%Y-%m-%d")
+                                                else:
+                                                    d_col = daily_data.xs(sym_is, level=1, axis=1) if hasattr(daily_data.columns, 'levels') else daily_data[sym_is]
+                                                    d_closes = d_col["Close"].dropna()
+                                                    d_dates = d_col.index.strftime("%Y-%m-%d")
+                                                if len(d_closes) >= 2:
+                                                    # Son gunluk satir bugun ise capasi bir onceki gun yap
+                                                    if d_dates[-1] == today_str:
+                                                        prev_close = float(d_closes.iloc[-2])
+                                                    else:
+                                                        prev_close = float(d_closes.iloc[-1])
+                                                    if prev_close > 0:
+                                                        GLOBAL_DASHBOARD_CACHE["all_symbols_stats"][sym]["Change_Pct"] = round(((close_px - prev_close) / prev_close) * 100, 2)
+                                            except Exception:
+                                                pass
                                             updates += 1
                                     except Exception:
                                         pass
