@@ -6203,6 +6203,7 @@ function renderAllStocksTable() {
         return {
             symbol: sym,
             price: price,
+            close: data.Daily_Close || 0,
             change: change,
               high: data.High || price,
               low: data.Low || price,
@@ -6248,8 +6249,27 @@ function renderAllStocksTable() {
 
         let valA = a[currentStocksSort.col];
         let valB = b[currentStocksSort.col];
+
+        // Hacim Gücü ekranda değişimin yönüyle birlikte gösterilir:
+        // pozitifler (+%120) üstte, negatifler (-%1000) altta olmalıdır.
+        // Ham relative volume ile sıralamak negatif hisseleri de pozitif gibi
+        // üste taşıyordu.
+        if (currentStocksSort.col === 'rel_vol') {
+            const signedVolume = item => {
+                const direction = item.change > 0 ? 1 : (item.change < 0 ? -1 : 0);
+                return direction * Number(item.rel_vol || 0) * 100;
+            };
+            valA = signedVolume(a);
+            valB = signedVolume(b);
+        }
+
         if (typeof valA === 'string') valA = valA.toLowerCase();
         if (typeof valB === 'string') valB = valB.toLowerCase();
+
+        // Eksik/veri olmayan değerler her zaman listenin sonunda kalsın.
+        const missingA = valA === undefined || valA === null || valA === '';
+        const missingB = valB === undefined || valB === null || valB === '';
+        if (missingA !== missingB) return missingA ? 1 : -1;
 
         if (valA < valB) return currentStocksSort.asc ? -1 : 1;
         if (valA > valB) return currentStocksSort.asc ? 1 : -1;
