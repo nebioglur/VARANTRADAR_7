@@ -6232,21 +6232,18 @@ function renderAllStocksTable() {
     }
 
     allStats.sort((a, b) => {
-        // FIRSAT SKORU katmanli siralama:
-        // 1. katman: yesiller once (kirmizi hicbir kosulda yesili gecemez)
-        // 2. katman: likit hisseler once (hacim < 50M TL alta duser)
-        // 3. katman: skor
         if (currentStocksSort.col === 'opportunity') {
-            const gA = a.change > 0 ? 1 : 0, gB = b.change > 0 ? 1 : 0;
-            const lA = a.volume_tl >= 50e6 ? 1 : 0, lB = b.volume_tl >= 50e6 ? 1 : 0;
-            if (currentStocksSort.asc) {
-                if (gA !== gB) return gA - gB;
-                if (lA !== lB) return lA - lB;
-                return a.opportunity - b.opportunity;
+            // Puan siralamasi gercek sayisal siralama olmalidir.
+            // Yesil/likit katmanlari puani ezmemeli; aksi halde dusuk
+            // puanli yesil hisse, yuksek puanli hisseyi geciyordu.
+            const scoreDiff = a.opportunity - b.opportunity;
+            if (scoreDiff !== 0) {
+                return currentStocksSort.asc ? scoreDiff : -scoreDiff;
             }
-            if (gA !== gB) return gB - gA;
-            if (lA !== lB) return lB - lA;
-            return b.opportunity - a.opportunity;
+            // Esit puanlarda likit olan, sonra pozitif degisimli olan once.
+            const liquidityDiff = (b.volume_tl >= 50e6 ? 1 : 0) - (a.volume_tl >= 50e6 ? 1 : 0);
+            if (liquidityDiff !== 0) return liquidityDiff;
+            return (b.change > 0 ? 1 : 0) - (a.change > 0 ? 1 : 0);
         }
 
         let valA = a[currentStocksSort.col];
