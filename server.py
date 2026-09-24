@@ -288,8 +288,22 @@ def start_live_data_collector():
                                                         prev_close = float(d_closes.iloc[-2])
                                                     else:
                                                         prev_close = float(d_closes.iloc[-1])
-                                                    if prev_close > 0:
+                                                    # KENDI-KENDINE CAPA KORUMASI: prev anlik fiyata
+                                                    # cok yakin ise bu bugunun yarim mumudur; boyle
+                                                    # capa degisimi 0.00 uretir, kullanma.
+                                                    if prev_close > 0 and abs(prev_close - close_px) / close_px > 0.0005:
                                                         GLOBAL_DASHBOARD_CACHE["all_symbols_stats"][sym]["Change_Pct"] = round(((close_px - prev_close) / prev_close) * 100, 2)
+                                            except Exception:
+                                                pass
+                                            # YEDEK CAPA (Yahoo engelliyse): tarayici cache'indeki
+                                            # Daily_Close (Is Yatirim = onceki gun resmi kapanisi)
+                                            # ile degisim hesapla; bugunun yarim mumuna capa yapma.
+                                            try:
+                                                _stat_row = GLOBAL_DASHBOARD_CACHE["all_symbols_stats"][sym]
+                                                if _stat_row.get("Change_Pct") in (0, 0.0, None):
+                                                    _prev_stored = float(_stat_row.get("Daily_Close") or 0)
+                                                    if _prev_stored > 0 and abs(_prev_stored - close_px) / close_px > 0.002:
+                                                        _stat_row["Change_Pct"] = round(((close_px - _prev_stored) / _prev_stored) * 100, 2)
                                             except Exception:
                                                 pass
                                             updates += 1
@@ -1911,7 +1925,7 @@ def api_system_logs_read():
 def api_ping():
     """Uygulamanin calistigini dogrulamak icin basit health-check."""
     import os
-    return jsonify({"status": "alive", "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "cwd": os.getcwd()})
+    return jsonify({"status": "alive", "build": "20260924_degsim_capa_v2", "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "cwd": os.getcwd()})
 
 @app.route('/api/health', methods=['GET'])
 def api_health():
