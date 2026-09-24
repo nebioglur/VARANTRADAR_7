@@ -978,10 +978,13 @@ def api_client_log():
 
 @app.route('/robots.txt')
 def robots_txt():
+    host = request.headers.get('X-Forwarded-Host', request.host)
+    scheme = request.headers.get('X-Forwarded-Proto', request.scheme)
+    base = f"{scheme}://{host}"
     body = ("User-agent: *\n"
             "Allow: /\n"
             "Disallow: /api/\n\n"
-            "Sitemap: https://varantradar-7.onrender.com/sitemap.xml\n")
+            f"Sitemap: {base}/sitemap.xml\n")
     resp = make_response(body)
     resp.headers["Content-Type"] = "text/plain; charset=utf-8"
     resp.headers["Cache-Control"] = "public, max-age=86400"
@@ -990,9 +993,12 @@ def robots_txt():
 
 @app.route('/sitemap.xml')
 def sitemap_xml():
+    host = request.headers.get('X-Forwarded-Host', request.host)
+    scheme = request.headers.get('X-Forwarded-Proto', request.scheme)
+    base = f"{scheme}://{host}"
     body = ('<?xml version="1.0" encoding="UTF-8"?>\n'
             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-            '  <url><loc>https://varantradar-7.onrender.com/</loc>'
+            f'  <url><loc>{base}/</loc>'
             '<changefreq>daily</changefreq><priority>1.0</priority></url>\n'
             '</urlset>\n')
     resp = make_response(body)
@@ -1981,7 +1987,7 @@ def api_system_logs_read():
 def api_ping():
     """Uygulamanin calistigini dogrulamak icin basit health-check."""
     import os
-    return jsonify({"status": "alive", "build": "20260924_render_eski_veri_fix_v3", "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "cwd": os.getcwd()})
+    return jsonify({"status": "alive", "build": "20260924_render_url_fix_v4", "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "cwd": os.getcwd()})
 
 @app.route('/api/cache_status', methods=['GET'])
 def api_cache_status():
