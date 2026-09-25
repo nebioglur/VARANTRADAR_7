@@ -205,6 +205,7 @@ class PGConn:
                 self.commit()
             except Exception:
                 raise
+        self.close()
         return False
 
 
