@@ -6130,12 +6130,24 @@ function sortAllStocks(col) {
 function updateAllStocksSortBtn() {
     const label = document.getElementById('all-stocks-sort-label');
     const btn = document.getElementById('all-stocks-sort-btn');
-    if (!label || !btn) return;
-    const active = currentStocksSort.col === 'opportunity';
-    const arrow = active ? (currentStocksSort.asc ? '↑' : '↓') : '↕';
-    label.textContent = `Puan ${arrow}`;
-    btn.style.background = active ? 'rgba(59,130,246,0.38)' : 'rgba(59,130,246,0.2)';
-    btn.style.borderColor = active ? '#60a5fa' : 'rgba(59,130,246,0.3)';
+    const specialLabel = document.getElementById('all-stocks-special-sort-label');
+    const specialBtn = document.getElementById('all-stocks-special-sort-btn');
+    
+    if (label && btn) {
+        const active = currentStocksSort.col === 'opportunity';
+        const arrow = active ? (currentStocksSort.asc ? '↑' : '↓') : '↕';
+        label.textContent = `Puan ${arrow}`;
+        btn.style.background = active ? 'rgba(59,130,246,0.38)' : 'rgba(59,130,246,0.2)';
+        btn.style.borderColor = active ? '#60a5fa' : 'rgba(59,130,246,0.3)';
+    }
+
+    if (specialLabel && specialBtn) {
+        const active = currentStocksSort.col === 'special';
+        const arrow = active ? (currentStocksSort.asc ? '↑' : '↓') : '';
+        specialLabel.textContent = `Özel Sıralama ${arrow}`;
+        specialBtn.style.background = active ? 'rgba(234,179,8,0.4)' : 'rgba(234,179,8,0.2)';
+        specialBtn.style.borderColor = active ? '#facc15' : 'rgba(234,179,8,0.3)';
+    }
 
     // Hacim Gücü oku her zaman aktif sütunun yönünü gösterir.
     // Varsayılan sıra: +%1000 > +%120 > 0 > -%20000.
@@ -6243,6 +6255,21 @@ function renderAllStocksTable() {
     }
 
     allStats.sort((a, b) => {
+        if (currentStocksSort.col === 'special') {
+            const getSpecialScore = (item) => {
+                let intra_score = item.intra_change * 5; 
+                let vol_score = item.rel_vol * 3;
+                let change_penalty = item.change * 4; 
+                let opp_score = item.opportunity * 0.5;
+                return intra_score + vol_score - change_penalty + opp_score;
+            };
+            let scoreA = getSpecialScore(a);
+            let scoreB = getSpecialScore(b);
+            const diff = scoreA - scoreB;
+            if (diff !== 0) return currentStocksSort.asc ? diff : -diff;
+            return (b.change > 0 ? 1 : 0) - (a.change > 0 ? 1 : 0);
+        }
+
         if (currentStocksSort.col === 'opportunity') {
             // Puan siralamasi gercek sayisal siralama olmalidir.
             // Yesil/likit katmanlari puani ezmemeli; aksi halde dusuk
