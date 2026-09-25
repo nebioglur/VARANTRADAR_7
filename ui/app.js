@@ -5601,31 +5601,35 @@ function loadV8Discovery() {
             const tbody = document.getElementById('v8-discovery-tbody');
             if(!tbody) return;
             tbody.innerHTML = '';
-            
-            if (!json.data || json.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:1rem; color:var(--text-muted);">Şu an sıkışma hazırlığında olan hisse yok.</td></tr>';
+
+            const waitBadge = document.getElementById('v8-wait-badge');
+            const data = json.data || [];
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1rem; color:var(--text-muted);">Şu an hazırlık aşamasında olan hisse yok.</td></tr>';
+                if (waitBadge) waitBadge.textContent = '0';
                 return;
             }
 
-            json.data.slice(0, 15).forEach(d => {
+            if (waitBadge) waitBadge.textContent = data.length;
+
+            data.slice(0, 20).forEach(d => {
                 const tr = document.createElement('tr');
-                let stateStyle = "color:var(--text-muted)";
-                if (d.state === "READY") stateStyle = "color:var(--accent-blue); font-weight:bold;";
-                if (d.state === "PREPARING") stateStyle = "color:var(--accent-green);";
-                
-                const tf = d.timeframe_breakdown || {};
-                const short = tf.short ? tf.short.score : '-';
-                const medium = tf.medium ? tf.medium.score : '-';
-                const long = tf.long ? tf.long.score : '-';
-                
+                let stateLabel = d.state || '—';
+                let stateStyle = 'color:var(--text-muted)';
+                if (d.state === 'READY') { stateLabel = '🟢 HAZIR'; stateStyle = 'color:#10b981; font-weight:bold;'; }
+                else if (d.state === 'PREPARING') { stateLabel = '🔵 Sıkışıyor'; stateStyle = 'color:#60a5fa;'; }
+                else if (d.state === 'PRE_BREAKOUT') { stateLabel = '⚡ Kırılım Yakın'; stateStyle = 'color:#facc15; font-weight:bold;'; }
+
+                const vol = d.metrics ? `${(d.metrics.relative_volume || 0).toFixed(1)}x` : '—';
+                const reasons = (d.reasons || []).slice(0, 1).join('') || '—';
+
                 tr.innerHTML = `
                     <td style="font-weight:bold; color:var(--text-light);">${d.symbol}</td>
-                    <td><span style="${stateStyle}">${d.state}</span></td>
-                    <td style="text-align:center;">${d.preparation_score}</td>
-                    <td style="text-align:center; font-size:0.8rem; color:var(--text-muted);">${short}</td>
-                    <td style="text-align:center; font-size:0.8rem; color:var(--text-muted);">${medium}</td>
-                    <td style="text-align:center; font-size:0.8rem; color:var(--text-muted);">${long}</td>
-                    <td style="text-align:center; color:var(--accent-green);">${d.metrics.relative_volume}x</td>
+                    <td><span style="${stateStyle}">${stateLabel}</span></td>
+                    <td style="text-align:center; font-weight:bold; color:#60a5fa;">${d.preparation_score || '—'}</td>
+                    <td style="text-align:center; color:var(--accent-green);">${vol}</td>
+                    <td style="font-size:0.78rem; color:var(--text-muted); max-width:180px; white-space:normal;">${reasons}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -5636,52 +5640,91 @@ function loadV8Breakout() {
     fetch(`${V8_API}/radar/breakout`)
         .then(res => res.json())
         .then(json => {
+            // Gizli tbody için backward compat
             const tbody = document.getElementById('v8-breakout-tbody');
-            if(!tbody) return;
-            tbody.innerHTML = '';
-            
-            if (!json.data || json.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:1rem; color:var(--text-muted);">Aktif bir kırılım tespit edilmedi.</td></tr>';
+            if (tbody) tbody.innerHTML = '';
+
+            const cardsContainer = document.getElementById('v8-enter-cards');
+            const countEnter = document.getElementById('v8-count-enter');
+            const countWait  = document.getElementById('v8-count-wait-bo');
+            const countAvoid = document.getElementById('v8-count-avoid');
+            const countTotal = document.getElementById('v8-count-total');
+
+            const data = json.data || [];
+
+            let enterList = [];
+            let waitList  = [];
+            let avoidList = [];
+
+            data.forEach(d => {
+                if (d.entry_status === 'ENTER') enterList.push(d);
+                else if (d.entry_status === 'WAIT_PULLBACK' || d.entry_status === 'WAIT') waitList.push(d);
+                else avoidList.push(d);
+            });
+
+            if (countEnter) countEnter.textContent = enterList.length;
+            if (countAvoid) countAvoid.textContent = avoidList.length;
+            if (countTotal) countTotal.textContent = data.length;
+
+            // Update wait count (discovery handles it, but cross-update here too)
+            const wBadge = document.getElementById('v8-count-wait');
+            if (wBadge && waitList.length > 0) wBadge.textContent = waitList.length;
+
+            if (!cardsContainer) return;
+
+            if (enterList.length === 0) {
+                cardsContainer.innerHTML = `
+                    <div style="grid-column:1/-1; text-align:center; padding:3rem; color:var(--text-muted); border:1px dashed rgba(255,255,255,0.1); border-radius:12px;">
+                        <div style="font-size:2rem; margin-bottom:0.5rem;">🔍</div>
+                        <div style="font-size:0.95rem; font-weight:600;">Şu an giriş onaylı hisse yok</div>
+                        <div style="font-size:0.78rem; margin-top:0.4rem;">Sistem ${data.length} hisseyi tarıyor. Hazırlık aşamasındakileri aşağıda görebilirsiniz.</div>
+                    </div>`;
                 return;
             }
 
-            json.data.slice(0, 15).forEach(d => {
-                const tr = document.createElement('tr');
-                const fakeRiskColor = d.fakeout_risk > 50 ? "var(--accent-red)" : "var(--accent-green)";
-                
-                let entryStyle = "color:var(--text-muted);";
-                if(d.entry_status === "ENTER") entryStyle = "color:var(--accent-green); font-weight:bold; background:rgba(16,185,129,0.1); padding:2px 6px; border-radius:4px;";
-                if(d.entry_status === "WAIT_PULLBACK") entryStyle = "color:var(--accent-yellow);";
-                if(d.entry_status === "CHASE_RISK" || d.entry_status === "NO_ENTRY") entryStyle = "color:var(--accent-red);";
-                
+            cardsContainer.innerHTML = '';
+            enterList.forEach(d => {
+                const fakeRisk = d.fakeout_risk || 0;
+                const fakeColor = fakeRisk > 50 ? '#ef4444' : fakeRisk > 30 ? '#facc15' : '#10b981';
+                const fakeLabel = fakeRisk > 50 ? '⚠️ Yüksek' : fakeRisk > 30 ? '⚡ Orta' : '✅ Düşük';
                 const speed = d.momentum_speed || 'NORMAL';
-                let speedColor = "var(--text-muted)";
-                if(speed === "EXPLOSIVE") speedColor = "var(--accent-green)";
-                if(speed === "STRONG") speedColor = "var(--accent-blue)";
-                if(speed === "WEAK") speedColor = "var(--accent-red)";
-                
-                const tfq = d.timeframe_quality || 0;
-                const tfqColor = tfq >= 60 ? "var(--accent-green)" : (tfq >= 40 ? "var(--accent-yellow)" : "var(--text-muted)");
-                
-                tr.innerHTML = `
-                    <td style="font-weight:bold; color:var(--accent-green);">${d.symbol}</td>
-                    <td style="font-size:0.85rem;">
-                        <div style="color:var(--accent-blue)">Güç: ${d.breakout_score}</div>
-                        <div style="color:${fakeRiskColor}">Tuzak: %${d.fakeout_risk}</div>
-                    </td>
-                    <td><span style="${entryStyle}">${d.entry_status}</span></td>
-                    <td style="font-size:0.8rem; color:${speedColor}; font-weight:bold;">${speed}</td>
-                    <td style="text-align:center; font-size:0.85rem; color:${tfqColor}; font-weight:bold;">${tfq}</td>
-                    
-                    <td style="font-size:0.8rem; color:var(--text-muted); max-width:200px; white-space:normal;">
-                        <div>${d.entry_reasons[0] || '-'}</div>
-                        ${d.varrant_info && d.varrant_info.status === 'VARRANT_FOUND' ? 
-                          '<div style="margin-top:4px; font-size:0.75rem; color:var(--accent-purple);"><i class="fa-solid fa-bolt"></i> Varant: ' + d.varrant_info.varrant_prefix + ' (Kaldıraç: ~' + d.varrant_info.estimated_leverage + 'x)</div>' 
-                          : ''}
-                    </td>
-    
+                const speedColor = speed === 'EXPLOSIVE' ? '#10b981' : speed === 'STRONG' ? '#60a5fa' : '#94a3b8';
+                const reason = (d.entry_reasons || [])[0] || '—';
+                const varrantInfo = d.varrant_info && d.varrant_info.status === 'VARRANT_FOUND'
+                    ? `<div style="margin-top:0.5rem; padding:0.4rem 0.6rem; background:rgba(168,85,247,0.12); border:1px solid rgba(168,85,247,0.3); border-radius:6px; font-size:0.75rem; color:#c084fc;">
+                         <i class="fa-solid fa-bolt"></i> Varant: <b>${d.varrant_info.varrant_prefix}</b> — Kaldıraç: ~${d.varrant_info.estimated_leverage}x
+                       </div>`
+                    : '';
+
+                const card = document.createElement('div');
+                card.style.cssText = 'background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.35); border-radius:12px; padding:1rem; position:relative; overflow:hidden;';
+                card.innerHTML = `
+                    <div style="position:absolute; top:0; right:0; background:#10b981; color:#fff; font-size:0.7rem; font-weight:800; padding:3px 10px; border-bottom-left-radius:8px; letter-spacing:1px;">✅ GİR</div>
+                    <div style="font-size:1.2rem; font-weight:800; color:#10b981; margin-bottom:0.75rem;">${d.symbol}</div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; font-size:0.8rem; margin-bottom:0.75rem;">
+                        <div style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.4rem 0.6rem;">
+                            <div style="color:var(--text-muted); font-size:0.68rem;">Kırılım Gücü</div>
+                            <div style="font-weight:700; color:#60a5fa;">${d.breakout_score || '—'} <span style="font-size:0.68rem; color:var(--text-muted);">/100</span></div>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.4rem 0.6rem;">
+                            <div style="color:var(--text-muted); font-size:0.68rem;">Tuzak Riski</div>
+                            <div style="font-weight:700; color:${fakeColor};">${fakeLabel}</div>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.4rem 0.6rem;">
+                            <div style="color:var(--text-muted); font-size:0.68rem;">Momentum Hızı</div>
+                            <div style="font-weight:700; color:${speedColor};">${speed}</div>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.4rem 0.6rem;">
+                            <div style="color:var(--text-muted); font-size:0.68rem;">Zaman Uyumu</div>
+                            <div style="font-weight:700; color:#facc15;">${d.timeframe_quality || 0}/100</div>
+                        </div>
+                    </div>
+                    <div style="font-size:0.78rem; color:var(--text-muted); padding:0.4rem 0.6rem; background:rgba(0,0,0,0.15); border-radius:6px; margin-bottom:0.5rem;">
+                        <i class="fa-solid fa-circle-info" style="color:#60a5fa;"></i> ${reason}
+                    </div>
+                    ${varrantInfo}
                 `;
-                tbody.appendChild(tr);
+                cardsContainer.appendChild(card);
             });
         }).catch(e => console.error(e));
 }
@@ -5693,35 +5736,27 @@ function loadV8Learning() {
             const tbody = document.getElementById('v8-learning-tbody');
             if(!tbody) return;
             tbody.innerHTML = '';
-            
+
             if (!json.data || json.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="14" style="text-align:center; padding:1rem; color:var(--text-muted);">Henüz V8 tarafından alınan bir pozisyon kaydı yok.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:1rem; color:var(--text-muted);">Henüz V8 tarafından alınan bir pozisyon kaydı yok.</td></tr>';
                 return;
             }
 
             json.data.forEach(d => {
                 const tr = document.createElement('tr');
-                const timeStr = new Date(d.timestamp).toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
-                
-                const mfeColor = d.mfe > 2.0 ? "color:var(--accent-green); font-weight:bold;" : "color:rgba(16,185,129,0.7);";
-                const maeColor = d.mae < -2.0 ? "color:var(--accent-red); font-weight:bold;" : "color:rgba(225,29,72,0.7);";
-                const statColor = d.status === 'ACTIVE' ? "color:var(--accent-blue);" : "color:var(--text-muted);";
-                
+                const timeStr = new Date(d.timestamp).toLocaleString('tr-TR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+                const mfeColor = d.mfe > 2.0 ? 'color:#10b981; font-weight:bold;' : 'color:rgba(16,185,129,0.7);';
+                const maeColor = d.mae < -2.0 ? 'color:#ef4444; font-weight:bold;' : 'color:rgba(225,29,72,0.7);';
+                const statColor = d.status === 'ACTIVE' ? 'color:#60a5fa; font-weight:bold;' : 'color:var(--text-muted);';
                 tr.innerHTML = `
-                    <td style="font-size:0.8rem; color:var(--text-muted);">${timeStr}</td>
+                    <td style="font-size:0.78rem; color:var(--text-muted);">${timeStr}</td>
                     <td style="font-weight:bold;">${d.symbol}</td>
                     <td style="text-align:right;">${d.entry_price.toFixed(2)}</td>
-                    <td style="text-align:right; font-size:0.85rem;">${formatV8Price(d.entry_price, d.t_3m_price)}</td>
-                    <td style="text-align:right; font-size:0.85rem;">${formatV8Price(d.entry_price, d.t_5m_price)}</td>
-                    <td style="text-align:right; font-size:0.85rem;">${formatV8Price(d.entry_price, d.t_10m_price)}</td>
-                    <td style="text-align:right; font-size:0.85rem;">${formatV8Price(d.entry_price, d.t_15m_price)}</td>
-                    <td style="text-align:right; font-size:0.85rem;">${formatV8Price(d.entry_price, d.t_30m_price)}</td>
-                    <td style="text-align:right; font-size:0.85rem;">${formatV8Price(d.entry_price, d.t_60m_price)}</td>
-                    <td style="text-align:right; font-size:0.85rem;">${formatV8Price(d.entry_price, d.t_120m_price)}</td>
-                    <td style="text-align:right; font-size:0.85rem;">${formatV8Price(d.entry_price, d.t_240m_price)}</td>
+                    <td style="text-align:right; font-size:0.82rem;">${formatV8Price(d.entry_price, d.t_15m_price)}</td>
+                    <td style="text-align:right; font-size:0.82rem;">${formatV8Price(d.entry_price, d.t_60m_price)}</td>
                     <td style="text-align:right; ${mfeColor}">+${d.mfe.toFixed(2)}%</td>
                     <td style="text-align:right; ${maeColor}">${d.mae.toFixed(2)}%</td>
-                    <td style="text-align:center; font-weight:bold; ${statColor}">${d.status}</td>
+                    <td style="text-align:center; font-size:0.78rem; ${statColor}">${d.status}</td>
                 `;
                 tbody.appendChild(tr);
             });

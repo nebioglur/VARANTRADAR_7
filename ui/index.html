@@ -2016,113 +2016,110 @@
     <!-- KULLANIM KILAVUZU TAB -->
     
     <!-- V8 ENGINE TAB -->
-    <div id="v8-wrapper" class="main-wrapper" style="display:none; max-width:1400px; margin:0 auto; padding:1rem;">
-        
-        <div style="margin-bottom:2rem; text-align: center;">
-            <h2 style="color:var(--accent-blue); font-size: 1.8rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-brain"></i> V8 ENGINE (Otonom Karar Destek)</h2>
-            <p style="color:var(--text-muted); font-size: 0.9rem;">Hareket başlamadan önce fark et, Kırılımı Doğrula, Tuzaktan Kaçın, Sonucu Öğren.</p>
+        <div id="v8-wrapper" class="main-wrapper" style="display:none; max-width:1400px; margin:0 auto; padding:1rem;">
+
+        <!-- BAŞLIK -->
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:0.75rem;">
+            <div>
+                <h2 style="color:var(--accent-blue); font-size:1.5rem; margin:0;"><i class="fa-solid fa-brain"></i> V8 ENGINE</h2>
+                <p style="color:var(--text-muted); font-size:0.82rem; margin:4px 0 0;">Sistematik fırsat taraması — Hazırlık → Kırılım → Karar</p>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; background:rgba(15,23,42,0.7); border:1px solid rgba(59,130,246,0.3); border-radius:12px; padding:0.6rem 1.2rem;">
+                <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px;">Piyasa</span>
+                <span id="regime-status" style="font-size:1.05rem; font-weight:800; padding:3px 10px; border-radius:6px; background:var(--bg-lighter);">—</span>
+                <span id="regime-score" style="font-size:0.85rem; color:var(--text-light);">--</span>
+            </div>
+        </div>
+        <div id="regime-trend" style="margin-bottom:1rem; font-size:0.85rem; color:var(--text-muted); text-align:center;"></div>
+
+        <!-- ÖZET BAR -->
+        <div style="display:flex; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap;">
+            <div style="flex:1; min-width:120px; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.35); border-radius:10px; padding:0.75rem; text-align:center;">
+                <div style="font-size:0.7rem; color:#10b981; text-transform:uppercase; font-weight:700;">&#10003; AL</div>
+                <div id="v8-count-enter" style="font-size:1.8rem; font-weight:800; color:#10b981;">—</div>
+                <div style="font-size:0.68rem; color:var(--text-muted);">Giriş Onaylı</div>
+            </div>
+            <div style="flex:1; min-width:120px; background:rgba(234,179,8,0.1); border:1px solid rgba(234,179,8,0.35); border-radius:10px; padding:0.75rem; text-align:center;">
+                <div style="font-size:0.7rem; color:#facc15; text-transform:uppercase; font-weight:700;">BEKLE</div>
+                <div id="v8-count-wait" style="font-size:1.8rem; font-weight:800; color:#facc15;">—</div>
+                <div style="font-size:0.68rem; color:var(--text-muted);">Hazırlık Aşaması</div>
+            </div>
+            <div style="flex:1; min-width:120px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.35); border-radius:10px; padding:0.75rem; text-align:center;">
+                <div style="font-size:0.7rem; color:#ef4444; text-transform:uppercase; font-weight:700;">UZAK DUR</div>
+                <div id="v8-count-avoid" style="font-size:1.8rem; font-weight:800; color:#ef4444;">—</div>
+                <div style="font-size:0.68rem; color:var(--text-muted);">Tuzak / Zayıf</div>
+            </div>
+            <div style="flex:1; min-width:120px; background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.25); border-radius:10px; padding:0.75rem; text-align:center;">
+                <div style="font-size:0.7rem; color:#60a5fa; text-transform:uppercase; font-weight:700;">Tarandı</div>
+                <div id="v8-count-total" style="font-size:1.8rem; font-weight:800; color:#60a5fa;">—</div>
+                <div style="font-size:0.68rem; color:var(--text-muted);">Toplam Hisse</div>
+            </div>
         </div>
 
-        <!-- MARKET REGIME WIDGET -->
-        <div class="radar-card" style="margin-bottom: 1.5rem; text-align: center; padding: 1.5rem; border: 1px solid rgba(59, 130, 246, 0.3); background: rgba(15, 23, 42, 0.6);">
-            <div style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Piyasa Rejimi (XU100)</div>
-            <div style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 10px;">
-                <span id="regime-status" style="font-size: 1.8rem; font-weight: 800; padding: 5px 15px; border-radius: 8px; background: var(--bg-lighter);">YÜKLENİYOR...</span>
-                <span id="regime-score" style="font-size: 1.2rem; color: var(--text-light);">--</span>
-            </div>
-            <div id="regime-trend" style="margin-top: 10px; font-size: 0.95rem;"></div>
+        <!-- AL KARARI — KARTLAR -->
+        <div style="margin-bottom:0.75rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem;">
+            <h3 style="margin:0; color:#10b981; font-size:1rem;"><i class="fa-solid fa-bolt"></i> Giriş Onaylı Hisseler</h3>
+            <span style="font-size:0.72rem; color:var(--text-muted);">Sadece sistematik olarak onaylananlar gösterilir</span>
+        </div>
+        <div id="v8-enter-cards" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:1rem; margin-bottom:2rem;">
+            <div style="text-align:center; color:var(--text-muted); padding:2rem; grid-column:1/-1;"><i class="fa-solid fa-circle-notch fa-spin"></i> Yükleniyor...</div>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
-            
-            <!-- DISCOVERY -->
-            <div class="radar-card">
-                <div class="card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 10px;">
-                    <h3 style="color:var(--accent-blue); font-size:1.2rem; margin:0;"><i class="fa-solid fa-magnifying-glass"></i> Discovery (Hazırlık)</h3>
-                    <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">Patlamadan önceki hacim ve volatilite sıkışmaları</div>
-                </div>
-                <div class="table-responsive">
-                    <table class="data-table" style="width: 100%;">
-                        <thead>
-                            <tr>
-                                <th>Hisse</th>
-                                <th>Durum</th>
-                                <th>Hazırlık Skoru</th>
-                                <th>Kısa</th>
-                                <th>Orta</th>
-                                <th>Uzun</th>
-                                <th>Hacim Şişmesi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="v8-discovery-tbody">
-                            <tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:1rem;">Yükleniyor...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
+        <!-- HAZIRLIKTAKİLER -->
+        <details style="margin-bottom:1.5rem;">
+            <summary style="cursor:pointer; font-size:0.92rem; font-weight:700; color:#facc15; padding:0.6rem 0.5rem; border-bottom:1px solid rgba(234,179,8,0.2); list-style:none; display:flex; align-items:center; gap:0.5rem; user-select:none;">
+                <i class="fa-solid fa-hourglass-half"></i> Hazırlık Aşamasındakiler
+                <span id="v8-wait-badge" style="background:rgba(234,179,8,0.2); color:#facc15; border-radius:20px; padding:1px 8px; font-size:0.72rem; margin-left:4px;">—</span>
+                <i class="fa-solid fa-chevron-down" style="margin-left:auto; font-size:0.68rem; color:var(--text-muted);"></i>
+            </summary>
+            <div class="table-responsive" style="margin-top:0.75rem;">
+                <table class="data-table" style="width:100%; font-size:0.82rem;">
+                    <thead>
+                        <tr>
+                            <th>Hisse</th>
+                            <th>Durum</th>
+                            <th>Hazırlık %</th>
+                            <th>Hacim Güç</th>
+                            <th>Ne Bekliyor?</th>
+                        </tr>
+                    </thead>
+                    <tbody id="v8-discovery-tbody">
+                        <tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:1rem;">Yükleniyor...</td></tr>
+                    </tbody>
+                </table>
             </div>
+        </details>
 
-            <!-- EXECUTION -->
-            <div class="radar-card">
-                <div class="card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 10px;">
-                    <h3 style="color:var(--accent-green); font-size:1.2rem; margin:0;"><i class="fa-solid fa-bolt"></i> Execution (Kırılım & Giriş)</h3>
-                    <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">Gerçekleşen kırılımlar ve tuzak riski filtresi</div>
-                </div>
-                <div class="table-responsive">
-                    <table class="data-table" style="width: 100%;">
-                        <thead>
-                            <tr>
-                                <th>Hisse</th>
-                                <th>Kalite/Tuzak</th>
-                                <th>V8 Kararı</th>
-                                <th>Hız</th>
-                                <th>Çoklu Zaman Uyumu</th>
-                                <th>Sebep</th>
-                            </tr>
-                        </thead>
-                        <tbody id="v8-breakout-tbody">
-                            <tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:1rem;">Yükleniyor...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- OUTCOME LEARNING -->
-        <div class="radar-card">
-            <div class="card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 10px;">
-                <h3 style="color:var(--accent-purple); font-size:1.2rem; margin:0;"><i class="fa-solid fa-brain"></i> Outcome & Learning (Sonuç Takibi)</h3>
-                <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">V8 tarafından onaylanıp canlı takip edilen işlemlerin MFE/MAE sonuçları</div>
-            </div>
-            <div class="table-responsive" style="max-height: 400px; overflow-y: auto; overflow-x: auto;">
-                <table class="data-table" style="width: 100%; white-space: nowrap;">
-                    <thead style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">
+        <!-- SONUÇ TAKİBİ -->
+        <details>
+            <summary style="cursor:pointer; font-size:0.92rem; font-weight:700; color:#c084fc; padding:0.6rem 0.5rem; border-bottom:1px solid rgba(168,85,247,0.2); list-style:none; display:flex; align-items:center; gap:0.5rem; user-select:none;">
+                <i class="fa-solid fa-chart-bar"></i> Sonuç Takibi (Geçmiş İşlemler)
+                <i class="fa-solid fa-chevron-down" style="margin-left:auto; font-size:0.68rem; color:var(--text-muted);"></i>
+            </summary>
+            <div class="table-responsive" style="max-height:300px; overflow-y:auto; margin-top:0.75rem;">
+                <table class="data-table" style="width:100%; white-space:nowrap; font-size:0.8rem;">
+                    <thead style="position:sticky; top:0; background:var(--bg-base); z-index:10;">
                         <tr>
                             <th>Tarih</th>
                             <th>Hisse</th>
                             <th>Giriş</th>
-                            <th>T+3dk</th>
-                            <th>T+5dk</th>
-                            <th>T+10dk</th>
                             <th>T+15dk</th>
-                            <th>T+30dk</th>
                             <th>T+60dk</th>
-                            <th>T+120dk</th>
-                            <th>T+240dk</th>
-                            <th>MFE (Kâr)</th>
-                            <th>MAE (Zarar)</th>
-                            <th>Durum</th>
+                            <th>Max Kâr (MFE)</th>
+                            <th>Max Zarar (MAE)</th>
+                            <th>Sonuç</th>
                         </tr>
                     </thead>
                     <tbody id="v8-learning-tbody">
-                        <tr><td colspan="14" style="text-align:center; color:var(--text-muted); padding:1rem;">Yükleniyor...</td></tr>
+                        <tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:1rem;">Yükleniyor...</td></tr>
                     </tbody>
                 </table>
             </div>
-        </div>
+        </details>
+
+        <table style="display:none;"><tbody id="v8-breakout-tbody"></tbody></table>
 
     </div>
-
 <div id="logs-wrapper" class="main-wrapper" style="display:none; max-width:1200px; margin:0 auto; padding:1rem;">
     <div class="card" style="background:var(--bg-light, rgba(255,255,255,0.02)); border:1px solid var(--border-color, rgba(255,255,255,0.08)); border-radius:12px; padding:1rem;">
         <h3 class="card-title" style="display:flex; align-items:center; justify-content:space-between; margin-top:0; margin-bottom:0.8rem;">
