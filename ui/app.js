@@ -6174,8 +6174,10 @@ function renderAllStocksTable() {
         
         let rVol = 0;
         let state = 'NONE';
+        let prep_score = 0;
         if (data.v8_discovery) {
             state = data.v8_discovery.state || 'NONE';
+            prep_score = data.v8_discovery.preparation_score || 0;
             if (data.v8_discovery.metrics) {
                 rVol = data.v8_discovery.metrics.relative_volume || 0;
             }
@@ -6238,7 +6240,8 @@ function renderAllStocksTable() {
             state: state,
             intra_change: intra_change,
             hourly_flow: hourly_flow,
-            acc_score: acc_score
+            acc_score: acc_score,
+            prep_score: prep_score
         };
     });
     
@@ -6257,28 +6260,26 @@ function renderAllStocksTable() {
     allStats.sort((a, b) => {
         if (currentStocksSort.col === 'special') {
             const getSpecialScore = (item) => {
-                let intra_score = item.intra_change * 5; 
+                // 1) Gün içi güç — EN ÖNEMLİ (açılıştan itibaren gün içi ivme)
+                let intra_score = item.intra_change * 6;
+
+                // 2) Hacim gücü (göreceli hacim: 2x = +6, 3x = +9)
                 let vol_score = item.rel_vol * 3;
-                
-                let change_penalty = 0;
-                if (item.change > 0) {
-                    // Pozitif değişim: Ne kadar yüksekse o kadar ceza (fiyatlanmış)
-                    change_penalty = item.change * 4; 
-                } else {
-                    // Negatif değişim: Aşırı düşmüşse (-3% altı) taban serisi veya çöküş riskidir, ödüllendirme, ceza ver.
-                    if (item.change < -2) {
-                        change_penalty = Math.abs(item.change) * 3; 
-                    }
-                }
-                
-                let opp_score = item.opportunity * 0.5;
-                return intra_score + vol_score - change_penalty + opp_score;
+
+                // 3) Fiyatlanmamış filtresi: Hem çok yükselen (+%5+) hem çok düşen (-%2+) ceza
+                //    Hedef: %0 ile +%5 arasında olan, henüz hareket etmemiş hisseler ödüllendirilir
+                let change_penalty = Math.abs(item.change) * 3;
+
+                // 4) Puan (V8 preparation_score) — hafif kalite filtresi
+                let quality_bonus = item.prep_score * 0.3;
+
+                return intra_score + vol_score - change_penalty + quality_bonus;
             };
-            let scoreA = getSpecialScore(a);
-            let scoreB = getSpecialScore(b);
+            const scoreA = getSpecialScore(a);
+            const scoreB = getSpecialScore(b);
             const diff = scoreA - scoreB;
             if (diff !== 0) return currentStocksSort.asc ? diff : -diff;
-            return (b.change > 0 ? 1 : 0) - (a.change > 0 ? 1 : 0);
+            return b.rel_vol - a.rel_vol;
         }
 
         if (currentStocksSort.col === 'opportunity') {
