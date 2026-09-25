@@ -6259,7 +6259,18 @@ function renderAllStocksTable() {
             const getSpecialScore = (item) => {
                 let intra_score = item.intra_change * 5; 
                 let vol_score = item.rel_vol * 3;
-                let change_penalty = item.change * 4; 
+                
+                let change_penalty = 0;
+                if (item.change > 0) {
+                    // Pozitif değişim: Ne kadar yüksekse o kadar ceza (fiyatlanmış)
+                    change_penalty = item.change * 4; 
+                } else {
+                    // Negatif değişim: Aşırı düşmüşse (-3% altı) taban serisi veya çöküş riskidir, ödüllendirme, ceza ver.
+                    if (item.change < -2) {
+                        change_penalty = Math.abs(item.change) * 3; 
+                    }
+                }
+                
                 let opp_score = item.opportunity * 0.5;
                 return intra_score + vol_score - change_penalty + opp_score;
             };
