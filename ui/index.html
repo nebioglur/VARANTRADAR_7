@@ -2016,7 +2016,7 @@
     <!-- KULLANIM KILAVUZU TAB -->
     
     <!-- V8 ENGINE TAB -->
-        <div id="v8-wrapper" class="main-wrapper" style="display:none; max-width:1400px; margin:0 auto; padding:1rem;">
+    <div id="v8-wrapper" class="main-wrapper" style="display:none; max-width:1400px; margin:0 auto; padding:1rem;">
 
         <!-- BAŞLIK -->
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:0.75rem;">
@@ -2024,6 +2024,7 @@
                 <h2 style="color:var(--accent-blue); font-size:1.5rem; margin:0;"><i class="fa-solid fa-brain"></i> V8 ENGINE</h2>
                 <p style="color:var(--text-muted); font-size:0.82rem; margin:4px 0 0;">Sistematik fırsat taraması — Hazırlık → Kırılım → Karar</p>
             </div>
+            <!-- PİYASA REJİMİ -->
             <div style="display:flex; align-items:center; gap:10px; background:rgba(15,23,42,0.7); border:1px solid rgba(59,130,246,0.3); border-radius:12px; padding:0.6rem 1.2rem;">
                 <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px;">Piyasa</span>
                 <span id="regime-status" style="font-size:1.05rem; font-weight:800; padding:3px 10px; border-radius:6px; background:var(--bg-lighter);">—</span>
@@ -2035,28 +2036,28 @@
         <!-- ÖZET BAR -->
         <div style="display:flex; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap;">
             <div style="flex:1; min-width:120px; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.35); border-radius:10px; padding:0.75rem; text-align:center;">
-                <div style="font-size:0.7rem; color:#10b981; text-transform:uppercase; font-weight:700;">&#10003; AL</div>
+                <div style="font-size:0.7rem; color:#10b981; text-transform:uppercase; font-weight:700;">✅ AL</div>
                 <div id="v8-count-enter" style="font-size:1.8rem; font-weight:800; color:#10b981;">—</div>
                 <div style="font-size:0.68rem; color:var(--text-muted);">Giriş Onaylı</div>
             </div>
             <div style="flex:1; min-width:120px; background:rgba(234,179,8,0.1); border:1px solid rgba(234,179,8,0.35); border-radius:10px; padding:0.75rem; text-align:center;">
-                <div style="font-size:0.7rem; color:#facc15; text-transform:uppercase; font-weight:700;">BEKLE</div>
+                <div style="font-size:0.7rem; color:#facc15; text-transform:uppercase; font-weight:700;">⏳ BEKLE</div>
                 <div id="v8-count-wait" style="font-size:1.8rem; font-weight:800; color:#facc15;">—</div>
                 <div style="font-size:0.68rem; color:var(--text-muted);">Hazırlık Aşaması</div>
             </div>
             <div style="flex:1; min-width:120px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.35); border-radius:10px; padding:0.75rem; text-align:center;">
-                <div style="font-size:0.7rem; color:#ef4444; text-transform:uppercase; font-weight:700;">UZAK DUR</div>
+                <div style="font-size:0.7rem; color:#ef4444; text-transform:uppercase; font-weight:700;">⛔ UZAK DUR</div>
                 <div id="v8-count-avoid" style="font-size:1.8rem; font-weight:800; color:#ef4444;">—</div>
                 <div style="font-size:0.68rem; color:var(--text-muted);">Tuzak / Zayıf</div>
             </div>
             <div style="flex:1; min-width:120px; background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.25); border-radius:10px; padding:0.75rem; text-align:center;">
-                <div style="font-size:0.7rem; color:#60a5fa; text-transform:uppercase; font-weight:700;">Tarandı</div>
+                <div style="font-size:0.7rem; color:#60a5fa; text-transform:uppercase; font-weight:700;">🔍 Tarandı</div>
                 <div id="v8-count-total" style="font-size:1.8rem; font-weight:800; color:#60a5fa;">—</div>
                 <div style="font-size:0.68rem; color:var(--text-muted);">Toplam Hisse</div>
             </div>
         </div>
 
-        <!-- AL KARARI — KARTLAR -->
+        <!-- AL KARARI VERİLMİŞ HİSSELER — KARTLAR -->
         <div style="margin-bottom:0.75rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem;">
             <h3 style="margin:0; color:#10b981; font-size:1rem;"><i class="fa-solid fa-bolt"></i> Giriş Onaylı Hisseler</h3>
             <span style="font-size:0.72rem; color:var(--text-muted);">Sadece sistematik olarak onaylananlar gösterilir</span>
@@ -2065,7 +2066,7 @@
             <div style="text-align:center; color:var(--text-muted); padding:2rem; grid-column:1/-1;"><i class="fa-solid fa-circle-notch fa-spin"></i> Yükleniyor...</div>
         </div>
 
-        <!-- HAZIRLIKTAKİLER -->
+        <!-- HAZIRLIKTAKİLER — DARALTILMIŞ TABLO -->
         <details style="margin-bottom:1.5rem;">
             <summary style="cursor:pointer; font-size:0.92rem; font-weight:700; color:#facc15; padding:0.6rem 0.5rem; border-bottom:1px solid rgba(234,179,8,0.2); list-style:none; display:flex; align-items:center; gap:0.5rem; user-select:none;">
                 <i class="fa-solid fa-hourglass-half"></i> Hazırlık Aşamasındakiler
@@ -2090,7 +2091,7 @@
             </div>
         </details>
 
-        <!-- SONUÇ TAKİBİ -->
+        <!-- SONUÇ TAKİBİ — DARALTILMIŞ -->
         <details>
             <summary style="cursor:pointer; font-size:0.92rem; font-weight:700; color:#c084fc; padding:0.6rem 0.5rem; border-bottom:1px solid rgba(168,85,247,0.2); list-style:none; display:flex; align-items:center; gap:0.5rem; user-select:none;">
                 <i class="fa-solid fa-chart-bar"></i> Sonuç Takibi (Geçmiş İşlemler)
@@ -2117,9 +2118,11 @@
             </div>
         </details>
 
+        <!-- Gizli eski tablo uyumu -->
         <table style="display:none;"><tbody id="v8-breakout-tbody"></tbody></table>
 
     </div>
+
 <div id="logs-wrapper" class="main-wrapper" style="display:none; max-width:1200px; margin:0 auto; padding:1rem;">
     <div class="card" style="background:var(--bg-light, rgba(255,255,255,0.02)); border:1px solid var(--border-color, rgba(255,255,255,0.08)); border-radius:12px; padding:1rem;">
         <h3 class="card-title" style="display:flex; align-items:center; justify-content:space-between; margin-top:0; margin-bottom:0.8rem;">
