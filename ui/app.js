@@ -5646,7 +5646,7 @@ function loadV8Breakout() {
 
             const cardsContainer = document.getElementById('v8-enter-cards');
             const countEnter = document.getElementById('v8-count-enter');
-            const countWait  = document.getElementById('v8-count-wait-bo');
+            const countWait  = document.getElementById('v8-count-wait');
             const countAvoid = document.getElementById('v8-count-avoid');
             const countTotal = document.getElementById('v8-count-total');
 
@@ -5663,12 +5663,9 @@ function loadV8Breakout() {
             });
 
             if (countEnter) countEnter.textContent = enterList.length;
+            if (countWait)  countWait.textContent = waitList.length;
             if (countAvoid) countAvoid.textContent = avoidList.length;
             if (countTotal) countTotal.textContent = data.length;
-
-            // Update wait count (discovery handles it, but cross-update here too)
-            const wBadge = document.getElementById('v8-count-wait');
-            if (wBadge && waitList.length > 0) wBadge.textContent = waitList.length;
 
             if (!cardsContainer) return;
 
@@ -6374,7 +6371,7 @@ function renderAllStocksTable() {
         const volLotM = (s.volume_lot / 1000000).toFixed(1) + 'M';
         const volTLM = (s.volume_tl / 1000000).toFixed(1) + 'M ₺';
         const relVolPct = (s.rel_vol * 100).toFixed(0);
-        const relVolText = s.change > 0 ? `+ %${relVolPct}` : (s.change < 0 ? `- %${relVolPct}` : `%${relVolPct}`);
+        const relVolText = "%" + relVolPct;
         
         const intraColor = s.intra_change > 0 ? 'var(--accent-green)' : (s.intra_change < 0 ? 'var(--accent-red)' : 'var(--text-color)');
         const intraSign = s.intra_change > 0 ? '+' : '';
@@ -6553,7 +6550,7 @@ function renderSuper12Table() {
         const volLotM = (s.volume_lot / 1000000).toFixed(1) + 'M';
         const volTLM = (s.volume_tl / 1000000).toFixed(1) + 'M \u20BA';
         const relVolPct = (s.rel_vol * 100).toFixed(0);
-        const relVolText = s.change > 0 ? '+ %' + relVolPct : (s.change < 0 ? '- %' + relVolPct : '%' + relVolPct);
+        const relVolText = "%" + relVolPct;
         
         
         let p_val = (s.high + s.low + s.price) / 3;
