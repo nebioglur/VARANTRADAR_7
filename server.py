@@ -730,6 +730,7 @@ def simulation_loop():
     - Piyasa disinda son eldeki verilerle simulasyonu oynatmaya devam eder,
       boylece test/arka-plan bildirimleri kesintisiz gider.
     - Her AL/SAT islemi aninda Telegram bildirimi gider."""
+    _last_stale_cleanup = None
     while True:
         sleep_secs = 120.0
         try:
@@ -745,6 +746,36 @@ def simulation_loop():
                     MarketDataManager.fetch_and_store_intraday(d_str, period="5d")
                 except Exception as _md_err:
                     print(f"[SIMLOOP] Intraday veri hatasi: {_md_err}")
+
+            # SAATLIK ONARIM: gecmis gunlerde hala "ACIK" kalan pozisyonlar
+            # (orn. sunucu restart'i kapanis penceresini kacirdiysa) son bar
+            # fiyatiyla kapatilmak icin ilgili tarih yeniden simule edilir.
+            _cleanup_due = (
+                _last_stale_cleanup is None
+                or (now - _last_stale_cleanup).total_seconds() >= 3600
+            )
+            if _cleanup_due:
+                _last_stale_cleanup = now
+                try:
+                    from services.trade_database import get_connection as _gc
+                    with _gc() as _sc:
+                        _cur = _sc.cursor()
+                        _cur.execute(
+                            "SELECT DISTINCT owner, date_str FROM trades "
+                            "WHERE exit_time IS NULL AND date_str < ? "
+                            "ORDER BY date_str ASC",
+                            (d_str,),
+                        )
+                        _stale = [tuple(r) for r in _cur.fetchall()]
+                    for _s_owner, _s_date in _stale:
+                        try:
+                            from services.simulation_engine import SimulationEngine
+                            SimulationEngine(owner=_s_owner).run_daily_simulation(_s_date)
+                            print(f"[SIMLOOP] Gecmis gun kapanis onarimi: {_s_date} ({_s_owner})")
+                        except Exception as _rep_err:
+                            print(f"[SIMLOOP] Onarim hatasi {_s_date} ({_s_owner}): {_rep_err}")
+                except Exception as _cl_err:
+                    print(f"[SIMLOOP] Onarim tarama hatasi: {_cl_err}")
 
             try:
                 from services.trade_database import get_connection as _get_conn

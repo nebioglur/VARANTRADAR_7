@@ -610,11 +610,13 @@ class SimulationEngine:
                     stopped_out_symbols.remove(sym)
 
         # Seans sonu: acik pozisyonlari kapat.
-        # Ancak BUGUN icin seans henuz 17:50'den onceyse canli modda acik birak;
-        # frontend "Islemde" olarak gostersin.
+        # BUGUN icin seans henuz 17:50'den onceyse canli modda acik birak;
+        # frontend "Islemde" olarak gostersin. GECMIS tarihler icin son bar
+        # (seans sonu ~18:00) uzerinden kapanis zorunlu — aksi halde eski
+        # gunlerin pozisyonlari sonsuza kadar "ACIK POZISYON" kalirdi.
         now = datetime.now()
         is_today = date_str == now.strftime("%Y-%m-%d")
-        close_open_now = is_today and now.time() >= time(17, 50)
+        close_open_now = (not is_today) or now.time() >= time(17, 50)
 
         for trade in [t for t in active_trades if t['status'] == 'OPEN']:
             sym = trade['symbol']
