@@ -320,39 +320,83 @@ def _sr_text_block(symbol: str) -> str:
 
 
 def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.0, reason: str = "", date_str: str = "", trade: dict = None) -> bool:
-    import json, os
-    from datetime import datetime
+    import hashlib
+    from datetime import datetime, timedelta, timezone
+    from zoneinfo import ZoneInfo
+    from services.trade_database import get_connection
+
     if not date_str:
         date_str = datetime.now().strftime("%Y-%m-%d")
-        
-    cache_file = "data/sent_sim_alerts.json"
-    cache = {}
-    if os.path.exists(cache_file):
-        try:
-            with open(cache_file, "r", encoding="utf-8") as f_c:
-                cache = json.load(f_c)
-        except:
-            pass
-            
-    if cache.get("date") != date_str:
-        cache = {"date": date_str, "alerts": []}
-        
-    alert_key = f"{symbol}_{action}_{price:.2f}"
-    if alert_key in cache["alerts"]:
-        return True
-        
-    cache["alerts"].append(alert_key)
-    try:
-        with open(cache_file, "w", encoding="utf-8") as f_c:
-            json.dump(cache, f_c)
-    except:
-        pass
-        
+
     trade = trade or {}
-    # Simülasyonun TÜM otomatik emirleri (AL, SAT, TP1, yeniden giriş, 17:50)
-    # Telegram'a bildirilir. VIP puan filtresi YOK — canlı portföy işlemleri
-    # buraya gelmez (yalnızca simulation_engine bu fonksiyonu çağırır).
+    entry_time = str(trade.get("entry_time") or "")
+    exit_time = str(trade.get("exit_time") or "")
+    event_time = entry_time if "AL" in action else exit_time
+    if not event_time:
+        event_time = date_str
+    try:
+        event_dt = datetime.fromisoformat(event_time.replace("Z", "+00:00"))
+        local_now = datetime.now(ZoneInfo("Europe/Istanbul"))
+        if event_dt.tzinfo is None:
+            event_dt = event_dt.replace(tzinfo=ZoneInfo("Europe/Istanbul"))
+        if event_dt < local_now - timedelta(minutes=15) or event_dt > local_now + timedelta(minutes=5):
+            return True
+    except (TypeError, ValueError):
+        logger.warning("Simulasyon Telegram olayi icin zaman okunamadi: %s", event_time)
+        return False
+
+    identity = "|".join((date_str, symbol, action, entry_time, event_time))
+    event_key = hashlib.sha256(identity.encode("utf-8")).hexdigest()
+    event_now = datetime.now(timezone.utc)
+    now_str = event_now.isoformat()
+    stale_before = (event_now - timedelta(minutes=10)).isoformat()
+
+    try:
+        conn = get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO simulation_alerts (event_key, status, updated_at, attempts) "
+                "VALUES (?, 'sending', ?, 1) ON CONFLICT(event_key) DO NOTHING",
+                (event_key, now_str),
+            )
+            claimed = cursor.rowcount == 1
+            if not claimed:
+                cursor.execute(
+                    "UPDATE simulation_alerts SET status='sending', updated_at=?, attempts=attempts+1 "
+                    "WHERE event_key=? AND (status='failed' OR (status='sending' AND updated_at < ?))",
+                    (now_str, event_key, stale_before),
+                )
+                claimed = cursor.rowcount == 1
+            conn.commit()
+        finally:
+            conn.close()
+    except Exception as exc:
+        logger.error("Simulasyon Telegram olayi kaydedilemedi: %s", exc)
+        return False
+
+    if not claimed:
+        return True
+
     trade_score = trade.get("entry_score", trade.get("score", 0))
+
+    def _send_once(message: str) -> bool:
+        sent = send_telegram_message(message)
+        try:
+            conn = get_connection()
+            try:
+                cursor = conn.cursor()
+                cursor.execute(
+                    "UPDATE simulation_alerts SET status=?, updated_at=? WHERE event_key=?",
+                    ("sent" if sent else "failed", datetime.now(timezone.utc).isoformat(), event_key),
+                )
+                conn.commit()
+            finally:
+                conn.close()
+        except Exception as exc:
+            logger.error("Simulasyon Telegram sonucu kaydedilemedi: %s", exc)
+        return sent
+
     shares = trade.get('shares', 0)
     total_val = shares * price if shares else 0
     tp1 = trade.get('tp1_price', 0)
@@ -389,7 +433,7 @@ def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.
             text += f"✅ <b>Kontroller:</b> {checks}\n"
         if reason:
             text += "\n💡 <b>Neden:</b> " + reason
-        return send_telegram_message(text)
+        return _send_once(text)
     else:
         emoji = "🟢" if pnl_pct >= 0 else "🔴"
         pnl_val = trade.get('pnl_val', 0)
@@ -416,4 +460,4 @@ def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.
             text += f"🌐 <b>Piyasa Rejimi:</b> {regime}\n"
         if reason:
             text += "\n💡 <b>Neden:</b> " + reason
-        return send_telegram_message(text)
+        return _send_once(text)

@@ -3466,6 +3466,8 @@ function renderStatsMode() {
     
     if (current_stats_mode === 'cumulative') {
         const summ = data.summary || {};
+        const statusEl = el('stats-data-status');
+        if (statusEl) statusEl.textContent = `Kümülatif arşiv: ${summ.total_days_tracked || 0} seans`;
         if (el('stats-tab-total-days')) el('stats-tab-total-days').innerText = summ.total_days_tracked || 0;
         if (el('stats-tab-total-candidates-sub')) el('stats-tab-total-candidates-sub').innerText = `Toplam ${summ.total_candidates_tracked || 0} Öneri`;
         if (el('stats-tab-tavan-rate')) el('stats-tab-tavan-rate').innerText = `%${summ.tavan_success_pct || 0}`;
@@ -3519,8 +3521,18 @@ function renderStatsMode() {
         }
     } else {
         const history = data.daily_breakdown || data.history || [];
-        if (history.length > 0) {
-            const today = history[0]; 
+        const todayDate = new Date().toLocaleDateString('sv-SE');
+        const today = history.find(item => item.date === todayDate) || history.find(item => item.date);
+        const isCurrentSession = today?.date === todayDate;
+        const statusEl = el('stats-data-status');
+        if (statusEl) {
+            statusEl.textContent = isCurrentSession
+                ? `Güncel seans: ${today.date}`
+                : today
+                    ? `Bugün için henüz kayıt yok · Son kayıt: ${today.date}`
+                    : 'Henüz istatistik kaydı bulunmuyor';
+        }
+        if (today) {
             const allSyms = today.all_symbols || [];
             const totalC = allSyms.length;
             const tavanC = allSyms.filter(s => s.hit_ceiling).length;
@@ -3598,13 +3610,16 @@ function renderStatsMode() {
 
 async function fetchStatsTabData() {
     const dailyTbody = document.getElementById('stats-history-tbody');
+    const statusEl = document.getElementById('stats-data-status');
 
     if (dailyTbody) {
         dailyTbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Performans arşivi yükleniyor...</td></tr>`;
     }
+    if (statusEl) statusEl.textContent = 'İstatistikler yenileniyor...';
 
     try {
         const res = await vrAuthorizedFetch(`/api/tavan_history?t=` + Date.now());
+        if (!res.ok) throw new Error(`İstatistik servisi HTTP ${res.status}`);
         const data = await res.json();
         global_stats_data = data;
 
@@ -3614,12 +3629,19 @@ async function fetchStatsTabData() {
             populateStatsWeekSelect(history);
             renderStatsHistoryTable(history);
         } else {
+            if (statusEl) statusEl.textContent = `İstatistik verisi alınamadı: ${data.message || 'Bilinmeyen hata'}`;
             if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="6" class="text-red text-center" style="padding:2rem;">Veri alınamadı: ${data.message || 'Bilinmeyen hata'}</td></tr>`;
         }
     } catch (e) {
-        if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="6" class="text-red text-center" style="padding:2rem;">Baglanti hatasi: ${e.message}</td></tr>`;
+        if (statusEl) statusEl.textContent = e.message;
+        if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="6" class="text-red text-center" style="padding:2rem;">Bağlantı hatası: ${e.message}</td></tr>`;
     }
 }
+
+setInterval(() => {
+    const wrapper = document.getElementById('stats-wrapper');
+    if (wrapper && wrapper.style.display !== 'none') fetchStatsTabData();
+}, 60000);
 
 function populateStatsWeekSelect(history) {
     const select = document.getElementById('stats-tab-week-select');
@@ -4079,6 +4101,7 @@ function toggleSimAutoRefresh() {
         btn.innerHTML = simAutoRefresh
             ? '<i class="fa-solid fa-pause"></i> Otomatik Yenileme: AÇIK'
             : '<i class="fa-solid fa-play"></i> Otomatik Yenileme: KAPALI';
+        btn.classList.toggle('off', !simAutoRefresh);
         btn.style.borderColor = simAutoRefresh ? 'var(--border-color)' : 'var(--accent-yellow)';
         btn.style.color = simAutoRefresh ? 'var(--text-main)' : 'var(--accent-yellow)';
     }
@@ -4118,7 +4141,8 @@ function _tgSetBadge(configured, masked) {
 
 async function refreshTelegramStatus() {
     try {
-        const res = await fetch('/api/telegram/settings?t=' + Date.now());
+        const res = await vrAuthorizedFetch('/api/telegram/settings?t=' + Date.now());
+        if (!res.ok) throw new Error(`Telegram ayar servisi HTTP ${res.status}`);
         const data = await res.json();
         if (data.status === 'success') {
             _tgSetBadge(data.configured, data.chat_id_masked);
@@ -4138,7 +4162,7 @@ async function saveTelegramSettings() {
         return;
     }
     try {
-        const res = await fetch('/api/telegram/settings', {
+        const res = await vrAuthorizedFetch('/api/telegram/settings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token: token, chat_id: chatId })
@@ -4158,7 +4182,7 @@ async function saveTelegramSettings() {
 async function testTelegramSettings() {
     _tgShowMsg('Test mesajı gönderiliyor...', true);
     try {
-        const res = await fetch('/api/telegram/test', { method: 'POST' });
+        const res = await vrAuthorizedFetch('/api/telegram/test', { method: 'POST' });
         const data = await res.json();
         _tgShowMsg(data.message || (data.status === 'success' ? 'Gönderildi.' : 'Başarısız.'), data.status === 'success');
         if (data.status === 'success') refreshTelegramStatus();
@@ -4172,7 +4196,8 @@ async function fetchSimulationData() {
     if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> İşlem Geçmişi Yükleniyor...</td></tr>';
 
     try {
-        const res = await fetch(`/api/simulation/daily_pnl?t=` + Date.now());
+        const res = await vrAuthorizedFetch(`/api/simulation/daily_pnl?t=` + Date.now());
+        if (!res.ok) throw new Error(`Simülasyon servisi HTTP ${res.status}`);
         const data = await res.json();
 
         if (data.status === 'success') {
@@ -4262,10 +4287,10 @@ async function fetchSimulationData() {
                 }
             }
         } else {
-            if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-red text-center" style="padding:2rem;">Simülasyon verisi alınamadı.</td></tr>';
+            if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="text-red text-center" style="padding:2rem;">Simülasyon verisi alınamadı: ${data.message || 'Bilinmeyen hata'}</td></tr>`;
         }
     } catch (e) {
-        if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-red text-center" style="padding:2rem;">Bağlantı hatası: ' + e.message + '</td></tr>';
+        if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="text-red text-center" style="padding:2rem;">Bağlantı hatası: ${e.message}</td></tr>`;
     }
 }
 

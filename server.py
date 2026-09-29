@@ -2634,11 +2634,8 @@ def api_tavan_tracker():
 def api_simulation_daily_pnl():
     try:
         from services.trade_database import get_connection
-        conn = get_connection()
-        
         # Get all trades
         import sqlite3
-        from contextlib import closing
         with get_connection() as conn:
             conn.row_factory = sqlite3.Row
             c = conn.cursor()
