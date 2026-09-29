@@ -25,6 +25,7 @@ file_handler = logging.FileHandler("data/system_logs.txt", encoding="utf-8")
 file_handler.setFormatter(logging.Formatter('[%(asctime)s] [%(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S"))
 logging.getLogger().addHandler(file_handler)
 logging.getLogger().setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
 
 from flask import Flask, request, jsonify, send_from_directory, make_response
 from flask_cors import CORS
@@ -767,15 +768,17 @@ def simulation_loop():
                             (d_str,),
                         )
                         _stale = [tuple(r) for r in _cur.fetchall()]
+                    if _stale:
+                        logger.info("[SIMLOOP] Onarim: %d gecmis gun acik pozisyon bulundu", len(_stale))
                     for _s_owner, _s_date in _stale:
                         try:
                             from services.simulation_engine import SimulationEngine
                             SimulationEngine(owner=_s_owner).run_daily_simulation(_s_date)
-                            print(f"[SIMLOOP] Gecmis gun kapanis onarimi: {_s_date} ({_s_owner})")
+                            logger.info("[SIMLOOP] Gecmis gun kapanis onarimi: %s (%s)", _s_date, _s_owner)
                         except Exception as _rep_err:
-                            print(f"[SIMLOOP] Onarim hatasi {_s_date} ({_s_owner}): {_rep_err}")
+                            logger.error("[SIMLOOP] Onarim hatasi %s (%s): %s", _s_date, _s_owner, _rep_err)
                 except Exception as _cl_err:
-                    print(f"[SIMLOOP] Onarim tarama hatasi: {_cl_err}")
+                    logger.error("[SIMLOOP] Onarim tarama hatasi: %s", _cl_err)
 
             try:
                 from services.trade_database import get_connection as _get_conn
@@ -2020,11 +2023,20 @@ def api_varant_simulator():
 
 @app.route('/api/system_logs_read', methods=['GET'])
 def api_system_logs_read():
-    """Gecici log okuma ucu"""
+    """Gecici log okuma ucu. Opsiyonel: ?filter=telegram&lines=400"""
     try:
+        flt = (request.args.get('filter') or '').strip().lower()
+        try:
+            window = min(max(int(request.args.get('lines', 100)), 1), 5000)
+        except (TypeError, ValueError):
+            window = 100
         with open('data/system_logs.txt', 'r', encoding='utf-8') as f:
             lines = f.readlines()
-        return Response("".join(lines[-100:]), mimetype='text/plain')
+        if flt:
+            picked = [ln for ln in lines[-5000:] if flt in ln.lower()]
+        else:
+            picked = lines[-window:]
+        return Response("".join(picked), mimetype='text/plain')
     except Exception as e:
         return str(e)
 
