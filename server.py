@@ -2636,7 +2636,8 @@ def api_simulation_daily_pnl():
         from services.trade_database import get_connection
         # Get all trades
         import sqlite3
-        with get_connection() as conn:
+        from contextlib import closing
+        with closing(get_connection()) as conn:
             conn.row_factory = sqlite3.Row
             c = conn.cursor()
             owner = get_owner_key()
