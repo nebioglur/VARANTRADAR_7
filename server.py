@@ -3031,6 +3031,25 @@ def api_dip_breakout():
         return jsonify({"status": "error", "message": str(e), "trace": traceback.format_exc()}), 500
 
 
+_sim_loop_started = False
+
+
+def ensure_simulation_loop():
+    """Gunicorn import sirasinda da sim dongusunu baslatir.
+    Render'da server gunicorn ile calisir; `__main__` blogu hic calismaz,
+    bu yuzden sim/telegram dongusu module-level guvenli baslatma ile acilir."""
+    global _sim_loop_started
+    if _sim_loop_started:
+        return
+    _sim_loop_started = True
+    _t_sim = threading.Thread(target=simulation_loop, daemon=True, name="simulation-loop")
+    _t_sim.start()
+    logger.info("[SIMLOOP] Arka plan simulasyon dongusu baslatildi (worker pid=%s)", os.getpid())
+
+
+ensure_simulation_loop()
+
+
 if __name__ == "__main__":
 
     print("[SYSTEM] VarantRadar Pro Web Server Baslatiliyor...")
@@ -3045,8 +3064,7 @@ if __name__ == "__main__":
         )
         t.start()
         # Simülasyon sürekli arka plan döngüsü (AL/SAT anında Telegram bildirimi)
-        t_sim = threading.Thread(target=simulation_loop, daemon=True, name="simulation-loop")
-        t_sim.start()
+        ensure_simulation_loop()
         try:
             start_live_data_collector()
         except Exception as e:
