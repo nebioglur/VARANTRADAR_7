@@ -339,7 +339,10 @@ def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.
         local_now = datetime.now(ZoneInfo("Europe/Istanbul"))
         if event_dt.tzinfo is None:
             event_dt = event_dt.replace(tzinfo=ZoneInfo("Europe/Istanbul"))
-        if event_dt < local_now - timedelta(minutes=15) or event_dt > local_now + timedelta(minutes=5):
+        # KULLANICI ISTEGI: gecmis gun kapanislari dahil TUM trade olaylari
+        # Telegram'a gider (eskisi gibi). Yalnizca gelecekteki bozuk/zaman
+        # tasmali olaylar engellenir; dedup zaten mukerrer mesaji onler.
+        if event_dt > local_now + timedelta(minutes=5):
             return True
     except (TypeError, ValueError):
         logger.warning("Simulasyon Telegram olayi icin zaman okunamadi: %s", event_time)
