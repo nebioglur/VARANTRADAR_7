@@ -6418,7 +6418,7 @@ function renderAllStocksTable() {
         return `
             <tr>
                 <td style="font-weight:bold; cursor:pointer; color:${color};" onclick="openGraphicTab('${s.symbol}')">${sym}</td>
-                <td style="font-weight:600;">₺${s.price.toFixed(2)}</td>
+                <td style="font-weight:600; color:${color};">₺${s.price.toFixed(2)}</td>
                 <td style="color:var(--text-muted);">₺${prevClose.toFixed(2)}</td>
                 <td style="color:${color}; font-weight:bold;">${sign}${s.change.toFixed(2)}%</td>
                 <td style="color:${intraColor}; font-weight:bold;">${intraSign}${s.intra_change.toFixed(2)}%</td>
@@ -6586,7 +6586,7 @@ function renderSuper12Table() {
         
         return '<tr>' +
                '<td style="font-weight:bold; cursor:pointer; color:' + color + ';" onclick="openGraphicTab(\'' + s.symbol + '\')">' + rankBadge + ' ' + sym + '</td>' +
-               '<td style="font-weight:600;">\u20BA' + s.price.toFixed(2) + '</td>' +
+               '<td style="font-weight:600; color:' + color + ';">\u20BA' + s.price.toFixed(2) + '</td>' +
                '<td style="color:' + color + '; font-weight:bold;">' + sign + s.change.toFixed(2) + '%</td>' +
                '<td style="color:var(--text-muted);">' + volTLM + '</td>' +
                '<td style="color:var(--text-muted);">' + volLotM + '</td>' +
