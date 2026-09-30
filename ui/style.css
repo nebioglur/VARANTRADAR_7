@@ -1578,23 +1578,24 @@ body.light-mode .data-table tbody tr:hover td {
 
 body.light-mode {
     color-scheme: light;
-    --bg-base: #a9aeb7;
-    --bg-card: #bfc4cb;
-    --bg-card-hover: #c8ccd3;
-    --border-color: #878e99;
-    --text-main: #1f232b;
-    --text-muted: #454b56;
-    --accent-blue: #1d4f9c;
-    --accent-blue-hover: #16407f;
-    --accent-green: #14724a;
-    --accent-red: #a93226;
-    --accent-yellow: #9a5b10;
-    --accent-purple: #5b3e9e;
-    --surface-raised: #ced2d8;
-    --surface-inset: #a2a8b1;
-    --shadow-sm: 0 1px 2px rgba(30, 34, 44, 0.14);
-    --shadow-md: 0 5px 14px rgba(30, 34, 44, 0.18);
-    --shadow-lg: 0 12px 28px rgba(30, 34, 44, 0.24);
+    --bg-base: #9aa3b0;
+    --bg-card: #b8c0cc;
+    --bg-card-hover: #c2cad5;
+    --border-color: #7e8794;
+    --text-main: #1c2230;
+    --text-muted: #3f4859;
+    --accent-blue: #1d5fbf;
+    --accent-blue-hover: #164a99;
+    --accent-green: #0e7c4a;
+    --accent-red: #c0332a;
+    --accent-yellow: #a8640e;
+    --accent-purple: #6d3fc0;
+    --accent-teal: #0d7a72;
+    --surface-raised: #c3cddb;
+    --surface-inset: #a5aebc;
+    --shadow-sm: 0 1px 2px rgba(24, 30, 42, 0.16);
+    --shadow-md: 0 5px 14px rgba(24, 30, 42, 0.2);
+    --shadow-lg: 0 12px 28px rgba(24, 30, 42, 0.26);
     background: var(--bg-base) !important;
     color: var(--text-main) !important;
 }
@@ -1636,7 +1637,7 @@ body.light-mode .card h3 {
 }
 
 body.light-mode .card h4 {
-    color: var(--text-main) !important;
+    color: var(--accent-teal) !important;
 }
 
 body.light-mode .card[style*="linear-gradient"],
@@ -1648,7 +1649,7 @@ body.light-mode .glass-panel[style*="linear-gradient"] {
     box-shadow: var(--shadow-sm) !important;
 }
 
-/* inline koyu/beyaz yuzeyleri gri yuzeylere cevir */
+/* inline koyu/beyaz yuzeyler -> gri-mavi yuzeyler (beyaz yok) */
 body.light-mode [style*="background:rgba(15,23,42"],
 body.light-mode [style*="background: rgba(15, 23, 42"],
 body.light-mode [style*="background:rgba(30,41,59"],
@@ -1666,7 +1667,9 @@ body.light-mode [style*="background: #0f172a"] {
 body.light-mode [style*="background:#fff"],
 body.light-mode [style*="background: #fff"],
 body.light-mode [style*="background:#ffffff"],
-body.light-mode [style*="background: #ffffff"] {
+body.light-mode [style*="background: #ffffff"],
+body.light-mode [style*="background:rgba(255,255,255"],
+body.light-mode [style*="background: rgba(255, 255, 255"] {
     background: var(--surface-raised) !important;
     background-image: none !important;
 }
@@ -1678,7 +1681,7 @@ body.light-mode [style*="color: var(--text-light)"] {
     color: var(--text-main) !important;
 }
 
-/* tablo */
+/* tablo: zebra satirlar acik mavi */
 body.light-mode .data-table {
     background: var(--bg-card) !important;
     border-color: var(--border-color) !important;
@@ -1686,52 +1689,51 @@ body.light-mode .data-table {
 }
 
 body.light-mode .data-table thead th {
-    background: #9aa1ab !important;
-    color: #15181e !important;
-    border-color: #828a95 !important;
+    background: #6f7a8d !important;
+    color: #ffffff !important;
+    border-color: #5d687b !important;
 }
 
 body.light-mode .data-table tbody td {
     color: var(--text-main) !important;
-    border-color: #a7adb6 !important;
+    border-color: #9aa5b5 !important;
 }
 
 body.light-mode .data-table tbody tr:nth-child(even) td {
-    background: #b4bac2 !important;
+    background: #c3d5e8 !important;
 }
 
 body.light-mode .data-table tbody tr:hover td,
 body.light-mode table tbody tr:hover td {
-    background: #a7adb6 !important;
+    background: #b4c9e0 !important;
 }
 
-/* form elemanlari */
+/* form elemanlari: gri-mavi, beyaz yok */
 body.light-mode input,
 body.light-mode select,
 body.light-mode textarea,
 body.light-mode #symbol-input {
     background: var(--surface-raised) !important;
     color: var(--text-main) !important;
-    border-color: #6f7681 !important;
-    box-shadow: inset 0 1px 2px rgba(30, 34, 44, 0.08) !important;
+    border-color: #6d7889 !important;
+    box-shadow: inset 0 1px 2px rgba(24, 30, 42, 0.1) !important;
 }
 
 body.light-mode input::placeholder,
 body.light-mode textarea::placeholder {
-    color: #565c66 !important;
+    color: #4a5568 !important;
 }
 
-/* buton / filtre / gezinme */
+/* butonlar renkli: acik mavi aile */
 body.light-mode .s-tab,
 body.light-mode .nav-btn,
 body.light-mode .pill-btn,
 body.light-mode .filter-btn,
 body.light-mode .dip-filter-btn,
-body.light-mode .slider-nav-btn,
-body.light-mode .theme-toggle-btn {
-    background: var(--surface-inset) !important;
-    color: #22262e !important;
-    border-color: #7f8692 !important;
+body.light-mode .slider-nav-btn {
+    background: #b9c9de !important;
+    color: #164a8f !important;
+    border-color: #8aa4c4 !important;
     box-shadow: none !important;
 }
 
@@ -1740,10 +1742,9 @@ body.light-mode .nav-btn:hover,
 body.light-mode .pill-btn:hover,
 body.light-mode .filter-btn:hover,
 body.light-mode .dip-filter-btn:hover,
-body.light-mode .slider-nav-btn:hover,
-body.light-mode .theme-toggle-btn:hover {
-    background: #969ca6 !important;
-    color: #15181e !important;
+body.light-mode .slider-nav-btn:hover {
+    background: #a9bcd6 !important;
+    color: #123a72 !important;
 }
 
 body.light-mode .s-tab.active,
@@ -1751,70 +1752,70 @@ body.light-mode .nav-btn.active,
 body.light-mode .pill-btn.active,
 body.light-mode .filter-btn.active,
 body.light-mode .indicator-dot.active {
-    background: #1d4f9c !important;
+    background: #1d5fbf !important;
     color: #ffffff !important;
-    border-color: #16407f !important;
+    border-color: #164a99 !important;
 }
 
 body.light-mode .dip-filter-btn.active {
-    background: #c2dcc7 !important;
-    color: #14563a !important;
-    border-color: #86ac8e !important;
+    background: #bedcc6 !important;
+    color: #0b5c36 !important;
+    border-color: #7fb08c !important;
 }
 
 body.light-mode .indicator-dot {
     background: var(--surface-inset) !important;
-    color: #22262e !important;
-    border-color: #7f8692 !important;
+    color: #1c2230 !important;
+    border-color: #7e8794 !important;
 }
 
 body.light-mode #total-analyzed-counter {
-    background: #c2dcc7 !important;
-    color: #14563a !important;
-    border-color: #86ac8e !important;
+    background: #bfdcc8 !important;
+    color: #0b5c36 !important;
+    border-color: #7fb08c !important;
     box-shadow: none !important;
 }
 
-/* rozet/chip'ler: gri uzerinde acik renkli tints */
+/* rozet/chip'ler: doygun pastel tints */
 body.light-mode span[style*="background:#22c55e22"],
 body.light-mode span[style*="border:1px solid #22c55e66"] {
-    background: #c2dcc7 !important;
-    color: #14563a !important;
-    border-color: #86ac8e !important;
+    background: #bfdcc8 !important;
+    color: #0b5c36 !important;
+    border-color: #7fb08c !important;
 }
 
 body.light-mode span[style*="background:#3b82f622"],
 body.light-mode span[style*="border:1px solid #3b82f666"] {
-    background: #c4d5e8 !important;
-    color: #1d4f9c !important;
-    border-color: #8aa8c6 !important;
+    background: #c3d6ee !important;
+    color: #1a4d96 !important;
+    border-color: #8fb0d8 !important;
 }
 
 body.light-mode span[style*="background:#ef444422"],
 body.light-mode span[style*="border:1px solid #ef444466"] {
-    background: #e6c9c5 !important;
-    color: #8c2b20 !important;
-    border-color: #c39a93 !important;
+    background: #ecc8c3 !important;
+    color: #96261c !important;
+    border-color: #d09a92 !important;
 }
 
 body.light-mode span[style*="background:#f9731622"],
 body.light-mode span[style*="border:1px solid #f9731666"] {
-    background: #e6d8bd !important;
-    color: #7a5117 !important;
-    border-color: #c2a878 !important;
+    background: #ecd9b8 !important;
+    color: #7d5312 !important;
+    border-color: #caa86f !important;
 }
 
 body.light-mode button[style*="rgba(34,197,94,0.2)"] {
-    background: #c2dcc7 !important;
-    color: #14563a !important;
-    border-color: #86ac8e !important;
+    background: #bfdcc8 !important;
+    color: #0b5c36 !important;
+    border-color: #7fb08c !important;
 }
 
 body.light-mode button[style*="rgba(239,68,68,0.2)"],
 body.light-mode button[style*="rgba(239,68,68,0.25)"] {
-    background: #e6c9c5 !important;
-    color: #8c2b20 !important;
-    border-color: #c39a93 !important;
+    background: #ecc8c3 !important;
+    color: #96261c !important;
+    border-color: #d09a92 !important;
 }
 
 body.light-mode .text-blue { color: var(--accent-blue) !important; }
@@ -1832,12 +1833,12 @@ body.light-mode #live-clock {
 
 body.light-mode .theme-toggle-btn { background: transparent !important; }
 body.light-mode .theme-toggle-btn:hover { background: var(--surface-inset) !important; }
-body.light-mode .table-scroll-wrapper { scrollbar-color: #6f7681 var(--bg-base); }
+body.light-mode .table-scroll-wrapper { scrollbar-color: #6d7889 var(--bg-base); }
 
 body.light-mode .fullscreen-card {
     background: var(--bg-card) !important;
     border-color: var(--border-color) !important;
-    box-shadow: 0 0 0 9999px rgba(18, 20, 26, 0.62), var(--shadow-lg) !important;
+    box-shadow: 0 0 0 9999px rgba(14, 18, 26, 0.66), var(--shadow-lg) !important;
 }
 
 body.light-mode .swal2-popup,
