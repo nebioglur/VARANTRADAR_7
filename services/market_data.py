@@ -127,8 +127,8 @@ class MarketDataManager:
             if all_rows:
                 try:
                     cursor.executemany(insert_sql, all_rows)
-                except Exception:
-                    pass
+                except Exception as _ins_err:
+                    print(f"[MarketData] INSERT hatasi ({len(all_rows)} satir): {_ins_err}")
         except Exception as e:
             print(f"[MarketData] YF indirme hatası: {e}")
             
