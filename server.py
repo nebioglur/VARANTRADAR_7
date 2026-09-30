@@ -2703,9 +2703,17 @@ def api_tavan_history():
         # Arka plan taraması henüz ilk denetim kaydını yazmadıysa, mevcut
         # gerçek dashboard cache'inden bir canlı snapshot oluştur. Böylece
         # Render yeniden başlatmalarında istatistik ekranı boş kalmaz.
-        today_str = datetime.now().strftime("%Y-%m-%d")
+        today_str = datetime.now(ZoneInfo("Europe/Istanbul")).strftime("%Y-%m-%d")
         audits = TavanAuditTracker.load_all_audits()
-        if today_str not in audits:
+        _today_audit = audits.get(today_str) or {}
+        # Sahte bos kayit korumasi: gece yarisi / veri yokken yazilan
+        # "NO_QUALIFIED_CANDIDATES + 0 item" kaydi, gunduz gercek veriyle
+        # snapshot alinmasini engellememeli.
+        _bogus_today = (
+            _today_audit.get("status") == "NO_QUALIFIED_CANDIDATES"
+            and not _today_audit.get("items")
+        )
+        if today_str not in audits or _bogus_today:
             cached_candidates = GLOBAL_DASHBOARD_CACHE.get("tavan_adaylari", [])
             cached_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
             if cached_candidates and cached_stats:
