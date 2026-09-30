@@ -1575,3 +1575,264 @@ body.light-mode .data-table tbody tr:hover td {
     overflow-y: auto !important;
     overflow-x: auto !important;
 }
+
+body.light-mode {
+    color-scheme: light;
+    --bg-base: #e6e5ee;
+    --bg-card: #f4f3f8;
+    --bg-card-hover: #edecf3;
+    --border-color: #cfcedb;
+    --text-main: #2b2e3b;
+    --text-muted: #5d6170;
+    --accent-blue: #315f85;
+    --accent-blue-hover: #244c6d;
+    --accent-green: #28744f;
+    --accent-red: #a64c45;
+    --accent-yellow: #91641e;
+    --accent-purple: #66518a;
+    --surface-raised: #fbfbfd;
+    --surface-inset: #e3e2ea;
+    --shadow-sm: 0 1px 2px rgba(44, 46, 66, 0.055);
+    --shadow-md: 0 5px 14px rgba(44, 46, 66, 0.07);
+    --shadow-lg: 0 12px 28px rgba(44, 46, 66, 0.11);
+    background: var(--bg-base) !important;
+    color: var(--text-main) !important;
+}
+
+body.light-mode .top-nav,
+body.light-mode .bottom-mobile-bar,
+body.light-mode .mobile-slider-controls,
+body.light-mode .sidebar-tabs {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+body.light-mode .card,
+body.light-mode details.card,
+body.light-mode .glass-panel,
+body.light-mode .modal-content,
+body.light-mode .modal,
+body.light-mode .scenario-box,
+body.light-mode .cio-verdict-box {
+    background: var(--bg-card) !important;
+    background-image: none !important;
+    border-color: var(--border-color) !important;
+    box-shadow: var(--shadow-sm) !important;
+    color: var(--text-main) !important;
+}
+
+body.light-mode .card h1,
+body.light-mode .card h2,
+body.light-mode .card h3,
+body.light-mode .card h4,
+body.light-mode .card-title,
+body.light-mode .modal-content h1,
+body.light-mode .modal-content h2,
+body.light-mode .modal-content h3,
+body.light-mode .modal-content h4 {
+    color: var(--text-main) !important;
+}
+
+body.light-mode .card[style*="linear-gradient"],
+body.light-mode .glass-panel[style*="linear-gradient"] {
+    background: var(--bg-card) !important;
+    background-image: none !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-main) !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+body.light-mode .glass-panel[style*="linear-gradient"] [style*="color:var(--text-main)"],
+body.light-mode .glass-panel[style*="linear-gradient"] [style*="color:var(--text-muted)"] {
+    color: var(--text-main) !important;
+}
+
+body.light-mode #live-clock {
+    background: transparent !important;
+    color: var(--accent-blue) !important;
+    -webkit-text-fill-color: var(--accent-blue) !important;
+    text-shadow: none !important;
+}
+
+body.light-mode [style*="background:rgba(15,23,42"],
+body.light-mode [style*="background: rgba(15, 23, 42"],
+body.light-mode [style*="background:rgba(30,41,59"],
+body.light-mode [style*="background: rgba(30, 41, 59"],
+body.light-mode [style*="background:rgba(0,0,0"],
+body.light-mode [style*="background: rgba(0, 0, 0"],
+body.light-mode [style*="background:#fff"],
+body.light-mode [style*="background: #fff"],
+body.light-mode [style*="background:var(--bg-secondary)"],
+body.light-mode [style*="background: var(--bg-secondary)"],
+body.light-mode [style*="background:#0f172a"],
+body.light-mode [style*="background: #0f172a"] {
+    background: var(--surface-inset) !important;
+    background-image: none !important;
+}
+
+body.light-mode [style*="color:#fff"],
+body.light-mode [style*="color: #fff"],
+body.light-mode [style*="color:var(--text-light)"],
+body.light-mode [style*="color: var(--text-light)"] {
+    color: var(--text-main) !important;
+}
+
+body.light-mode .data-table {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+body.light-mode .data-table thead th {
+    background: #dcdae6 !important;
+    color: #43465a !important;
+    border-color: #b9b7c9 !important;
+}
+
+body.light-mode .data-table tbody td {
+    color: var(--text-main) !important;
+    border-color: #dcdae4 !important;
+}
+
+body.light-mode .data-table tbody tr:nth-child(even) td {
+    background: #edeaf2 !important;
+}
+
+body.light-mode .data-table tbody tr:hover td,
+body.light-mode table tbody tr:hover td {
+    background: #e2e0ea !important;
+}
+
+body.light-mode input,
+body.light-mode select,
+body.light-mode textarea,
+body.light-mode #symbol-input {
+    background: var(--surface-raised) !important;
+    color: var(--text-main) !important;
+    border-color: #b9b7c9 !important;
+    box-shadow: inset 0 1px 2px rgba(44, 46, 66, 0.04) !important;
+}
+
+body.light-mode input::placeholder,
+body.light-mode textarea::placeholder {
+    color: #6b6f7c !important;
+}
+
+body.light-mode .s-tab,
+body.light-mode .nav-btn,
+body.light-mode .pill-btn,
+body.light-mode .filter-btn,
+body.light-mode .dip-filter-btn,
+body.light-mode .slider-nav-btn,
+body.light-mode .theme-toggle-btn {
+    background: var(--surface-inset) !important;
+    color: #4b4f60 !important;
+    border-color: var(--border-color) !important;
+    box-shadow: none !important;
+}
+
+body.light-mode .s-tab:hover,
+body.light-mode .nav-btn:hover,
+body.light-mode .pill-btn:hover,
+body.light-mode .filter-btn:hover,
+body.light-mode .dip-filter-btn:hover,
+body.light-mode .slider-nav-btn:hover,
+body.light-mode .theme-toggle-btn:hover {
+    background: #d5d3e0 !important;
+    color: #2b2e3b !important;
+}
+
+body.light-mode .s-tab.active,
+body.light-mode .nav-btn.active,
+body.light-mode .pill-btn.active,
+body.light-mode .filter-btn.active,
+body.light-mode .indicator-dot.active {
+    background: #315f85 !important;
+    color: #fff !important;
+    border-color: #315f85 !important;
+}
+
+body.light-mode .dip-filter-btn.active {
+    background: #dce8dd !important;
+    color: #275c40 !important;
+    border-color: #a3c3ab !important;
+}
+
+body.light-mode .indicator-dot {
+    background: var(--surface-inset) !important;
+    color: #4b4f60 !important;
+    border-color: var(--border-color) !important;
+}
+
+body.light-mode #total-analyzed-counter {
+    background: #dce8dd !important;
+    color: #275c40 !important;
+    border-color: #a3c3ab !important;
+    box-shadow: none !important;
+}
+
+body.light-mode .data-table span[style*="background:#22c55e22"],
+body.light-mode span[style*="background:#22c55e22"],
+body.light-mode span[style*="border:1px solid #22c55e66"] {
+    background: #dce8dd !important;
+    color: #275c40 !important;
+    border-color: #a3c3ab !important;
+}
+
+body.light-mode span[style*="background:#3b82f622"],
+body.light-mode span[style*="border:1px solid #3b82f666"] {
+    background: #dbe4f0 !important;
+    color: #2f5478 !important;
+    border-color: #a4bcd2 !important;
+}
+
+body.light-mode span[style*="background:#ef444422"],
+body.light-mode span[style*="border:1px solid #ef444466"] {
+    background: #f0dcda !important;
+    color: #7e3d38 !important;
+    border-color: #d3a9a2 !important;
+}
+
+body.light-mode span[style*="background:#f9731622"],
+body.light-mode span[style*="border:1px solid #f9731666"] {
+    background: #f0e3d0 !important;
+    color: #7a4f22 !important;
+    border-color: #d4b98e !important;
+}
+
+body.light-mode button[style*="rgba(34,197,94,0.2)"] {
+    background: #dce8dd !important;
+    color: #275c40 !important;
+    border-color: #a3c3ab !important;
+}
+
+body.light-mode button[style*="rgba(239,68,68,0.2)"],
+body.light-mode button[style*="rgba(239,68,68,0.25)"] {
+    background: #f0dcda !important;
+    color: #7e3d38 !important;
+    border-color: #d3a9a2 !important;
+}
+
+body.light-mode .text-blue { color: var(--accent-blue) !important; }
+body.light-mode .text-green { color: var(--accent-green) !important; }
+body.light-mode .text-red { color: var(--accent-red) !important; }
+body.light-mode .text-yellow { color: var(--accent-yellow) !important; }
+body.light-mode .text-muted { color: var(--text-muted) !important; }
+body.light-mode .theme-toggle-btn { background: transparent !important; }
+body.light-mode .theme-toggle-btn:hover { background: var(--surface-inset) !important; }
+body.light-mode .table-scroll-wrapper { scrollbar-color: #a7a5b8 var(--bg-base); }
+body.light-mode .fullscreen-card {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+    box-shadow: 0 0 0 9999px rgba(32, 33, 44, 0.55), var(--shadow-lg) !important;
+}
+body.light-mode .swal2-popup,
+body.light-mode .toast,
+body.light-mode .notification,
+body.light-mode .alert {
+    background: var(--bg-card) !important;
+    color: var(--text-main) !important;
+    border-color: var(--border-color) !important;
+    box-shadow: var(--shadow-md) !important;
+}
