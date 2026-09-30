@@ -1578,23 +1578,23 @@ body.light-mode .data-table tbody tr:hover td {
 
 body.light-mode {
     color-scheme: light;
-    --bg-base: #e6e5ee;
-    --bg-card: #f4f3f8;
-    --bg-card-hover: #edecf3;
-    --border-color: #cfcedb;
-    --text-main: #2b2e3b;
-    --text-muted: #5d6170;
-    --accent-blue: #315f85;
-    --accent-blue-hover: #244c6d;
-    --accent-green: #28744f;
-    --accent-red: #a64c45;
-    --accent-yellow: #91641e;
-    --accent-purple: #66518a;
-    --surface-raised: #fbfbfd;
-    --surface-inset: #e3e2ea;
-    --shadow-sm: 0 1px 2px rgba(44, 46, 66, 0.055);
-    --shadow-md: 0 5px 14px rgba(44, 46, 66, 0.07);
-    --shadow-lg: 0 12px 28px rgba(44, 46, 66, 0.11);
+    --bg-base: #a9aeb7;
+    --bg-card: #bfc4cb;
+    --bg-card-hover: #c8ccd3;
+    --border-color: #878e99;
+    --text-main: #1f232b;
+    --text-muted: #454b56;
+    --accent-blue: #1d4f9c;
+    --accent-blue-hover: #16407f;
+    --accent-green: #14724a;
+    --accent-red: #a93226;
+    --accent-yellow: #9a5b10;
+    --accent-purple: #5b3e9e;
+    --surface-raised: #ced2d8;
+    --surface-inset: #a2a8b1;
+    --shadow-sm: 0 1px 2px rgba(30, 34, 44, 0.14);
+    --shadow-md: 0 5px 14px rgba(30, 34, 44, 0.18);
+    --shadow-lg: 0 12px 28px rgba(30, 34, 44, 0.24);
     background: var(--bg-base) !important;
     color: var(--text-main) !important;
 }
@@ -1622,15 +1622,20 @@ body.light-mode .cio-verdict-box {
     color: var(--text-main) !important;
 }
 
+/* basliklar renkli */
 body.light-mode .card h1,
 body.light-mode .card h2,
-body.light-mode .card h3,
-body.light-mode .card h4,
 body.light-mode .card-title,
 body.light-mode .modal-content h1,
-body.light-mode .modal-content h2,
-body.light-mode .modal-content h3,
-body.light-mode .modal-content h4 {
+body.light-mode .modal-content h2 {
+    color: var(--accent-blue) !important;
+}
+
+body.light-mode .card h3 {
+    color: var(--accent-purple) !important;
+}
+
+body.light-mode .card h4 {
     color: var(--text-main) !important;
 }
 
@@ -1643,31 +1648,26 @@ body.light-mode .glass-panel[style*="linear-gradient"] {
     box-shadow: var(--shadow-sm) !important;
 }
 
-body.light-mode .glass-panel[style*="linear-gradient"] [style*="color:var(--text-main)"],
-body.light-mode .glass-panel[style*="linear-gradient"] [style*="color:var(--text-muted)"] {
-    color: var(--text-main) !important;
-}
-
-body.light-mode #live-clock {
-    background: transparent !important;
-    color: var(--accent-blue) !important;
-    -webkit-text-fill-color: var(--accent-blue) !important;
-    text-shadow: none !important;
-}
-
+/* inline koyu/beyaz yuzeyleri gri yuzeylere cevir */
 body.light-mode [style*="background:rgba(15,23,42"],
 body.light-mode [style*="background: rgba(15, 23, 42"],
 body.light-mode [style*="background:rgba(30,41,59"],
 body.light-mode [style*="background: rgba(30, 41, 59"],
 body.light-mode [style*="background:rgba(0,0,0"],
 body.light-mode [style*="background: rgba(0, 0, 0"],
-body.light-mode [style*="background:#fff"],
-body.light-mode [style*="background: #fff"],
 body.light-mode [style*="background:var(--bg-secondary)"],
 body.light-mode [style*="background: var(--bg-secondary)"],
 body.light-mode [style*="background:#0f172a"],
 body.light-mode [style*="background: #0f172a"] {
     background: var(--surface-inset) !important;
+    background-image: none !important;
+}
+
+body.light-mode [style*="background:#fff"],
+body.light-mode [style*="background: #fff"],
+body.light-mode [style*="background:#ffffff"],
+body.light-mode [style*="background: #ffffff"] {
+    background: var(--surface-raised) !important;
     background-image: none !important;
 }
 
@@ -1678,6 +1678,7 @@ body.light-mode [style*="color: var(--text-light)"] {
     color: var(--text-main) !important;
 }
 
+/* tablo */
 body.light-mode .data-table {
     background: var(--bg-card) !important;
     border-color: var(--border-color) !important;
@@ -1685,40 +1686,42 @@ body.light-mode .data-table {
 }
 
 body.light-mode .data-table thead th {
-    background: #dcdae6 !important;
-    color: #43465a !important;
-    border-color: #b9b7c9 !important;
+    background: #9aa1ab !important;
+    color: #15181e !important;
+    border-color: #828a95 !important;
 }
 
 body.light-mode .data-table tbody td {
     color: var(--text-main) !important;
-    border-color: #dcdae4 !important;
+    border-color: #a7adb6 !important;
 }
 
 body.light-mode .data-table tbody tr:nth-child(even) td {
-    background: #edeaf2 !important;
+    background: #b4bac2 !important;
 }
 
 body.light-mode .data-table tbody tr:hover td,
 body.light-mode table tbody tr:hover td {
-    background: #e2e0ea !important;
+    background: #a7adb6 !important;
 }
 
+/* form elemanlari */
 body.light-mode input,
 body.light-mode select,
 body.light-mode textarea,
 body.light-mode #symbol-input {
     background: var(--surface-raised) !important;
     color: var(--text-main) !important;
-    border-color: #b9b7c9 !important;
-    box-shadow: inset 0 1px 2px rgba(44, 46, 66, 0.04) !important;
+    border-color: #6f7681 !important;
+    box-shadow: inset 0 1px 2px rgba(30, 34, 44, 0.08) !important;
 }
 
 body.light-mode input::placeholder,
 body.light-mode textarea::placeholder {
-    color: #6b6f7c !important;
+    color: #565c66 !important;
 }
 
+/* buton / filtre / gezinme */
 body.light-mode .s-tab,
 body.light-mode .nav-btn,
 body.light-mode .pill-btn,
@@ -1727,8 +1730,8 @@ body.light-mode .dip-filter-btn,
 body.light-mode .slider-nav-btn,
 body.light-mode .theme-toggle-btn {
     background: var(--surface-inset) !important;
-    color: #4b4f60 !important;
-    border-color: var(--border-color) !important;
+    color: #22262e !important;
+    border-color: #7f8692 !important;
     box-shadow: none !important;
 }
 
@@ -1739,8 +1742,8 @@ body.light-mode .filter-btn:hover,
 body.light-mode .dip-filter-btn:hover,
 body.light-mode .slider-nav-btn:hover,
 body.light-mode .theme-toggle-btn:hover {
-    background: #d5d3e0 !important;
-    color: #2b2e3b !important;
+    background: #969ca6 !important;
+    color: #15181e !important;
 }
 
 body.light-mode .s-tab.active,
@@ -1748,70 +1751,70 @@ body.light-mode .nav-btn.active,
 body.light-mode .pill-btn.active,
 body.light-mode .filter-btn.active,
 body.light-mode .indicator-dot.active {
-    background: #315f85 !important;
-    color: #fff !important;
-    border-color: #315f85 !important;
+    background: #1d4f9c !important;
+    color: #ffffff !important;
+    border-color: #16407f !important;
 }
 
 body.light-mode .dip-filter-btn.active {
-    background: #dce8dd !important;
-    color: #275c40 !important;
-    border-color: #a3c3ab !important;
+    background: #c2dcc7 !important;
+    color: #14563a !important;
+    border-color: #86ac8e !important;
 }
 
 body.light-mode .indicator-dot {
     background: var(--surface-inset) !important;
-    color: #4b4f60 !important;
-    border-color: var(--border-color) !important;
+    color: #22262e !important;
+    border-color: #7f8692 !important;
 }
 
 body.light-mode #total-analyzed-counter {
-    background: #dce8dd !important;
-    color: #275c40 !important;
-    border-color: #a3c3ab !important;
+    background: #c2dcc7 !important;
+    color: #14563a !important;
+    border-color: #86ac8e !important;
     box-shadow: none !important;
 }
 
-body.light-mode .data-table span[style*="background:#22c55e22"],
+/* rozet/chip'ler: gri uzerinde acik renkli tints */
 body.light-mode span[style*="background:#22c55e22"],
 body.light-mode span[style*="border:1px solid #22c55e66"] {
-    background: #dce8dd !important;
-    color: #275c40 !important;
-    border-color: #a3c3ab !important;
+    background: #c2dcc7 !important;
+    color: #14563a !important;
+    border-color: #86ac8e !important;
 }
 
 body.light-mode span[style*="background:#3b82f622"],
 body.light-mode span[style*="border:1px solid #3b82f666"] {
-    background: #dbe4f0 !important;
-    color: #2f5478 !important;
-    border-color: #a4bcd2 !important;
+    background: #c4d5e8 !important;
+    color: #1d4f9c !important;
+    border-color: #8aa8c6 !important;
 }
 
 body.light-mode span[style*="background:#ef444422"],
 body.light-mode span[style*="border:1px solid #ef444466"] {
-    background: #f0dcda !important;
-    color: #7e3d38 !important;
-    border-color: #d3a9a2 !important;
+    background: #e6c9c5 !important;
+    color: #8c2b20 !important;
+    border-color: #c39a93 !important;
 }
 
 body.light-mode span[style*="background:#f9731622"],
 body.light-mode span[style*="border:1px solid #f9731666"] {
-    background: #f0e3d0 !important;
-    color: #7a4f22 !important;
-    border-color: #d4b98e !important;
+    background: #e6d8bd !important;
+    color: #7a5117 !important;
+    border-color: #c2a878 !important;
 }
 
 body.light-mode button[style*="rgba(34,197,94,0.2)"] {
-    background: #dce8dd !important;
-    color: #275c40 !important;
-    border-color: #a3c3ab !important;
+    background: #c2dcc7 !important;
+    color: #14563a !important;
+    border-color: #86ac8e !important;
 }
 
 body.light-mode button[style*="rgba(239,68,68,0.2)"],
 body.light-mode button[style*="rgba(239,68,68,0.25)"] {
-    background: #f0dcda !important;
-    color: #7e3d38 !important;
-    border-color: #d3a9a2 !important;
+    background: #e6c9c5 !important;
+    color: #8c2b20 !important;
+    border-color: #c39a93 !important;
 }
 
 body.light-mode .text-blue { color: var(--accent-blue) !important; }
@@ -1819,14 +1822,24 @@ body.light-mode .text-green { color: var(--accent-green) !important; }
 body.light-mode .text-red { color: var(--accent-red) !important; }
 body.light-mode .text-yellow { color: var(--accent-yellow) !important; }
 body.light-mode .text-muted { color: var(--text-muted) !important; }
+
+body.light-mode #live-clock {
+    background: transparent !important;
+    color: var(--accent-blue) !important;
+    -webkit-text-fill-color: var(--accent-blue) !important;
+    text-shadow: none !important;
+}
+
 body.light-mode .theme-toggle-btn { background: transparent !important; }
 body.light-mode .theme-toggle-btn:hover { background: var(--surface-inset) !important; }
-body.light-mode .table-scroll-wrapper { scrollbar-color: #a7a5b8 var(--bg-base); }
+body.light-mode .table-scroll-wrapper { scrollbar-color: #6f7681 var(--bg-base); }
+
 body.light-mode .fullscreen-card {
     background: var(--bg-card) !important;
     border-color: var(--border-color) !important;
-    box-shadow: 0 0 0 9999px rgba(32, 33, 44, 0.55), var(--shadow-lg) !important;
+    box-shadow: 0 0 0 9999px rgba(18, 20, 26, 0.62), var(--shadow-lg) !important;
 }
+
 body.light-mode .swal2-popup,
 body.light-mode .toast,
 body.light-mode .notification,
