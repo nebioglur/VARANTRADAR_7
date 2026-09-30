@@ -6417,7 +6417,7 @@ function renderAllStocksTable() {
         let prevClose = s.price / (1 + (s.change / 100));
         return `
             <tr>
-                <td style="font-weight:bold; cursor:pointer; color:var(--text-light);" onclick="openGraphicTab('${s.symbol}')">${sym}</td>
+                <td style="font-weight:bold; cursor:pointer; color:${color};" onclick="openGraphicTab('${s.symbol}')">${sym}</td>
                 <td style="font-weight:600;">₺${s.price.toFixed(2)}</td>
                 <td style="color:var(--text-muted);">₺${prevClose.toFixed(2)}</td>
                 <td style="color:${color}; font-weight:bold;">${sign}${s.change.toFixed(2)}%</td>
@@ -6585,7 +6585,7 @@ function renderSuper12Table() {
         let rankBadge = '<span style="display:inline-block; width:30px; text-align:center; color:var(--text-muted); font-size:0.85rem; font-weight:bold; margin-right:5px; background:rgba(0,0,0,0.05); border-radius:4px;">#' + (index+1) + '</span>';
         
         return '<tr>' +
-               '<td style="font-weight:bold; cursor:pointer; color:var(--text-light);" onclick="openGraphicTab(\'' + s.symbol + '\')">' + rankBadge + ' ' + sym + '</td>' +
+               '<td style="font-weight:bold; cursor:pointer; color:' + color + ';" onclick="openGraphicTab(\'' + s.symbol + '\')">' + rankBadge + ' ' + sym + '</td>' +
                '<td style="font-weight:600;">\u20BA' + s.price.toFixed(2) + '</td>' +
                '<td style="color:' + color + '; font-weight:bold;">' + sign + s.change.toFixed(2) + '%</td>' +
                '<td style="color:var(--text-muted);">' + volTLM + '</td>' +

@@ -1575,3 +1575,104 @@ body.light-mode .data-table tbody tr:hover td {
     overflow-y: auto !important;
     overflow-x: auto !important;
 }
+/* =========================================================
+   LIGHT THEME MODERNIZATION (Colorful Headers Edition)
+   ========================================================= */
+
+body.light-mode {
+    --bg-base: #F6F8FB !important;
+    --bg-card: #FFFFFF !important;
+    --bg-card-hover: #F8FAFC !important;
+    --border-color: #E5E7EB !important;
+    --text-main: #111827 !important;
+    --text-muted: #667085 !important;
+    --accent-blue: #2563EB !important; /* Vibrant Primary Blue */
+    --accent-green: #16A34A !important;
+    --accent-red: #DC2626 !important; /* Vibrant Red */
+    --accent-yellow: #D97706 !important; /* Vibrant Amber/Orange */
+}
+
+/* Base structural overrides */
+body.light-mode .card, 
+body.light-mode .summary-card, 
+body.light-mode .glass-panel {
+    background: #FFFFFF !important;
+    border: 1px solid #E5E7EB !important;
+    box-shadow: 0 4px 6px -1px rgba(17, 24, 39, 0.05), 0 2px 4px -1px rgba(17, 24, 39, 0.03) !important;
+    border-radius: 12px !important;
+}
+
+body.light-mode .top-nav {
+    background: #FFFFFF !important;
+    border-bottom: 1px solid #E5E7EB !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02) !important;
+}
+
+body.light-mode .nav-btn {
+    background: transparent !important;
+    color: #475569 !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+    padding: 6px 14px !important;
+    margin: 2px 4px !important;
+}
+
+body.light-mode .nav-btn:hover {
+    background: #F1F5F9 !important;
+    color: #0F172A !important;
+}
+
+body.light-mode .nav-btn.active {
+    background: #EFF6FF !important;
+    color: #2563EB !important;
+    font-weight: 600 !important;
+}
+
+/* COLORFUL HEADERS */
+/* Tüm Hisseler (Blue) is already using var(--accent-blue) which is now #2563EB */
+
+/* V8 ENGINE & Special Sort (Orange/Amber) */
+body.light-mode #v8-wrapper h2 {
+    color: #D97706 !important;
+}
+body.light-mode .nav-btn[href="/#v8"] {
+    color: #D97706 !important;
+}
+body.light-mode .nav-btn[href="/#v8"].active {
+    background: #FEF3C7 !important;
+}
+
+/* Radar Sinyalleri (Red) */
+body.light-mode #live-radar-container h2 {
+    color: #DC2626 !important; 
+}
+
+/* Piyasa Dedektifi / Ýstatistikler (Yellow/Gold) */
+body.light-mode #home-top-picks h3, 
+body.light-mode #portfolio-container h3,
+body.light-mode .card-title i.fa-fire {
+    color: #F59E0B !important; 
+}
+
+/* Inputs & Search boxes */
+body.light-mode input[type="search"], 
+body.light-mode input[type="text"] {
+    background: #FFFFFF !important;
+    border: 1px solid #CBD5E1 !important;
+    color: #0F172A !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05) inset !important;
+}
+body.light-mode input[type="search"]:focus {
+    border-color: #2563EB !important;
+    outline: 2px solid rgba(37, 99, 235, 0.2) !important;
+}
+
+/* Buttons inside tables */
+body.light-mode button[onclick^="quickTradeBuy"] {
+    border-radius: 6px !important;
+    text-transform: uppercase;
+    font-size: 0.72rem !important;
+    padding: 4px 12px !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
+}
