@@ -1692,3 +1692,6 @@ body.light-mode #market-closed-warning {
 body.light-mode #market-closed-warning-detail {
     color: #fef3c7 !important;
 }
+body.light-mode {
+    --card-bg: #FFFFFF !important;
+}
