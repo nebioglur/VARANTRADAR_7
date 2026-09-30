@@ -827,7 +827,7 @@ def simulation_loop():
                     with _gc() as _sc:
                         _cur = _sc.cursor()
                         _cur.execute(
-                            "SELECT s.date_str FROM signals s "
+                            "SELECT DISTINCT s.date_str FROM signals s "
                             "WHERE s.date_str >= ? AND s.date_str < ? AND NOT EXISTS ("
                             "  SELECT 1 FROM market_data m WHERE m.date_str = s.date_str"
                             ") ORDER BY s.date_str ASC",
