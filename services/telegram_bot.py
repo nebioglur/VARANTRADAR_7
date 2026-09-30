@@ -379,7 +379,10 @@ def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.
         return False
 
     if not claimed:
+        logger.info("[TG-TRADE] Tekrar mesaji engellendi (dedup): %s %s %s", date_str, symbol, action)
         return True
+
+    logger.info("[TG-TRADE] Bildirim hazirlaniyor: %s %s %s @ %.2f", date_str, symbol, action, price)
 
     trade_score = trade.get("entry_score", trade.get("score", 0))
 
