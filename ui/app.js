@@ -4602,14 +4602,64 @@ async function ltOpenPosition() {
 }
 
 async function ltEditOrders(id, curTp, curSl, lastPrice) {
-    const tpInp = prompt(
-        'Yeni KÂR AL fiyatı (₺) — anlık: ' + Number(lastPrice).toFixed(2) + ' TL\n' +
-        'Boş bırakırsan değişmez. Mevcut: ' + Number(curTp).toFixed(2), '');
-    if (tpInp === null) return;
-    const slInp = prompt(
-        'Yeni ZARAR KES fiyatı (₺) — anlık: ' + Number(lastPrice).toFixed(2) + ' TL\n' +
-        'Boş bırakırsan değişmez. Mevcut: ' + Number(curSl).toFixed(2), '');
-    if (slInp === null) return;
+    const fmt = (v) => Number(v).toFixed(2);
+    let tpInp = null, slInp = null;
+
+    if (typeof Swal !== 'undefined') {
+        const res = await Swal.fire({
+            title: '<span style="font-size:1.05rem;">Emir Düzenle</span>',
+            html:
+                '<div style="text-align:left; font-size:0.85rem;">' +
+                '<div style="display:flex; justify-content:space-between; color:#94a3b8; margin-bottom:12px;">' +
+                '<span>Anlık Fiyat</span><b style="color:#38bdf8;">' + fmt(lastPrice) + ' ₺</b></div>' +
+                '<label style="display:block; color:#34d399; font-weight:600; margin-bottom:4px;">Kâr AL (₺)</label>' +
+                '<input id="swal-tp" type="number" step="0.01" min="0" value="' + fmt(curTp) + '" ' +
+                'style="width:100%; box-sizing:border-box; background:#0f1420; border:1px solid #2a3245; border-radius:8px; color:#fff; padding:9px 12px; font-size:0.95rem; margin-bottom:12px;">' +
+                '<label style="display:block; color:#f87171; font-weight:600; margin-bottom:4px;">Zarar KES (₺)</label>' +
+                '<input id="swal-sl" type="number" step="0.01" min="0" value="' + fmt(curSl) + '" ' +
+                'style="width:100%; box-sizing:border-box; background:#0f1420; border:1px solid #2a3245; border-radius:8px; color:#fff; padding:9px 12px; font-size:0.95rem;"></div>',
+            showCancelButton: true,
+            confirmButtonText: 'Kaydet',
+            cancelButtonText: 'İptal',
+            confirmButtonColor: '#10b981',
+            cancelButtonColor: '#475569',
+            background: '#1a1f2e',
+            color: '#fff',
+            focusConfirm: false,
+            didOpen: () => {
+                const t = document.getElementById('swal-tp');
+                const s = document.getElementById('swal-sl');
+                if (t) { t.focus(); t.select(); }
+                [t, s].forEach(inp => {
+                    if (!inp) return;
+                    inp.addEventListener('keydown', (ev) => {
+                        if (ev.key === 'Enter') { ev.preventDefault(); Swal.clickConfirm(); }
+                    });
+                });
+            },
+            preConfirm: () => {
+                const t = parseFloat(document.getElementById('swal-tp')?.value);
+                const s = parseFloat(document.getElementById('swal-sl')?.value);
+                if ((isNaN(t) || t <= 0) && (isNaN(s) || s <= 0)) {
+                    Swal.showValidationMessage('Geçerli bir fiyat girin (0\'dan büyük)');
+                    return false;
+                }
+                return { tp: t, sl: s };
+            }
+        });
+        if (!res.isConfirmed || !res.value) return;
+        tpInp = String(res.value.tp);
+        slInp = String(res.value.sl);
+    } else {
+        tpInp = prompt(
+            'Yeni KÂR AL fiyatı (₺) — anlık: ' + fmt(lastPrice) + ' TL\n' +
+            'Boş bırakırsan değişmez. Mevcut: ' + fmt(curTp), '');
+        if (tpInp === null) return;
+        slInp = prompt(
+            'Yeni ZARAR KES fiyatı (₺) — anlık: ' + fmt(lastPrice) + ' TL\n' +
+            'Boş bırakırsan değişmez. Mevcut: ' + fmt(curSl), '');
+        if (slInp === null) return;
+    }
 
     const tpV = parseFloat(tpInp);
     const slV = parseFloat(slInp);
@@ -4619,16 +4669,32 @@ async function ltEditOrders(id, curTp, curSl, lastPrice) {
     if (body.tp_price === undefined && body.sl_price === undefined) return;
 
     try {
-        const res = await fetch('/api/simulation/terminal/update', {
+        const res2 = await fetch('/api/simulation/terminal/update', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(body)
         });
-        const data = await res.json();
-        alert(data.message || (data.status === 'success' ? 'Güncellendi' : 'Hata'));
+        const data = await res2.json();
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: data.status === 'success' ? 'Güncellendi' : 'Hata',
+                text: data.message || '',
+                icon: data.status === 'success' ? 'success' : 'error',
+                timer: 2500,
+                showConfirmButton: false,
+                background: '#1a1f2e',
+                color: '#fff'
+            });
+        } else {
+            alert(data.message || (data.status === 'success' ? 'Güncellendi' : 'Hata'));
+        }
         fetchLiveTerminal();
     } catch (e) {
-        alert('Bağlantı hatası');
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({ title: 'Bağlantı hatası', icon: 'error', background: '#1a1f2e', color: '#fff' });
+        } else {
+            alert('Bağlantı hatası');
+        }
     }
 }
 
