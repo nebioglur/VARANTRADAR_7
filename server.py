@@ -734,6 +734,7 @@ def simulation_loop():
       boylece test/arka-plan bildirimleri kesintisiz gider.
     - Her AL/SAT islemi aninda Telegram bildirimi gider."""
     _last_stale_cleanup = None
+    _last_backfill = None
     _md_thread = None
     while True:
         sleep_secs = 120.0
@@ -801,6 +802,67 @@ def simulation_loop():
                             logger.error("[SIMLOOP] Onarim hatasi %s (%s): %s", _s_date, _s_owner, _rep_err)
                 except Exception as _cl_err:
                     logger.error("[SIMLOOP] Onarim tarama hatasi: %s", _cl_err)
+
+                # NAKIT MUTABAKATI (yalnizca seans disinda; seans icinde
+                # devam eden kapanis/credit islemleriyle cakismasin):
+                if not in_market:
+                    try:
+                        from services.live_trade_monitor import reconcile_all_cash
+                        _fixed = reconcile_all_cash()
+                        if _fixed:
+                            logger.info("[SIMLOOP] Nakit mutabakati: %d hesap duzeltildi", len(_fixed))
+                    except Exception as _rec_err:
+                        logger.error("[SIMLOOP] Nakit mutabakat hatasi: %s", _rec_err)
+
+            # GUNLUK INTRADAY ONARIM (seans disinda, gunde 1 kez):
+            # Sinyali olan ama 5dk bar verisi hic toplanmamis gecmis gunleri
+            # geriye donuk doldurur ve o gunlerin simulasyonunu yeniden
+            # calistirir. Boylece loop'un kesildigi gunler Trade Log'ta bos
+            # kalmaz (yfinance 5m verisi ~60 gun tutar).
+            if not in_market and _last_backfill != d_str:
+                _last_backfill = d_str
+                try:
+                    from services.trade_database import get_connection as _gc
+                    from services.market_data import MarketDataManager as _MDM
+                    with _gc() as _sc:
+                        _cur = _sc.cursor()
+                        _cur.execute(
+                            "SELECT s.date_str FROM signals s "
+                            "WHERE s.date_str >= ? AND s.date_str < ? AND NOT EXISTS ("
+                            "  SELECT 1 FROM market_data m WHERE m.date_str = s.date_str"
+                            ") ORDER BY s.date_str ASC",
+                            ((now - timedelta(days=7)).strftime("%Y-%m-%d"), d_str),
+                        )
+                        _missing = [r[0] for r in _cur.fetchall()]
+                    if _missing:
+                        logger.info("[SIMLOOP] Intraday onarimi: %d gunun bar verisi eksik (%s)",
+                                    len(_missing), ", ".join(_missing))
+                        for _b_date in _missing:
+                            try:
+                                _MDM.fetch_and_store_intraday(_b_date, period="1mo")
+                                logger.info("[SIMLOOP] Intraday dolduruldu: %s", _b_date)
+                            except Exception as _bf_err:
+                                logger.error("[SIMLOOP] Intraday doldurma hatasi %s: %s", _b_date, _bf_err)
+                        # Doldurulan gunlerin simulasyonlarini tum hesaplar icin
+                        # yeniden calistir (kapanislar + Telegram bildirimleri).
+                        try:
+                            from services.trade_database import get_connection as _gc2
+                            with _gc2() as _uc:
+                                _cur = _uc.cursor()
+                                _cur.execute("SELECT owner_key FROM app_users")
+                                _all_owners = [r[0] for r in _cur.fetchall()]
+                        except Exception:
+                            _all_owners = ["local:nebioglur"]
+                        for _b_date in _missing:
+                            for _b_owner in _all_owners:
+                                try:
+                                    from services.simulation_engine import SimulationEngine
+                                    SimulationEngine(owner=_b_owner).run_daily_simulation(_b_date)
+                                except Exception as _bs_err:
+                                    logger.error("[SIMLOOP] Backfill sim hatasi %s/%s: %s", _b_date, _b_owner, _bs_err)
+                        logger.info("[SIMLOOP] Intraday onarimi tamamlandi")
+                except Exception as _bf_outer:
+                    logger.error("[SIMLOOP] Intraday onarim hatasi: %s", _bf_outer)
 
             try:
                 from services.trade_database import get_connection as _get_conn

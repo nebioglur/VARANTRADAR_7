@@ -462,6 +462,59 @@ def close_position_by_symbol(symbol, price=None, reason="MANUEL KAPATMA", owner=
     return False, " | ".join(msgs)
 
 
+def reconcile_all_cash(tolerance=1.0):
+    """Nakit mutabakati: bakiyeyi pozisyon gecmisinden yeniden hesaplar.
+    expected = 100.000 (baslangic) + SUM(kapali.pnl_val) - SUM(acik.cost_val)
+    (Kapali pozisyonda net etki: -cost + (satis - komisyon) = pnl_val;
+     acik pozisyonda: -cost. Dolayisiyla bu formul kapali dagilimlar
+     (reset, cift kredi, kayip guncelleme) ne olursa olsun dogru bakiyeyi verir.)
+    Sapma tolerance TL'yi asarsa atomik SQL toplama ile duzeltir (cift site
+    ayni anda duzeltse bile ikinci deneme diff=0 bulur)."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT owner, status, SUM(pnl_val) pnl, SUM(cost_val) cost "
+              "FROM live_positions GROUP BY owner, status")
+    agg = c.fetchall()
+    c.execute("SELECT key, value FROM live_settings WHERE key LIKE 'live_cash%'")
+    cash_map = {r["key"]: float(r["value"]) for r in c.fetchall()}
+    conn.close()
+
+    owners = set()
+    for r in agg:
+        owners.add(r["owner"] or DEFAULT_OWNER)
+    for k in cash_map:
+        owners.add(k.replace("live_cash:", ""))
+
+    fixed = []
+    for owner in owners:
+        closed_pnl = 0.0
+        open_cost = 0.0
+        for r in agg:
+            if (r["owner"] or DEFAULT_OWNER) != owner:
+                continue
+            if r["status"] == "CLOSED":
+                closed_pnl += float(r["pnl"] or 0)
+            elif r["status"] == "OPEN":
+                open_cost += float(r["cost"] or 0)
+        expected = round(STARTING_CASH + closed_pnl - open_cost, 2)
+        actual = round(cash_map.get(_cash_key(owner), STARTING_CASH), 2)
+        diff = round(expected - actual, 2)
+        if abs(diff) <= tolerance:
+            continue
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("UPDATE live_settings SET value = CAST(CAST(value AS DOUBLE PRECISION) + ? AS TEXT) "
+                  "WHERE key=?", (diff, _cash_key(owner)))
+        if c.rowcount == 0:
+            c.execute("INSERT INTO live_settings (key, value) VALUES (?, ?)",
+                      (_cash_key(owner), str(expected)))
+        conn.commit()
+        conn.close()
+        fixed.append((owner, actual, expected))
+        print(f"[CashReconcile] {owner}: {actual:.2f} -> {expected:.2f} (diff {diff:+.2f})")
+    return fixed
+
+
 def get_terminal_state(owner=None, price_map=None):
     """UI icin acik pozisyonlar + son islemler + bakiye (owner'a ozel).
     price_map verildiyse (sembol -> guncel fiyat) acik pozisyon K/Z'si
