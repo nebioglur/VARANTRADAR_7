@@ -748,14 +748,20 @@ def simulation_loop():
             if in_market:
                 # Agir network I/O'yu ana donguden ayir; yf.download uzun
                 # surebilir veya asili kalabilir.
+                try:
+                    from services.market_data import MarketDataManager
+                except Exception as _import_err:
+                    logger.error("[SIMLOOP] MarketDataManager import hatasi: %s", _import_err)
+                    MarketDataManager = None
+
                 def _fetch_md():
                     try:
-                        from services.market_data import MarketDataManager
-                        MarketDataManager.fetch_and_store_intraday(d_str, period="5d")
+                        if MarketDataManager is not None:
+                            MarketDataManager.fetch_and_store_intraday(d_str, period="5d")
                     except Exception as _md_err:
                         logger.error("[SIMLOOP] Intraday veri hatasi: %s", _md_err)
 
-                if _md_thread is None or not _md_thread.is_alive():
+                if MarketDataManager is not None and (_md_thread is None or not _md_thread.is_alive()):
                     _md_thread = threading.Thread(target=_fetch_md, daemon=True, name="sim-md-fetch")
                     _md_thread.start()
                     _md_thread.join(timeout=30.0)
@@ -2060,7 +2066,7 @@ def api_system_logs_read():
 def api_ping():
     """Uygulamanin calistigini dogrulamak icin basit health-check."""
     import os
-    return jsonify({"status": "alive", "build": "20260930_v15_simloop_md_import", "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "cwd": os.getcwd()})
+    return jsonify({"status": "alive", "build": "20260930_v16_md_import_outer", "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "cwd": os.getcwd()})
 
 @app.route('/api/cache_status', methods=['GET'])
 def api_cache_status():
