@@ -1674,3 +1674,32 @@ body.light-mode button[onclick^="quickTradeBuy"] {
     box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
 }
 
+/* GRAY-TONED LIGHT THEME OVERRIDES FOR TABLES AND BACKGROUNDS */
+body.light-mode {
+    --bg-base: #E2E8F0 !important; /* Açýk gri arka plan */
+    --bg-card: #F8FAFC !important; /* Çok açýk gri kartlar */
+    --border-color: #CBD5E1 !important;
+}
+
+body.light-mode .data-table thead th {
+    background: #475569 !important; /* Koyu Gri baþlýklar */
+    color: #FFFFFF !important; /* Beyaz metin */
+    border-bottom: none !important;
+}
+
+body.light-mode .data-table tbody tr:nth-child(odd) td {
+    background-color: #F1F5F9 !important; /* Açýk gri satýr */
+}
+
+body.light-mode .data-table tbody tr:nth-child(even) td {
+    background-color: #E2E8F0 !important; /* Biraz daha koyu açýk gri satýr */
+}
+
+body.light-mode .data-table tbody tr:hover td {
+    background-color: #CBD5E1 !important; /* Hover efekti */
+}
+
+body.light-mode .scenario-box,
+body.light-mode .cio-verdict-box {
+    background-color: #E2E8F0 !important;
+}
