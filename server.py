@@ -750,6 +750,7 @@ def simulation_loop():
                 # surebilir veya asili kalabilir.
                 def _fetch_md():
                     try:
+                        from services.market_data import MarketDataManager
                         MarketDataManager.fetch_and_store_intraday(d_str, period="5d")
                     except Exception as _md_err:
                         logger.error("[SIMLOOP] Intraday veri hatasi: %s", _md_err)
@@ -2059,7 +2060,7 @@ def api_system_logs_read():
 def api_ping():
     """Uygulamanin calistigini dogrulamak icin basit health-check."""
     import os
-    return jsonify({"status": "alive", "build": "20260930_v14_simloop_nonblock", "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "cwd": os.getcwd()})
+    return jsonify({"status": "alive", "build": "20260930_v15_simloop_md_import", "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "cwd": os.getcwd()})
 
 @app.route('/api/cache_status', methods=['GET'])
 def api_cache_status():
