@@ -728,25 +728,40 @@ def simulation_loop():
     """SIMULASYON SUREKLI ARKA PLAN DONGUSU:
     - Her 2 dakikada bir calisir (piyasa acik/kapali fark etmez).
     - Piyasa saatlerinde (10:00 - 18:10) gercek guncel barlari alir.
+      Agir yfinance indirmesi ana donguyu bloklamamasi icin ayri thread'de
+      calisir ve 30 sn icinde bitmezse sonraki tura birakilir.
     - Piyasa disinda son eldeki verilerle simulasyonu oynatmaya devam eder,
       boylece test/arka-plan bildirimleri kesintisiz gider.
     - Her AL/SAT islemi aninda Telegram bildirimi gider."""
     _last_stale_cleanup = None
+    _md_thread = None
     while True:
         sleep_secs = 120.0
         try:
             now = datetime.now(ZoneInfo("Europe/Istanbul"))
             d_str = now.strftime("%Y-%m-%d")
+            logger.info("[SIMLOOP] tick - %s", d_str)
             t_open = now.replace(hour=10, minute=0, second=0, microsecond=0)
             t_close = now.replace(hour=18, minute=10, second=0, microsecond=0)
             in_market = t_open <= now <= t_close
 
             if in_market:
-                try:
-                    from services.market_data import MarketDataManager
-                    MarketDataManager.fetch_and_store_intraday(d_str, period="5d")
-                except Exception as _md_err:
-                    print(f"[SIMLOOP] Intraday veri hatasi: {_md_err}")
+                # Agir network I/O'yu ana donguden ayir; yf.download uzun
+                # surebilir veya asili kalabilir.
+                def _fetch_md():
+                    try:
+                        MarketDataManager.fetch_and_store_intraday(d_str, period="5d")
+                    except Exception as _md_err:
+                        logger.error("[SIMLOOP] Intraday veri hatasi: %s", _md_err)
+
+                if _md_thread is None or not _md_thread.is_alive():
+                    _md_thread = threading.Thread(target=_fetch_md, daemon=True, name="sim-md-fetch")
+                    _md_thread.start()
+                    _md_thread.join(timeout=30.0)
+                    if _md_thread.is_alive():
+                        logger.warning("[SIMLOOP] Intraday indirme 30sn icinde bitmedi, sonraki tura birakildi")
+                else:
+                    logger.info("[SIMLOOP] Onceki intraday indirme hala devam ediyor, atlaniyor")
 
             # SAATLIK ONARIM: gecmis gunlerde hala "ACIK" kalan pozisyonlar
             # (orn. sunucu restart'i kapanis penceresini kacirdiysa) son bar
@@ -796,10 +811,10 @@ def simulation_loop():
                     from services.simulation_engine import SimulationEngine
                     SimulationEngine(owner=_owner).run_daily_simulation(d_str)
                 except Exception as _sim_err:
-                    print(f"[SIMLOOP] Sim hatasi ({_owner}): {_sim_err}")
+                    logger.error("[SIMLOOP] Sim hatasi (%s): %s", _owner, _sim_err)
 
         except Exception as e:
-            print(f"[SIMLOOP] Hata: {e}")
+            logger.error("[SIMLOOP] Hata: %s", e)
             sleep_secs = 300.0
         time.sleep(sleep_secs)
 
@@ -2044,7 +2059,7 @@ def api_system_logs_read():
 def api_ping():
     """Uygulamanin calistigini dogrulamak icin basit health-check."""
     import os
-    return jsonify({"status": "alive", "build": "20260929_v13_eod_tg", "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "cwd": os.getcwd()})
+    return jsonify({"status": "alive", "build": "20260930_v14_simloop_nonblock", "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "cwd": os.getcwd()})
 
 @app.route('/api/cache_status', methods=['GET'])
 def api_cache_status():
