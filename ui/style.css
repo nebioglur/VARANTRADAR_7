@@ -1470,7 +1470,6 @@ body.light-mode .data-table thead th {
 
 body.light-mode .data-table tbody td {
     border-bottom: 1px solid #f1f5f9 !important;
-    color: #1e293b !important;
 }
 
 body.light-mode .data-table tbody tr:nth-child(even) td {
@@ -1703,3 +1702,4 @@ body.light-mode .scenario-box,
 body.light-mode .cio-verdict-box {
     background-color: #E2E8F0 !important;
 }
+
