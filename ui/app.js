@@ -6628,17 +6628,11 @@ function renderSuper12Table() {
                          ' <button onclick="showSR(\'' + sym + '\', ' + s.price + ', ' + s.high + ', ' + s.low + ')" style="background:rgba(59,130,246,0.2); color:#3b82f6; border:1px solid rgba(59,130,246,0.5); border-radius:4px; padding:3px 6px; cursor:pointer; font-weight:bold; font-size:0.7rem; transition:0.2s;" onmouseover="this.style.background=\'#3b82f6\'; this.style.color=\'#fff\';" onmouseout="this.style.background=\'rgba(59,130,246,0.2)\'; this.style.color=\'#3b82f6\';" title="Destek ve Direnc Seviyeleri">D/D</button></div>';
         
         let rankBadge = '<span style="display:inline-block; width:30px; text-align:center; color:var(--text-muted); font-size:0.85rem; font-weight:bold; margin-right:5px; background:rgba(0,0,0,0.05); border-radius:4px;">#' + (index+1) + '</span>';
-        let prevClose = s.close || (s.price / (1 + (s.change / 100)));
-        let intraSign = s.intra_change > 0 ? '+' : '';
-        let intraColor = s.intra_change > 0 ? 'var(--accent-green)' : (s.intra_change < 0 ? 'var(--accent-red)' : 'var(--text-muted)');
-
+                        
         return '<tr>' +
                '<td style="font-weight:bold; cursor:pointer; color:' + color + ';" onclick="openGraphicTab(\'' + s.symbol + '\')">' + rankBadge + ' ' + sym + '</td>' +
                '<td style="font-weight:600; color:' + color + ';">\u20BA' + s.price.toFixed(2) + '</td>' +
-               '<td style="color:var(--text-muted);">\u20BA' + prevClose.toFixed(2) + '</td>' +
                '<td style="color:' + color + '; font-weight:bold;">' + sign + s.change.toFixed(2) + '%</td>' +
-               '<td style="color:' + intraColor + '; font-weight:bold;">' + intraSign + (s.intra_change || 0).toFixed(2) + '%</td>' +
-               '<td>' + flowHtml + '</td>' +
                '<td style="color:var(--text-muted);">' + volTLM + '</td>' +
                '<td style="color:var(--text-muted);">' + volLotM + '</td>' +
                '<td style="color:' + color + '; font-weight:bold;">' + relVolText + '</td>' +
