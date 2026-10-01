@@ -308,9 +308,6 @@ class TavanAuditTracker:
 
             filtered.append(item)
 
-        if not filtered:
-            return {}
-
         now = datetime.now()
         if not date_str:
             date_str = now.strftime("%Y-%m-%d")
