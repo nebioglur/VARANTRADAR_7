@@ -5665,7 +5665,7 @@ function loadV8Breakout() {
             if (countEnter) countEnter.textContent = enterList.length;
             if (countWait)  countWait.textContent = waitList.length;
             if (countAvoid) countAvoid.textContent = avoidList.length;
-            if (countTotal) countTotal.textContent = (window.globalDashboardData && window.globalDashboardData.all_symbols_stats) ? Object.keys(window.globalDashboardData.all_symbols_stats).length : data.length;
+            if (countTotal) countTotal.textContent = (typeof globalDashboardData !== 'undefined' && globalDashboardData.all_symbols_stats) ? Object.keys(globalDashboardData.all_symbols_stats).length : 550;
 
             if (!cardsContainer) return;
 
@@ -5674,7 +5674,7 @@ function loadV8Breakout() {
                     <div style="grid-column:1/-1; text-align:center; padding:3rem; color:var(--text-muted); border:1px dashed rgba(255,255,255,0.1); border-radius:12px;">
                         <div style="font-size:2rem; margin-bottom:0.5rem;">🔍</div>
                         <div style="font-size:0.95rem; font-weight:600;">Şu an giriş onaylı hisse yok</div>
-                        <div style="font-size:0.78rem; margin-top:0.4rem;">Sistem ${(window.globalDashboardData && window.globalDashboardData.all_symbols_stats) ? Object.keys(window.globalDashboardData.all_symbols_stats).length : 550} hisseyi tarıyor. Hazırlık aşamasındakileri aşağıda görebilirsiniz.</div>
+                        <div style="font-size:0.78rem; margin-top:0.4rem;">Sistem ${(typeof globalDashboardData !== 'undefined' && globalDashboardData.all_symbols_stats) ? Object.keys(globalDashboardData.all_symbols_stats).length : 550} hisseyi tarıyor. Hazırlık aşamasındakileri aşağıda görebilirsiniz.</div>
                     </div>`;
                 return;
             }
@@ -5698,6 +5698,10 @@ function loadV8Breakout() {
                 card.innerHTML = `
                     <div style="position:absolute; top:0; right:0; background:#10b981; color:#fff; font-size:0.7rem; font-weight:800; padding:3px 10px; border-bottom-left-radius:8px; letter-spacing:1px;">✅ GİR</div>
                     <div style="font-size:1.2rem; font-weight:800; color:#10b981; margin-bottom:0.75rem;">${d.symbol}</div>
+                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; padding-bottom:0.5rem; border-bottom:1px solid rgba(255,255,255,0.05);">
+                          <div style="font-size:1.4rem; font-weight:700; color:var(--text-main);">₺${(d.price || 0).toFixed(2)}</div>
+                          <div style="font-size:0.9rem; font-weight:bold; color:${(d.change_pct || 0) > 0 ? 'var(--accent-green)' : ((d.change_pct || 0) < 0 ? 'var(--accent-red)' : 'var(--text-muted)')};">${(d.change_pct || 0) > 0 ? '+' : ''}${(d.change_pct || 0).toFixed(2)}%</div>
+                      </div>
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; font-size:0.8rem; margin-bottom:0.75rem;">
                         <div style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.4rem 0.6rem;">
                             <div style="color:var(--text-muted); font-size:0.68rem;">Kırılım Gücü</div>
