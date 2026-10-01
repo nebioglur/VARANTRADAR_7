@@ -6379,19 +6379,33 @@ function renderAllStocksTable() {
         
         let flowHtml = s.hourly_flow;
         if (s.hourly_flow === 'Toplanıyor') {
-            flowHtml = '<div style="display:flex; flex-direction:column; align-items:center; line-height:1.2;">' +
-                       '<div style="display:flex; align-items:flex-end; height:14px; gap:2px; margin-bottom:2px;">' +
-                       '<div style="width:4px; height:40%; background:var(--accent-green); opacity:0.5; border-radius:1px;"></div>' +
-                       '<div style="width:4px; height:70%; background:var(--accent-green); opacity:0.8; border-radius:1px;"></div>' +
-                       '<div style="width:4px; height:100%; background:var(--accent-green); opacity:1.0; border-radius:1px;"></div>' +
-                       '</div><span style="font-size:0.75rem;">Toplanıyor</span></div>';
+            flowHtml = `<div style="display:flex; flex-direction:column; align-items:center; line-height:1.2; width:70px; margin:0 auto;">
+                <svg viewBox="0 0 100 30" preserveAspectRatio="none" style="width:100%; height:20px; overflow:visible;">
+                    <defs>
+                        <linearGradient id="grad-green" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="var(--accent-green)" stop-opacity="0.35" />
+                            <stop offset="100%" stop-color="var(--accent-green)" stop-opacity="0.0" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M0,25 Q15,20 25,23 T50,15 T75,18 T100,5 L100,30 L0,30 Z" fill="url(#grad-green)"></path>
+                    <path d="M0,25 Q15,20 25,23 T50,15 T75,18 T100,5" fill="none" stroke="var(--accent-green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+                <span style="font-size:0.75rem; margin-top:2px;">Toplanıyor</span>
+            </div>`;
         } else if (s.hourly_flow === 'Satılıyor') {
-            flowHtml = '<div style="display:flex; flex-direction:column; align-items:center; line-height:1.2;">' +
-                       '<div style="display:flex; align-items:flex-end; height:14px; gap:2px; margin-bottom:2px;">' +
-                       '<div style="width:4px; height:100%; background:var(--accent-red); opacity:1.0; border-radius:1px;"></div>' +
-                       '<div style="width:4px; height:70%; background:var(--accent-red); opacity:0.8; border-radius:1px;"></div>' +
-                       '<div style="width:4px; height:40%; background:var(--accent-red); opacity:0.5; border-radius:1px;"></div>' +
-                       '</div><span style="font-size:0.75rem;">Satılıyor</span></div>';
+            flowHtml = `<div style="display:flex; flex-direction:column; align-items:center; line-height:1.2; width:70px; margin:0 auto;">
+                <svg viewBox="0 0 100 30" preserveAspectRatio="none" style="width:100%; height:20px; overflow:visible;">
+                    <defs>
+                        <linearGradient id="grad-red" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="var(--accent-red)" stop-opacity="0.35" />
+                            <stop offset="100%" stop-color="var(--accent-red)" stop-opacity="0.0" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M0,5 Q15,10 25,7 T50,15 T75,12 T100,25 L100,30 L0,30 Z" fill="url(#grad-red)"></path>
+                    <path d="M0,5 Q15,10 25,7 T50,15 T75,12 T100,25" fill="none" stroke="var(--accent-red)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+                <span style="font-size:0.75rem; margin-top:2px;">Satılıyor</span>
+            </div>`;
         } else if (s.hourly_flow === '-' || !s.hourly_flow) {
             flowHtml = '-';
         }
