@@ -127,8 +127,13 @@ class MarketDataManager:
             if all_rows:
                 try:
                     cursor.executemany(insert_sql, all_rows)
-                except Exception:
-                    pass
+                except Exception as e:
+                    print(f"[CRITICAL] MarketData executemany hatasi: {e}")
+                    try:
+                        from services.telegram_bot import send_telegram_message
+                        send_telegram_message(f"🚨 SIMULASYON VERI YAZMA HATASI!\nMarket verileri (intraday) DB'ye yazilamadi!\nHata: {e}")
+                    except:
+                        pass
         except Exception as e:
             print(f"[MarketData] YF indirme hatası: {e}")
             

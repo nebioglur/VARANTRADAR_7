@@ -745,6 +745,11 @@ def simulation_loop():
                     MarketDataManager.fetch_and_store_intraday(d_str, period="5d")
                 except Exception as _md_err:
                     print(f"[SIMLOOP] Intraday veri hatasi: {_md_err}")
+                    try:
+                        from services.telegram_bot import send_telegram_message
+                        send_telegram_message(f"🚨 [SIMLOOP] Intraday veri toplama HATASI: {_md_err}")
+                    except:
+                        pass
 
             try:
                 from services.trade_database import get_connection as _get_conn
