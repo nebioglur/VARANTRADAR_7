@@ -140,6 +140,12 @@ class PGCursor:
         else:
             self._names = None
 
+
+    def executemany(self, sql, params_list):
+        sql2 = _translate_sql(sql, self._cur)
+        for params in params_list:
+            self._cur.execute(sql2, tuple(params) if params else None)
+
     def _wrap(self, row):
         if row is None:
             return None
