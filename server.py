@@ -2586,7 +2586,7 @@ def api_tavan_history():
         if today_str not in audits:
             cached_candidates = GLOBAL_DASHBOARD_CACHE.get("tavan_adaylari", [])
             cached_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
-            if cached_candidates and cached_stats:
+            if cached_stats:
                 TavanAuditTracker.record_snapshot(
                     cached_candidates,
                     all_symbols_stats=cached_stats,

@@ -266,7 +266,7 @@ class TavanAuditTracker:
         Istatistige yalnizca SUPER_12 listesindeki VE hacim gucu %100'un uzerindeki
         (rel_vol > 1.0) hisseler alinir. Diger adaylar takibe girmez.
         """
-        if not tavan_candidates:
+        if tavan_candidates is None:
             return {}
 
         super12 = cls._compute_super12_set(all_symbols_stats or {})
