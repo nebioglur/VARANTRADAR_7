@@ -5665,7 +5665,7 @@ function loadV8Breakout() {
             if (countEnter) countEnter.textContent = enterList.length;
             if (countWait)  countWait.textContent = waitList.length;
             if (countAvoid) countAvoid.textContent = avoidList.length;
-            if (countTotal) countTotal.textContent = data.length;
+            if (countTotal) countTotal.textContent = (window.globalDashboardData && window.globalDashboardData.all_symbols_stats) ? Object.keys(window.globalDashboardData.all_symbols_stats).length : data.length;
 
             if (!cardsContainer) return;
 
@@ -5674,7 +5674,7 @@ function loadV8Breakout() {
                     <div style="grid-column:1/-1; text-align:center; padding:3rem; color:var(--text-muted); border:1px dashed rgba(255,255,255,0.1); border-radius:12px;">
                         <div style="font-size:2rem; margin-bottom:0.5rem;">🔍</div>
                         <div style="font-size:0.95rem; font-weight:600;">Şu an giriş onaylı hisse yok</div>
-                        <div style="font-size:0.78rem; margin-top:0.4rem;">Sistem ${data.length} hisseyi tarıyor. Hazırlık aşamasındakileri aşağıda görebilirsiniz.</div>
+                        <div style="font-size:0.78rem; margin-top:0.4rem;">Sistem ${(window.globalDashboardData && window.globalDashboardData.all_symbols_stats) ? Object.keys(window.globalDashboardData.all_symbols_stats).length : 550} hisseyi tarıyor. Hazırlık aşamasındakileri aşağıda görebilirsiniz.</div>
                     </div>`;
                 return;
             }

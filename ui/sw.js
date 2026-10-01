@@ -1,5 +1,5 @@
 /* VARANTRADAR minimal service worker: uygulama kurulumu + temel statik onbellek. */
-const CACHE = 'vr-static-v5';
+const CACHE = 'vr-static-v6';
 const CORE = ['/', '/login', '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
