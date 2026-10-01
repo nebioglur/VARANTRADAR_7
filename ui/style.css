@@ -63,6 +63,9 @@ body.light-mode [style*="color:#fff"] {
     color: #0F172A !important;
     font-weight: 700 !important;
 }
+body.light-mode [style*="color:var(--accent-yellow)"] { color: #B45309 !important; }
+body.light-mode [style*="color:var(--accent-green)"] { color: #15803D !important; }
+body.light-mode [style*="color:var(--accent-red)"] { color: #B91C1C !important; }
 
 /* Tablolar - Kurumsal finans havasi */
 body.light-mode .data-table {
@@ -1303,9 +1306,24 @@ body.light-mode #total-analyzed-counter {
 }
 
 /* --- ACIK TEMA: INLINE KOYU RENKLERI TAMAMEN EZME --- */
+body.light-mode [style*="rgba(15,23,42,1)"],
+body.light-mode [style*="rgba(15, 23, 42, 1)"],
+body.light-mode [style*="rgba(15,23,42,0.95)"],
+body.light-mode [style*="rgba(30,41,59,0.8)"],
+body.light-mode [style*="background:rgba(0,0,0,0.2)"],
+body.light-mode [style*="background:rgba(0,0,0,0.3)"],
+body.light-mode [style*="background:rgba(255,255,255,0.03)"],
+body.light-mode [style*="background:rgba(255,255,255,0.04)"],
+body.light-mode [style*="background:var(--bg-secondary)"] {
+    background: #FFFFFF !important;
+}
 
-
-
+/* Radar Kartlarindaki Gradient (Linear) Koyu Renkleri Ezme */
+body.light-mode .card[style*="linear-gradient"] {
+    background: #FFFFFF !important;
+    border-color: #E2E8F0 !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+}
 
 /* Pill Butonlar (Tum, Tavan Radari vb.) */
 body.light-mode .pill-btn {
@@ -1373,7 +1391,13 @@ body.light-mode table tbody tr:hover {
 }
 
 /* Javascript tarafindan basilan kapkaranlik inline background lari temizle */
-
+body.light-mode [style*="rgba(0,0,0"],
+body.light-mode [style*="rgba(0, 0, 0"],
+body.light-mode [style*="rgba(30,41,59"],
+body.light-mode [style*="rgba(15,23,42"] {
+    background: transparent !important;
+    background-color: transparent !important;
+}
 
 body.light-mode tr[style*="rgba(0,0,0"],
 body.light-mode td[style*="rgba(0,0,0"] {
@@ -1449,6 +1473,7 @@ body.light-mode .data-table thead th {
 
 body.light-mode .data-table tbody td {
     border-bottom: 1px solid #f1f5f9 !important;
+    color: #1e293b !important;
 }
 
 body.light-mode .data-table tbody tr:nth-child(even) td {
@@ -1550,6 +1575,8 @@ body.light-mode .data-table tbody tr:hover td {
     overflow-y: auto !important;
     overflow-x: auto !important;
 }
+
+
 /* =========================================================
    LIGHT THEME MODERNIZATION (Colorful Headers Edition)
    ========================================================= */
@@ -1561,13 +1588,13 @@ body.light-mode {
     --border-color: #E5E7EB !important;
     --text-main: #111827 !important;
     --text-muted: #667085 !important;
-    --accent-blue: #2563EB !important; /* Vibrant Primary Blue */
+    --accent-blue: #2563EB !important;
     --accent-green: #16A34A !important;
-    --accent-red: #DC2626 !important; /* Vibrant Red */
-    --accent-yellow: #D97706 !important; /* Vibrant Amber/Orange */
+    --accent-red: #DC2626 !important;
+    --accent-yellow: #D97706 !important;
+    --card-bg: #FFFFFF !important;
 }
 
-/* Base structural overrides */
 body.light-mode .card, 
 body.light-mode .summary-card, 
 body.light-mode .glass-panel {
@@ -1604,10 +1631,6 @@ body.light-mode .nav-btn.active {
     font-weight: 600 !important;
 }
 
-/* COLORFUL HEADERS */
-/* Tüm Hisseler (Blue) is already using var(--accent-blue) which is now #2563EB */
-
-/* V8 ENGINE & Special Sort (Orange/Amber) */
 body.light-mode #v8-wrapper h2 {
     color: #D97706 !important;
 }
@@ -1618,19 +1641,16 @@ body.light-mode .nav-btn[href="/#v8"].active {
     background: #FEF3C7 !important;
 }
 
-/* Radar Sinyalleri (Red) */
 body.light-mode #live-radar-container h2 {
     color: #DC2626 !important; 
 }
 
-/* Piyasa Dedektifi / Ýstatistikler (Yellow/Gold) */
 body.light-mode #home-top-picks h3, 
 body.light-mode #portfolio-container h3,
 body.light-mode .card-title i.fa-fire {
     color: #F59E0B !important; 
 }
 
-/* Inputs & Search boxes */
 body.light-mode input[type="search"], 
 body.light-mode input[type="text"] {
     background: #FFFFFF !important;
@@ -1643,7 +1663,6 @@ body.light-mode input[type="search"]:focus {
     outline: 2px solid rgba(37, 99, 235, 0.2) !important;
 }
 
-/* Buttons inside tables */
 body.light-mode button[onclick^="quickTradeBuy"] {
     border-radius: 6px !important;
     text-transform: uppercase;
@@ -1652,15 +1671,6 @@ body.light-mode button[onclick^="quickTradeBuy"] {
     box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
 }
 
-
-
-
-
-
-body.light-mode {
-    --card-bg: #FFFFFF !important;
-}
-/* --- ACIK TEMA: INLINE KOYU RENKLERI TAMAMEN EZME --- */
 body.light-mode [style*="rgba(15,23,42,1)"],
 body.light-mode [style*="rgba(15, 23, 42, 1)"],
 body.light-mode [style*="rgba(15,23,42,0.95)"],
@@ -1692,7 +1702,6 @@ body.light-mode .card[style*="linear-gradient"] {
     box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
 }
 
-/* FIX FOR UNREADABLE WARNING BOXES IN LIGHT MODE (Keep this dark for readability) */
 body.light-mode #market-closed-warning {
     background: linear-gradient(135deg, rgba(120,53,15,0.1), rgba(245,158,11,0.1)) !important;
     color: #9A3412 !important;
@@ -1704,6 +1713,3 @@ body.light-mode #market-closed-warning-detail {
 body.light-mode #market-closed-warning i {
     color: #D97706 !important;
 }
-
-
-
