@@ -6407,7 +6407,19 @@ function renderAllStocksTable() {
                 <span style="font-size:0.75rem; margin-top:2px;">Satılıyor</span>
             </div>`;
         } else if (s.hourly_flow === '-' || !s.hourly_flow) {
-            flowHtml = '-';
+            flowHtml = `<div style="display:flex; flex-direction:column; align-items:center; line-height:1.2; width:70px; margin:0 auto;">
+                <svg viewBox="0 0 100 30" preserveAspectRatio="none" style="width:100%; height:20px; overflow:visible;">
+                    <defs>
+                        <linearGradient id="grad-gray" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="var(--text-muted)" stop-opacity="0.25" />
+                            <stop offset="100%" stop-color="var(--text-muted)" stop-opacity="0.0" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M0,15 L100,15 L100,30 L0,30 Z" fill="url(#grad-gray)"></path>
+                    <path d="M0,15 L100,15" fill="none" stroke="var(--text-muted)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+                <span style="font-size:0.75rem; margin-top:2px; color:var(--text-muted);">-</span>
+            </div>`;
         }
         
         let p_val = (s.high + s.low + s.price) / 3;
@@ -6616,15 +6628,20 @@ function renderSuper12Table() {
                          ' <button onclick="showSR(\'' + sym + '\', ' + s.price + ', ' + s.high + ', ' + s.low + ')" style="background:rgba(59,130,246,0.2); color:#3b82f6; border:1px solid rgba(59,130,246,0.5); border-radius:4px; padding:3px 6px; cursor:pointer; font-weight:bold; font-size:0.7rem; transition:0.2s;" onmouseover="this.style.background=\'#3b82f6\'; this.style.color=\'#fff\';" onmouseout="this.style.background=\'rgba(59,130,246,0.2)\'; this.style.color=\'#3b82f6\';" title="Destek ve Direnc Seviyeleri">D/D</button></div>';
         
         let rankBadge = '<span style="display:inline-block; width:30px; text-align:center; color:var(--text-muted); font-size:0.85rem; font-weight:bold; margin-right:5px; background:rgba(0,0,0,0.05); border-radius:4px;">#' + (index+1) + '</span>';
-        
+        let prevClose = s.close || (s.price / (1 + (s.change / 100)));
+        let intraSign = s.intra_change > 0 ? '+' : '';
+        let intraColor = s.intra_change > 0 ? 'var(--accent-green)' : (s.intra_change < 0 ? 'var(--accent-red)' : 'var(--text-muted)');
+
         return '<tr>' +
                '<td style="font-weight:bold; cursor:pointer; color:' + color + ';" onclick="openGraphicTab(\'' + s.symbol + '\')">' + rankBadge + ' ' + sym + '</td>' +
                '<td style="font-weight:600; color:' + color + ';">\u20BA' + s.price.toFixed(2) + '</td>' +
+               '<td style="color:var(--text-muted);">\u20BA' + prevClose.toFixed(2) + '</td>' +
                '<td style="color:' + color + '; font-weight:bold;">' + sign + s.change.toFixed(2) + '%</td>' +
+               '<td style="color:' + intraColor + '; font-weight:bold;">' + intraSign + (s.intra_change || 0).toFixed(2) + '%</td>' +
+               '<td>' + flowHtml + '</td>' +
                '<td style="color:var(--text-muted);">' + volTLM + '</td>' +
                '<td style="color:var(--text-muted);">' + volLotM + '</td>' +
                '<td style="color:' + color + '; font-weight:bold;">' + relVolText + '</td>' +
-
                '<td>' + scoreBadge + '</td>' +
                '<td>' + actionBtns + '</td>' +
                '</tr>';
