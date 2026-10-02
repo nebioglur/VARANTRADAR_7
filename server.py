@@ -1102,8 +1102,10 @@ def require_auth():
     if request.path.endswith('.css') or request.path.endswith('.js') or request.path.endswith('.png') or request.path.endswith('.woff2'):
         return
 
-    # Arama motorlari + PWA dosyalari oturum kapisi disinda
+    # Arama motorlari + PWA dosyalari + APK indirme oturum kapisi disinda
     if request.path in ('/robots.txt', '/sitemap.xml', '/manifest.json', '/sw.js', '/icons/icon-192.png', '/icons/icon-512.png'):
+        return
+    if request.path == '/apk/VarantRadarPro.apk':
         return
 
     if not session.get('logged_in'):
