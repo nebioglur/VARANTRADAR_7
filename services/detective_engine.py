@@ -763,6 +763,7 @@ def start_build():
         with _lock:
             _cache["building"] = True
             _cache["error"] = None
+            _cache["build_start"] = datetime.now()
         def _run():
             try:
                 _build()
@@ -790,6 +791,13 @@ def get_rows():
                 age = None
         else:
             age = None
+        
+        # Timeout for hung building thread (120 seconds)
+        if _cache["building"] and "build_start" in _cache:
+            if (datetime.now() - _cache["build_start"]).total_seconds() > 120:
+                _cache["building"] = False
+                _cache["error"] = "Piyasa verisi çekilirken zaman aşımı (Render IP engellemesi olabilir)"
+
         building = _cache["building"]
         error = _cache["error"]
         has_rows = len(_cache["rows"]) > 0
