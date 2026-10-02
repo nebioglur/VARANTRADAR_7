@@ -2150,125 +2150,38 @@ def api_brokerage(symbol):
 @app.route('/api/simulation/live_orders', methods=['GET'])
 def api_simulation_live_orders():
     try:
-        from services.market_data import MarketDataManager
-        import datetime
-        # Canlı sistemde bugün olması lazım
-        today = datetime.datetime.now().strftime("%Y-%m-%d")
-        date_str = request.args.get('date', today) 
-        signals = MarketDataManager.get_signals(date_str)
-        
-        valid_signals = []
-        for s in signals:
-            score = float(s.get('score', 0))
-            phase = str(s.get('morning_phase', ''))
-            if score >= 80 and "NEGAT" not in phase and "UZAK DUR" not in phase:
-                valid_signals.append(s)
-                
+        from services.trade_database import get_connection
+        date_str = request.args.get('date') or datetime.now(ZoneInfo("Europe/Istanbul")).strftime("%Y-%m-%d")
+        owner = get_owner_key()
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, date_str, symbol, entry_time, entry_price, exit_time,
+                       exit_price, shares, pnl_val, pnl_pct, exit_reason,
+                       strategy_name, entry_score, atr_value, risk_amount, market_regime
+                FROM trades
+                WHERE owner=? AND date_str=?
+                ORDER BY entry_time DESC, id DESC
+            """, (owner, date_str))
+            trades = [dict(row) for row in cursor.fetchall()]
+
         orders = []
-        # ENDEKS KALKANI (Market Regime Filter)
-        bist_chg = get_xu100_change()
-        
-        # 1. PİYASA GENİŞLİĞİ (Market Breadth - Suni Ralli Kalkanı)
-        advancers = 0
-        decliners = 0
-        total_scanned = 0
-        cache_data = globals().get("GLOBAL_DASHBOARD_CACHE", {})
-        for cat, items in cache_data.items():
-            if isinstance(items, list):
-                for item in items:
-                    if isinstance(item, dict) and "Change_Pct" in item:
-                        total_scanned += 1
-                        val = float(item["Change_Pct"])
-                        if val > 0: advancers += 1
-                        elif val < 0: decliners += 1
-        
-        ad_ratio = (advancers / total_scanned) if total_scanned > 0 else 0.5
-        # Eğer endeks artıdaysa ama piyasadaki hisselerin %60'ından fazlası eksideyse = SUNİ RALLİ
-        is_fake_rally = (bist_chg > 0 and ad_ratio < 0.40)
-        
-        # Suni rallide risk %80 daraltılır (Güvenilmez piyasa)
-        is_bear_market = (bist_chg < -0.5)
-        if is_fake_rally:
-            base_allocation = 666.0
-        else:
-            base_allocation = 1500.0 if is_bear_market else 3333.0  
-        
-        # SAATLİK TUZAK (FAKEOUT) FİLTRESİ
-        import datetime
-        from zoneinfo import ZoneInfo
-        now_time = datetime.datetime.now(ZoneInfo("Europe/Istanbul")).time()
-        lunch_start = datetime.time(12, 30)
-        lunch_end = datetime.time(14, 0)
-        # Öğle tatili civarındaki sığ hacimli hareketleri filtrele
-        is_fakeout_zone = (lunch_start <= now_time <= lunch_end)
-        
-        import json
-        for s in valid_signals:
-            morning_price = float(s.get('morning_price', 0))
-            if morning_price <= 0: continue
-            
-            if is_fakeout_zone:
-                # Sadece aşırı güçlü YZ favorileri fakeout saatinde geçebilir
-                if s.get('score', 0) < 95:
-                    continue
-            
-            meta = {}
-            try:
-                meta = json.loads(s.get('metadata', '{}'))
-            except: pass
-            
-            # MTF ONAYI: Günlük EMA50 > EMA200 değilse pas geç (Katı filtre)
-            e50 = meta.get('Daily_EMA50')
-            e200 = meta.get('Daily_EMA200')
-            if e50 is None or e200 is None:
-                inds = meta.get('Indicators', {})
-                e50 = inds.get('EMA_50')
-                e200 = inds.get('EMA_200')
-                
-            if e50 and e200 and float(e50) <= float(e200):
-                continue # MTF (Günlük) ana trend negatif, riske girme!
-                
-            entry_price = morning_price * 1.0015 # %0.15 slipaj payı
-            # 2. KELLY KRITERI (Dinamik Pozisyon Boyutlandirma)
-            ai_score = float(s.get('score', 60))
-            win_prob = ai_score / 100.0
-            reward_risk = 2.0
-            kelly_fraction = max(0.1, min(1.0, win_prob - ((1.0 - win_prob) / reward_risk)))
-            final_allocation = base_allocation * (kelly_fraction / 0.5)
-            shares = int(final_allocation // entry_price)
-            if shares <= 0: continue
-            
-            ceiling = float(s.get('ceiling_target', entry_price * 1.10))
-            
-            # ATR TABANLI DİNAMİK HEDEFLEME
-            atr = meta.get('ATR')
-            if atr and float(atr) > 0:
-                atr_val = float(atr)
-                stop_price = entry_price - (atr_val * 1.2)  # 1.2x ATR Stop
-                tp1_price = entry_price + (atr_val * 1.5)   # 1.5x ATR TP1
-                tp2_price = entry_price + (atr_val * 3.0)   # 3.0x ATR TP2 (or Ceiling)
-                tp2_price = min(tp2_price, ceiling) # Tavandan fazlasını hedefleme
-            else:
-                stop_price = entry_price * 0.97
-                tp1_price = entry_price * 1.05
-                tp2_price = ceiling
-            
+        for trade in trades:
+            entry_price = float(trade.get('entry_price') or 0)
+            shares = int(trade.get('shares') or 0)
             orders.append({
-                'symbol': s['symbol'],
-                'score': s['score'],
-                'entry_price': round(entry_price, 2),
+                **trade,
+                'score': trade.get('entry_score') or 0,
+                'entry_price': entry_price,
                 'shares': shares,
-                'total_volume': round(shares * entry_price, 2),
-                'stop_price': round(stop_price, 2),
-                'max_loss': round(shares * (entry_price - stop_price), 2),
-                'tp1_price': round(tp1_price, 2),
-                'tp2_price': round(tp2_price, 2)
+                'total_volume': round(entry_price * shares, 2),
+                'is_open': not bool(trade.get('exit_time'))
             })
-            
+
         return jsonify({
             "status": "success",
             "date": date_str,
-            "orders": sanitize_for_json(sorted(orders, key=lambda x: x["score"], reverse=True))
+            "orders": sanitize_for_json(orders)
         })
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500

@@ -5437,49 +5437,52 @@ async function fetchLiveOrders() {
         const res = await fetch(`/api/simulation/live_orders?t=${Date.now()}`);
         const data = await res.json();
         
-        if (data.status === 'success' && data.orders && data.orders.length > 0) {
+        const orders = data.status === 'success' && Array.isArray(data.orders) ? data.orders : [];
+        if (orders.length > 0) {
             container.innerHTML = '';
-            data.orders.forEach(order => {
-                let card = document.createElement('div');
-                card.style.cssText = "background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; padding:1rem; display:flex; flex-direction:column; gap: 0.5rem;";
-                
+            orders.forEach(order => {
+                const card = document.createElement('div');
+                card.style.cssText = "background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; padding:1rem; display:flex; flex-direction:column; gap:0.5rem;";
+                const pnl = Number(order.pnl_val || 0);
+                const pnlColor = pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+                const entryTime = order.entry_time
+                    ? new Date(order.entry_time).toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'})
+                    : '--';
+                const statusText = order.is_open ? 'AÇIK POZİSYON' : `KAPANDI${order.exit_reason ? ` · ${order.exit_reason}` : ''}`;
+                const actions = order.is_open ? `
+                    <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
+                        <button onclick="preparePortfolioOrder('${order.symbol}', ${order.shares}, ${order.entry_price}, null, null)" class="btn-primary" style="flex:1; background:var(--accent-green); color:#fff; border:none; padding:0.4rem; border-radius:4px; font-weight:bold; cursor:pointer;"><i class="fa-solid fa-cart-arrow-down"></i> Portföye AL</button>
+                        <button onclick="quickTrade('${order.symbol}', 'sell', ${order.shares}, ${order.entry_price}, null, null)" class="btn-primary" style="flex:1; background:var(--accent-red); color:#fff; border:none; padding:0.4rem; border-radius:4px; font-weight:bold; cursor:pointer;"><i class="fa-solid fa-money-bill-wave"></i> Portföyden SAT</button>
+                    </div>` : '';
+
                 card.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem; margin-bottom:0.5rem;">
                         <strong style="color:var(--text-light); font-size:1.1rem;"><i class="fa-solid fa-crosshairs text-blue"></i> ${order.symbol}</strong>
-                        <span style="background:var(--accent-blue); color:#fff; font-size:0.75rem; padding:0.1rem 0.4rem; border-radius:4px;">Güç: ${order.score}</span>
+                        <span style="background:var(--accent-blue); color:#fff; font-size:0.75rem; padding:0.1rem 0.4rem; border-radius:4px;">Güç: ${Number(order.score || 0).toFixed(0)}</span>
                     </div>
                     <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
-                        <span style="color:var(--text-muted);">Alış Fiyatı:</span>
-                        <strong style="color:var(--text-main);">₺${order.entry_price.toFixed(2)}</strong>
+                        <span style="color:var(--text-muted);">Trade Log Alış Fiyatı:</span>
+                        <strong style="color:var(--text-main);">₺${Number(order.entry_price || 0).toFixed(2)}</strong>
                     </div>
                     <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
                         <span style="color:var(--text-muted);">Miktar (Lot):</span>
                         <strong style="color:var(--text-main); font-family:monospace;">${order.shares} Lot</strong>
                     </div>
-                    <div style="background:rgba(255,255,255,0.02); padding:0.5rem; border-radius:4px; margin-top:0.5rem;">
-                        <div style="font-size:0.8rem; color:var(--accent-yellow); margin-bottom:0.3rem;"><i class="fa-solid fa-link"></i> <strong>Zincir Emirler (OCO)</strong></div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:0.2rem;">
-                            <span style="color:var(--accent-red);">Stop-Loss (-%3):</span>
-                            <strong>₺${order.stop_price.toFixed(2)}</strong>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:0.2rem;">
-                            <span style="color:var(--accent-green);">Kâr Al TP1 (+%5):</span>
-                            <strong>₺${order.tp1_price.toFixed(2)}</strong>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
-                            <span style="color:var(--accent-green);">Kâr Al TP2 (Tavan):</span>
-                            <strong>?${order.tp2_price.toFixed(2)}</strong>
-                        </div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
+                        <span style="color:var(--text-muted);">Giriş Saati:</span>
+                        <strong>${entryTime}</strong>
                     </div>
-                    <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
-                        <button onclick="preparePortfolioOrder('${order.symbol}', ${order.shares}, ${order.entry_price}, ${order.tp1_price}, ${order.stop_price})" class="btn-primary" style="flex:1; background:var(--accent-green); color:#fff; border:none; padding:0.4rem; border-radius:4px; font-weight:bold; cursor:pointer;"><i class="fa-solid fa-cart-arrow-down"></i> Portfoye AL</button>
-                        <button onclick="quickTrade('${order.symbol}', 'sell', ${order.shares}, ${order.entry_price}, ${order.tp1_price}, ${order.stop_price})" class="btn-primary" style="flex:1; background:var(--accent-red); color:#fff; border:none; padding:0.4rem; border-radius:4px; font-weight:bold; cursor:pointer;"><i class="fa-solid fa-money-bill-wave"></i> Portfoyden SAT</button>
+                    <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
+                        <span style="color:var(--text-muted);">Trade Log K/Z:</span>
+                        <strong style="color:${pnlColor};">${pnl >= 0 ? '+' : ''}₺${pnl.toFixed(2)} (${Number(order.pnl_pct || 0).toFixed(2)}%)</strong>
                     </div>
+                    <div style="font-size:0.8rem; color:${order.is_open ? 'var(--accent-yellow)' : 'var(--text-muted)'};">${statusText}${order.strategy_name ? ` · ${order.strategy_name}` : ''}</div>
+                    ${actions}
                 `;
                 container.appendChild(card);
             });
         } else {
-            container.innerHTML = '<div style="color:var(--text-muted);"><i class="fa-solid fa-circle-exclamation"></i> Bugün için geçerli "Çelik Emir" kriterlerine uyan sinyal bulunamadı.</div>';
+            container.innerHTML = '<div style="color:var(--text-muted);"><i class="fa-solid fa-circle-exclamation"></i> Bugün Trade Log’a kaydedilmiş Çelik işlemi bulunamadı.</div>';
         }
     } catch (e) {
         container.innerHTML = '<div style="color:var(--accent-red);">Hata: ' + e.message + '</div>';
@@ -6698,8 +6701,8 @@ function preparePortfolioOrder(symbol, qty, price, tpPrice, slPrice) {
             'lt-price': Number(price || 0).toFixed(2),
             'lt-qty': String(qty || ''),
             'lt-allocation': (Number(price || 0) * Number(qty || 0)).toFixed(2),
-            'lt-tp-price': Number(tpPrice || 0).toFixed(2),
-            'lt-sl-price': Number(slPrice || 0).toFixed(2)
+            'lt-tp-price': tpPrice == null ? '' : Number(tpPrice).toFixed(2),
+            'lt-sl-price': slPrice == null ? '' : Number(slPrice).toFixed(2)
         };
         Object.entries(values).forEach(([id, value]) => {
             const field = document.getElementById(id);
