@@ -3575,8 +3575,10 @@ function renderStatsMode() {
                 if (el('stats-tab-elite-net-pct')) el('stats-tab-elite-net-pct').style.color = 'var(--text-muted)';
             }
         }
-        // Tavan denetimi kartlari (Tavan Basarisi, +%5, Zirve Primi) — arsiv gununden beslenir
-        if (today) {
+        // Tavan denetimi kartlari yalnızca bugünün kaydından beslenir.
+        // Eski arşiv kaydını güncel seans gibi göstermemek için yoksa boş
+        // durum açıkça gösterilir.
+        if (isCurrentSession && today) {
             const allSyms = today.all_symbols || [];
             const totalC = allSyms.length;
             const tavanC = allSyms.filter(s => s.hit_ceiling).length;
@@ -3593,6 +3595,16 @@ function renderStatsMode() {
             if (el('stats-tab-avg-max-gain')) el('stats-tab-avg-max-gain').innerText = `+ %${avgMax.toFixed(2)}`;
             if (el('stats-tab-avg-close-sub')) el('stats-tab-avg-close-sub').innerText = `Kapanış: %${(totalC > 0 ? sumClose / totalC : 0).toFixed(2)}`;
             if (el('stats-tab-warrant-avg-gain')) el('stats-tab-warrant-avg-gain').innerText = `+ %${(avgMax * 6.2).toFixed(2)}`;
+        } else {
+            if (el('stats-tab-total-days')) el('stats-tab-total-days').innerText = 'Bugün yok';
+            if (el('stats-tab-total-candidates-sub')) el('stats-tab-total-candidates-sub').innerText = 'Tavan denetimi bekleniyor';
+            if (el('stats-tab-tavan-rate')) el('stats-tab-tavan-rate').innerText = '-';
+            if (el('stats-tab-tavan-cnt-sub')) el('stats-tab-tavan-cnt-sub').innerText = 'Bugün kayıt yok';
+            if (el('stats-tab-plus5-rate')) el('stats-tab-plus5-rate').innerText = '-';
+            if (el('stats-tab-plus5-cnt-sub')) el('stats-tab-plus5-cnt-sub').innerText = 'Bugün kayıt yok';
+            if (el('stats-tab-avg-max-gain')) el('stats-tab-avg-max-gain').innerText = '-';
+            if (el('stats-tab-avg-close-sub')) el('stats-tab-avg-close-sub').innerText = 'Bugün kayıt yok';
+            if (el('stats-tab-warrant-avg-gain')) el('stats-tab-warrant-avg-gain').innerText = '-';
         }
     }
 }
