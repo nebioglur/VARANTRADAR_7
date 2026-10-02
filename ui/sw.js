@@ -1,5 +1,5 @@
 /* VARANTRADAR minimal service worker: uygulama kurulumu + temel statik onbellek. */
-const CACHE = 'vr-static-v9';
+const CACHE = 'vr-static-v10';
 const CORE = ['/', '/login', '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -31,7 +31,19 @@ self.addEventListener('fetch', (e) => {
         return;
     }
 
-    // Statik dosyalar: once onbellek
+    // JS/CSS: once ag (guncellik), olmazsa onbellek — boylece yeni kod hemen yansir
+    if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
+        e.respondWith(
+            fetch(e.request).then((r) => {
+                const copy = r.clone();
+                caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
+                return r;
+            }).catch(() => caches.match(e.request))
+        );
+        return;
+    }
+
+    // Diger statik dosyalar (ikon, manifest): once onbellek
     e.respondWith(
         caches.match(e.request).then((m) => m || fetch(e.request).then((r) => {
             const copy = r.clone();
