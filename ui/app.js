@@ -3533,37 +3533,66 @@ function renderStatsMode() {
         const todayDate = new Date().toLocaleDateString('sv-SE');
         const today = history.find(item => item.date === todayDate) || history.find(item => item.date);
         const isCurrentSession = today?.date === todayDate;
+        const ts = data.trade_stats || null;
         const statusEl = el('stats-data-status');
         if (statusEl) {
-            statusEl.textContent = isCurrentSession
+            let base = isCurrentSession
                 ? `Güncel seans: ${today.date}`
                 : today
-                    ? `Bugün için henüz kayıt yok · Son kayıt: ${today.date}`
-                    : 'Henüz istatistik kaydı bulunmuyor';
+                    ? `Bugün için tavan denetim kaydı yok · Son kayıt: ${today.date}`
+                    : 'Henüz tavan denetim kaydı bulunmuyor';
+            if (ts) base += ` · Trade Log: ${ts.closed_count} kapalı, ${ts.open_count} açık pozisyon`;
+            statusEl.textContent = base;
         }
+        // Trade Log (portfoy) kartlari — tavan arsivinden bagimsiz kaynak
+        if (ts) {
+            const trPos = ts.positive_count || 0;
+            const trNeg = ts.negative_count || 0;
+            const trNet = ts.net_pct || 0;
+            if (el('stats-tab-pos-count')) el('stats-tab-pos-count').innerText = `${trPos} Adet`;
+            if (el('stats-tab-pos-avg')) el('stats-tab-pos-avg').innerText = `(Ort. +%${(ts.avg_positive_pct || 0).toFixed(2)})`;
+            if (el('stats-tab-neg-count')) el('stats-tab-neg-count').innerText = `${trNeg} Adet`;
+            if (el('stats-tab-neg-avg')) el('stats-tab-neg-avg').innerText = `(Ort. -%${Math.abs(ts.avg_negative_pct || 0).toFixed(2)})`;
+            const trSign = trNet > 0 ? '+' : '';
+            if (el('stats-tab-net-pct')) el('stats-tab-net-pct').innerText = `${trSign}%${trNet.toFixed(2)}`;
+            const trNetCard = el('stats-tab-net-card');
+            if (trNetCard) {
+                if (trNet > 0) {
+                    trNetCard.style.background = 'linear-gradient(145deg, rgba(16,185,129,0.05) 0%, rgba(15,23,42,1) 100%)';
+                    trNetCard.style.border = '1px solid rgba(16,185,129,0.2)';
+                    if (el('stats-tab-net-pct')) el('stats-tab-net-pct').style.color = 'var(--accent-green)';
+                } else if (trNet < 0) {
+                    trNetCard.style.background = 'linear-gradient(145deg, rgba(239,68,68,0.05) 0%, rgba(15,23,42,1) 100%)';
+                    trNetCard.style.border = '1px solid rgba(239,68,68,0.2)';
+                    if (el('stats-tab-net-pct')) el('stats-tab-net-pct').style.color = 'var(--accent-red)';
+                } else {
+                    trNetCard.style.background = 'linear-gradient(145deg, rgba(59,130,246,0.05) 0%, rgba(15,23,42,1) 100%)';
+                    trNetCard.style.border = '1px solid rgba(59,130,246,0.2)';
+                    if (el('stats-tab-net-pct')) el('stats-tab-net-pct').style.color = 'var(--text-muted)';
+                }
+            }
+            // Elit kartlari tavan denetimine ozeldir; Trade Log'da karşılığı yok
+            if (el('stats-tab-elite-pos-count')) el('stats-tab-elite-pos-count').innerText = '-';
+            if (el('stats-tab-elite-pos-avg')) el('stats-tab-elite-pos-avg').innerText = '(Tavan denetimi gerektirir)';
+            if (el('stats-tab-elite-neg-count')) el('stats-tab-elite-neg-count').innerText = '-';
+            if (el('stats-tab-elite-neg-avg')) el('stats-tab-elite-neg-avg').innerText = '(Tavan denetimi gerektirir)';
+            if (el('stats-tab-elite-net-pct')) el('stats-tab-elite-net-pct').innerText = '-';
+            const eliteNetCard2 = el('stats-tab-elite-net-card');
+            if (eliteNetCard2) {
+                eliteNetCard2.style.background = 'linear-gradient(145deg, rgba(234,179,8,0.05) 0%, rgba(15,23,42,1) 100%)';
+                eliteNetCard2.style.border = '1px solid rgba(234,179,8,0.5)';
+                if (el('stats-tab-elite-net-pct')) el('stats-tab-elite-net-pct').style.color = 'var(--text-muted)';
+            }
+        }
+        // Tavan denetimi kartlari (Tavan Basarisi, +%5, Zirve Primi) — arsiv gununden beslenir
         if (today) {
             const allSyms = today.all_symbols || [];
             const totalC = allSyms.length;
             const tavanC = allSyms.filter(s => s.hit_ceiling).length;
             const plus5C = allSyms.filter(s => s.hit_plus5).length;
-            const posSyms = allSyms.filter(s => (s.closing_gain_pct || 0) > 0);
-            const negSyms = allSyms.filter(s => (s.closing_gain_pct || 0) <= 0);
             const sumMax = allSyms.reduce((sum, s) => sum + (s.max_gain_pct || 0), 0);
             const sumClose = allSyms.reduce((sum, s) => sum + (s.closing_gain_pct || 0), 0);
             const avgMax = totalC > 0 ? sumMax / totalC : 0;
-            const avgClose = totalC > 0 ? sumClose / totalC : 0;
-            const posGain = posSyms.reduce((sum, s) => sum + (s.closing_gain_pct || 0), 0);
-            const negGain = negSyms.reduce((sum, s) => sum + (s.closing_gain_pct || 0), 0);
-            const avgPosGain = posSyms.length > 0 ? posGain / posSyms.length : 0;
-            const avgNegGain = negSyms.length > 0 ? negGain / negSyms.length : 0;
-            const elites = allSyms.filter(s => (s.morning_score || 0) >= 99.9);
-            const elitesPos = elites.filter(s => (s.closing_gain_pct || 0) > 0);
-            const elitesNeg = elites.filter(s => (s.closing_gain_pct || 0) <= 0);
-            const elitePosGain = elitesPos.reduce((sum, s) => sum + (s.closing_gain_pct || 0), 0);
-            const eliteNegGain = elitesNeg.reduce((sum, s) => sum + (s.closing_gain_pct || 0), 0);
-            const avgElitePos = elitesPos.length > 0 ? elitePosGain / elitesPos.length : 0;
-            const avgEliteNeg = elitesNeg.length > 0 ? eliteNegGain / elitesNeg.length : 0;
-            const eliteNet = elites.length > 0 ? (elitePosGain + eliteNegGain) / elites.length : 0;
             if (el('stats-tab-total-days')) el('stats-tab-total-days').innerText = today.date || 'Bugün';
             if (el('stats-tab-total-candidates-sub')) el('stats-tab-total-candidates-sub').innerText = `Toplam ${totalC} Öneri`;
             if (el('stats-tab-tavan-rate')) el('stats-tab-tavan-rate').innerText = `%${totalC > 0 ? (tavanC/totalC*100).toFixed(1) : 0}`;
@@ -3571,48 +3600,8 @@ function renderStatsMode() {
             if (el('stats-tab-plus5-rate')) el('stats-tab-plus5-rate').innerText = `%${totalC > 0 ? (plus5C/totalC*100).toFixed(1) : 0}`;
             if (el('stats-tab-plus5-cnt-sub')) el('stats-tab-plus5-cnt-sub').innerText = `${plus5C} Hisse`;
             if (el('stats-tab-avg-max-gain')) el('stats-tab-avg-max-gain').innerText = `+ %${avgMax.toFixed(2)}`;
-            if (el('stats-tab-avg-close-sub')) el('stats-tab-avg-close-sub').innerText = `Kapanış: %${avgClose.toFixed(2)}`;
+            if (el('stats-tab-avg-close-sub')) el('stats-tab-avg-close-sub').innerText = `Kapanış: %${(totalC > 0 ? sumClose / totalC : 0).toFixed(2)}`;
             if (el('stats-tab-warrant-avg-gain')) el('stats-tab-warrant-avg-gain').innerText = `+ %${(avgMax * 6.2).toFixed(2)}`;
-            if (el('stats-tab-pos-count')) el('stats-tab-pos-count').innerText = `${posSyms.length} Adet`;
-            if (el('stats-tab-pos-avg')) el('stats-tab-pos-avg').innerText = `(Ort. +%${avgPosGain.toFixed(2)})`;
-            if (el('stats-tab-neg-count')) el('stats-tab-neg-count').innerText = `${negSyms.length} Adet`;
-            if (el('stats-tab-neg-avg')) el('stats-tab-neg-avg').innerText = `(Ort. %${Math.abs(avgNegGain).toFixed(2)})`;
-            let netSign = avgClose > 0 ? '+' : '';
-            if (el('stats-tab-net-pct')) el('stats-tab-net-pct').innerText = `${netSign}%${avgClose.toFixed(2)}`;
-            let netCard = el('stats-tab-net-card');
-            if (netCard) {
-                if (avgClose > 0) {
-                    netCard.style.background = 'linear-gradient(145deg, rgba(16,185,129,0.05) 0%, rgba(15,23,42,1) 100%)';
-                    netCard.style.border = '1px solid rgba(16,185,129,0.2)';
-                    if (el('stats-tab-net-pct')) el('stats-tab-net-pct').style.color = 'var(--accent-green)';
-                } else if (avgClose < 0) {
-                    netCard.style.background = 'linear-gradient(145deg, rgba(239,68,68,0.05) 0%, rgba(15,23,42,1) 100%)';
-                    netCard.style.border = '1px solid rgba(239,68,68,0.2)';
-                    if (el('stats-tab-net-pct')) el('stats-tab-net-pct').style.color = 'var(--accent-red)';
-                } else {
-                    netCard.style.background = 'linear-gradient(145deg, rgba(59,130,246,0.05) 0%, rgba(15,23,42,1) 100%)';
-                    netCard.style.border = '1px solid rgba(59,130,246,0.2)';
-                    if (el('stats-tab-net-pct')) el('stats-tab-net-pct').style.color = 'var(--text-muted)';
-                }
-            }
-            if (el('stats-tab-elite-pos-count')) el('stats-tab-elite-pos-count').innerText = `${elitesPos.length} Adet`;
-            if (el('stats-tab-elite-pos-avg')) el('stats-tab-elite-pos-avg').innerText = `(Ort. +%${avgElitePos.toFixed(2)})`;
-            if (el('stats-tab-elite-neg-count')) el('stats-tab-elite-neg-count').innerText = `${elitesNeg.length} Adet`;
-            if (el('stats-tab-elite-neg-avg')) el('stats-tab-elite-neg-avg').innerText = `(Ort. %${Math.abs(avgEliteNeg).toFixed(2)})`;
-            let eliteSign = eliteNet > 0 ? '+' : '';
-            if (el('stats-tab-elite-net-pct')) el('stats-tab-elite-net-pct').innerText = `${eliteSign}%${eliteNet.toFixed(2)}`;
-            let eliteCard = el('stats-tab-elite-net-card');
-            if (eliteCard) {
-                if (eliteNet > 0) {
-                    eliteCard.style.background = 'linear-gradient(145deg, rgba(234,179,8,0.05) 0%, rgba(15,23,42,1) 100%)';
-                    eliteCard.style.border = '1px solid rgba(234,179,8,0.5)';
-                    if (el('stats-tab-elite-net-pct')) el('stats-tab-elite-net-pct').style.color = 'var(--accent-yellow)';
-                } else {
-                    eliteCard.style.background = 'linear-gradient(145deg, rgba(239,68,68,0.05) 0%, rgba(15,23,42,1) 100%)';
-                    eliteCard.style.border = '1px solid rgba(239,68,68,0.5)';
-                    if (el('stats-tab-elite-net-pct')) el('stats-tab-elite-net-pct').style.color = 'var(--accent-red)';
-                }
-            }
         }
     }
 }
@@ -3786,6 +3775,34 @@ function openStatsDetailModal(type, date = null) {
         items = dayData?.all_symbols || [];
         titleText = `<i class="fa-regular fa-calendar"></i> ${date} Tarihli Tüm Öneriler`;
     }
+
+    // Günlük modda K/Z kartlari Trade Log'dan beslenir; detay da Trade Log islemlerinden gelir
+    const tsTrades = (isDaily && global_stats_data.trade_stats && Array.isArray(global_stats_data.trade_stats.trades))
+        ? global_stats_data.trade_stats.trades : null;
+    if (tsTrades && (type === 'positive_close' || type === 'negative_close' || type === 'all')) {
+        const closedTrades = tsTrades.filter(t => !t.is_open);
+        let selected = type === 'positive_close'
+            ? closedTrades.filter(t => (t.pnl_val || 0) > 0)
+            : type === 'negative_close'
+                ? closedTrades.filter(t => (t.pnl_val || 0) < 0)
+                : tsTrades;
+        items = selected.map(t => ({
+            date: global_stats_data.trade_stats.date,
+            symbol: t.symbol,
+            snapshot_time: 'Trade Log',
+            morning_price: t.entry_price,
+            morning_gain_pct: 0,
+            closing_price: t.is_open ? t.entry_price : t.exit_price,
+            max_gain_pct: t.pnl_pct || 0,
+            hit_ceiling: false,
+            hit_plus5: false,
+            _is_trade: true,
+            _is_open: !!t.is_open,
+            _pnl_val: t.pnl_val || 0,
+            _shares: t.shares || 0
+        }));
+        titleText += ' · Trade Log';
+    }
     
     
     let posCount = 0;
@@ -3851,8 +3868,13 @@ function openStatsDetailModal(type, date = null) {
             const diffStr = diffVal > 0 ? '+' + diffVal.toFixed(2) : diffVal.toFixed(2);
             const diffPctStr = diffPct > 0 ? '+' + diffPct.toFixed(2) : diffPct.toFixed(2);
 
-            const hitStatus = item.hit_ceiling ? '<span style="background:rgba(16,185,129,0.2); color:#10b981; padding:2px 5px; border-radius:4px; font-size:0.7rem;"><i class="fa-solid fa-fire"></i> TAVAN</span>' : 
+            let hitStatus = item.hit_ceiling ? '<span style="background:rgba(16,185,129,0.2); color:#10b981; padding:2px 5px; border-radius:4px; font-size:0.7rem;"><i class="fa-solid fa-fire"></i> TAVAN</span>' :
                                (item.hit_plus5 ? '<span style="background:rgba(245,158,11,0.2); color:#f59e0b; padding:2px 5px; border-radius:4px; font-size:0.7rem;">+%5</span>' : '');
+            if (item._is_trade) {
+                hitStatus = item._is_open
+                    ? '<span style="background:rgba(245,158,11,0.2); color:#f59e0b; padding:2px 5px; border-radius:4px; font-size:0.7rem;"><i class="fa-solid fa-hourglass-half"></i> AÇIK POZİSYON</span>'
+                    : `<span style="background:rgba(59,130,246,0.2); color:#3b82f6; padding:2px 5px; border-radius:4px; font-size:0.7rem;">${item._shares} Lot · ${(item._pnl_val || 0) >= 0 ? '+' : ''}${(item._pnl_val || 0).toFixed(2)} ₺</span>`;
+            }
             
             
             // Get today's date in YYYY-MM-DD

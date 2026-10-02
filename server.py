@@ -2487,6 +2487,52 @@ def api_admin_set_cash():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+def _get_today_trade_stats():
+    """Bugunun (Istanbul) Trade Log kayitlarindan portfoy istatistigi uretir.
+    Tavan denetim arsivinden bagimsizdir; hesaba ozel gercek islemleri yansitir."""
+    from services.trade_database import get_connection, IS_PG
+    from zoneinfo import ZoneInfo
+    today = datetime.now(ZoneInfo("Europe/Istanbul")).strftime("%Y-%m-%d")
+    owner = get_owner_key()
+    ph = "%s" if IS_PG else "?"
+    with get_connection() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            f"SELECT symbol, entry_price, shares, pnl_val, pnl_pct, exit_time, exit_price FROM trades WHERE owner={ph} AND date_str={ph}",
+            (owner, today)
+        )
+        cols = [c[0] for c in cur.description]
+        rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+    closed = [r for r in rows if r.get('exit_time')]
+    pos = [r for r in closed if float(r.get('pnl_val') or 0) > 0]
+    neg = [r for r in closed if float(r.get('pnl_val') or 0) < 0]
+    invested = sum(float(r.get('entry_price') or 0) * int(r.get('shares') or 0) for r in closed)
+    total_pnl = sum(float(r.get('pnl_val') or 0) for r in closed)
+    avg_pos = sum(float(r.get('pnl_pct') or 0) for r in pos) / len(pos) if pos else 0.0
+    avg_neg = sum(float(r.get('pnl_pct') or 0) for r in neg) / len(neg) if neg else 0.0
+    trade_list = [{
+        "symbol": r.get('symbol'),
+        "entry_price": float(r.get('entry_price') or 0),
+        "exit_price": float(r.get('exit_price') or 0),
+        "shares": int(r.get('shares') or 0),
+        "pnl_val": round(float(r.get('pnl_val') or 0), 2),
+        "pnl_pct": round(float(r.get('pnl_pct') or 0), 2),
+        "is_open": not bool(r.get('exit_time')),
+    } for r in rows]
+    return {
+        "date": today,
+        "open_count": len(rows) - len(closed),
+        "closed_count": len(closed),
+        "positive_count": len(pos),
+        "negative_count": len(neg),
+        "avg_positive_pct": round(avg_pos, 2),
+        "avg_negative_pct": round(avg_neg, 2),
+        "net_pnl": round(total_pnl, 2),
+        "net_pct": round(total_pnl / invested * 100, 2) if invested > 0 else 0.0,
+        "trades": trade_list,
+    }
+
+
 @app.route('/api/tavan_history', methods=['GET'])
 def api_tavan_history():
     try:
@@ -2519,6 +2565,13 @@ def api_tavan_history():
             symbol_filter=symbol_filter,
             time_filter=time_filter
         )
+        # Trade Log istatistikleri tavan arsivinden ayridir; UI bunlari
+        # kâr/zarar kartlarinda ayri kaynaktan gosterir.
+        try:
+            res["trade_stats"] = _get_today_trade_stats()
+        except Exception as te:
+            print(f"[tavan_history] trade_stats hatasi: {te}")
+            res["trade_stats"] = None
         return jsonify(sanitize_for_json(res))
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
