@@ -2568,7 +2568,14 @@ function renderAllDashboardTables() {
                     </div>`;
                 }
                 scoreStr += scoreStrChips;
-                
+
+                // İşlem sütunu: Portföye AL / Portföyden SAT
+                const symClean = String(res.Symbol || '').replace('.IS', '');
+                const tradeCell = `<div style="display:flex; flex-direction:column; gap:4px; align-items:stretch; min-width:86px;">
+                    <button onclick="event.stopPropagation(); preparePortfolioOrder('${symClean}', null, ${parseFloat(res.Price || 0).toFixed(2)}, null, null)" title="Portföy sekmesine geç ve alış emrini doldur" style="background:var(--accent-green); color:#fff; border:none; padding:4px 8px; border-radius:4px; font-weight:800; font-size:0.72rem; cursor:pointer; white-space:nowrap;"><i class="fa-solid fa-cart-arrow-down"></i> AL</button>
+                    <button onclick="event.stopPropagation(); quickTrade('${symClean}', 'sell', null, ${parseFloat(res.Price || 0).toFixed(2)}, null, null)" title="Portföydeki açık pozisyonu kapat (SAT)" style="background:var(--accent-red); color:#fff; border:none; padding:4px 8px; border-radius:4px; font-weight:800; font-size:0.72rem; cursor:pointer; white-space:nowrap;"><i class="fa-solid fa-money-bill-wave"></i> SAT</button>
+                </div>`;
+
                 tr.innerHTML = `
                     <td style="color:var(--text-main);font-weight:700;">${symStr}</td>
                     <td style="font-family:monospace; font-weight:600;">${priceStr}</td>
@@ -2577,6 +2584,7 @@ function renderAllDashboardTables() {
                     <td>${hacimStr}</td>
                     <td>${scoreStr}</td>
                     <td>${srCellHtml(res.Symbol, res.Price)}</td>
+                    <td>${tradeCell}</td>
                 `;
                 tbody.appendChild(tr);
                 return;
