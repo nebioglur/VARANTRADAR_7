@@ -1929,20 +1929,33 @@ window.onload = function() {
             }
             toggleRadarFullscreen(this);
         };
-        // MOBIL: cift dokunus destegi (dblclick mobil tarayicilarda tetiklenmez)
-        let lastTap = 0;
+        // MOBIL: uc dokunus destegi (dblclick mobil tarayicilarda tetiklenmez,
+        // cift dokunus kazara tam ekran actigi icin 3 dokunus kullaniliyor)
+        let tapCount = 0;
+        let lastTapTime = 0;
+        let tapTimer = null;
         card.addEventListener('touchend', function(e) {
-            if (e.target.closest('button') || e.target.closest('input') || e.target.closest('a')) return;
+            if (e.target.closest('button') || e.target.closest('input') || e.target.closest('a')) {
+                tapCount = 0;
+                return;
+            }
             const now = Date.now();
-            if (now - lastTap < 350) {
+            if (now - lastTapTime > 600) tapCount = 0;
+            lastTapTime = now;
+            tapCount++;
+            if (tapCount === 2) e.preventDefault(); // cift dokunus zoom'unu engelle
+            if (tapCount >= 3) {
                 e.preventDefault();
+                clearTimeout(tapTimer);
+                tapCount = 0;
                 toggleRadarFullscreen(this);
-                lastTap = 0;
             } else {
-                lastTap = now;
+                // 3. dokunus gelmezse sayaci sifirla
+                clearTimeout(tapTimer);
+                tapTimer = setTimeout(() => { tapCount = 0; }, 600);
             }
         }, { passive: false });
-        card.title = "Tam ekran yapmak için çift tıklayın";
+        card.title = "Tam ekran yapmak için üç kez dokunun";
     });
 };
 
