@@ -760,6 +760,9 @@ def _build():
 
 def start_build():
     if _build_lock.acquire(blocking=False):
+        with _lock:
+            _cache["building"] = True
+            _cache["error"] = None
         def _run():
             try:
                 _build()
@@ -780,19 +783,45 @@ def start_build():
 def get_rows():
     """UI icin satirlar; cache bos ise arka plan insasi tetikler."""
     with _lock:
-        if _cache["rows"] and _cache["built_at"]:
-            age = (datetime.now() - datetime.strptime(_cache["built_at"], "%Y-%m-%d %H:%M:%S")).total_seconds()
+        if _cache["built_at"]:
+            try:
+                age = (datetime.now() - datetime.strptime(_cache["built_at"], "%Y-%m-%d %H:%M:%S")).total_seconds()
+            except Exception:
+                age = None
         else:
             age = None
         building = _cache["building"]
+        error = _cache["error"]
+        has_rows = len(_cache["rows"]) > 0
+
+    if error and not building:
+        # Hata varsa ve yeni bir indirme süreci başlamadıysa hatayı dön
+        return {"status": "error", "rows": [], "summary": {}, "built_at": None, "error": error}
+
     if age is None and not building:
         start_build()
         return {"status": "building", "rows": [], "summary": {}, "built_at": None}
+
     if age is not None and age > CACHE_TTL and not building:
         start_build()
+        # Eski veriyi göstermeye devam edebiliriz veya building dönebiliriz.
+        # Has rows varsa eski veriyi döndür:
+        if not has_rows:
+            return {"status": "building", "rows": [], "summary": {}, "built_at": None}
+
     with _lock:
+        if _cache["rows"]:
+            status_val = "ok"
+        elif _cache["error"]:
+            status_val = "error"
+        elif _cache["built_at"] and not _cache["building"]:
+            status_val = "error"
+            _cache["error"] = "Piyasa verisi alınamadı (Semboller liste dışı veya borsa tatilde olabilir)"
+        else:
+            status_val = "building"
+
         return {
-            "status": "ok" if _cache["rows"] else "building",
+            "status": status_val,
             "rows": _cache["rows"],
             "summary": _cache["summary"],
             "built_at": _cache["built_at"],
