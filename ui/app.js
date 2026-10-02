@@ -5873,8 +5873,8 @@ function loadV8Breakout() {
                 cardsContainer.innerHTML = `
                     <div style="grid-column:1/-1; text-align:center; padding:3rem; color:var(--text-muted); border:1px dashed rgba(255,255,255,0.1); border-radius:12px;">
                         <div style="font-size:2rem; margin-bottom:0.5rem;">🔍</div>
-                        <div style="font-size:0.95rem; font-weight:600;">Şu an giriş onaylı hisse yok</div>
-                        <div style="font-size:0.78rem; margin-top:0.4rem;">Sistem ${(typeof globalDashboardData !== 'undefined' && globalDashboardData.all_symbols_stats) ? Object.keys(globalDashboardData.all_symbols_stats).length : 550} hisseyi tarıyor. Hazırlık aşamasındakileri aşağıda görebilirsiniz.</div>
+                        <div style="font-size:0.95rem; font-weight:600;">Şu an AL onayı yok</div>
+                        <div style="font-size:0.78rem; margin-top:0.4rem;">${waitList.length} hisse hazırlıkta. Kırılım + hacim teyidi oluştuğunda AL kartı burada görünecek; hazırlık adayları aşağıda listeleniyor.</div>
                     </div>`;
                 return;
             }
