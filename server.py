@@ -1161,9 +1161,13 @@ def login_post():
     data = request.get_json(silent=True) or request.form
     username = (data.get('username') or '').strip()
     password = data.get('password') or ''
-    valid_user = os.environ.get('ADMIN_USER', 'nebioglur')
-    valid_pass = os.environ.get('ADMIN_PASS', '123')
-    if username == valid_user and password == valid_pass:
+    # Çok kullanıcılı klasik giriş: her kullanıcı kendi owner anahtarıyla (local:<ad>)
+    # ayrı hesaba sahip olur. Ortam değişkenleriyle override edilebilir.
+    valid_users = {
+        os.environ.get('ADMIN_USER', 'nebioglur'): os.environ.get('ADMIN_PASS', '123'),
+        os.environ.get('SARI_USER', 'sari'): os.environ.get('SARI_PASS', '123'),
+    }
+    if username in valid_users and password == valid_users[username]:
         session['logged_in'] = True
         session['username'] = username
         upsert_app_user(f"local:{username}", display_name=username)
