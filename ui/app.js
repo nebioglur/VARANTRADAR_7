@@ -6981,3 +6981,103 @@ async function quickTrade(symbol, action, qty, price, tp_price, sl_price) {
 }
 
 
+// ===== MOBIL TABLO DONUSTURUCU: genis tablolari hisse basina mini kartlara cevirir =====
+function isMobileView() {
+    return window.innerWidth < 768;
+}
+
+function mtSig(tbody) {
+    let h = 5381;
+    const s = tbody.innerHTML;
+    for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+    return h + '|' + tbody.rows.length;
+}
+
+function mobilizeTable(table) {
+    if (!table.tHead || !table.tBodies.length) return;
+    const tbody = table.tBodies[0];
+    const sig = mtSig(tbody);
+    let list = table.nextElementSibling;
+    if (list && list.classList && list.classList.contains('mt-list')) {
+        if (list.dataset.sig === sig) return; // veri degismedi, yeniden kurma
+        list.dataset.sig = sig;
+    } else {
+        list = document.createElement('div');
+        list.className = 'mt-list';
+        list.dataset.sig = sig;
+        table.after(list);
+    }
+
+    const cols = Array.from(table.tHead.rows[0].cells).map(th => th.textContent.trim());
+    list.innerHTML = '';
+    Array.from(tbody.rows).forEach(tr => {
+        const cells = Array.from(tr.cells);
+        if (cells.length === 1 && tr.cells[0].colSpan > 1) {
+            // "Taranıyor..." / "bulunamadı" gibi placeholder satırlar
+            const ph = document.createElement('div');
+            ph.className = 'mt-empty';
+            ph.textContent = cells[0].textContent.trim();
+            list.appendChild(ph);
+            return;
+        }
+        const card = document.createElement('div');
+        card.className = 'mt-card';
+        const head = cells[0].cloneNode(true);
+        head.className = 'mt-sym';
+        card.appendChild(head);
+        cells.slice(1).forEach((td, i) => {
+            const rowEl = document.createElement('div');
+            rowEl.className = 'mt-row';
+            const lab = document.createElement('span');
+            lab.className = 'mt-lab';
+            lab.textContent = cols[i + 1] || '';
+            const val = document.createElement('span');
+            val.className = 'mt-val';
+            val.appendChild(td.cloneNode(true));
+            rowEl.appendChild(lab);
+            rowEl.appendChild(val);
+            card.appendChild(rowEl);
+        });
+        list.appendChild(card);
+    });
+    table.style.display = 'none';
+}
+
+function demobilizeTable(table) {
+    const list = table.nextElementSibling;
+    if (list && list.classList && list.classList.contains('mt-list')) {
+        list.remove();
+    }
+    table.style.display = '';
+}
+
+function refreshMobileTables() {
+    document.querySelectorAll('table[id^="tb-"]').forEach(table => {
+        // Modallar kendi mobil düzenine sahip; karıştırma
+        if (table.closest('.modal-overlay, #tavan-audit-modal, #indicator-modal')) return;
+        if (isMobileView()) {
+            mobilizeTable(table);
+        } else {
+            demobilizeTable(table);
+        }
+    });
+}
+
+(function initMobileTables() {
+    let debounceTimer = null;
+    const schedule = () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(refreshMobileTables, 250);
+    };
+    try {
+        const obs = new MutationObserver(schedule);
+        obs.observe(document.body, { childList: true, subtree: true });
+    } catch (e) { /* eski tarayici: interval ile dene */
+        setInterval(refreshMobileTables, 3000);
+    }
+    window.addEventListener('resize', schedule);
+    document.addEventListener('DOMContentLoaded', refreshMobileTables);
+    refreshMobileTables();
+})();
+
+
