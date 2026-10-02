@@ -1904,6 +1904,30 @@ window.onload = function() {
         const active = !card.classList.contains('fullscreen-card');
         card.classList.toggle('fullscreen-card', active);
         document.body.classList.toggle('fullscreen-table-open', active);
+        if (active) {
+            Object.assign(card.style, {
+                position: 'fixed',
+                inset: '0',
+                top: '0',
+                left: '0',
+                width: '100vw',
+                maxWidth: '100vw',
+                height: '100dvh',
+                minHeight: '100dvh',
+                margin: '0',
+                padding: '0.6rem',
+                borderRadius: '0',
+                boxShadow: 'none',
+                overflow: 'hidden',
+                zIndex: '999999'
+            });
+        } else {
+            [
+                'position', 'inset', 'top', 'left', 'width', 'max-width',
+                'height', 'min-height', 'margin', 'padding', 'border-radius',
+                'box-shadow', 'overflow', 'z-index'
+            ].forEach((property) => card.style.removeProperty(property));
+        }
         let closeButton = card.querySelector('.mobile-fs-close');
         if (active && !closeButton) {
             closeButton = document.createElement('button');
