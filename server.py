@@ -2848,16 +2848,74 @@ def api_v8_radar_breakout():
     for sym, data in all_stats.items():
         bo = data.get("v8_breakout")
         if bo and bo.get("is_breakout"):
-            bo["symbol"] = sym
-            bo["price"] = data.get("Daily_Close", 0.0)
-            bo["change_pct"] = data.get("Change_Pct", 0.0)
-            bo["volume"] = data.get("Volume", 0)
-            bo["entry_status"] = data.get("v8_execution", {}).get("entry_status", "UNKNOWN")
-            bo["entry_reasons"] = data.get("v8_execution", {}).get("reasons", [])
-            breakout_list.append(bo)
+            row = dict(bo)
+            row["symbol"] = sym
+            row["price"] = data.get("Daily_Close", 0.0)
+            row["change_pct"] = data.get("Change_Pct", 0.0)
+            row["volume"] = data.get("Volume", 0)
+            row["entry_status"] = data.get("v8_execution", {}).get("entry_status", "UNKNOWN")
+            row["entry_reasons"] = data.get("v8_execution", {}).get("reasons", [])
+            breakout_list.append(row)
+            continue
+
+        # Kırılım yokken endpoint'in boş dönmesi V8'in 600+ hisseyi
+        # taramadığı izlenimini veriyordu. Discovery sonuçlarını da bekleme
+        # listesine ekle; gerçek kırılım oluştuğunda yukarıdaki karar yolu
+        # yine önceliklidir.
+        disc = data.get("v8_discovery") or {}
+        state = disc.get("state")
+        if state in ("READY", "PREPARING", "WATCH"):
+            metrics = disc.get("metrics") or {}
+            breakout_list.append({
+                "symbol": sym,
+                "price": data.get("Daily_Close", 0.0),
+                "change_pct": data.get("Change_Pct", 0.0),
+                "volume": data.get("Volume", 0),
+                "is_breakout": False,
+                "status": "DISCOVERY_" + state,
+                "breakout_score": disc.get("preparation_score", 0.0),
+                "fakeout_risk": 0.0,
+                "metrics": {
+                    "relative_volume": metrics.get("relative_volume", 1.0),
+                    "rsi": data.get("RSI", 50.0),
+                },
+                "entry_status": "WAIT",
+                "entry_reasons": disc.get("reasons") or [
+                    "Kırılım bekleniyor; hazırlık sinyali mevcut."
+                ],
+                "momentum_speed": "PREPARING",
+            })
+        elif data.get("Daily_Close") or data.get("Price"):
+            # V8 verisi geçici olarak boşsa günlük taramayı da tamamen
+            # kaybetme; bunları AL değil, düşük öncelikli BEKLE adayı yap.
+            price = float(data.get("Daily_Close") or data.get("Price") or 0)
+            change = float(data.get("Change_Pct") or 0)
+            rel_vol = float(data.get("Vol_Multiplier") or data.get("Volume_Ratio") or 1)
+            fallback_score = max(35.0, min(65.0, 48.0 + change * 2.0 + (rel_vol - 1.0) * 5.0))
+            breakout_list.append({
+                "symbol": sym,
+                "price": price,
+                "change_pct": change,
+                "volume": data.get("Volume", 0),
+                "is_breakout": False,
+                "status": "DISCOVERY_WATCH",
+                "breakout_score": round(fallback_score, 1),
+                "fakeout_risk": 0.0,
+                "metrics": {"relative_volume": rel_vol, "rsi": data.get("RSI", 50.0)},
+                "entry_status": "WAIT",
+                "entry_reasons": ["Günlük tarama adayı; V8 kırılım teyidi bekleniyor."],
+                "momentum_speed": "NORMAL",
+            })
             
     # Siralama: Oncelikle kaliteli kirilimlar
-    breakout_list = sorted(breakout_list, key=lambda x: x.get("breakout_score", 0) - x.get("fakeout_risk", 0), reverse=True)
+    breakout_list = sorted(
+        breakout_list,
+        key=lambda x: (
+            x.get("entry_status") == "ENTER",
+            x.get("breakout_score", 0) - x.get("fakeout_risk", 0),
+        ),
+        reverse=True,
+    )[:80]
     return jsonify({"status": "success", "data": breakout_list})
 
 @app.route('/api/v8/radar/discovery', methods=['GET'])
@@ -2874,9 +2932,23 @@ def api_v8_radar_discovery():
             disc["change_pct"] = data.get("Change_Pct", 0.0)
             disc["volume"] = data.get("Volume", 0)
             discovery_list.append(disc)
+        elif data.get("Daily_Close") or data.get("Price"):
+            price = float(data.get("Daily_Close") or data.get("Price") or 0)
+            change = float(data.get("Change_Pct") or 0)
+            rel_vol = float(data.get("Vol_Multiplier") or data.get("Volume_Ratio") or 1)
+            discovery_list.append({
+                "symbol": sym,
+                "price": price,
+                "change_pct": change,
+                "volume": data.get("Volume", 0),
+                "state": "WATCH",
+                "preparation_score": round(max(35.0, min(65.0, 48.0 + change * 2.0 + (rel_vol - 1.0) * 5.0)), 1),
+                "reasons": ["Günlük tarama adayı; V8 hazırlık teyidi bekleniyor."],
+                "metrics": {"relative_volume": rel_vol},
+            })
             
     # Puanlara gore sirala
-    discovery_list = sorted(discovery_list, key=lambda x: x.get("preparation_score", 0), reverse=True)
+    discovery_list = sorted(discovery_list, key=lambda x: x.get("preparation_score", 0), reverse=True)[:100]
     return jsonify({"status": "success", "data": discovery_list})
 
 @app.route('/api/v8/market/regime', methods=['GET'])
