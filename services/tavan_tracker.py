@@ -266,7 +266,8 @@ class TavanAuditTracker:
         Istatistige yalnizca SUPER_12 listesindeki VE hacim gucu %100'un uzerindeki
         (rel_vol > 1.0) hisseler alinir. Diger adaylar takibe girmez.
         """
-        tavan_candidates = tavan_candidates or []
+        if tavan_candidates is None:
+            return {}
 
         super12 = cls._compute_super12_set(all_symbols_stats or {})
 
@@ -387,7 +388,6 @@ class TavanAuditTracker:
                 "warrant_gain_pct": "+%0.0"
             })
 
-        existing_day["status"] = "LIVE_TRACKING" if existing_items else "NO_QUALIFIED_CANDIDATES"
         existing_day["items"] = existing_items
         all_audits[date_str] = existing_day
         cls.save_all_audits(all_audits)
@@ -663,7 +663,7 @@ class TavanAuditTracker:
                 items = [it for it in items if it.get("snapshot_time") == time_filter]
 
             d_total = len(items)
-            if d_total == 0 and (symbol_filter or time_filter):
+            if d_total == 0:
                 continue
 
             # 1. Her hisse için % getiri hesapla (Eğer closing_gain_pct json'da 0 ise fiyatlardan hesapla)
@@ -749,9 +749,8 @@ class TavanAuditTracker:
             total_candidates += d_total
             total_tavan += d_tavan
             total_plus5 += d_plus5
-            if d_total > 0:
-                all_max_gains.append(d_max_gain)
-                all_closing_gains.append(d_close_gain)
+            all_max_gains.append(d_max_gain)
+            all_closing_gains.append(d_close_gain)
 
             # Saat bazlı ayrıştırma
             for it in items:

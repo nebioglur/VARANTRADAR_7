@@ -140,29 +140,11 @@ class PGCursor:
         else:
             self._names = None
 
-    def executemany(self, sql, seq_of_params):
-        """Batch INSERT: VALUES (...) kalibi tek execute_values ile gonderilir
-        (uzak PostgreSQL'de satir-satin execute cok yavas olur). Kalip
-        uyusmazsa satir-satin execute'a duser."""
-        s = _translate_sql(sql, self._cur)
-        m = re.search(r"VALUES\s*\(([^()]*)\)\s*(ON\s+CONFLICT.*)?$", s, re.I | re.S)
-        rows = [tuple(p) for p in seq_of_params]
-        if m and rows:
-            n_params = m.group(1).count("%s")
-            template = f"({','.join(['%s'] * n_params)})"
-            tail = m.group(2) or ""
-            from psycopg2.extras import execute_values
-            execute_values(
-                self._cur,
-                s[: m.start()] + "VALUES %s" + (f" {tail}" if tail else ""),
-                rows,
-                template=template,
-                page_size=1000,
-            )
-            self._names = None
-            return
-        for p in rows:
-            self.execute(sql, p)
+
+    def executemany(self, sql, params_list):
+        sql2 = _translate_sql(sql, self._cur)
+        import psycopg2.extras
+        psycopg2.extras.execute_batch(self._cur, sql2, [tuple(p) if p else None for p in params_list], page_size=1000)
 
     def _wrap(self, row):
         if row is None:

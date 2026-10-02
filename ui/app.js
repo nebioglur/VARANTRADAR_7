@@ -5765,7 +5765,7 @@ function loadV8Breakout() {
             if (countEnter) countEnter.textContent = enterList.length;
             if (countWait)  countWait.textContent = waitList.length;
             if (countAvoid) countAvoid.textContent = avoidList.length;
-            if (countTotal) countTotal.textContent = data.length;
+            if (countTotal) countTotal.textContent = (typeof globalDashboardData !== 'undefined' && globalDashboardData.all_symbols_stats) ? Object.keys(globalDashboardData.all_symbols_stats).length : 550;
 
             if (!cardsContainer) return;
 
@@ -5774,7 +5774,7 @@ function loadV8Breakout() {
                     <div style="grid-column:1/-1; text-align:center; padding:3rem; color:var(--text-muted); border:1px dashed rgba(255,255,255,0.1); border-radius:12px;">
                         <div style="font-size:2rem; margin-bottom:0.5rem;">🔍</div>
                         <div style="font-size:0.95rem; font-weight:600;">Şu an giriş onaylı hisse yok</div>
-                        <div style="font-size:0.78rem; margin-top:0.4rem;">Sistem ${data.length} hisseyi tarıyor. Hazırlık aşamasındakileri aşağıda görebilirsiniz.</div>
+                        <div style="font-size:0.78rem; margin-top:0.4rem;">Sistem ${(typeof globalDashboardData !== 'undefined' && globalDashboardData.all_symbols_stats) ? Object.keys(globalDashboardData.all_symbols_stats).length : 550} hisseyi tarıyor. Hazırlık aşamasındakileri aşağıda görebilirsiniz.</div>
                     </div>`;
                 return;
             }
@@ -5798,6 +5798,10 @@ function loadV8Breakout() {
                 card.innerHTML = `
                     <div style="position:absolute; top:0; right:0; background:#10b981; color:#fff; font-size:0.7rem; font-weight:800; padding:3px 10px; border-bottom-left-radius:8px; letter-spacing:1px;">✅ GİR</div>
                     <div style="font-size:1.2rem; font-weight:800; color:#10b981; margin-bottom:0.75rem;">${d.symbol}</div>
+                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; padding-bottom:0.5rem; border-bottom:1px solid rgba(255,255,255,0.05);">
+                          <div style="font-size:1.4rem; font-weight:700; color:var(--text-main);">₺${(d.price || 0).toFixed(2)}</div>
+                          <div style="font-size:0.9rem; font-weight:bold; color:${(d.change_pct || 0) > 0 ? 'var(--accent-green)' : ((d.change_pct || 0) < 0 ? 'var(--accent-red)' : 'var(--text-muted)')};">${(d.change_pct || 0) > 0 ? '+' : ''}${(d.change_pct || 0).toFixed(2)}%</div>
+                      </div>
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; font-size:0.8rem; margin-bottom:0.75rem;">
                         <div style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.4rem 0.6rem;">
                             <div style="color:var(--text-muted); font-size:0.68rem;">Kırılım Gücü</div>
@@ -6477,6 +6481,51 @@ function renderAllStocksTable() {
         const intraSign = s.intra_change > 0 ? '+' : '';
         const flowColor = s.hourly_flow === 'Toplanıyor' ? 'var(--accent-green)' : (s.hourly_flow === 'Satılıyor' ? 'var(--accent-red)' : 'var(--text-muted)');
         
+        let flowHtml = s.hourly_flow;
+        if (s.hourly_flow === 'Toplanıyor') {
+            flowHtml = `<div style="display:flex; flex-direction:column; align-items:center; line-height:1.2; width:70px; margin:0 auto;">
+                <svg viewBox="0 0 100 30" preserveAspectRatio="none" style="width:100%; height:20px; overflow:visible;">
+                    <defs>
+                        <linearGradient id="grad-green" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="var(--accent-green)" stop-opacity="0.35" />
+                            <stop offset="100%" stop-color="var(--accent-green)" stop-opacity="0.0" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M0,25 Q15,20 25,23 T50,15 T75,18 T100,5 L100,30 L0,30 Z" fill="url(#grad-green)"></path>
+                    <path d="M0,25 Q15,20 25,23 T50,15 T75,18 T100,5" fill="none" stroke="var(--accent-green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+                <span style="font-size:0.75rem; margin-top:2px;">Toplanıyor</span>
+            </div>`;
+        } else if (s.hourly_flow === 'Satılıyor') {
+            flowHtml = `<div style="display:flex; flex-direction:column; align-items:center; line-height:1.2; width:70px; margin:0 auto;">
+                <svg viewBox="0 0 100 30" preserveAspectRatio="none" style="width:100%; height:20px; overflow:visible;">
+                    <defs>
+                        <linearGradient id="grad-red" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="var(--accent-red)" stop-opacity="0.35" />
+                            <stop offset="100%" stop-color="var(--accent-red)" stop-opacity="0.0" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M0,5 Q15,10 25,7 T50,15 T75,12 T100,25 L100,30 L0,30 Z" fill="url(#grad-red)"></path>
+                    <path d="M0,5 Q15,10 25,7 T50,15 T75,12 T100,25" fill="none" stroke="var(--accent-red)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+                <span style="font-size:0.75rem; margin-top:2px;">Satılıyor</span>
+            </div>`;
+        } else if (s.hourly_flow === '-' || !s.hourly_flow) {
+            flowHtml = `<div style="display:flex; flex-direction:column; align-items:center; line-height:1.2; width:70px; margin:0 auto;">
+                <svg viewBox="0 0 100 30" preserveAspectRatio="none" style="width:100%; height:20px; overflow:visible;">
+                    <defs>
+                        <linearGradient id="grad-gray" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="var(--text-muted)" stop-opacity="0.25" />
+                            <stop offset="100%" stop-color="var(--text-muted)" stop-opacity="0.0" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M0,15 L100,15 L100,30 L0,30 Z" fill="url(#grad-gray)"></path>
+                    <path d="M0,15 L100,15" fill="none" stroke="var(--text-muted)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+                <span style="font-size:0.75rem; margin-top:2px; color:var(--text-muted);">-</span>
+            </div>`;
+        }
+        
         let p_val = (s.high + s.low + s.price) / 3;
         let dR1 = (2 * p_val) - s.low;
         let dS1 = (2 * p_val) - s.high;
@@ -6517,12 +6566,12 @@ function renderAllStocksTable() {
         let prevClose = s.price / (1 + (s.change / 100));
         return `
             <tr>
-                <td style="font-weight:bold; cursor:pointer; color:var(--text-light);" onclick="openGraphicTab('${s.symbol}')">${sym}</td>
-                <td style="font-weight:600;">₺${s.price.toFixed(2)}</td>
+                <td style="font-weight:bold; cursor:pointer; color:${color};" onclick="openGraphicTab('${s.symbol}')">${sym}</td>
+                <td style="font-weight:600; color:${color};">₺${s.price.toFixed(2)}</td>
                 <td style="color:var(--text-muted);">₺${prevClose.toFixed(2)}</td>
                 <td style="color:${color}; font-weight:bold;">${sign}${s.change.toFixed(2)}%</td>
                 <td style="color:${intraColor}; font-weight:bold;">${intraSign}${s.intra_change.toFixed(2)}%</td>
-                <td style="color:${flowColor}; font-weight:bold;">${s.hourly_flow}</td>
+                <td style="color:${flowColor}; font-weight:bold;">${flowHtml}</td>
                 <td style="color:var(--text-muted);">${volTLM}</td>
                 <td style="color:var(--text-muted);">${volLotM}</td>
                 <td style="color:${color}; font-weight:bold;">${relVolText}</td>
@@ -6683,15 +6732,14 @@ function renderSuper12Table() {
                          ' <button onclick="showSR(\'' + sym + '\', ' + s.price + ', ' + s.high + ', ' + s.low + ')" style="background:rgba(59,130,246,0.2); color:#3b82f6; border:1px solid rgba(59,130,246,0.5); border-radius:4px; padding:3px 6px; cursor:pointer; font-weight:bold; font-size:0.7rem; transition:0.2s;" onmouseover="this.style.background=\'#3b82f6\'; this.style.color=\'#fff\';" onmouseout="this.style.background=\'rgba(59,130,246,0.2)\'; this.style.color=\'#3b82f6\';" title="Destek ve Direnc Seviyeleri">D/D</button></div>';
         
         let rankBadge = '<span style="display:inline-block; width:30px; text-align:center; color:var(--text-muted); font-size:0.85rem; font-weight:bold; margin-right:5px; background:rgba(0,0,0,0.05); border-radius:4px;">#' + (index+1) + '</span>';
-        
+                        
         return '<tr>' +
-               '<td style="font-weight:bold; cursor:pointer; color:var(--text-light);" onclick="openGraphicTab(\'' + s.symbol + '\')">' + rankBadge + ' ' + sym + '</td>' +
-               '<td style="font-weight:600;">\u20BA' + s.price.toFixed(2) + '</td>' +
+               '<td style="font-weight:bold; cursor:pointer; color:' + color + ';" onclick="openGraphicTab(\'' + s.symbol + '\')">' + rankBadge + ' ' + sym + '</td>' +
+               '<td style="font-weight:600; color:' + color + ';">\u20BA' + s.price.toFixed(2) + '</td>' +
                '<td style="color:' + color + '; font-weight:bold;">' + sign + s.change.toFixed(2) + '%</td>' +
                '<td style="color:var(--text-muted);">' + volTLM + '</td>' +
                '<td style="color:var(--text-muted);">' + volLotM + '</td>' +
                '<td style="color:' + color + '; font-weight:bold;">' + relVolText + '</td>' +
-
                '<td>' + scoreBadge + '</td>' +
                '<td>' + actionBtns + '</td>' +
                '</tr>';

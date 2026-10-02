@@ -25,7 +25,6 @@ file_handler = logging.FileHandler("data/system_logs.txt", encoding="utf-8")
 file_handler.setFormatter(logging.Formatter('[%(asctime)s] [%(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S"))
 logging.getLogger().addHandler(file_handler)
 logging.getLogger().setLevel(logging.INFO)
-logger = logging.getLogger(__name__)
 
 from flask import Flask, request, jsonify, send_from_directory, make_response
 from flask_cors import CORS
@@ -728,141 +727,29 @@ def simulation_loop():
     """SIMULASYON SUREKLI ARKA PLAN DONGUSU:
     - Her 2 dakikada bir calisir (piyasa acik/kapali fark etmez).
     - Piyasa saatlerinde (10:00 - 18:10) gercek guncel barlari alir.
-      Agir yfinance indirmesi ana donguyu bloklamamasi icin ayri thread'de
-      calisir ve 30 sn icinde bitmezse sonraki tura birakilir.
     - Piyasa disinda son eldeki verilerle simulasyonu oynatmaya devam eder,
       boylece test/arka-plan bildirimleri kesintisiz gider.
     - Her AL/SAT islemi aninda Telegram bildirimi gider."""
-    _last_stale_cleanup = None
-    _last_backfill = None
-    _md_thread = None
     while True:
         sleep_secs = 120.0
         try:
             now = datetime.now(ZoneInfo("Europe/Istanbul"))
             d_str = now.strftime("%Y-%m-%d")
-            logger.info("[SIMLOOP] tick - %s", d_str)
             t_open = now.replace(hour=10, minute=0, second=0, microsecond=0)
             t_close = now.replace(hour=18, minute=10, second=0, microsecond=0)
             in_market = t_open <= now <= t_close
 
             if in_market:
-                # Agir network I/O'yu ana donguden ayir; yf.download uzun
-                # surebilir veya asili kalabilir.
                 try:
                     from services.market_data import MarketDataManager
-                except Exception as _import_err:
-                    logger.error("[SIMLOOP] MarketDataManager import hatasi: %s", _import_err)
-                    MarketDataManager = None
-
-                def _fetch_md():
+                    MarketDataManager.fetch_and_store_intraday(d_str, period="5d")
+                except Exception as _md_err:
+                    print(f"[SIMLOOP] Intraday veri hatasi: {_md_err}")
                     try:
-                        if MarketDataManager is not None:
-                            MarketDataManager.fetch_and_store_intraday(d_str, period="5d")
-                    except Exception as _md_err:
-                        logger.error("[SIMLOOP] Intraday veri hatasi: %s", _md_err)
-
-                if MarketDataManager is not None and (_md_thread is None or not _md_thread.is_alive()):
-                    _md_thread = threading.Thread(target=_fetch_md, daemon=True, name="sim-md-fetch")
-                    _md_thread.start()
-                    _md_thread.join(timeout=30.0)
-                    if _md_thread.is_alive():
-                        logger.warning("[SIMLOOP] Intraday indirme 30sn icinde bitmedi, sonraki tura birakildi")
-                else:
-                    logger.info("[SIMLOOP] Onceki intraday indirme hala devam ediyor, atlaniyor")
-
-            # SAATLIK ONARIM: gecmis gunlerde hala "ACIK" kalan pozisyonlar
-            # (orn. sunucu restart'i kapanis penceresini kacirdiysa) son bar
-            # fiyatiyla kapatilmak icin ilgili tarih yeniden simule edilir.
-            _cleanup_due = (
-                _last_stale_cleanup is None
-                or (now - _last_stale_cleanup).total_seconds() >= 3600
-            )
-            if _cleanup_due:
-                _last_stale_cleanup = now
-                try:
-                    from services.trade_database import get_connection as _gc
-                    with _gc() as _sc:
-                        _cur = _sc.cursor()
-                        _cur.execute(
-                            "SELECT DISTINCT owner, date_str FROM trades "
-                            "WHERE exit_time IS NULL AND date_str < ? "
-                            "ORDER BY date_str ASC",
-                            (d_str,),
-                        )
-                        _stale = [tuple(r) for r in _cur.fetchall()]
-                    if _stale:
-                        logger.info("[SIMLOOP] Onarim: %d gecmis gun acik pozisyon bulundu", len(_stale))
-                    for _s_owner, _s_date in _stale:
-                        try:
-                            from services.simulation_engine import SimulationEngine
-                            SimulationEngine(owner=_s_owner).run_daily_simulation(_s_date)
-                            logger.info("[SIMLOOP] Gecmis gun kapanis onarimi: %s (%s)", _s_date, _s_owner)
-                        except Exception as _rep_err:
-                            logger.error("[SIMLOOP] Onarim hatasi %s (%s): %s", _s_date, _s_owner, _rep_err)
-                except Exception as _cl_err:
-                    logger.error("[SIMLOOP] Onarim tarama hatasi: %s", _cl_err)
-
-                # NAKIT MUTABAKATI (yalnizca seans disinda; seans icinde
-                # devam eden kapanis/credit islemleriyle cakismasin):
-                if not in_market:
-                    try:
-                        from services.live_trade_monitor import reconcile_all_cash
-                        _fixed = reconcile_all_cash()
-                        if _fixed:
-                            logger.info("[SIMLOOP] Nakit mutabakati: %d hesap duzeltildi", len(_fixed))
-                    except Exception as _rec_err:
-                        logger.error("[SIMLOOP] Nakit mutabakat hatasi: %s", _rec_err)
-
-            # GUNLUK INTRADAY ONARIM (seans disinda, gunde 1 kez):
-            # Sinyali olan ama 5dk bar verisi hic toplanmamis gecmis gunleri
-            # geriye donuk doldurur ve o gunlerin simulasyonunu yeniden
-            # calistirir. Boylece loop'un kesildigi gunler Trade Log'ta bos
-            # kalmaz (yfinance 5m verisi ~60 gun tutar).
-            if not in_market and _last_backfill != d_str:
-                _last_backfill = d_str
-                try:
-                    from services.trade_database import get_connection as _gc
-                    from services.market_data import MarketDataManager as _MDM
-                    with _gc() as _sc:
-                        _cur = _sc.cursor()
-                        _cur.execute(
-                            "SELECT DISTINCT s.date_str FROM signals s "
-                            "WHERE s.date_str >= ? AND s.date_str < ? AND NOT EXISTS ("
-                            "  SELECT 1 FROM market_data m WHERE m.date_str = s.date_str"
-                            ") ORDER BY s.date_str ASC",
-                            ((now - timedelta(days=7)).strftime("%Y-%m-%d"), d_str),
-                        )
-                        _missing = [r[0] for r in _cur.fetchall()]
-                    if _missing:
-                        logger.info("[SIMLOOP] Intraday onarimi: %d gunun bar verisi eksik (%s)",
-                                    len(_missing), ", ".join(_missing))
-                        for _b_date in _missing:
-                            try:
-                                _MDM.fetch_and_store_intraday(_b_date, period="1mo")
-                                logger.info("[SIMLOOP] Intraday dolduruldu: %s", _b_date)
-                            except Exception as _bf_err:
-                                logger.error("[SIMLOOP] Intraday doldurma hatasi %s: %s", _b_date, _bf_err)
-                        # Doldurulan gunlerin simulasyonlarini tum hesaplar icin
-                        # yeniden calistir (kapanislar + Telegram bildirimleri).
-                        try:
-                            from services.trade_database import get_connection as _gc2
-                            with _gc2() as _uc:
-                                _cur = _uc.cursor()
-                                _cur.execute("SELECT owner_key FROM app_users")
-                                _all_owners = [r[0] for r in _cur.fetchall()]
-                        except Exception:
-                            _all_owners = ["local:nebioglur"]
-                        for _b_date in _missing:
-                            for _b_owner in _all_owners:
-                                try:
-                                    from services.simulation_engine import SimulationEngine
-                                    SimulationEngine(owner=_b_owner).run_daily_simulation(_b_date)
-                                except Exception as _bs_err:
-                                    logger.error("[SIMLOOP] Backfill sim hatasi %s/%s: %s", _b_date, _b_owner, _bs_err)
-                        logger.info("[SIMLOOP] Intraday onarimi tamamlandi")
-                except Exception as _bf_outer:
-                    logger.error("[SIMLOOP] Intraday onarim hatasi: %s", _bf_outer)
+                        from services.telegram_bot import send_telegram_message
+                        send_telegram_message(f"🚨 [SIMLOOP] Intraday veri toplama HATASI: {_md_err}")
+                    except:
+                        pass
 
             try:
                 from services.trade_database import get_connection as _get_conn
@@ -880,10 +767,10 @@ def simulation_loop():
                     from services.simulation_engine import SimulationEngine
                     SimulationEngine(owner=_owner).run_daily_simulation(d_str)
                 except Exception as _sim_err:
-                    logger.error("[SIMLOOP] Sim hatasi (%s): %s", _owner, _sim_err)
+                    print(f"[SIMLOOP] Sim hatasi ({_owner}): {_sim_err}")
 
         except Exception as e:
-            logger.error("[SIMLOOP] Hata: %s", e)
+            print(f"[SIMLOOP] Hata: {e}")
             sleep_secs = 300.0
         time.sleep(sleep_secs)
 
@@ -2107,20 +1994,11 @@ def api_varant_simulator():
 
 @app.route('/api/system_logs_read', methods=['GET'])
 def api_system_logs_read():
-    """Gecici log okuma ucu. Opsiyonel: ?filter=telegram&lines=400"""
+    """Gecici log okuma ucu"""
     try:
-        flt = (request.args.get('filter') or '').strip().lower()
-        try:
-            window = min(max(int(request.args.get('lines', 100)), 1), 5000)
-        except (TypeError, ValueError):
-            window = 100
         with open('data/system_logs.txt', 'r', encoding='utf-8') as f:
             lines = f.readlines()
-        if flt:
-            picked = [ln for ln in lines[-5000:] if flt in ln.lower()]
-        else:
-            picked = lines[-window:]
-        return Response("".join(picked), mimetype='text/plain')
+        return Response("".join(lines[-100:]), mimetype='text/plain')
     except Exception as e:
         return str(e)
 
@@ -2128,7 +2006,7 @@ def api_system_logs_read():
 def api_ping():
     """Uygulamanin calistigini dogrulamak icin basit health-check."""
     import os
-    return jsonify({"status": "alive", "build": "20260930_v16_md_import_outer", "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "cwd": os.getcwd()})
+    return jsonify({"status": "alive", "build": "20260924_canonical_dynamic_v5", "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "cwd": os.getcwd()})
 
 @app.route('/api/cache_status', methods=['GET'])
 def api_cache_status():
@@ -2703,20 +2581,12 @@ def api_tavan_history():
         # Arka plan taraması henüz ilk denetim kaydını yazmadıysa, mevcut
         # gerçek dashboard cache'inden bir canlı snapshot oluştur. Böylece
         # Render yeniden başlatmalarında istatistik ekranı boş kalmaz.
-        today_str = datetime.now(ZoneInfo("Europe/Istanbul")).strftime("%Y-%m-%d")
+        today_str = datetime.now().strftime("%Y-%m-%d")
         audits = TavanAuditTracker.load_all_audits()
-        _today_audit = audits.get(today_str) or {}
-        # Sahte bos kayit korumasi: gece yarisi / veri yokken yazilan
-        # "NO_QUALIFIED_CANDIDATES + 0 item" kaydi, gunduz gercek veriyle
-        # snapshot alinmasini engellememeli.
-        _bogus_today = (
-            _today_audit.get("status") == "NO_QUALIFIED_CANDIDATES"
-            and not _today_audit.get("items")
-        )
-        if today_str not in audits or _bogus_today:
+        if today_str not in audits:
             cached_candidates = GLOBAL_DASHBOARD_CACHE.get("tavan_adaylari", [])
             cached_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
-            if cached_candidates and cached_stats:
+            if cached_stats:
                 TavanAuditTracker.record_snapshot(
                     cached_candidates,
                     all_symbols_stats=cached_stats,
@@ -2769,10 +2639,12 @@ def api_tavan_tracker():
 def api_simulation_daily_pnl():
     try:
         from services.trade_database import get_connection
+        conn = get_connection()
+        
         # Get all trades
         import sqlite3
         from contextlib import closing
-        with closing(get_connection()) as conn:
+        with get_connection() as conn:
             conn.row_factory = sqlite3.Row
             c = conn.cursor()
             owner = get_owner_key()
@@ -3123,25 +2995,6 @@ def api_dip_breakout():
         return jsonify({"status": "error", "message": str(e), "trace": traceback.format_exc()}), 500
 
 
-_sim_loop_started = False
-
-
-def ensure_simulation_loop():
-    """Gunicorn import sirasinda da sim dongusunu baslatir.
-    Render'da server gunicorn ile calisir; `__main__` blogu hic calismaz,
-    bu yuzden sim/telegram dongusu module-level guvenli baslatma ile acilir."""
-    global _sim_loop_started
-    if _sim_loop_started:
-        return
-    _sim_loop_started = True
-    _t_sim = threading.Thread(target=simulation_loop, daemon=True, name="simulation-loop")
-    _t_sim.start()
-    logger.info("[SIMLOOP] Arka plan simulasyon dongusu baslatildi (worker pid=%s)", os.getpid())
-
-
-ensure_simulation_loop()
-
-
 if __name__ == "__main__":
 
     print("[SYSTEM] VarantRadar Pro Web Server Baslatiliyor...")
@@ -3156,7 +3009,8 @@ if __name__ == "__main__":
         )
         t.start()
         # Simülasyon sürekli arka plan döngüsü (AL/SAT anında Telegram bildirimi)
-        ensure_simulation_loop()
+        t_sim = threading.Thread(target=simulation_loop, daemon=True, name="simulation-loop")
+        t_sim.start()
         try:
             start_live_data_collector()
         except Exception as e:

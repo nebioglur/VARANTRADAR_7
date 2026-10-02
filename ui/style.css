@@ -1473,7 +1473,7 @@ body.light-mode .data-table thead th {
 
 body.light-mode .data-table tbody td {
     border-bottom: 1px solid #f1f5f9 !important;
-    color: #1e293b !important;
+    /* color: #1e293b; removed to allow inline */
 }
 
 body.light-mode .data-table tbody tr:nth-child(even) td {
@@ -1576,277 +1576,56 @@ body.light-mode .data-table tbody tr:hover td {
     overflow-x: auto !important;
 }
 
+
+/* =========================================================
+   LIGHT THEME MODERNIZATION (Colorful Headers Edition)
+   ========================================================= */
+
 body.light-mode {
-    color-scheme: light;
-    --bg-base: #9aa3b0;
-    --bg-card: #b8c0cc;
-    --bg-card-hover: #c2cad5;
-    --border-color: #7e8794;
-    --text-main: #1c2230;
-    --text-muted: #3f4859;
-    --accent-blue: #1d5fbf;
-    --accent-blue-hover: #164a99;
-    --accent-green: #0e7c4a;
-    --accent-red: #c0332a;
-    --accent-yellow: #a8640e;
-    --accent-purple: #6d3fc0;
-    --accent-teal: #0d7a72;
-    --surface-raised: #c3cddb;
-    --surface-inset: #a5aebc;
-    --shadow-sm: 0 1px 2px rgba(24, 30, 42, 0.16);
-    --shadow-md: 0 5px 14px rgba(24, 30, 42, 0.2);
-    --shadow-lg: 0 12px 28px rgba(24, 30, 42, 0.26);
-    background: var(--bg-base) !important;
-    color: var(--text-main) !important;
+    --bg-base: #F6F8FB !important;
+    --bg-card: #FFFFFF !important;
+    --bg-card-hover: #F8FAFC !important;
+    --border-color: #E5E7EB !important;
+    --text-main: #111827 !important;
+    --text-muted: #667085 !important;
+    --card-bg: #FFFFFF !important; /* Mobile scroll fix */
 }
 
-body.light-mode .top-nav,
-body.light-mode .bottom-mobile-bar,
-body.light-mode .mobile-slider-controls,
-body.light-mode .sidebar-tabs {
-    background: var(--bg-card) !important;
-    border-color: var(--border-color) !important;
-    box-shadow: var(--shadow-sm) !important;
+/* Base structural overrides */
+body.light-mode .card, 
+body.light-mode .summary-card, 
+body.light-mode .glass-panel {
+    background: #FFFFFF !important;
+    border: 1px solid #E5E7EB !important;
+    box-shadow: 0 4px 6px -1px rgba(17, 24, 39, 0.05), 0 2px 4px -1px rgba(17, 24, 39, 0.03) !important;
+    border-radius: 12px !important;
 }
 
-body.light-mode .card,
-body.light-mode details.card,
-body.light-mode .glass-panel,
-body.light-mode .modal-content,
-body.light-mode .modal,
-body.light-mode .scenario-box,
-body.light-mode .cio-verdict-box {
-    background: var(--bg-card) !important;
-    background-image: none !important;
-    border-color: var(--border-color) !important;
-    box-shadow: var(--shadow-sm) !important;
-    color: var(--text-main) !important;
+/* TURN DARK INLINE BACKGROUNDS INTO LIGHT GREY FOR LIGHT MODE */
+body.light-mode [style*="rgba(15,23,42,1)"],
+body.light-mode [style*="rgba(15, 23, 42, 1)"],
+body.light-mode [style*="rgba(15,23,42,0.95)"],
+body.light-mode [style*="rgba(30,41,59,0.8)"] {
+    background: #F8FAFC !important;
+    color: #0F172A !important;
+    border: 1px solid #E2E8F0 !important;
 }
 
-/* basliklar renkli */
-body.light-mode .card h1,
-body.light-mode .card h2,
-body.light-mode .card-title,
-body.light-mode .modal-content h1,
-body.light-mode .modal-content h2 {
-    color: var(--accent-blue) !important;
+/* If a table header was turned light grey, ensure its text is dark */
+body.light-mode [style*="rgba(15,23,42,1)"] *,
+body.light-mode [style*="rgba(15, 23, 42, 1)"] * {
+    color: #0F172A !important;
 }
 
-body.light-mode .card h3 {
-    color: var(--accent-purple) !important;
+/* EXCEPTIONS: Warning boxes */
+body.light-mode #market-closed-warning {
+    background: linear-gradient(135deg, rgba(120,53,15,0.1), rgba(245,158,11,0.1)) !important;
+    color: #9A3412 !important;
+    border: 1px solid rgba(245,158,11,0.4) !important;
 }
-
-body.light-mode .card h4 {
-    color: var(--accent-teal) !important;
+body.light-mode #market-closed-warning-detail {
+    color: #B45309 !important;
 }
-
-body.light-mode .card[style*="linear-gradient"],
-body.light-mode .glass-panel[style*="linear-gradient"] {
-    background: var(--bg-card) !important;
-    background-image: none !important;
-    border-color: var(--border-color) !important;
-    color: var(--text-main) !important;
-    box-shadow: var(--shadow-sm) !important;
-}
-
-/* inline koyu/beyaz yuzeyler -> gri-mavi yuzeyler (beyaz yok) */
-body.light-mode [style*="background:rgba(15,23,42"],
-body.light-mode [style*="background: rgba(15, 23, 42"],
-body.light-mode [style*="background:rgba(30,41,59"],
-body.light-mode [style*="background: rgba(30, 41, 59"],
-body.light-mode [style*="background:rgba(0,0,0"],
-body.light-mode [style*="background: rgba(0, 0, 0"],
-body.light-mode [style*="background:var(--bg-secondary)"],
-body.light-mode [style*="background: var(--bg-secondary)"],
-body.light-mode [style*="background:#0f172a"],
-body.light-mode [style*="background: #0f172a"] {
-    background: var(--surface-inset) !important;
-    background-image: none !important;
-}
-
-body.light-mode [style*="background:#fff"],
-body.light-mode [style*="background: #fff"],
-body.light-mode [style*="background:#ffffff"],
-body.light-mode [style*="background: #ffffff"],
-body.light-mode [style*="background:rgba(255,255,255"],
-body.light-mode [style*="background: rgba(255, 255, 255"] {
-    background: var(--surface-raised) !important;
-    background-image: none !important;
-}
-
-body.light-mode [style*="color:#fff"],
-body.light-mode [style*="color: #fff"],
-body.light-mode [style*="color:var(--text-light)"],
-body.light-mode [style*="color: var(--text-light)"] {
-    color: var(--text-main) !important;
-}
-
-/* tablo: zebra satirlar acik mavi */
-body.light-mode .data-table {
-    background: var(--bg-card) !important;
-    border-color: var(--border-color) !important;
-    box-shadow: var(--shadow-sm) !important;
-}
-
-body.light-mode .data-table thead th {
-    background: #6f7a8d !important;
-    color: #ffffff !important;
-    border-color: #5d687b !important;
-}
-
-body.light-mode .data-table tbody td {
-    color: var(--text-main) !important;
-    border-color: #9aa5b5 !important;
-}
-
-body.light-mode .data-table tbody tr:nth-child(even) td {
-    background: #c3d5e8 !important;
-}
-
-body.light-mode .data-table tbody tr:hover td,
-body.light-mode table tbody tr:hover td {
-    background: #b4c9e0 !important;
-}
-
-/* form elemanlari: gri-mavi, beyaz yok */
-body.light-mode input,
-body.light-mode select,
-body.light-mode textarea,
-body.light-mode #symbol-input {
-    background: var(--surface-raised) !important;
-    color: var(--text-main) !important;
-    border-color: #6d7889 !important;
-    box-shadow: inset 0 1px 2px rgba(24, 30, 42, 0.1) !important;
-}
-
-body.light-mode input::placeholder,
-body.light-mode textarea::placeholder {
-    color: #4a5568 !important;
-}
-
-/* butonlar renkli: acik mavi aile */
-body.light-mode .s-tab,
-body.light-mode .nav-btn,
-body.light-mode .pill-btn,
-body.light-mode .filter-btn,
-body.light-mode .dip-filter-btn,
-body.light-mode .slider-nav-btn {
-    background: #b9c9de !important;
-    color: #164a8f !important;
-    border-color: #8aa4c4 !important;
-    box-shadow: none !important;
-}
-
-body.light-mode .s-tab:hover,
-body.light-mode .nav-btn:hover,
-body.light-mode .pill-btn:hover,
-body.light-mode .filter-btn:hover,
-body.light-mode .dip-filter-btn:hover,
-body.light-mode .slider-nav-btn:hover {
-    background: #a9bcd6 !important;
-    color: #123a72 !important;
-}
-
-body.light-mode .s-tab.active,
-body.light-mode .nav-btn.active,
-body.light-mode .pill-btn.active,
-body.light-mode .filter-btn.active,
-body.light-mode .indicator-dot.active {
-    background: #1d5fbf !important;
-    color: #ffffff !important;
-    border-color: #164a99 !important;
-}
-
-body.light-mode .dip-filter-btn.active {
-    background: #bedcc6 !important;
-    color: #0b5c36 !important;
-    border-color: #7fb08c !important;
-}
-
-body.light-mode .indicator-dot {
-    background: var(--surface-inset) !important;
-    color: #1c2230 !important;
-    border-color: #7e8794 !important;
-}
-
-body.light-mode #total-analyzed-counter {
-    background: #bfdcc8 !important;
-    color: #0b5c36 !important;
-    border-color: #7fb08c !important;
-    box-shadow: none !important;
-}
-
-/* rozet/chip'ler: doygun pastel tints */
-body.light-mode span[style*="background:#22c55e22"],
-body.light-mode span[style*="border:1px solid #22c55e66"] {
-    background: #bfdcc8 !important;
-    color: #0b5c36 !important;
-    border-color: #7fb08c !important;
-}
-
-body.light-mode span[style*="background:#3b82f622"],
-body.light-mode span[style*="border:1px solid #3b82f666"] {
-    background: #c3d6ee !important;
-    color: #1a4d96 !important;
-    border-color: #8fb0d8 !important;
-}
-
-body.light-mode span[style*="background:#ef444422"],
-body.light-mode span[style*="border:1px solid #ef444466"] {
-    background: #ecc8c3 !important;
-    color: #96261c !important;
-    border-color: #d09a92 !important;
-}
-
-body.light-mode span[style*="background:#f9731622"],
-body.light-mode span[style*="border:1px solid #f9731666"] {
-    background: #ecd9b8 !important;
-    color: #7d5312 !important;
-    border-color: #caa86f !important;
-}
-
-body.light-mode button[style*="rgba(34,197,94,0.2)"] {
-    background: #bfdcc8 !important;
-    color: #0b5c36 !important;
-    border-color: #7fb08c !important;
-}
-
-body.light-mode button[style*="rgba(239,68,68,0.2)"],
-body.light-mode button[style*="rgba(239,68,68,0.25)"] {
-    background: #ecc8c3 !important;
-    color: #96261c !important;
-    border-color: #d09a92 !important;
-}
-
-body.light-mode .text-blue { color: var(--accent-blue) !important; }
-body.light-mode .text-green { color: var(--accent-green) !important; }
-body.light-mode .text-red { color: var(--accent-red) !important; }
-body.light-mode .text-yellow { color: var(--accent-yellow) !important; }
-body.light-mode .text-muted { color: var(--text-muted) !important; }
-
-body.light-mode #live-clock {
-    background: transparent !important;
-    color: var(--accent-blue) !important;
-    -webkit-text-fill-color: var(--accent-blue) !important;
-    text-shadow: none !important;
-}
-
-body.light-mode .theme-toggle-btn { background: transparent !important; }
-body.light-mode .theme-toggle-btn:hover { background: var(--surface-inset) !important; }
-body.light-mode .table-scroll-wrapper { scrollbar-color: #6d7889 var(--bg-base); }
-
-body.light-mode .fullscreen-card {
-    background: var(--bg-card) !important;
-    border-color: var(--border-color) !important;
-    box-shadow: 0 0 0 9999px rgba(14, 18, 26, 0.66), var(--shadow-lg) !important;
-}
-
-body.light-mode .swal2-popup,
-body.light-mode .toast,
-body.light-mode .notification,
-body.light-mode .alert {
-    background: var(--bg-card) !important;
-    color: var(--text-main) !important;
-    border-color: var(--border-color) !important;
-    box-shadow: var(--shadow-md) !important;
+body.light-mode #market-closed-warning i {
+    color: #D97706 !important;
 }

@@ -171,15 +171,15 @@ def open_position(symbol, allocation=2000.0, tp_pct=5.0, sl_pct=3.0, trailing=Tr
     tp_price = _f(tp_price)
     sl_price = _f(sl_price)
 
-    live_price, src = _get_live_price(clean)
-    if not live_price or live_price <= 0:
-        return False, f"{clean} icin guncel fiyat alinamadi"
-
     manual_price = _f(price)
     if manual_price is not None:
         entry_price = round(manual_price, 2)
         base_price = entry_price
+        live_price = entry_price
     else:
+        live_price, src = _get_live_price(clean)
+        if not live_price or live_price <= 0:
+            return False, f"{clean} icin guncel fiyat alinamadi"
         entry_price = round(live_price * 1.0015, 2)  # slipaj
         base_price = live_price
 
