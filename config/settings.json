@@ -1,0 +1,16 @@
+{
+    "theme": "dark",
+    "language": "tr",
+    "default_symbol": "AKBNK.IS",
+    "default_interval": "1d",
+    "max_history_days": 365,
+    "ui": {
+        "show_volume": true,
+        "show_indicators": true,
+        "chart_height": 600
+    },
+    "alerts": {
+        "enabled": true,
+        "telegram_notifications": false
+    }
+}

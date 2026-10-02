@@ -1,0 +1,52 @@
+{
+    "Technical_AI": {
+        "win_rate": 68.5,
+        "total_trades": 120,
+        "history": [
+            65.0,
+            66.2,
+            67.8,
+            68.5
+        ]
+    },
+    "Fundamental_AI": {
+        "win_rate": 72.1,
+        "total_trades": 85,
+        "history": [
+            70.0,
+            71.5,
+            71.8,
+            72.1
+        ]
+    },
+    "Macro_AI": {
+        "win_rate": 64.3,
+        "total_trades": 150,
+        "history": [
+            60.0,
+            62.5,
+            63.8,
+            64.3
+        ]
+    },
+    "SmartMoney_AI": {
+        "win_rate": 75.8,
+        "total_trades": 92,
+        "history": [
+            72.0,
+            74.5,
+            75.2,
+            75.8
+        ]
+    },
+    "Sentiment_AI": {
+        "win_rate": 58.2,
+        "total_trades": 60,
+        "history": [
+            55.0,
+            56.5,
+            57.8,
+            58.2
+        ]
+    }
+}

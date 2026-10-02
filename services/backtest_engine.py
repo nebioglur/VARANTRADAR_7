@@ -1,0 +1,188 @@
+import pandas as pd
+import numpy as np
+
+class BacktestEngine:
+    """
+    VarantRadar Pro V6 - Backtest Motoru
+    Tarihsel veriler üzerinde kural tabanlı stratejileri test eder ve finansal metrikleri hesaplar.
+    """
+    def __init__(self, initial_capital: float = 100000.0, commission_pct: float = 0.002, slippage_pct: float = 0.001):
+        self.initial_capital = initial_capital
+        self.commission_pct = commission_pct
+        self.slippage_pct = slippage_pct
+        
+    def run_backtest(self, df: pd.DataFrame, strategy_name: str = "MACD_RSI_CROSS", trailing_stop_pct: float = 0.0, stop_loss_pct: float = 0.0) -> dict:
+        """
+        Geçmiş veri üzerinde simülasyon çalıştırır (Modül 1, 2).
+        Parametreler vectorize mantığıyla hızlıca hesaplanır.
+        """
+        if df.empty or len(df) < 50:
+            return {"error": "Veri yetersiz"}
+            
+        # Copy df to avoid setting with copy warnings
+        data = df.copy()
+        
+        # Sinyal Üretimi
+        data['Signal'] = 0
+        if strategy_name == "MACD_RSI_CROSS":
+            # AL Sinyali: MACD > Signal ve RSI < 70 ve EMA(20) > EMA(50)
+            data.loc[(data['macd'] > data['macd_signal']) & (data['rsi'] < 70) & (data['ema'] > data['sma']), 'Signal'] = 1
+            # SAT Sinyali: MACD < Signal ve RSI > 30
+            data.loc[(data['macd'] < data['macd_signal']) & (data['rsi'] > 30), 'Signal'] = -1
+        elif strategy_name == "RSI_MEAN_REVERSION":
+            data.loc[data['rsi'] < 30, 'Signal'] = 1
+            data.loc[data['rsi'] > 70, 'Signal'] = -1
+        elif strategy_name == "BOLLINGER_BREAKOUT":
+            # Üst bandı kırınca AL (trend başladı), Alt bandı kırınca SAT (trend bitti)
+            if 'bollinger_upper' in data.columns:
+                data.loc[data['close'] > data['bollinger_upper'], 'Signal'] = 1
+                data.loc[data['close'] < data['bollinger_lower'], 'Signal'] = -1
+        elif strategy_name == "GOLDEN_CROSS":
+            # EMA(20) > SMA(50) AL, tam tersi SAT
+            data.loc[(data['ema'] > data['sma']), 'Signal'] = 1
+            data.loc[(data['ema'] < data['sma']), 'Signal'] = -1
+        elif strategy_name == "EMA_9_21_CROSS":
+            close = pd.to_numeric(data['close'], errors='coerce')
+            ema9 = close.ewm(span=9, adjust=False, min_periods=9).mean()
+            ema21 = close.ewm(span=21, adjust=False, min_periods=21).mean()
+            bullish_cross = (ema9 > ema21) & (ema9.shift(1) <= ema21.shift(1))
+            bearish_cross = (ema9 < ema21) & (ema9.shift(1) >= ema21.shift(1))
+            data.loc[bullish_cross, 'Signal'] = 1
+            data.loc[bearish_cross, 'Signal'] = -1
+        elif strategy_name == "EMA_9_21_CROSS":
+            close = pd.to_numeric(data['close'], errors='coerce')
+            ema9 = close.ewm(span=9, adjust=False, min_periods=9).mean()
+            ema21 = close.ewm(span=21, adjust=False, min_periods=21).mean()
+            bullish_cross = (ema9 > ema21) & (ema9.shift(1) <= ema21.shift(1))
+            bearish_cross = (ema9 < ema21) & (ema9.shift(1) >= ema21.shift(1))
+            data.loc[bullish_cross, 'Signal'] = 1
+            data.loc[bearish_cross, 'Signal'] = -1
+        else:
+            # Sadece elde tut (Buy and Hold benchmark)
+            data['Signal'] = 1
+
+        # İşlem Simülasyonu
+        position = 0 # 1=Long, 0=Flat
+        entry_price = 0.0
+        current_capital = self.initial_capital
+        position_size = 0.0
+        highest_price = 0.0
+        trades = []
+        
+        for index, row in data.iterrows():
+            if position == 1:
+                if row['high'] > highest_price:
+                    highest_price = row['high']
+                
+                sell_triggered = False
+                # 1) İzleyen Stop
+                if trailing_stop_pct > 0 and row['low'] < highest_price * (1 - trailing_stop_pct / 100.0):
+                    sell_triggered = True
+                # 2) Sabit Stop
+                if stop_loss_pct > 0 and row['low'] < entry_price * (1 - stop_loss_pct / 100.0):
+                    sell_triggered = True
+                # 3) Strateji Satış Sinyali
+                if row['Signal'] == -1:
+                    sell_triggered = True
+                    
+                if sell_triggered:
+                    exit_price = row['close'] * (1 - self.slippage_pct)
+                    
+                    # Komisyon ve PnL Hesabı
+                    entry_value = position_size * entry_price
+                    exit_value = position_size * exit_price
+                    cost = (entry_value * self.commission_pct) + (exit_value * self.commission_pct)
+                    
+                    pnl = (exit_value - entry_value) - cost
+                    pnl_pct = (pnl / current_capital) * 100
+                    
+                    current_capital += pnl
+                    
+                    trades.append({
+                        "entry_date": entry_date,
+                        "exit_date": row['date'],
+                        "entry_price": entry_price,
+                        "exit_price": exit_price,
+                        "pnl": pnl,
+                        "pnl_pct": pnl_pct,
+                        "duration": (row['date'] - entry_date).days if isinstance(row['date'], pd.Timestamp) else 0
+                    })
+                    position = 0
+                    position_size = 0.0
+                    highest_price = 0.0
+
+            if row['Signal'] == 1 and position == 0:
+                # AL
+                entry_price = row['close'] * (1 + self.slippage_pct)
+                # Tüm sermaye ile alım yap (bileşik getiri)
+                position_size = current_capital / entry_price
+                position = 1
+                entry_date = row['date']
+                highest_price = entry_price
+
+        # Açık kalan pozisyonu güncel fiyatla kapat (Mark-to-market)
+        if position == 1:
+            exit_price = data['close'].iloc[-1] * (1 - self.slippage_pct)
+            entry_value = position_size * entry_price
+            exit_value = position_size * exit_price
+            cost = (entry_value * self.commission_pct) + (exit_value * self.commission_pct)
+            
+            pnl = (exit_value - entry_value) - cost
+            pnl_pct = (pnl / current_capital) * 100
+            
+            current_capital += pnl
+            
+            trades.append({
+                "entry_date": entry_date,
+                "exit_date": data['date'].iloc[-1],
+                "entry_price": entry_price,
+                "exit_price": exit_price,
+                "pnl": pnl,
+                "pnl_pct": pnl_pct,
+                "duration": 0
+            })
+
+        # Performans Metrikleri Hesaplama (Modül 5)
+        return self._calculate_metrics(trades)
+
+    def _calculate_metrics(self, trades: list) -> dict:
+        if not trades:
+            return {"error": "Hiç işlem yapılmadı."}
+            
+        df_trades = pd.DataFrame(trades)
+        total_trades = len(df_trades)
+        winning_trades = df_trades[df_trades['pnl'] > 0]
+        losing_trades = df_trades[df_trades['pnl'] <= 0]
+        
+        win_rate = len(winning_trades) / total_trades * 100
+        
+        avg_win = winning_trades['pnl_pct'].mean() if not winning_trades.empty else 0
+        avg_loss = losing_trades['pnl_pct'].mean() if not losing_trades.empty else 0
+        risk_reward = abs(avg_win / avg_loss) if avg_loss != 0 else 0
+        
+        # Cumulative Equity & Max Drawdown
+        df_trades['cumulative_pnl'] = df_trades['pnl'].cumsum()
+        df_trades['equity'] = self.initial_capital + df_trades['cumulative_pnl']
+        df_trades['peak'] = df_trades['equity'].cummax()
+        df_trades['drawdown'] = (df_trades['equity'] - df_trades['peak']) / df_trades['peak'] * 100
+        max_drawdown = df_trades['drawdown'].min()
+        
+        # Sortino Ratio (Basitleştirilmiş)
+        returns = df_trades['pnl_pct'] / 100
+        downside_returns = returns[returns < 0]
+        sortino = (returns.mean() / downside_returns.std() * np.sqrt(252)) if not downside_returns.empty and downside_returns.std() > 0 else 0
+        
+        total_pnl = df_trades['pnl'].sum()
+        total_return_pct = (total_pnl / self.initial_capital) * 100
+        
+        return {
+            "total_trades": total_trades,
+            "win_rate": round(win_rate, 2),
+            "total_return_pct": round(total_return_pct, 2),
+            "max_drawdown": round(abs(max_drawdown), 2),
+            "avg_win": round(avg_win, 2),
+            "avg_loss": round(abs(avg_loss), 2),
+            "risk_reward": round(risk_reward, 2),
+            "sortino_ratio": round(sortino, 2),
+            "trades": trades
+        }

@@ -1,0 +1,193 @@
+import yfinance as yf
+import pandas as pd
+from datetime import datetime
+import time
+import json
+from services.trade_database import get_connection
+
+class MarketDataManager:
+    
+    @staticmethod
+    def record_signals(date_str: str, candidates: list):
+        """
+        10:00 - 10:15 arasında bulunan Tavan Adaylarını (Sinyalleri) veritabanına yazar.
+        """
+        conn = get_connection()
+        cursor = conn.cursor()
+        for cand in candidates:
+            sym = cand.get('symbol', '') or cand.get('Symbol', '')
+            if not sym:
+                continue
+            
+            # .IS uzantısı garantile
+            if not sym.endswith('.IS'):
+                sym += '.IS'
+                
+            score = float(cand.get('Score', 0) or cand.get('score', 0))
+            morning_price = float(cand.get('morning_price', 0) or cand.get('Price', 0) or cand.get('Daily_Close', 0))
+            ceiling_target = float(cand.get('ceiling_target', 0) or cand.get('Ceiling_Price', 0))
+            morning_phase = cand.get('morning_phase', '') or cand.get('Phase', '') or cand.get('Phase_Badge', '')
+            metadata = json.dumps(cand, ensure_ascii=False)
+            
+            try:
+                cursor.execute("""
+                    INSERT INTO signals (date_str, symbol, score, morning_price, ceiling_target, morning_phase, metadata)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(date_str, symbol) DO UPDATE SET 
+                        score=excluded.score, 
+                        morning_price=excluded.morning_price,
+                        ceiling_target=excluded.ceiling_target,
+                        morning_phase=excluded.morning_phase,
+                        metadata=excluded.metadata
+                """, (date_str, sym, score, morning_price, ceiling_target, morning_phase, metadata))
+            except Exception as e:
+                print(f"[MarketData] Sinyal kayıt hatası {sym}: {e}")
+                
+        conn.commit()
+        conn.close()
+
+    @staticmethod
+    def fetch_and_store_intraday(date_str: str, period: str = "1mo"):
+        """
+        O gün sinyal üretilen tüm hisseler için yfinance'den 5 dakikalık veya 1 saatlik
+        geçmişi indirir ve market_data tablosuna yazar.
+        Simülasyon motoru buradan okuyacaktır.
+        period: "1mo" tam tarama; "5d" sadece son gunler (canli toplayici icin hafif).
+        """
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT symbol FROM signals WHERE date_str = ?", (date_str,))
+        rows = cursor.fetchall()
+        symbols = [r["symbol"] for r in rows]
+
+        if not symbols:
+            conn.close()
+            return
+
+        print(f"[MarketData] {date_str} için {len(symbols)} hissenin 5m verisi indiriliyor (period={period})...")
+
+        # Yahoo Finance bazen 5m vermeyebilir eski tarihler için, 1mo içinde verir.
+        try:
+            # interval = 5m; BUYUK tek istek (98 sembol) Yahoo'da ~30dk geriye
+            # dusuk veri dondurdugu icin 10'lu parcalar halinde indiriliyor
+            # (parcalar taze; tek istek ~2-3sn).
+            insert_sql = """
+                INSERT INTO market_data (date_str, timestamp, symbol, open, high, low, close, volume)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(timestamp, symbol) DO NOTHING
+            """
+            all_rows = []
+            chunk_size = 10
+            for ci in range(0, len(symbols), chunk_size):
+                chunk = symbols[ci:ci + chunk_size]
+                try:
+                    data = yf.download(chunk, period=period, interval="5m", group_by='ticker', threads=True, progress=False)
+                except Exception:
+                    continue
+                if data is None or data.empty:
+                    continue
+                if len(chunk) == 1:
+                    data = {chunk[0]: data}
+
+                for sym in chunk:
+                    try:
+                        if len(chunk) == 1:
+                            df = data[sym]
+                        else:
+                            if hasattr(data.columns, 'levels') and sym in data.columns.levels[0]:
+                                df = data[sym]
+                            else:
+                                continue
+                    except Exception:
+                        continue
+
+                    df = df.dropna(how='all')
+                    if df.empty:
+                        continue
+
+                    for idx_time, row in df.iterrows():
+                        # idx_time timezone aware datetime
+                        idx_date = idx_time.strftime("%Y-%m-%d")
+                        # Sadece ilgili günün verisini kaydet
+                        if idx_date != date_str:
+                            continue
+
+                        _open = row['Open']
+                        _high = row['High']
+                        _low = row['Low']
+                        _close = row['Close']
+                        _vol = row['Volume']
+                        if not (pd.notna(_open) and pd.notna(_close)):
+                            continue
+
+                        all_rows.append((date_str, str(idx_time), sym, float(_open), float(_high), float(_low), float(_close), float(_vol)))
+
+            # TEK executemany ile yaz (satir-satır INSERT uzak DB'de dakikalar aliyordu)
+            if all_rows:
+                try:
+                    cursor.executemany(insert_sql, all_rows)
+                except Exception as e:
+                    print(f"[CRITICAL] MarketData executemany hatasi: {e}")
+                    try:
+                        from services.telegram_bot import send_telegram_message
+                        send_telegram_message(f"🚨 SIMULASYON VERI YAZMA HATASI!\nMarket verileri (intraday) DB'ye yazilamadi!\nHata: {e}")
+                    except:
+                        pass
+        except Exception as e:
+            print(f"[MarketData] YF indirme hatası: {e}")
+            
+        conn.commit()
+        conn.close()
+
+    @staticmethod
+    def get_signals(date_str: str) -> list:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM signals WHERE date_str = ? ORDER BY score DESC", (date_str,))
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(r) for r in rows]
+
+    @staticmethod
+    def get_market_data(date_str: str, symbol: str):
+        """
+        Backtester için veritabanından Pandas DataFrame döndürür.
+        Eğer veritabanında yoksa yfinance üzerinden anlık çeker.
+        """
+        import pandas as pd
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT timestamp, open, high, low, close, volume
+            FROM market_data
+            WHERE date_str = ? AND symbol = ?
+            ORDER BY timestamp ASC
+        """, (date_str, symbol))
+        rows = cur.fetchall()
+        conn.close()
+
+        if rows:
+            df = pd.DataFrame(
+                [[r[1], r[2], r[3], r[4], r[5]] for r in rows],
+                index=pd.to_datetime([r[0] for r in rows]),
+                columns=['Open', 'High', 'Low', 'Close', 'Volume'],
+            )
+            df.index.name = 'Datetime'
+            return df
+
+        # Fallback to yfinance if missing in DB
+        try:
+            import yfinance as yf
+            from datetime import datetime, timedelta
+            dt = datetime.strptime(date_str, '%Y-%m-%d')
+            next_dt = dt + timedelta(days=1)
+            dl_df = yf.download(symbol, start=date_str, end=next_dt.strftime('%Y-%m-%d'), interval='1d', progress=False)
+            if not dl_df.empty:
+                dl_df.columns = [c[0] if isinstance(c, tuple) else c for c in dl_df.columns]
+                return dl_df
+        except Exception as e:
+            pass
+
+        return pd.DataFrame()
+

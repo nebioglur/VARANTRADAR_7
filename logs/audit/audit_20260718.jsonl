@@ -1,0 +1,24 @@
+{"timestamp": 1784328855.952251, "time_str": "2026-07-18 01:54:15", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "BIMAS.IS: YFinance API deneniyor..."}}
+{"timestamp": 1784328866.0171728, "time_str": "2026-07-18 01:54:26", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "BIMAS.IS: YFinance API BAŞARILI (Q=90)"}}
+{"timestamp": 1784328866.0198224, "time_str": "2026-07-18 01:54:26", "event_type": "DATA_FETCH_SUCCESS", "symbol": "BIMAS.IS", "details": {"source": "YFinance API", "quality": 90}}
+{"timestamp": 1784328866.0701723, "time_str": "2026-07-18 01:54:26", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^GSPC: YFinance API deneniyor..."}}
+{"timestamp": 1784328866.8036563, "time_str": "2026-07-18 01:54:26", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^GSPC: YFinance API BAŞARILI (Q=100)"}}
+{"timestamp": 1784328866.8149033, "time_str": "2026-07-18 01:54:26", "event_type": "DATA_FETCH_SUCCESS", "symbol": "^GSPC", "details": {"source": "YFinance API", "quality": 100}}
+{"timestamp": 1784328869.4289021, "time_str": "2026-07-18 01:54:29", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "BIMAS.IS: YFinance API deneniyor..."}}
+{"timestamp": 1784328872.6565733, "time_str": "2026-07-18 01:54:32", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "BIMAS.IS: YFinance API BAŞARILI (Q=100)"}}
+{"timestamp": 1784328872.6573212, "time_str": "2026-07-18 01:54:32", "event_type": "DATA_FETCH_SUCCESS", "symbol": "BIMAS.IS", "details": {"source": "YFinance API", "quality": 100}}
+{"timestamp": 1784328873.3223875, "time_str": "2026-07-18 01:54:33", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^GSPC: YFinance API deneniyor..."}}
+{"timestamp": 1784328873.9493291, "time_str": "2026-07-18 01:54:33", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^GSPC: YFinance API BAŞARILI (Q=100)"}}
+{"timestamp": 1784328873.9508111, "time_str": "2026-07-18 01:54:33", "event_type": "DATA_FETCH_SUCCESS", "symbol": "^GSPC", "details": {"source": "YFinance API", "quality": 100}}
+{"timestamp": 1784328873.9538379, "time_str": "2026-07-18 01:54:33", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^VIX: YFinance API deneniyor..."}}
+{"timestamp": 1784328878.498038, "time_str": "2026-07-18 01:54:38", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^VIX: YFinance API veri kalitesi düşük (Q=70), FAILOVER"}}
+{"timestamp": 1784328878.5000336, "time_str": "2026-07-18 01:54:38", "event_type": "FAILOVER_TRIGGERED", "symbol": "^VIX", "details": {"reason": "Low Quality", "source": "YFinance API"}}
+{"timestamp": 1784328878.5360081, "time_str": "2026-07-18 01:54:38", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^VIX: Finnhub API deneniyor..."}}
+{"timestamp": 1784328878.5374672, "time_str": "2026-07-18 01:54:38", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^VIX: Finnhub API boş veri döndü, FAILOVER"}}
+{"timestamp": 1784328878.8751428, "time_str": "2026-07-18 01:54:38", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "^VIX: Disk Cache FALLBACK"}}
+{"timestamp": 1784373621.3546596, "time_str": "2026-07-18 14:20:21", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "ASELSAN.IS: YFinance API deneniyor..."}}
+{"timestamp": 1784374345.6836455, "time_str": "2026-07-18 14:32:25", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "ASELSAN.IS: YFinance API boş veri döndü, FAILOVER"}}
+{"timestamp": 1784374345.6845212, "time_str": "2026-07-18 14:32:25", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "ASELSAN.IS: Finnhub API deneniyor..."}}
+{"timestamp": 1784374345.6855626, "time_str": "2026-07-18 14:32:25", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "ASELSAN.IS: Finnhub API boş veri döndü, FAILOVER"}}
+{"timestamp": 1784374345.8101676, "time_str": "2026-07-18 14:32:25", "event_type": "SYSTEM_LOG", "symbol": "ALL", "details": {"message": "ASELSAN.IS: TÜM KAYNAKLAR BAŞARISIZ — SAFE MODE"}}
+{"timestamp": 1784374345.8333712, "time_str": "2026-07-18 14:32:25", "event_type": "SAFE_MODE_ACTIVATED", "symbol": "ASELSAN.IS", "details": {"reason": "All sources and caches failed."}}

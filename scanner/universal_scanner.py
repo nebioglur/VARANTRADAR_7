@@ -1,0 +1,645 @@
+import concurrent.futures
+import time
+from typing import List, Dict, Any
+import yfinance as yf
+import pandas as pd
+import numpy as np
+
+from data.pipeline import DataPipeline
+from analysis.technical import TechnicalEngine
+from core.event_bus import EventBus
+from services.intraday_strength import IntradayStrengthAnalyzer
+
+# Yapay Zeka Favori 15 Hissesi (Kurumsal & Yüksek Momentumlu)
+AI_FAVORITES = [
+    "THYAO.IS", "TUPRS.IS", "KCHOL.IS", "SAHOL.IS", "FROTO.IS", 
+    "ISCTR.IS", "YKBNK.IS", "AKBNK.IS", "GARAN.IS", "BIMAS.IS",
+    "ASELS.IS", "SISE.IS", "ENKAI.IS", "EREGL.IS", "TTKOM.IS"
+]
+
+class UniversalScanner:
+    """
+    CFG-03 Scanner Layer (Evrensel Tarayıcı)
+    Verilen sembol havuzunu (Örn: BIST100) paralel işleyerek tarar.
+    Amacı binlerce hisse arasından ön filtrelemeyi geçebilen 'Adayları' bulmaktır.
+    """
+    
+    def __init__(self, data_pipeline: DataPipeline):
+        self.pipeline = data_pipeline
+        self.tech_engine = TechnicalEngine()
+        
+    def scan_pool(self, symbols: List[str], min_score: float = 60.0) -> List[Dict[str, Any]]:
+        """Hisse havuzunu paralel tarar ve eşik değerini geçenleri listeler."""
+        
+        candidates = []
+        EventBus.publish("SCAN_STARTED", {"total": len(symbols)})
+        
+        # Multithreading (Paralel Tarama) ile API bekleme sürelerini (I/O) minimize ederiz
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            future_to_symbol = {executor.submit(self._scan_single, sym): sym for sym in symbols}
+            
+            for future in concurrent.futures.as_completed(future_to_symbol):
+                sym = future_to_symbol[future]
+                try:
+                    result = future.result()
+                    if result and result.get("Score", 0) >= min_score:
+                        candidates.append({
+                            "Symbol": sym,
+                            "Score": result["Score"],
+                            "Trend": result.get("Trend", "UNKNOWN"),
+                            "Momentum": result.get("Momentum", "UNKNOWN")
+                        })
+                except Exception as e:
+                    print(f"[Scanner] Hata ({sym}): {e}")
+                    
+        # Yüksek puandan düşüğe doğru sırala
+        candidates = sorted(candidates, key=lambda x: x["Score"], reverse=True)
+        EventBus.publish("SCAN_FINISHED", {"candidates_found": len(candidates)})
+        
+        return candidates
+        
+    def _scan_single(self, symbol: str) -> Dict[str, Any]:
+        """Tek bir hisse için hızlı (sadece teknik) bir ön eleme yapar."""
+        df = self.pipeline.get_clean_data(symbol, period="3mo", interval="1d")
+        if df.empty:
+            return None
+            
+        # Ön eleme genellikle çok hızlı olan Teknik Motor ile yapılır
+        # Buradan geçerse Phase 5 (Executive Engine) detaylı analiz yapar
+        tech_result = self.tech_engine.analyze(symbol, df)
+        return tech_result
+
+    def _bulk_download_chunked(self, symbols: List[str], period: str, interval: str, chunk_size: int = 100) -> Dict[str, pd.DataFrame]:
+        """
+        Toplu indirmeyi kucuk paketlere boler ve hata alinan paketi yeniden dener.
+        Buyuk havuzlarin (orn. 642 BIST hissesi) tek HTTP isteginde Yahoo hiz
+        limitine takilip tamamen bos donmesini engeller.
+        """
+        result = {}
+        total_chunks = (len(symbols) + chunk_size - 1) // chunk_size
+        for idx, start in enumerate(range(0, len(symbols), chunk_size)):
+            chunk = symbols[start:start + chunk_size]
+            data = None
+            for attempt in range(1, 4):
+                try:
+                    data = yf.download(chunk, period=period, interval=interval,
+                                       group_by='ticker', threads=False, progress=False)
+                    if data is not None and not data.empty:
+                        break
+                except Exception as e:
+                    print(f"[SCANNER] Paket {idx+1}/{total_chunks} deneme {attempt} hatasi: {e}")
+                    data = None
+                time.sleep(3 * attempt)
+            if data is None or data.empty:
+                print(f"[SCANNER] Paket {idx+1}/{total_chunks} tamamen basarisiz, atlandi.")
+                continue
+            if len(chunk) == 1:
+                result[chunk[0]] = data
+            elif hasattr(data.columns, 'levels'):
+                for sym in chunk:
+                    if sym in data.columns.levels[0]:
+                        result[sym] = data[sym]
+            else:
+                result[chunk[0]] = data
+            print(f"[SCANNER] Paket {idx+1}/{total_chunks} indirildi ({len(result)}/{len(symbols)} hisse hazir).")
+        return result
+
+    def scan_pool_bulk(self, symbols: List[str]) -> Dict[str, List[Dict]]:
+        """
+        YFinance Bulk Download (Toplu İndirme) ile tüm sembolleri tek HTTP isteğinde çeker.
+        IP Ban riskini sıfırlar ve Yükselen/Düşen/Hacimli/Sığ/Favori kategorilerini üretir.
+        """
+        EventBus.publish("SCAN_STARTED", {"total": len(symbols), "mode": "bulk"})
+        print(f"[SCANNER] {len(symbols)} hisse paketler halinde indiriliyor (Bulk Download)...")
+        
+        # Toplu indirme: EMA200 hesaplayabilmek için en az 1y (1 yıl) veri çekiyoruz
+        bulk_data = self._bulk_download_chunked(symbols, period="1y", interval="1d")
+
+        # Yahoo'dan gelmeyen semboller Is Yatirim ile doldurulur (resmi gunluk kapanis,
+        # key'siz). Kapak: dongu basina 150 sembol (kota dostu).
+        try:
+            missing = [s for s in symbols if bulk_data.get(s) is None]
+            if missing:
+                cap = missing[:150]
+                print(f"[SCANNER] {len(missing)} sembol Yahoo'dan gelmedi; ilk {len(cap)} tanesi Is Yatirim ile dolduruluyor...")
+                from data.providers.isyatirim_provider import IsYatirimProvider
+                iy = IsYatirimProvider()
+                for s in cap:
+                    try:
+                        df_iy = iy.fetch_ohlcv(s, period="1y", interval="1d")
+                        if df_iy is not None and not df_iy.empty and len(df_iy) >= 5:
+                            bulk_data[s] = df_iy
+                    except Exception:
+                        continue
+        except Exception as e_gap:
+            print(f"[SCANNER] Is Yatirim bos-doldurma hatasi: {e_gap}")
+
+        # ROTASYONLU RESMI FIYAT TAZELEME: Yahoo bayat kapanis verebiliyor.
+        # Her dongude ~150 sembol Is Yatirim'in resmi gunluk verisiyle
+        # uzerine yazilir; birkaç dongude tum BIST resmi fiyata yakinsar.
+        try:
+            n_all = len(symbols)
+            if n_all:
+                start_idx = getattr(self, "_iy_rotate_idx", 0) % n_all
+                rotate = symbols[start_idx:start_idx + 150]
+                self._iy_rotate_idx = (start_idx + len(rotate)) % n_all
+                from data.providers.isyatirim_provider import IsYatirimProvider
+                iy_rot = IsYatirimProvider()
+                refreshed = 0
+                for s in rotate:
+                    if not str(s).upper().endswith('.IS'):
+                        continue
+                    try:
+                        df_r = iy_rot.fetch_ohlcv(s, period="1y", interval="1d")
+                        if df_r is not None and not df_r.empty and len(df_r) >= 5:
+                            bulk_data[s] = df_r
+                            refreshed += 1
+                    except Exception:
+                        continue
+                if refreshed:
+                    print(f"[SCANNER] Is Yatirim rotasyonu: {refreshed} sembol resmi veriyle tazelendi (pencere {len(rotate)}).")
+        except Exception as e_rot:
+            print(f"[SCANNER] Is Yatirim rotasyon hatasi: {e_rot}")
+
+        all_results = []
+        
+        for sym in symbols:
+            raw = bulk_data.get(sym)
+            if raw is None:
+                continue
+            df = raw.dropna(how='all').copy()
+            res = self._process_bulk_df(sym, df)
+            if res: all_results.append(res)
+                    
+        # Şimdi sonuçları kategorize edelim:
+        
+        # 1. Yükselenler (En çok % artanlar)
+        gainers = sorted([r for r in all_results if r["Change_Pct"] > 0], key=lambda x: x["Change_Pct"], reverse=True)[:20]
+        
+        # 2. Düşenler (En çok % azalanlar)
+        losers = sorted([r for r in all_results if r["Change_Pct"] < 0], key=lambda x: x["Change_Pct"])[:20]
+        
+        # 3. En Hacimliler / Kurumsal (Volume * Price en yüksek)
+        high_vol = sorted(all_results, key=lambda x: x["Money_Volume"], reverse=True)[:20]
+        
+        # 4. En Sığ Hisseler (Volume * Price en düşük)
+        low_vol = sorted([r for r in all_results if r["Money_Volume"] > 0], key=lambda x: x["Money_Volume"])[:20]
+        
+        # 5. Favoriler (Sadece listemizdeki hisseler)
+        favorites = [r for r in all_results if r["Symbol"] in AI_FAVORITES]
+        favorites = sorted(favorites, key=lambda x: x.get("Score", 0), reverse=True)
+        
+        
+        # 0 Risk / Defansif Hisseler (Borsa eksideyken bile sağlam duranlar)
+        defensive = []
+        for r in all_results:
+            d_close = r.get("Daily_Close", 0)
+            e50 = r.get("Daily_EMA50", 0)
+            e200 = r.get("Daily_EMA200", 0)
+            change = r.get("Change_Pct", 0)
+            
+            money_vol = r.get("Money_Volume") or 0
+            macd = r.get("MACD") or 0
+            macd_signal = r.get("MACD_Signal") or 0
+            vol_sma10 = r.get("Vol_SMA10") or 0
+            atr = r.get("ATR") or 0
+            vol_today = r.get("Volume") or 0
+            # RSI_14 veri yetersizse "N/A" stringi olabilir; sayiya cevir, olmazsa 50 (notr)
+            try:
+                rsi = float(r.get("Indicators", {}).get("RSI_14") or 50)
+            except (TypeError, ValueError):
+                rsi = 50.0
+            
+            gap_pct = r.get("Gap_Pct", 0)
+            is_squeeze = r.get("Short_Squeeze_Candidate", False)
+            
+            # Puanlama Mantığı (Esnek Defansif Seçim)
+            # Katı kilitler yerine mevcut piyasadaki en güvenlileri seçer
+            if e50 > 0 and e200 > 0:
+                def_score = 0
+                
+                # 1. Trend Gücü (En Önemli Kalkan)
+                if d_close > e200: def_score += 20
+                if d_close > e50: def_score += 15
+                
+                # 2. Günlük Değişim (Pozitif Ayrışma)
+                if change > 0: def_score += 10
+                elif change > -1.0: def_score += 5 # Az düşmüşse yine fena değil
+                
+                # 3. Destekten Çok Uzaklaşmamış Olma (Güvenli Liman)
+                dist_to_e50 = abs(d_close - e50) / e50 * 100 if e50 > 0 else 100
+                if dist_to_e50 <= 4.0: def_score += 15
+                elif dist_to_e50 <= 8.0: def_score += 5
+                
+                # 4. RSI Dengesi
+                if 45 <= rsi <= 65: def_score += 10
+                
+                # 5. Likidite ve Smart Money
+                if money_vol > 50_000_000: def_score += 10
+                if vol_today > vol_sma10: def_score += 10
+                
+                # 6. Teknik Momentum
+                if macd > macd_signal: def_score += 5
+                if macd > 0: def_score += 5
+                
+                # 7. Volatilite (Düşük dalgalanma = Güven)
+                if d_close > 0 and (atr / d_close) < 0.05: def_score += 5
+                
+                # ALPHA 3: Açıkçı Sıkıştırması (Squeeze) Puanı
+                if is_squeeze: def_score += 20
+                
+                # ALPHA 4: Gap Arbitrajı (Boşlukla açan hisselerden kaçın)
+                if gap_pct > 3.0: def_score -= 15
+                elif gap_pct < -2.0: def_score += 10 # Dipte açanlara destek puanı
+                
+                # 8. Squeeze / VCP Filtresi (Bollinger Daralması)
+                # Fiyat patlamadan hemen önceki o çok dar bantları tespit et
+                bb_width = r.get('Indicators', {}).get('BB_Width', 0)
+                if 0 < bb_width < 0.05: def_score += 15 # Kusursuz sıkışma
+                elif 0 < bb_width < 0.10: def_score += 8 # İyi sıkışma
+                
+                r['Defensive_Score'] = def_score
+                
+                # Skoru 50 ve üzeri olanları potansiyel defansif olarak gör
+                if def_score >= 35:
+                    defensive.append(r)
+        
+        # En güvenliden (skoru yüksek) en az güvenliye doğru sırala
+        defensive = sorted(defensive, key=lambda x: (x.get("Defensive_Score", 0), x.get("Change_Pct", 0)), reverse=True)[:15]
+
+        # 6. Fırsatlar (Skoru en yüksek olanlar AL sinyalli)
+        opportunities = sorted([r for r in all_results if r.get("Score", 0) >= 65 and r.get("Status") == "AL"], 
+                               key=lambda x: x["Score"], reverse=True)[:20]
+                               
+        # Tüm sembollerin temel günlük verilerini sakla (1 saatlik taramada filtre olarak kullanmak için)
+        all_symbols_stats = {}
+        for r in all_results:
+            sym = r["Symbol"]
+            if "Daily_EMA50" in r and "Daily_EMA200" in r:
+                # Günlük veriden gün içi güç metrikleri (1h taraması gelene kadar fallback)
+                try:
+                    today_open = float(r.get("Daily_Open", 0))
+                    today_close = float(r.get("Daily_Close", 0))
+                    today_high = float(r.get("High", today_close))
+                    today_low = float(r.get("Low", today_close))
+                    if today_open > 0:
+                        intra_change_pct = ((today_close - today_open) / today_open) * 100
+                    else:
+                        intra_change_pct = 0.0
+                    intra_fallback = {
+                        "session_open": round(today_open, 2),
+                        "current_price": round(today_close, 2),
+                        "intraday_change_pct": round(intra_change_pct, 2),
+                        "session_high": round(today_high, 2),
+                        "session_low": round(today_low, 2),
+                        "hourly_flow": "-"
+                    }
+                except Exception:
+                    intra_fallback = {"intraday_change_pct": 0.0, "hourly_flow": "-"}
+
+                all_symbols_stats[sym] = {
+                    "Daily_EMA50": r["Daily_EMA50"],
+                    "Daily_EMA200": r["Daily_EMA200"],
+                    "Daily_Close": r["Daily_Close"],
+                    "Price": r.get("Price"),
+                    "High": r.get("High"),
+                    "Low": r.get("Low"),
+                    "Change_Pct": r.get("Change_Pct", 0.0),
+                    "Volume": r.get("Volume", 0),
+                    "Time": r.get("Time", "-"),
+                    "v8_discovery": r.get("v8_discovery"),
+                    "v8_breakout": r.get("v8_breakout"),
+                    "v8_execution": r.get("v8_execution"),
+                    "v8_varrant": r.get("v8_varrant"),
+                    "intraday_strength": intra_fallback
+                }
+                
+        print("[SCANNER] Bulk analiz tamamlandı ve kategorize edildi.")
+        return {
+            "opportunities": opportunities,
+            "gainers": gainers,
+            "losers": losers,
+            "high_volume": high_vol,
+            "low_volume": low_vol,
+            "favorites": favorites,
+            "defensive_stocks": defensive,
+            "all_symbols_stats": all_symbols_stats
+        }
+        
+    def _process_bulk_df(self, symbol: str, df: pd.DataFrame) -> Dict[str, Any]:
+        if df.empty or len(df) < 5:
+            return None
+            
+        # Standartlaştır (Clean)
+        df.columns = [str(c).lower() for c in df.columns]
+        required_cols = ['open', 'high', 'low', 'close', 'volume']
+        for col in required_cols:
+            if col not in df.columns:
+                df[col] = 0.0 if col != 'volume' else 0
+                
+        df['close'] = df['close'].ffill()
+        df = df[required_cols]
+
+        # Hacimsiz/tekrar eden kuyruk satirlari degisimi duzlestiriyor:
+        # bos gunluk kismi satirlari ve ayni gune ait kopyalari at.
+        try:
+            vol_num = pd.to_numeric(df['volume'], errors='coerce').fillna(0)
+            valid_df = df[vol_num > 0]
+            if len(valid_df) >= 5:
+                df = valid_df
+        except Exception:
+            pass
+        try:
+            df = df[~df.index.duplicated(keep='last')]
+        except Exception:
+            pass
+
+        # Günlük değişim hesapla
+        close_today = float(df['close'].iloc[-1])
+        close_yday = float(df['close'].iloc[-2]) if len(df) > 1 else close_today
+        
+        change_pct = ((close_today - close_yday) / close_yday * 100) if close_yday > 0 else 0
+        volume_today = float(df['volume'].iloc[-1])
+        money_volume = close_today * volume_today
+        
+        # Teknik motor analizi
+        tech_result = self.tech_engine.analyze(symbol, df)
+        if not tech_result:
+            return None
+            
+        # NOT: Artık EMA200 altındakileri reddetmiyoruz çünkü 'Short Squeeze' 
+        # ve 'Defansif Dönüş' stratejileri için bu fırsatlara ihtiyacımız var!
+        ema200 = tech_result.get("Daily_EMA200", 0)
+        
+        # 1. ALPHA: Yabancı Takas / Kurumsal Toplama (Institutional Accumulation Proxy)
+        # Hacim patlaması + Açılış Boşluğu (Gap) Tespiti
+        open_today = float(df['open'].iloc[-1])
+        gap_pct = ((open_today - close_yday) / close_yday * 100) if close_yday > 0 else 0
+        tech_result['Gap_Pct'] = round(gap_pct, 2)
+        
+        # 2. ALPHA: Açıkçı Sıkıştırması (Short Squeeze) Setup
+        is_squeeze = (close_today < ema200) and (change_pct > 3.0) and (gap_pct <= 0)
+        tech_result['Short_Squeeze_Candidate'] = is_squeeze
+            
+        # Ek verileri sonucun içine göm
+        tech_result["Symbol"] = symbol
+        tech_result["Change_Pct"] = round(change_pct, 2)
+        tech_result["Volume"] = volume_today
+        tech_result["Money_Volume"] = money_volume
+        
+        # Ek Indikatörler (Defansif vs için)
+        try:
+            exp1 = df['close'].ewm(span=12, adjust=False).mean()
+            exp2 = df['close'].ewm(span=26, adjust=False).mean()
+            macd = exp1 - exp2
+            macd_signal = macd.ewm(span=9, adjust=False).mean()
+            tech_result["MACD"] = float(macd.iloc[-1])
+            tech_result["MACD_Signal"] = float(macd_signal.iloc[-1])
+            
+            high_low = df['high'] - df['low']
+            high_close = (df['high'] - df['close'].shift()).abs()
+            low_close = (df['low'] - df['close'].shift()).abs()
+            tr = high_low.combine(high_close, max).combine(low_close, max)
+            atr = tr.rolling(14).mean()
+            tech_result["ATR"] = float(atr.iloc[-1])
+            
+            vol_sma = df['volume'].rolling(10).mean()
+            tech_result["Vol_SMA10"] = float(vol_sma.iloc[-1])
+        except:
+            pass
+        tech_result["Price"] = round(close_today, 2)
+        tech_result["High"] = round(float(df['high'].iloc[-1]), 2)
+        tech_result["Low"] = round(float(df['low'].iloc[-1]), 2)
+        tech_result["Daily_Open"] = round(open_today, 2)
+        
+        
+        # --- V8 DISCOVERY ---
+        try:
+            from v8_engine.discovery import DiscoveryEngine
+            disc_engine = DiscoveryEngine()
+            v8_disc = disc_engine.analyze_preparation(df, symbol)
+        except Exception as e:
+            v8_disc = {"state": "ERROR", "preparation_score": 0, "reasons": []}
+        tech_result["v8_discovery"] = v8_disc
+
+        # --- V8 BREAKOUT ---
+        try:
+            from v8_engine.breakout import BreakoutEngine
+            bo_engine = BreakoutEngine()
+            try:
+                import server
+                regime = server.GLOBAL_DASHBOARD_CACHE.get("v8_market_regime", {}).get("regime", "NEUTRAL")
+            except:
+                regime = "NEUTRAL"
+            v8_breakout = bo_engine.analyze_breakout(df, symbol, regime)
+        except Exception as e:
+            v8_breakout = {"is_breakout": False, "status": "ERROR"}
+        tech_result["v8_breakout"] = v8_breakout
+
+        # --- V8 EXECUTION ---
+        try:
+            from v8_engine.execution import ExecutionEngine
+            exec_engine = ExecutionEngine()
+            v8_exec = exec_engine.evaluate_entry(v8_breakout, regime)
+        except Exception as e:
+            v8_exec = {"entry_status": "ERROR"}
+        tech_result["v8_execution"] = v8_exec
+
+        # --- V8 OUTCOME REGISTRATION ---
+        try:
+            if v8_exec.get('entry_status') in ['ENTER', 'WAIT_PULLBACK']:
+                # Borsa kapaliyken sinyal kaydetme (BIST: hafta ici 10:00-18:10)
+                from datetime import datetime as _dt, time as _dtime
+                try:
+                    from zoneinfo import ZoneInfo
+                    _now = _dt.now(ZoneInfo("Europe/Istanbul"))
+                except Exception:
+                    _now = _dt.now()
+                _market_open = _now.weekday() < 5 and _dtime(10, 0) <= _now.time() <= _dtime(18, 10)
+
+                if _market_open:
+                    from v8_engine.learning import OutcomeEngine
+                    from datetime import datetime
+
+                    if not hasattr(self, 'registered_v8_signals'):
+                        self.registered_v8_signals = {}
+                        self.registered_v8_date = datetime.now().date()
+
+                    if self.registered_v8_date != datetime.now().date():
+                        self.registered_v8_signals = {}
+                        self.registered_v8_date = datetime.now().date()
+
+                    # Sinyal daha once kaydedilmediyse kaydet
+                    if symbol not in self.registered_v8_signals:
+                        oe = OutcomeEngine()
+                        price = float(df['close'].iloc[-1] if 'close' in df.columns else df['Close'].iloc[-1])
+                        sig_id = oe.register_signal(symbol, price, v8_breakout, v8_exec, regime)
+                        self.registered_v8_signals[symbol] = sig_id
+                        print(f"[V8 LEARNING] Registered Signal for {symbol}: {v8_exec.get('entry_status')}")
+        except Exception as e:
+            print(f"[V8 LEARNING ERROR] {e}")
+        # -------------------------------
+
+        # --------------------
+
+        # -------------------
+
+        # --------------------
+
+        return tech_result
+
+    def scan_pool_bulk_1h(self, symbols: List[str], daily_stats: Dict[str, Any] = None) -> Dict[str, List[Dict[str, Any]]]:
+        """
+        1 Saatlik veri indirir ve teknik kesişimler ile tavan adaylarını tespit eder.
+        """
+        if daily_stats:
+            filtered_symbols = []
+            for sym in symbols:
+                stats = daily_stats.get(sym)
+                if stats:
+                    c = stats.get("Daily_Close", 0)
+                    e50 = stats.get("Daily_EMA50", float('inf'))
+                    e200 = stats.get("Daily_EMA200", float('inf'))
+                    # Filtreyi esnettik: Sadece EMA200'ün %15 altından daha kötü olan çok ağır çöküştekileri ele
+                    if c > e200 * 0.85:
+                        filtered_symbols.append(sym)
+                else:
+                    filtered_symbols.append(sym)
+            print(f"[SCANNER 1H] Günlük EMA50/200 filtresinden geçen hisse sayısı: {len(filtered_symbols)} / {len(symbols)}")
+            symbols = filtered_symbols
+
+        if not symbols:
+            print("[SCANNER 1H] EMA filtresini geçen hisse bulunamadı.")
+            return {"opportunities_1h": [], "tavan_adaylari": []}
+
+        print(f"[SCANNER 1H] {len(symbols)} hisse 1 saatlik periyotta paketler halinde indiriliyor...")
+        bulk_data = self._bulk_download_chunked(symbols, period="1mo", interval="1h")
+        
+        opportunities = []
+        tavan_adaylari = []
+        stay_away_1h = []
+        vip_candidates = []
+        all_symbols_stats = {}
+        
+        for sym in symbols:
+            df_raw = bulk_data.get(sym)
+            if df_raw is None:
+                continue
+                    
+            df = df_raw.dropna(how='all').copy()
+            if df.empty or len(df) < 30:
+                continue
+                
+            df.columns = [str(c).lower() for c in df.columns]
+            required_cols = ['open', 'high', 'low', 'close', 'volume']
+            if not all(c in df.columns for c in required_cols):
+                continue
+                
+            df['close'] = df['close'].ffill()
+            df = df[required_cols]
+            
+            # Gün içi güç metriklerini hesapla (tüm semboller için)
+            try:
+                intra = IntradayStrengthAnalyzer.analyze(sym, df)
+                if intra:
+                    all_symbols_stats[sym] = {"intraday_strength": intra}
+            except Exception as e_intra:
+                print(f"[INTRADAY STRENGTH] {sym} hesaplanamadi: {e_intra}")
+            
+            # --- STRICT CUSTOM STRATEGY FILTER (AL / YÜKSELİŞ) ---
+            is_match_al, bars_ago_al, _ = self.tech_engine.check_custom_strict_strategy(df, direction="AL")
+            
+            # --- STRICT CUSTOM STRATEGY FILTER (SAT / UZAK DUR) ---
+            is_match_sat, bars_ago_sat, _ = self.tech_engine.check_custom_strict_strategy(df, direction="SAT")
+            
+            if not is_match_al and not is_match_sat:
+                continue
+                
+            if is_match_al:
+                time_label = "ŞİMDİ (Sıcak)" if bars_ago_al == 0 else f"{bars_ago_al} Saat Önce"
+                
+                # 1. Klasik 1 Saatlik Fırsatlar
+                res_1h = self.tech_engine.analyze_1h_opportunities(sym, df)
+                if res_1h:
+                    res_1h["Time_Label"] = time_label
+                    res_1h["Bars_Ago"] = bars_ago_al
+                    opportunities.append(res_1h)
+                    
+                # 2. Yüksek Tavan Olasılığı
+                stats = daily_stats.get(sym) if daily_stats else None
+                res_tavan = self.tech_engine.analyze_tavan_adaylari(sym, df, stats)
+                if res_tavan:
+                    res_tavan["Time_Label"] = time_label
+                    res_tavan["Bars_Ago"] = bars_ago_al
+                    tavan_adaylari.append(res_tavan)
+                    
+                    # VIP Sinyal Kontrolü (100 Puan)
+                    if res_tavan.get("Score", 0) == 100:
+                        res_tavan["Symbol"] = sym
+                        vip_candidates.append(res_tavan)
+                        
+            if is_match_sat:
+                time_label_sat = "ŞİMDİ (Sıcak)" if bars_ago_sat == 0 else f"{bars_ago_sat} Saat Önce"
+                # 3. UZAK DUR (Stay Away) Hisseleri
+                res_stay_away = self.tech_engine.analyze_1h_stay_away(sym, df)
+                if res_stay_away:
+                    res_stay_away["Time_Label"] = time_label_sat
+                    res_stay_away["Bars_Ago"] = bars_ago_sat
+                    stay_away_1h.append(res_stay_away)
+                    
+        if vip_candidates:
+            self._trigger_batch_vip_signals(vip_candidates)
+
+        opportunities = sorted(
+            opportunities,
+            key=lambda x: (x.get("Crossover_Bars_Ago", 999), -x.get("EMA_Gap_Pct", 0))
+        )
+        
+        tavan_adaylari = sorted(
+            tavan_adaylari,
+            key=lambda x: (-x.get("Score", 0), -x.get("Vol_Multiplier", 0), x.get("Distance_To_Ceiling_Pct", 99))
+        )[:10]
+        
+        stay_away_1h = sorted(stay_away_1h, key=lambda x: (x.get("Crossover_Bars_Ago", 999), x.get("EMA_Gap_Pct", 0)))
+        
+        return {
+            "opportunities_1h": opportunities,
+            "stay_away_1h": stay_away_1h,
+            "tavan_adaylari": tavan_adaylari,
+            "all_symbols_stats": all_symbols_stats
+        }
+
+    def _trigger_batch_vip_signals(self, vips: list):
+        try:
+            import os
+            import json
+            from datetime import datetime
+            from services.telegram_bot import send_batch_vip_signals
+            
+            today = datetime.now().strftime("%Y-%m-%d")
+            cache_file = "data/sent_vip_signals.json"
+            
+            sent_data = {}
+            if os.path.exists(cache_file):
+                try:
+                    with open(cache_file, "r") as f:
+                        sent_data = json.load(f)
+                except:
+                    pass
+            
+            # Gün değiştiyse cache'i temizle
+            if sent_data.get("date") != today:
+                sent_data = {"date": today, "symbols": []}
+                
+            new_vips = [v for v in vips if v["Symbol"] not in sent_data["symbols"]]
+            
+            if new_vips:
+                # Sinyalleri toplu gönder
+                success = send_batch_vip_signals(new_vips)
+                if success:
+                    for v in new_vips:
+                        sent_data["symbols"].append(v["Symbol"])
+                    with open(cache_file, "w") as f:
+                        json.dump(sent_data, f)
+        except Exception as e:
+            print(f"[VIP BATCH SİNYAL HATA] {str(e)}")

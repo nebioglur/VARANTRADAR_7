@@ -1,0 +1,17 @@
+{
+  "name": "varantradar-pro",
+  "version": "1.0.0",
+  "private": true,
+  "description": "VARANTRADAR PRO - Fintech Terminali",
+  "scripts": {
+    "build:auth": "esbuild src/auth-client.js --bundle --format=iife --outfile=ui/js/auth-bundle.js --minify",
+    "build": "npm run build:auth"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "@verdent/auth-js": "^1.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.23.0"
+  }
+}

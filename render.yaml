@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: varantradar-pro
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server.py
+    envVars:
+      - key: SUPABASE_URL
+        value: https://supabase-api-prod.verdent.ai/p/pf565ccea3c6a9b19d28e
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
