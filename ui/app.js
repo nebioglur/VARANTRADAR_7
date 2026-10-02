@@ -3575,35 +3575,42 @@ function renderStatsMode() {
                 if (el('stats-tab-elite-net-pct')) el('stats-tab-elite-net-pct').style.color = 'var(--text-muted)';
             }
         }
-        // Tavan denetimi kartlari yalnızca bugünün kaydından beslenir.
-        // Eski arşiv kaydını güncel seans gibi göstermemek için yoksa boş
-        // durum açıkça gösterilir.
-        if (isCurrentSession && today) {
-            const allSyms = today.all_symbols || [];
+        // Tavan denetimi kartlari: bugunun dolu kaydi varsa bugun, yoksa
+        // son arsiv gunu "Son arsiv" etiketiyle gosterilir. Kartlar bos
+        // kalmaz ama eski tarih bugun gibi de sunulmaz.
+        const auditDay = (isCurrentSession && today && (today.all_symbols || []).length > 0)
+            ? today
+            : history.find(item => (item.all_symbols || []).length > 0) || null;
+        if (auditDay) {
+            const isArchive = auditDay.date !== todayDate;
+            const allSyms = auditDay.all_symbols || [];
             const totalC = allSyms.length;
             const tavanC = allSyms.filter(s => s.hit_ceiling).length;
             const plus5C = allSyms.filter(s => s.hit_plus5).length;
             const sumMax = allSyms.reduce((sum, s) => sum + (s.max_gain_pct || 0), 0);
             const sumClose = allSyms.reduce((sum, s) => sum + (s.closing_gain_pct || 0), 0);
             const avgMax = totalC > 0 ? sumMax / totalC : 0;
-            if (el('stats-tab-total-days')) el('stats-tab-total-days').innerText = today.date || 'Bugün';
-            if (el('stats-tab-total-candidates-sub')) el('stats-tab-total-candidates-sub').innerText = `Toplam ${totalC} Öneri`;
+            const archTag = isArchive ? ' (Son arşiv)' : '';
+            if (el('stats-tab-total-days')) el('stats-tab-total-days').innerText = (auditDay.date || 'Bugün') + archTag;
+            if (el('stats-tab-total-candidates-sub')) el('stats-tab-total-candidates-sub').innerText = isArchive
+                ? `Toplam ${totalC} Öneri · Bugün: kayıt yok`
+                : `Toplam ${totalC} Öneri`;
             if (el('stats-tab-tavan-rate')) el('stats-tab-tavan-rate').innerText = `%${totalC > 0 ? (tavanC/totalC*100).toFixed(1) : 0}`;
-            if (el('stats-tab-tavan-cnt-sub')) el('stats-tab-tavan-cnt-sub').innerText = `${tavanC} Tavan`;
+            if (el('stats-tab-tavan-cnt-sub')) el('stats-tab-tavan-cnt-sub').innerText = `${tavanC} Tavan${archTag}`;
             if (el('stats-tab-plus5-rate')) el('stats-tab-plus5-rate').innerText = `%${totalC > 0 ? (plus5C/totalC*100).toFixed(1) : 0}`;
-            if (el('stats-tab-plus5-cnt-sub')) el('stats-tab-plus5-cnt-sub').innerText = `${plus5C} Hisse`;
+            if (el('stats-tab-plus5-cnt-sub')) el('stats-tab-plus5-cnt-sub').innerText = `${plus5C} Hisse${archTag}`;
             if (el('stats-tab-avg-max-gain')) el('stats-tab-avg-max-gain').innerText = `+ %${avgMax.toFixed(2)}`;
-            if (el('stats-tab-avg-close-sub')) el('stats-tab-avg-close-sub').innerText = `Kapanış: %${(totalC > 0 ? sumClose / totalC : 0).toFixed(2)}`;
+            if (el('stats-tab-avg-close-sub')) el('stats-tab-avg-close-sub').innerText = `Kapanış: %${(totalC > 0 ? sumClose / totalC : 0).toFixed(2)}${archTag}`;
             if (el('stats-tab-warrant-avg-gain')) el('stats-tab-warrant-avg-gain').innerText = `+ %${(avgMax * 6.2).toFixed(2)}`;
         } else {
-            if (el('stats-tab-total-days')) el('stats-tab-total-days').innerText = 'Bugün yok';
+            if (el('stats-tab-total-days')) el('stats-tab-total-days').innerText = 'Arşiv boş';
             if (el('stats-tab-total-candidates-sub')) el('stats-tab-total-candidates-sub').innerText = 'Tavan denetimi bekleniyor';
             if (el('stats-tab-tavan-rate')) el('stats-tab-tavan-rate').innerText = '-';
-            if (el('stats-tab-tavan-cnt-sub')) el('stats-tab-tavan-cnt-sub').innerText = 'Bugün kayıt yok';
+            if (el('stats-tab-tavan-cnt-sub')) el('stats-tab-tavan-cnt-sub').innerText = 'Kayıt yok';
             if (el('stats-tab-plus5-rate')) el('stats-tab-plus5-rate').innerText = '-';
-            if (el('stats-tab-plus5-cnt-sub')) el('stats-tab-plus5-cnt-sub').innerText = 'Bugün kayıt yok';
+            if (el('stats-tab-plus5-cnt-sub')) el('stats-tab-plus5-cnt-sub').innerText = 'Kayıt yok';
             if (el('stats-tab-avg-max-gain')) el('stats-tab-avg-max-gain').innerText = '-';
-            if (el('stats-tab-avg-close-sub')) el('stats-tab-avg-close-sub').innerText = 'Bugün kayıt yok';
+            if (el('stats-tab-avg-close-sub')) el('stats-tab-avg-close-sub').innerText = 'Kayıt yok';
             if (el('stats-tab-warrant-avg-gain')) el('stats-tab-warrant-avg-gain').innerText = '-';
         }
     }
