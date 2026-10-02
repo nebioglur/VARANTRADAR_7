@@ -488,7 +488,9 @@ def _background_scanner_impl():
                 # aksi halde her yeniden dagitimdan sonra istatistik eskse (son kayit eski tarih) kalir.
                 try:
                     from services.tavan_tracker import TavanAuditTracker
-                    TavanAuditTracker.record_snapshot(fast_1h_res.get("tavan_adaylari", []), all_symbols_stats=daily_stats)
+                    bf_fast = TavanAuditTracker.backfill_from_db(fast_results["cache_date"])
+                    if not bf_fast:
+                        TavanAuditTracker.record_snapshot(fast_1h_res.get("tavan_adaylari", []), all_symbols_stats=daily_stats)
                     TavanAuditTracker.update_daily_progress(daily_stats)
                     print("[BACKGROUND] Hızlı Başlangıç tavan denetim kaydı oluşturuldu.")
                 except Exception as e_audit:
@@ -2558,19 +2560,39 @@ def api_tavan_history():
         # Render yeniden başlatmalarında istatistik ekranı boş kalmaz.
         today_str = datetime.now().strftime("%Y-%m-%d")
         audits = TavanAuditTracker.load_all_audits()
-        if today_str not in audits:
-            cached_candidates = GLOBAL_DASHBOARD_CACHE.get("tavan_adaylari", [])
-            cached_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
-            if cached_stats:
-                TavanAuditTracker.record_snapshot(
-                    cached_candidates,
-                    all_symbols_stats=cached_stats,
-                    date_str=today_str,
-                )
-                TavanAuditTracker.update_daily_progress(
-                    cached_stats,
-                    date_str=today_str,
-                )
+
+        # 1) Bugunun kaydi yoksa veya items bos ise: gercek kaynaktan
+        #    (signals + market_data tablolari) geri yukle. record_snapshot
+        #    filtresi v8/metrik verisi bosken tum adaylari eleyip bos kayit
+        #    biraktigi icin gunler bos kalmisti.
+        today_entry = audits.get(today_str) or {}
+        if not today_entry.get("items"):
+            bf = TavanAuditTracker.backfill_from_db(today_str)
+            if not bf:
+                # Sinyal kaydi da yoksa mevcut cache'ten snapshot dene (eski davranis)
+                cached_candidates = GLOBAL_DASHBOARD_CACHE.get("tavan_adaylari", [])
+                cached_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
+                if cached_stats:
+                    TavanAuditTracker.record_snapshot(
+                        cached_candidates,
+                        all_symbols_stats=cached_stats,
+                        date_str=today_str,
+                    )
+                    TavanAuditTracker.update_daily_progress(
+                        cached_stats,
+                        date_str=today_str,
+                    )
+
+        # 2) Son 7 gunde items bos kalan gunleri de geri yukle (arsiv tamamlama)
+        try:
+            for i in range(1, 8):
+                from datetime import timedelta
+                d = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
+                day_entry = audits.get(d)
+                if day_entry is not None and not day_entry.get("items"):
+                    TavanAuditTracker.backfill_from_db(d)
+        except Exception as be:
+            print(f"[tavan_history] arsiv geri yukleme hatasi: {be}")
         start_date = request.args.get('start_date', '2026-08-04')
         end_date = request.args.get('end_date')
         symbol_filter = request.args.get('symbol_filter')
@@ -2612,6 +2634,14 @@ def api_tavan_tracker():
     try:
         from services.tavan_tracker import TavanAuditTracker
         date_str = request.args.get('date')
+        # Secili gun items bos ise sinyal/market_data kaynakli geri yukleme dene
+        try:
+            target = date_str or datetime.now().strftime("%Y-%m-%d")
+            audits = TavanAuditTracker.load_all_audits()
+            if not (audits.get(target) or {}).get("items"):
+                TavanAuditTracker.backfill_from_db(target)
+        except Exception as bfe:
+            print(f"[tavan_tracker] backfill hatasi: {bfe}")
         res = TavanAuditTracker.get_audit_report(date_str)
         return jsonify(sanitize_for_json(res))
     except Exception as e:

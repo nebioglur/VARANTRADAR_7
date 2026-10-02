@@ -399,6 +399,173 @@ class TavanAuditTracker:
         return cls.record_snapshot(tavan_candidates, checkpoint_time="10:15", date_str=date_str)
 
     @classmethod
+    def backfill_from_db(cls, date_str: str = None) -> Dict[str, Any]:
+        """Kayitli 10:15 sinyalleri + gun ici 5m fiyat barlarindan denetim
+        kaydini yeniden kurar.
+
+        Neden gerekli: record_snapshot filtresi (SUPER_12 + hacim + skor>60)
+        v8/metrik verisi bosken tum adaylari eleyip bos kayit birakir.
+        signals tablosu seans sirasinda gercekten kaydedilen adaylari ve
+        market_data tablosu gun icinde gerceklesen yuksek/kapanis
+        fiyatlarini tutar; bu iki kaynak gercek denetim verisini URETIR.
+        Yalnizca items bos olan gunleri doldurur, mevcut veriyi ezmez.
+        """
+        try:
+            from services.trade_database import get_connection, IS_PG
+        except Exception as e:
+            print(f"[TavanAuditTracker] backfill: DB modulu yok: {e}")
+            return {}
+
+        if not date_str:
+            date_str = datetime.now().strftime("%Y-%m-%d")
+        ph = "%s" if IS_PG else "?"
+
+        def _rows(cur):
+            cols = [c[0] for c in cur.description] if cur.description else []
+            return [dict(zip(cols, tuple(r))) for r in cur.fetchall()]
+
+        try:
+            conn = get_connection()
+            cur = conn.cursor()
+            cur.execute(
+                f"SELECT symbol, score, morning_price, ceiling_target, morning_phase FROM signals WHERE date_str = {ph}",
+                (date_str,))
+            sig_rows = _rows(cur)
+            if not sig_rows:
+                conn.close()
+                return {}
+            cur.execute(
+                f"SELECT symbol, timestamp, high, low, close, open FROM market_data WHERE date_str = {ph} ORDER BY timestamp",
+                (date_str,))
+            bar_rows = _rows(cur)
+            conn.close()
+        except Exception as e:
+            print(f"[TavanAuditTracker] backfill DB hatasi: {e}")
+            return {}
+
+        def fnum(v, default=0.0):
+            try:
+                return float(v)
+            except (ValueError, TypeError):
+                return default
+
+        # Gun ici toplulamlar: ilk acilis, en yuksek, en dusuk, son kapanis
+        agg: Dict[str, Dict[str, float]] = {}
+        for b in bar_rows:
+            sym = b.get("symbol")
+            if not sym:
+                continue
+            a = agg.setdefault(sym, {
+                "open": fnum(b.get("open")), "high": fnum(b.get("high")),
+                "low": fnum(b.get("low")), "close": fnum(b.get("close")),
+            })
+            a["high"] = max(a["high"], fnum(b.get("high")))
+            a["low"] = min(a["low"], fnum(b.get("low"))) if fnum(b.get("low")) > 0 else a["low"]
+            a["close"] = fnum(b.get("close"), a["close"])
+
+        all_audits = cls.load_all_audits()
+        day = all_audits.get(date_str) or {
+            "date": date_str, "status": "LIVE_TRACKING",
+            "evaluation_time": "18:10", "items": []
+        }
+        existing_syms = {it.get("symbol") for it in day.get("items", [])}
+
+        now = datetime.now()
+        is_closing = now.hour >= 18 or (now.hour == 18 and now.minute >= 10) or date_str < now.strftime("%Y-%m-%d")
+
+        added = 0
+        for s in sig_rows:
+            sym = (s.get("symbol") or "").strip()
+            if not sym or sym in existing_syms:
+                continue
+
+            m_price = fnum(s.get("morning_price"))
+            bar = agg.get(sym) or {}
+            if m_price <= 0:
+                m_price = bar.get("open") or bar.get("close") or 0.0
+            if m_price <= 0:
+                continue
+
+            ceiling = fnum(s.get("ceiling_target"))
+            if ceiling <= 0:
+                ceiling = round(m_price * 1.099, 2)
+
+            high = bar.get("high") or m_price
+            low = bar.get("low") or (m_price * 0.99)
+            close = bar.get("close") or m_price
+
+            max_gain = round(((high - m_price) / m_price) * 100, 2) if m_price else 0.0
+            close_gain = round(((close - m_price) / m_price) * 100, 2) if m_price else 0.0
+            dist_pct = ((ceiling - m_price) / m_price) * 100 if m_price else 0.0
+
+            is_tavan = (ceiling > 0 and high >= ceiling * 0.995) or max_gain >= 9.4 or close_gain >= 9.4
+            is_plus5 = max_gain >= 5.0 or close_gain >= 5.0
+
+            if is_tavan:
+                badge, bcol = "🚀 TAVAN KİLİT", "green"
+            elif is_plus5:
+                badge, bcol = "🎯 +%5 ÜZERİ KÂR", "blue"
+            elif close_gain > 0:
+                badge, bcol = "📈 POZİTİF", "yellow"
+            else:
+                badge, bcol = "🛑 YATAY / DÜZELTME", "red"
+
+            score = fnum(s.get("score"), 85)
+            phase = (s.get("morning_phase") or "GİRİŞ EVRESİ").strip()
+
+            day.setdefault("items", []).append({
+                "symbol": sym,
+                "snapshot_time": "10:15",
+                "morning_price": round(m_price, 2),
+                "ceiling_target": round(ceiling, 2),
+                "distance_to_ceiling_1015": f"+%{dist_pct:.1f}",
+                "morning_score": int(score) if score else 85,
+                "morning_phase": phase,
+                "current_price": round(close, 2),
+                "daily_high": round(high, 2),
+                "daily_low": round(low, 2),
+                "closing_price": round(close, 2),
+                "max_gain_pct": max_gain,
+                "closing_gain_pct": close_gain,
+                "stop_loss_triggered": False,
+                "hit_ceiling": bool(is_tavan),
+                "hit_plus5": bool(is_plus5),
+                "result_badge": badge,
+                "result_color": bcol,
+                "ahlatci_warrant": "-",
+                "warrant_leverage": "-",
+                "warrant_gain_pct": "-",
+            })
+            existing_syms.add(sym)
+            added += 1
+
+        if added == 0:
+            return day if day.get("items") else {}
+
+        items = day["items"]
+        total = len(items)
+        tavan_cnt = sum(1 for it in items if it.get("hit_ceiling"))
+        plus5_cnt = sum(1 for it in items if it.get("hit_plus5"))
+        day["summary"] = {
+            "total_candidates": total,
+            "hit_ceiling_count": tavan_cnt,
+            "hit_ceiling_pct": round(tavan_cnt / total * 100, 1) if total else 0.0,
+            "hit_plus5_count": plus5_cnt,
+            "hit_plus5_pct": round(plus5_cnt / total * 100, 1) if total else 0.0,
+            "avg_max_gain_pct": round(sum(fnum(it.get("max_gain_pct")) for it in items) / total, 2) if total else 0.0,
+            "avg_closing_gain_pct": round(sum(fnum(it.get("closing_gain_pct")) for it in items) / total, 2) if total else 0.0,
+        }
+        day["status"] = "COMPLETED" if is_closing else "LIVE_TRACKING"
+        day["evaluation_time"] = "18:10 (Kapanış)" if is_closing else now.strftime("%H:%M (Canlı)")
+        day["backfilled"] = True
+
+        all_audits[date_str] = day
+        cls.save_all_audits(all_audits)
+        print(f"[TavanAuditTracker] {date_str} icin {added} aday sinyal/market_data kaynakli geri yuklendi.")
+        return day
+
+
+    @classmethod
     def update_daily_progress(cls, all_symbols_stats: Dict[str, Any], date_str: str = None) -> Dict[str, Any]:
         """
         Gün içi fiyatlar güncellendikçe ve 18:10 kapanışında belirli saatlerdeki tüm önerilerin
