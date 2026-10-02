@@ -48,8 +48,17 @@ async function vrAuthorizedFetch(resource, options = {}) {
     } catch (e) {
         console.warn('[Auth] İstatistik isteği için token alınamadı', e);
     }
-    return fetch(resource, { ...options, headers });
+    return fetch(resource, { ...options, headers, credentials: 'include' });
 }
+
+// Tüm yerel /api/ isteklerine session cookie gönderilsin
+const _originalFetch = window.fetch;
+window.fetch = function(resource, options = {}) {
+    if (typeof resource === 'string' && resource.startsWith('/api/')) {
+        options = { ...options, credentials: 'include' };
+    }
+    return _originalFetch(resource, options);
+};
 
 let acTimeout = null;
 let acSelectedIndex = -1;
@@ -5661,7 +5670,7 @@ function formatV8Price(entry, current) {
 }
 
 function loadV8Regime() {
-    fetch(`${V8_API}/market/regime`)
+    vrAuthorizedFetch(`${V8_API}/market/regime`)
         .then(res => res.json())
         .then(data => {
             const el = document.getElementById('regime-status');
@@ -5686,7 +5695,7 @@ function loadV8Regime() {
 }
 
 function loadV8Discovery() {
-    fetch(`${V8_API}/radar/discovery`)
+    vrAuthorizedFetch(`${V8_API}/radar/discovery`)
         .then(res => res.json())
         .then(json => {
             const tbody = document.getElementById('v8-discovery-tbody');
@@ -5728,7 +5737,7 @@ function loadV8Discovery() {
 }
 
 function loadV8Breakout() {
-    fetch(`${V8_API}/radar/breakout`)
+    vrAuthorizedFetch(`${V8_API}/radar/breakout`)
         .then(res => res.json())
         .then(json => {
             // Gizli tbody için backward compat
@@ -5818,7 +5827,7 @@ function loadV8Breakout() {
 }
 
 function loadV8Learning() {
-    fetch(`${V8_API}/learning/outcomes`)
+    vrAuthorizedFetch(`${V8_API}/learning/outcomes`)
         .then(res => res.json())
         .then(json => {
             const tbody = document.getElementById('v8-learning-tbody');
@@ -5897,7 +5906,7 @@ let _dtOpenSymbol = null;
 function fetchDetective(attempt) {
     attempt = attempt || 0;
     const tb = document.getElementById('dt-tbody');
-    fetch('/api/detective').then(r => {
+    vrAuthorizedFetch('/api/detective').then(r => {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();
     }).then(d => {
@@ -5912,7 +5921,7 @@ function fetchDetective(attempt) {
                     <i class="fa-solid fa-magnifying-glass fa-spin"></i> Dedektif ilk raporunu hazırlıyor (60 gunluk 5 dakikalık veri taranıyor, ~1 dk)...</td></tr>`;
             document.getElementById('dt-updated').textContent = 'ilk tarama sürüyor...';
             if (!_dtPollTimer) _dtPollTimer = setInterval(() => {
-                fetch('/api/detective').then(r => r.json()).then(dd => {
+                vrAuthorizedFetch('/api/detective').then(r => r.json()).then(dd => {
                     if (dd.status === 'ok') {
                         clearInterval(_dtPollTimer); _dtPollTimer = null;
                         _dtApplyData(dd);
@@ -6101,7 +6110,7 @@ function dtOpenDetail(symbol, scroll) {
     panel.innerHTML = `<div class="card" style="border:1px solid rgba(249,115,22,0.35); padding:1.2rem;">
         <div style="color:var(--text-muted); padding:1rem; text-align:center;"><i class="fa-solid fa-magnifying-glass fa-spin"></i> ${symbol} dedektif dosyası açılıyor...</div></div>`;
     if (scroll) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    fetch(`/api/detective/detail/${encodeURIComponent(symbol)}`).then(r => r.json()).then(d => {
+    vrAuthorizedFetch(`/api/detective/detail/${encodeURIComponent(symbol)}`).then(r => r.json()).then(d => {
         if (d.status !== 'success') {
             panel.innerHTML = `<div class="card" style="border:1px solid rgba(239,68,68,0.4); padding:1rem; color:#ef4444;">
                 ${d.message || 'Panel verisi alınamadı'} <button onclick="dtCloseDetail()" style="margin-left:1rem; background:none; border:none; color:var(--text-muted); cursor:pointer;">kapat</button></div>`;
