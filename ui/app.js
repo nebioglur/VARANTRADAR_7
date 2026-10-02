@@ -2303,27 +2303,10 @@ function renderAllDashboardTables() {
             continue;
         }
 
-        // EMA 50 & 200 filtresini her zaman uygula (Defansif hisseler kendi kuralına sahiptir, hariç tut)
-        if (cat !== 'defensive_stocks' && cat !== 'losers') {
-            items = items.filter(res => {
-                let price = res.Price || res.Daily_Close;
-                let ema50 = res.Daily_EMA50;
-                let ema200 = res.Daily_EMA200;
-                
-                if (ema50 === undefined && res.Indicators) ema50 = res.Indicators.EMA_50;
-                if (ema200 === undefined && res.Indicators) ema200 = res.Indicators.EMA_200;
-                
-                if (price && ema50 && ema200) {
-                    return price > ema50 && price > ema200;
-                }
-                return true;
-            });
-        }
-        
-        if (items.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;" class="text-muted">Filtreye uygun hisse bulunamadı (EMA 50 & 200 Üzeri).</td></tr>`;
-            continue;
-        }
+        // EMA filtresi burada tekrar uygulanmaz. Backend zaten trend/risk
+        // filtresini uyguluyor; ikinci bir frontend filtresi, özellikle
+        // tavan adaylarını yanlışlıkla tamamen gizleyebiliyordu.
+        // EMA değerleri tabloda bilgi ve sıralama amacıyla kullanılabilir.
 
         // "Squaze (yukarı ok) + Güçlü Giriş + Pozitif Alpha" kontrolü için yardımcı fonksiyon
         const checkSuperGreen = (res) => {
