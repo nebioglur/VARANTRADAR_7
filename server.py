@@ -483,6 +483,16 @@ def _background_scanner_impl():
                 from services.market_data import MarketDataManager
                 MarketDataManager.record_signals(fast_results["cache_date"], fast_1h_res.get("tavan_adaylari", []))
                 MarketDataManager.fetch_and_store_intraday(fast_results["cache_date"])
+
+                # Hızlı başlangıçta da bugunun tavan denetim kaydini olustur:
+                # aksi halde her yeniden dagitimdan sonra istatistik eskse (son kayit eski tarih) kalir.
+                try:
+                    from services.tavan_tracker import TavanAuditTracker
+                    TavanAuditTracker.record_snapshot(fast_1h_res.get("tavan_adaylari", []), all_symbols_stats=daily_stats)
+                    TavanAuditTracker.update_daily_progress(daily_stats)
+                    print("[BACKGROUND] Hızlı Başlangıç tavan denetim kaydı oluşturuldu.")
+                except Exception as e_audit:
+                    print(f"[BACKGROUND] Hızlı Başlangıç denetim kaydı hatası: {e_audit}")
             except Exception as e_1h:
                 print(f"[BACKGROUND] Hızlı Başlangıç 1h hatası: {e_1h}")
             
