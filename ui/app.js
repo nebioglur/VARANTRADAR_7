@@ -5449,11 +5449,11 @@ async function fetchLiveOrders() {
                     ? new Date(order.entry_time).toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'})
                     : '--';
                 const statusText = order.is_open ? 'AÇIK POZİSYON' : `KAPANDI${order.exit_reason ? ` · ${order.exit_reason}` : ''}`;
-                const actions = order.is_open ? `
+                const actions = `
                     <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
                         <button onclick="preparePortfolioOrder('${order.symbol}', ${order.shares}, ${order.entry_price}, null, null)" class="btn-primary" style="flex:1; background:var(--accent-green); color:#fff; border:none; padding:0.4rem; border-radius:4px; font-weight:bold; cursor:pointer;"><i class="fa-solid fa-cart-arrow-down"></i> Portföye AL</button>
                         <button onclick="quickTrade('${order.symbol}', 'sell', ${order.shares}, ${order.entry_price}, null, null)" class="btn-primary" style="flex:1; background:var(--accent-red); color:#fff; border:none; padding:0.4rem; border-radius:4px; font-weight:bold; cursor:pointer;"><i class="fa-solid fa-money-bill-wave"></i> Portföyden SAT</button>
-                    </div>` : '';
+                    </div>`;
 
                 card.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem; margin-bottom:0.5rem;">
