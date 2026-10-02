@@ -5442,18 +5442,18 @@ async function fetchLiveOrders() {
             container.innerHTML = '';
             orders.forEach(order => {
                 const card = document.createElement('div');
-                card.style.cssText = "background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; padding:1rem; display:flex; flex-direction:column; gap:0.5rem;";
+                card.style.cssText = `background:${order.is_open ? 'rgba(16,185,129,0.12)' : 'var(--bg-card)'}; border:1px solid ${order.is_open ? 'rgba(16,185,129,0.65)' : 'var(--border-color)'}; box-shadow:${order.is_open ? 'inset 3px 0 0 rgba(16,185,129,0.95), 0 0 12px rgba(16,185,129,0.1)' : 'none'}; border-radius:8px; padding:1rem; display:flex; flex-direction:column; gap:0.5rem;`;
                 const pnl = Number(order.pnl_val || 0);
                 const pnlColor = pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
                 const entryTime = order.entry_time
                     ? new Date(order.entry_time).toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'})
                     : '--';
                 const statusText = order.is_open ? 'AÇIK POZİSYON' : `KAPANDI${order.exit_reason ? ` · ${order.exit_reason}` : ''}`;
-                const actions = `
+                const actions = order.is_open ? `
                     <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
                         <button onclick="preparePortfolioOrder('${order.symbol}', ${order.shares}, ${order.entry_price}, null, null)" class="btn-primary" style="flex:1; background:var(--accent-green); color:#fff; border:none; padding:0.4rem; border-radius:4px; font-weight:bold; cursor:pointer;"><i class="fa-solid fa-cart-arrow-down"></i> Portföye AL</button>
                         <button onclick="quickTrade('${order.symbol}', 'sell', ${order.shares}, ${order.entry_price}, null, null)" class="btn-primary" style="flex:1; background:var(--accent-red); color:#fff; border:none; padding:0.4rem; border-radius:4px; font-weight:bold; cursor:pointer;"><i class="fa-solid fa-money-bill-wave"></i> Portföyden SAT</button>
-                    </div>`;
+                    </div>` : '';
 
                 card.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem; margin-bottom:0.5rem;">
