@@ -2960,9 +2960,12 @@ def api_detective():
     # PROXY TO VERDENT (Render IP engeli asilmasi icin)
     try:
         import requests
-        r = requests.get("https://varantradar-7-u1f8z6s.verdent.app/api/detective", timeout=8)
+        h = {}
+        if 'Authorization' in request.headers: h['Authorization'] = request.headers['Authorization']
+        r = requests.get("https://varantradar-7-u1f8z6s.verdent.app/api/detective", timeout=8, cookies=request.cookies, headers=h)
         if r.status_code == 200:
             return jsonify(r.json())
+        print(f"[PROXY] Verdent returned status {r.status_code}: {r.text[:100]}")
     except Exception as e:
         print(f"[PROXY] Verdent /api/detective ulaşılamadı: {e}")
 
