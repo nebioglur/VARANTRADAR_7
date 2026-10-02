@@ -968,6 +968,37 @@ body {
         gap: 1rem !important;
     }
 
+    /* Radar kartlari: yatay kaydirilabilir tablo + cift dokunus zoom engeli */
+    #radar-cards-grid .card {
+        touch-action: manipulation;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    #radar-cards-grid .card table {
+        min-width: 620px;
+    }
+
+    /* Tam ekran kart mobilde gercek tam ekran */
+    #radar-cards-grid .card.fullscreen-card {
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        padding: 0.8rem !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        background: var(--bg-card, #0f172a) !important;
+    }
+    #radar-cards-grid .card.fullscreen-card .table-scroll-wrapper {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        touch-action: pan-x pan-y !important;
+    }
+    #radar-cards-grid .card.fullscreen-card table {
+        min-width: 680px;
+    }
+
     /* ---- İSTATİSTİKLER Mobil Grid ---- */
     #stats-wrapper .dashboard-layout .sidebar-tabs {
         display: flex !important;

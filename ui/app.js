@@ -1908,7 +1908,19 @@ window.onload = function() {
             }
             this.classList.toggle('fullscreen-card');
         };
-        // Kullanıcının anlaması için imleci pointer veya title ekleyebiliriz
+        // MOBIL: cift dokunus destegi (dblclick mobil tarayicilarda tetiklenmez)
+        let lastTap = 0;
+        card.addEventListener('touchend', function(e) {
+            if (e.target.closest('button') || e.target.closest('input') || e.target.closest('a')) return;
+            const now = Date.now();
+            if (now - lastTap < 350) {
+                e.preventDefault();
+                this.classList.toggle('fullscreen-card');
+                lastTap = 0;
+            } else {
+                lastTap = now;
+            }
+        }, { passive: false });
         card.title = "Tam ekran yapmak için çift tıklayın";
     });
 };
