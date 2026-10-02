@@ -1900,13 +1900,34 @@ window.onload = function() {
     dashboardPollInterval = setInterval(fetchDashboardData, 15000);
     
     // KULLANICI İSTEĞİ: TABLOYA ÇİFT TIKLAYINCA TAM TABLOYU TEK GÖSTER
+    const toggleRadarFullscreen = (card) => {
+        const active = !card.classList.contains('fullscreen-card');
+        card.classList.toggle('fullscreen-card', active);
+        document.body.classList.toggle('fullscreen-table-open', active);
+        let closeButton = card.querySelector('.mobile-fs-close');
+        if (active && !closeButton) {
+            closeButton = document.createElement('button');
+            closeButton.type = 'button';
+            closeButton.className = 'mobile-fs-close';
+            closeButton.innerHTML = '<i class="fa-solid fa-xmark"></i> Kapat';
+            closeButton.setAttribute('aria-label', 'Tam ekran tabloyu kapat');
+            closeButton.addEventListener('click', (event) => {
+                event.stopPropagation();
+                toggleRadarFullscreen(card);
+            });
+            card.appendChild(closeButton);
+        } else if (!active && closeButton) {
+            closeButton.remove();
+        }
+    };
+
     document.querySelectorAll('#radar-cards-grid .card').forEach(card => {
         card.ondblclick = function(e) {
             // Eğer butona veya input'a çift tıklandıysa büyütme
             if (e.target.closest('button') || e.target.closest('input') || e.target.closest('a')) {
                 return;
             }
-            this.classList.toggle('fullscreen-card');
+            toggleRadarFullscreen(this);
         };
         // MOBIL: cift dokunus destegi (dblclick mobil tarayicilarda tetiklenmez)
         let lastTap = 0;
@@ -1915,7 +1936,7 @@ window.onload = function() {
             const now = Date.now();
             if (now - lastTap < 350) {
                 e.preventDefault();
-                this.classList.toggle('fullscreen-card');
+                toggleRadarFullscreen(this);
                 lastTap = 0;
             } else {
                 lastTap = now;
