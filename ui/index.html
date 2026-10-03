@@ -37,7 +37,8 @@
             font-size:0.72rem; padding:0.32rem 0.7rem; border-radius:999px;
             background:rgba(100,116,139,0.15); color:var(--text-muted); border:1px solid rgba(100,116,139,0.3); white-space:nowrap;
         }
-        body { zoom: 0.8; }
+        /* Zoom sadece masaüstünde — mobilde uygulanmaz */
+        @media (min-width: 851px) { body { zoom: 0.8; } }
         .data-table th, .data-table td { text-align: center !important; }
     </style>
     <!-- ApexCharts -->
@@ -98,12 +99,47 @@
                 <button id="btn-signout" title="Çıkış Yap" style="background:none; border:none; color:var(--text-muted); cursor:pointer; padding:0 2px; transition:color 0.2s ease;" onmouseover="this.style.color='var(--accent-red)'" onmouseout="this.style.color='var(--text-muted)'"><i class="fa-solid fa-right-from-bracket"></i></button>
             </div>
             <!-- TEMA TOGGLE -->
+            <!-- Tema Toggle -->
             <button id="theme-toggle-btn" class="theme-toggle-btn" onclick="toggleTheme()" title="Açık / Koyu Tema">
                 <i class="fa-solid fa-sun" id="theme-icon"></i>
                 <span id="theme-label">Açık Tema</span>
             </button>
         </div>
+        <!-- 📱 Hamburger Menü Butonu (Sadece Mobilde Görünür) -->
+        <button type="button" class="mobile-hamburger" onclick="toggleMobileMenu()" aria-label="Menüyü Aç">
+            <i class="fa-solid fa-bars"></i>
+        </button>
     </header>
+
+    <!-- 📱 Mobil Slide-Out Menü Overlay -->
+    <div class="mobile-menu-overlay" id="mobileMenuOverlay" onclick="closeMobileMenu()"></div>
+
+    <!-- 📱 Mobil Slide-Out Menü -->
+    <div class="mobile-slide-menu" id="mobileSlideMenu">
+        <div class="menu-header">
+            <h3><i class="fa-solid fa-layer-group"></i> Menü</h3>
+            <button type="button" class="menu-close" onclick="closeMobileMenu()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <a class="menu-item active" href="/#home" onclick="mobileNavClick(event, 'home')"><i class="fa-solid fa-house"></i> GİRİŞ</a>
+        <a class="menu-item" href="/#detective" onclick="mobileNavClick(event, 'detective')" style="color:#f97316;"><i class="fa-solid fa-user-secret"></i> PİYASA DEDEKTİFİ</a>
+        <a class="menu-item" href="/#portfolio" onclick="mobileNavClick(event, 'portfolio')"><i class="fa-solid fa-wallet" style="color:var(--accent-green);"></i> PORTFÖYÜM</a>
+        <a class="menu-item" href="/#leaderboard" onclick="mobileNavClick(event, 'leaderboard')"><i class="fa-solid fa-ranking-star" style="color:var(--accent-yellow);"></i> SIRALAMA</a>
+        <a class="menu-item" href="/#radar" onclick="mobileNavClick(event, 'radar')"><i class="fa-solid fa-tower-broadcast"></i> RADAR</a>
+        <a class="menu-item" href="/#stats" onclick="mobileNavClick(event, 'stats')"><i class="fa-solid fa-chart-pie"></i> İSTATİSTİKLER</a>
+        <a class="menu-item" href="/#news" onclick="mobileNavClick(event, 'news')"><i class="fa-solid fa-newspaper"></i> HABERLER (KAP)</a>
+        <a class="menu-item" href="/#simulation" onclick="mobileNavClick(event, 'simulation')"><i class="fa-solid fa-flask"></i> SİMÜLASYON</a>
+        <a class="menu-item" href="/#logs" onclick="mobileNavClick(event, 'logs')"><i class="fa-solid fa-terminal"></i> LOGLAR</a>
+        <a class="menu-item" href="/#backtest" onclick="mobileNavClick(event, 'backtest')" style="color:var(--accent-purple);"><i class="fa-solid fa-microscope"></i> BACKTEST</a>
+        <a class="menu-item" href="/#v8" onclick="mobileNavClick(event, 'v8')" style="color:#0ea5e9;"><i class="fa-solid fa-brain"></i> V8 ENGINE</a>
+        <a class="menu-item" href="/#guide" onclick="mobileNavClick(event, 'guide')" style="color:var(--accent-yellow);"><i class="fa-solid fa-book-open"></i> NASIL KULLANILIR?</a>
+        <a class="menu-item" href="/#super12" onclick="mobileNavClick(event, 'super12')" style="color:#F59E0B;"><i class="fa-solid fa-crown"></i> SUPER_12</a>
+        <div style="margin-top:auto; padding-top:1rem; border-top:1px solid rgba(255,255,255,0.1); text-align:center;">
+            <div id="mobile-menu-user" style="font-size:0.78rem; color:var(--text-muted);"></div>
+            <button type="button" onclick="toggleTheme(); closeMobileMenu();" style="margin-top:0.5rem; background:transparent; border:1px solid var(--border-color); color:var(--text-muted); border-radius:20px; padding:0.4rem 1rem; font-size:0.8rem; cursor:pointer; font-weight:600;">
+                <i class="fa-solid fa-sun"></i> Tema Değiştir
+            </button>
+        </div>
+    </div>
 
     <!-- LOADING OVERLAY -->
     <div id="loading" class="loading-overlay" style="display: none;">
@@ -1899,13 +1935,13 @@
                 </div>
             </div>
         </div>
-    <!-- 📱 SABİT ALT MOBİL NAVİGASYON (GERİ / İLERİ VE HIZLI ERİŞİM) -->
+    <!-- 📱 SABİT ALT MOBİL NAVİGASYON (GENİŞLETİLMİŞ) -->
     <div class="bottom-mobile-bar">
-        <button type="button" class="bm-btn" onclick="navigateCard(-1)" title="Önceki Kart">
-            <i class="fa-solid fa-circle-chevron-left" style="color:var(--accent-blue);"></i>
-            <span>Geri</span>
+        <button type="button" class="bm-btn active" id="bm-home" onclick="if(typeof navClick==='function'){var b=document.querySelector('.nav-btn[href=\'/#home\']');navClick(event,'home',b);}" title="Ana Sayfa">
+            <i class="fa-solid fa-house" style="color:var(--accent-blue);"></i>
+            <span>Giriş</span>
         </button>
-        <button type="button" class="bm-btn active" id="bm-tavan" onclick="jumpToCard(0)" title="Tavan Radarı">
+        <button type="button" class="bm-btn" id="bm-tavan" onclick="jumpToCard(0)" title="Tavan Radarı">
             <i class="fa-solid fa-rocket" style="color:var(--accent-red);"></i>
             <span>Tavan</span>
         </button>
@@ -1913,13 +1949,17 @@
             <i class="fa-solid fa-clock" style="color:var(--accent-green);"></i>
             <span>1 Saatlik</span>
         </button>
-        <button type="button" class="bm-btn" id="bm-5m" onclick="jumpToCard(2)" title="5 Dk RSI">
-            <i class="fa-solid fa-bolt" style="color:var(--accent-blue);"></i>
-            <span>5D RSI</span>
+        <button type="button" class="bm-btn" id="bm-portfolio" onclick="if(typeof navClick==='function'){var b=document.querySelector('.nav-btn[href=\'/#portfolio\']');navClick(event,'portfolio',b);}" title="Portföyüm">
+            <i class="fa-solid fa-wallet" style="color:var(--accent-green);"></i>
+            <span>Portföy</span>
         </button>
-        <button type="button" class="bm-btn" onclick="navigateCard(1)" title="Sonraki Kart">
-            <i class="fa-solid fa-circle-chevron-right" style="color:var(--accent-blue);"></i>
-            <span>İleri</span>
+        <button type="button" class="bm-btn" id="bm-detective" onclick="if(typeof navClick==='function'){var b=document.querySelector('.nav-btn[href=\'/#detective\']');navClick(event,'detective',b);}" title="Piyasa Dedektifi">
+            <i class="fa-solid fa-user-secret" style="color:#f97316;"></i>
+            <span>Dedektif</span>
+        </button>
+        <button type="button" class="bm-btn" onclick="toggleMobileMenu()" title="Tüm Menü">
+            <i class="fa-solid fa-bars" style="color:var(--accent-blue);"></i>
+            <span>Menü</span>
         </button>
     </div>
     </div> <!-- END RADAR WRAPPER -->
@@ -2346,6 +2386,41 @@
     <script src="app.js?v=20261002_v13_auth_detective_v8"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js?v=20260916_v13"></script>
+    <script>
+        // 📱 Mobil Hamburger Menü Yönetimi
+        function toggleMobileMenu() {
+            var menu = document.getElementById('mobileSlideMenu');
+            var overlay = document.getElementById('mobileMenuOverlay');
+            if (menu.classList.contains('open')) {
+                closeMobileMenu();
+            } else {
+                menu.classList.add('open');
+                overlay.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+        function closeMobileMenu() {
+            var menu = document.getElementById('mobileSlideMenu');
+            var overlay = document.getElementById('mobileMenuOverlay');
+            menu.classList.remove('open');
+            overlay.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+        function mobileNavClick(event, section) {
+            event.preventDefault();
+            closeMobileMenu();
+            // Mevcut navClick fonksiyonunu çağır
+            if (typeof navClick === 'function') {
+                // Masaüstü nav butonlarında aktif olanı bul ve navClick'i simüle et
+                var fakeBtn = document.querySelector('.nav-btn[href="/#' + section + '"]');
+                navClick(event, section, fakeBtn);
+            }
+            // Mobil menüdeki aktif öğeyi güncelle
+            var items = document.querySelectorAll('.mobile-slide-menu .menu-item');
+            items.forEach(function(item) { item.classList.remove('active'); });
+            event.currentTarget.classList.add('active');
+        }
+    </script>
     <script>
         // PWA service worker kaydi (canli veri API'leri onbelleklenmez)
         if ("serviceWorker" in navigator) {
