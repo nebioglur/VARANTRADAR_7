@@ -1905,15 +1905,22 @@ window.onload = function() {
         card.classList.toggle('fullscreen-card', active);
         document.body.classList.toggle('fullscreen-table-open', active);
         if (active) {
+            // Dinamik tam ekran: ekran boyutunu px olarak hesapla (dvh desteklemeyen eski WebView'lar icin)
+            const applyBounds = () => {
+                card.style.width = window.innerWidth + 'px';
+                card.style.maxWidth = window.innerWidth + 'px';
+                card.style.height = window.innerHeight + 'px';
+                card.style.minHeight = window.innerHeight + 'px';
+            };
+            applyBounds();
+            window.addEventListener('resize', applyBounds);
+            window.addEventListener('orientationchange', applyBounds);
+            card._fsBoundsHandler = applyBounds;
             Object.assign(card.style, {
                 position: 'fixed',
                 inset: '0',
                 top: '0',
                 left: '0',
-                width: '100vw',
-                maxWidth: '100vw',
-                height: '100dvh',
-                minHeight: '100dvh',
                 margin: '0',
                 padding: '0.6rem',
                 borderRadius: '0',
@@ -1922,6 +1929,9 @@ window.onload = function() {
                 zIndex: '999999'
             });
         } else {
+            window.removeEventListener('resize', card._fsBoundsHandler || (() => {}));
+            window.removeEventListener('orientationchange', card._fsBoundsHandler || (() => {}));
+            delete card._fsBoundsHandler;
             [
                 'position', 'inset', 'top', 'left', 'width', 'max-width',
                 'height', 'min-height', 'margin', 'padding', 'border-radius',
