@@ -1920,6 +1920,12 @@ window.onload = function() {
         document.body.classList.toggle('fullscreen-table-open', active);
         if (active) {
             ensureFsStyle();
+            // Tam ekranda orijinal tabloyu goster: saga sola kaydirarak tum kolonlar okunur
+            if (typeof isMobileView === 'function' && isMobileView()) {
+                card.querySelectorAll('table[id^="tb-"]').forEach(t => {
+                    if (typeof demobilizeTable === 'function') demobilizeTable(t);
+                });
+            }
             // Dinamik tam ekran: ekran boyutunu px olarak hesapla (dvh desteklemeyen eski WebView'lar icin)
             const applyBounds = () => {
                 card.style.width = window.innerWidth + 'px';
@@ -1945,6 +1951,8 @@ window.onload = function() {
             });
         } else {
             removeFsStyle();
+            // Tam ekrandan cikinca mobil kart görünümüne geri dön
+            if (typeof refreshMobileTables === 'function') refreshMobileTables();
             window.removeEventListener('resize', card._fsBoundsHandler || (() => {}));
             window.removeEventListener('orientationchange', card._fsBoundsHandler || (() => {}));
             delete card._fsBoundsHandler;
@@ -7139,6 +7147,11 @@ function refreshMobileTables() {
     document.querySelectorAll('table[id^="tb-"]').forEach(table => {
         // Modallar kendi mobil düzenine sahip; karıştırma
         if (table.closest('.modal-overlay, #tavan-audit-modal, #indicator-modal')) return;
+        // Tam ekrandaki tablo her zaman orijinal genis tablo: saga sola kaydirilir
+        if (table.closest('.fullscreen-card')) {
+            demobilizeTable(table);
+            return;
+        }
         if (isMobileView()) {
             mobilizeTable(table);
         } else {

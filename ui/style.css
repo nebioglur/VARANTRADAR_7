@@ -1725,12 +1725,18 @@ body.light-mode .data-table tbody tr:hover td {
         max-height: none !important;
         display: flex !important;
         flex-direction: column !important;
-        overflow-x: hidden !important;
+        overflow-x: auto !important;
         overflow-y: auto !important;
         padding: 0 0 0.8rem !important;
         -webkit-overflow-scrolling: touch !important;
-        touch-action: pan-y !important;
+        touch-action: pan-x pan-y !important;
         background: none !important;
+    }
+
+    /* Tam ekranda orijinal tablo: saga sola kaydirarak tum kolonlar gorunur */
+    #radar-cards-grid .card.fullscreen-card table {
+        min-width: 680px !important;
+        width: max-content !important;
     }
 
     #radar-cards-grid .card.fullscreen-card .mt-list {
