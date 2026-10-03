@@ -853,12 +853,13 @@ let lwMacdHistSeries = null;
 window.currentChartSymbol = '';
 window.currentChartInterval = '1d';
 
-window.changeChartInterval = async function(interval) {
+window.changeChartInterval = async function(interval, evt) {
     window.currentChartInterval = interval;
     // Update active button
     document.querySelectorAll('.tf-btn').forEach(btn => btn.classList.remove('active'));
-    if(event && event.target) event.target.classList.add('active');
-    
+    const target = (evt && evt.target) ? evt.target : (window.event && window.event.target);
+    if (target) target.classList.add('active');
+
     await window.renderAdvancedChart();
 }
 
@@ -869,7 +870,10 @@ window.renderAdvancedChart = async function() {
     tvContainer.innerHTML = '<div style="color:var(--text-muted); padding:20px; text-align:center;">Veri yükleniyor...</div>';
     
     try {
-        const response = await fetch(`/api/chart_data?symbol=${window.currentChartSymbol}&interval=${window.currentChartInterval}`);
+        // Sembol normalizasyonu: ek'siz sembollere .IS ekle (sunucufix + istemci güvencesi)
+        let chartSym = String(window.currentChartSymbol || '').trim().toUpperCase();
+        if (chartSym && !chartSym.includes('.')) chartSym += '.IS';
+        const response = await fetch(`/api/chart_data?symbol=${encodeURIComponent(chartSym)}&interval=${window.currentChartInterval}`);
         const data = await response.json();
         if(data.status !== "success") {
             tvContainer.innerHTML = `<div style="color:red; padding:20px; text-align:center;">Hata: ${data.message}</div>`;
@@ -1177,9 +1181,9 @@ function loadCustomChart(sym) {
     window.currentChartSymbol = sym;
     window.currentChartInterval = '1d';
     document.querySelectorAll('.tf-btn').forEach(btn => btn.classList.remove('active'));
-    const btn = Array.from(document.querySelectorAll('.tf-btn')).find(b => b.getAttribute('onclick') === "changeChartInterval('1d')");
+    const btn = Array.from(document.querySelectorAll('.tf-btn')).find(b => (b.getAttribute('onclick') || '').includes("changeChartInterval('1d'"));
     if(btn) btn.classList.add('active');
-    
+
     window.renderAdvancedChart();
 }
 
@@ -7116,6 +7120,7 @@ function mobilizeTable(table) {
         card.className = 'mt-card';
         const head = cells[0].cloneNode(true);
         head.className = 'mt-sym';
+        head.querySelectorAll('.mini-g-btn').forEach(b => b.remove()); // ölü klon kalmasın
         card.appendChild(head);
         cells.slice(1).forEach((td, i) => {
             const rowEl = document.createElement('div');
@@ -7157,6 +7162,133 @@ function refreshMobileTables() {
         } else {
             demobilizeTable(table);
         }
+    });
+    injectMiniChartButtons();
+}
+
+// ===== MINI "G" HİSSE GRAFİĞİ: her hissenin yanında 1 saatlik grafik açan düğme =====
+function _extractSymbol(text) {
+    const m = String(text || '').trim().toUpperCase().match(/^([A-Z0-9]{2,6})(?:\.IS)?\b/);
+    return m ? m[1] : null;
+}
+
+window.openMiniChart = function(symRaw, interval) {
+    let sym = String(symRaw || '').trim().toUpperCase();
+    if (!sym) return;
+    if (!sym.includes('.')) sym += '.IS';
+    interval = interval || '1h';
+    window._miniChartSymbol = sym;
+    window._miniChartInterval = interval;
+
+    let overlay = document.getElementById('mini-chart-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'mini-chart-overlay';
+        overlay.style.cssText = 'position:fixed; inset:0; z-index:999998; background:rgba(2,6,23,0.92); display:none; align-items:center; justify-content:center; padding:0.6rem;';
+        overlay.innerHTML = `
+            <div style="background:var(--bg-card,#0f172a); border:1px solid rgba(148,163,184,0.25); border-radius:14px; width:100%; max-width:860px; height:min(88vh, 640px); display:flex; flex-direction:column; overflow:hidden;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem; padding:0.55rem 0.7rem; border-bottom:1px solid rgba(148,163,184,0.2); flex:0 0 auto; flex-wrap:wrap;">
+                    <div style="font-weight:800; font-size:0.95rem; color:var(--text-main,#f1f5f9); display:flex; align-items:center; gap:0.45rem;">
+                        <i class="fa-solid fa-chart-line" style="color:#38bdf8;"></i> <span id="mini-chart-sym">-</span>
+                    </div>
+                    <div style="display:flex; gap:0.25rem; align-items:center;">
+                        ${['5m','15m','1h','1d'].map(iv => `<button class="mc-tf" data-iv="${iv}" onclick="openMiniChart(window._miniChartSymbol, '${iv}')" style="border:1px solid rgba(148,163,184,0.3); background:transparent; color:#94a3b8; border-radius:8px; padding:0.28rem 0.5rem; font-size:0.7rem; font-weight:700; cursor:pointer;">${iv}</button>`).join('')}
+                        <button onclick="closeMiniChart()" style="border:1px solid rgba(248,113,113,0.55); background:rgba(127,29,29,0.92); color:#fecaca; border-radius:8px; padding:0.28rem 0.6rem; font-size:0.72rem; font-weight:800; cursor:pointer;"><i class="fa-solid fa-xmark"></i> Kapat</button>
+                    </div>
+                </div>
+                <div id="mini-chart-body" style="flex:1 1 auto; min-height:0; position:relative;"></div>
+            </div>`;
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) closeMiniChart(); });
+        document.body.appendChild(overlay);
+    }
+    overlay.style.display = 'flex';
+    overlay.querySelectorAll('.mc-tf').forEach(b => {
+        const on = b.dataset.iv === interval;
+        b.style.background = on ? 'rgba(56,189,248,0.2)' : 'transparent';
+        b.style.color = on ? '#38bdf8' : '#94a3b8';
+        b.style.borderColor = on ? 'rgba(56,189,248,0.6)' : 'rgba(148,163,184,0.3)';
+    });
+    document.getElementById('mini-chart-sym').textContent = sym + ' · ' + interval;
+
+    const body = document.getElementById('mini-chart-body');
+    body.innerHTML = '<div style="color:#94a3b8; padding:1.5rem; text-align:center;">Grafik yükleniyor...</div>';
+
+    fetch(`/api/chart_data?symbol=${encodeURIComponent(sym)}&interval=${interval}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status !== 'success' || !data.candles || !data.candles.length) {
+                body.innerHTML = `<div style="color:#ef4444; padding:1.5rem; text-align:center;">Grafik verisi alınamadı: ${data.message || 'veri yok'}</div>`;
+                return;
+            }
+            const candles = data.candles.filter(c => c.open != null && c.high != null && c.low != null && c.close != null);
+            if (!candles.length) {
+                body.innerHTML = '<div style="color:#ef4444; padding:1.5rem; text-align:center;">Geçerli mum verisi yok</div>';
+                return;
+            }
+            body.innerHTML = '';
+            const chart = LightweightCharts.createChart(body, {
+                layout: { textColor: '#94A3B8', background: { type: 'solid', color: 'transparent' } },
+                grid: { vertLines: { color: 'rgba(255,255,255,0.05)' }, horzLines: { color: 'rgba(255,255,255,0.05)' } },
+                rightPriceScale: { borderColor: '#334155' },
+                timeScale: { timeVisible: !['1d','1wk','1mo'].includes(interval), secondsVisible: false, borderColor: '#334155' },
+                width: body.clientWidth,
+                height: body.clientHeight
+            });
+            const candle = chart.addCandlestickSeries({ upColor: '#10B981', downColor: '#EF4444', borderVisible: false, wickUpColor: '#10B981', wickDownColor: '#EF4444' });
+            candle.setData(candles.map(c => ({ time: c.time, open: c.open, high: c.high, low: c.low, close: c.close })));
+            const ema8 = chart.addLineSeries({ color: '#3b82f6', lineWidth: 1 });
+            ema8.setData(candles.filter(c => c.ema8 != null).map(c => ({ time: c.time, value: c.ema8 })));
+            const ema21 = chart.addLineSeries({ color: '#f59e0b', lineWidth: 1 });
+            ema21.setData(candles.filter(c => c.ema21 != null).map(c => ({ time: c.time, value: c.ema21 })));
+            if (window._miniChartResize) window._miniChartResize.disconnect();
+            window._miniChartResize = new ResizeObserver(() => {
+                chart.applyOptions({ width: body.clientWidth, height: body.clientHeight });
+            });
+            window._miniChartResize.observe(body);
+        })
+        .catch(err => {
+            body.innerHTML = `<div style="color:#ef4444; padding:1.5rem; text-align:center;">Hata: ${err.message}</div>`;
+        });
+};
+
+window.closeMiniChart = function() {
+    const overlay = document.getElementById('mini-chart-overlay');
+    if (overlay) overlay.style.display = 'none';
+};
+
+function _makeMiniGButton(sym) {
+    const btn = document.createElement('button');
+    btn.className = 'mini-g-btn';
+    btn.type = 'button';
+    btn.textContent = 'G';
+    btn.title = sym + ' grafiğini aç (1 saatlik)';
+    btn.setAttribute('aria-label', sym + ' mini grafik');
+    btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openMiniChart(sym, '1h');
+    });
+    return btn;
+}
+
+function injectMiniChartButtons() {
+    // Masaüstü tablo satırları: ilk hücreye G düğmesi (mobilde tablolar gizli, kartlara bak)
+    if (!isMobileView()) {
+        document.querySelectorAll('table[id^="tb-"] tbody tr').forEach(tr => {
+            if (tr.closest('.modal-overlay, #tavan-audit-modal, #indicator-modal')) return;
+            const cell = tr.cells && tr.cells[0];
+            if (!cell || cell.querySelector('.mini-g-btn')) return;
+            const sym = _extractSymbol(cell.textContent);
+            if (!sym) return;
+            cell.appendChild(_makeMiniGButton(sym));
+        });
+    }
+    // Mobil kartlar: mt-sym başlıklarına G düğmesi
+    document.querySelectorAll('.mt-sym').forEach(head => {
+        if (head.querySelector('.mini-g-btn')) return;
+        const sym = _extractSymbol(head.textContent);
+        if (!sym) return;
+        head.appendChild(_makeMiniGButton(sym));
     });
 }
 

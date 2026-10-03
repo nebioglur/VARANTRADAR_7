@@ -785,13 +785,13 @@
 
                             
                             <div style="margin-left:auto; display:flex; gap:5px;" id="tf-buttons">
-                                <button class="tf-btn" onclick="changeChartInterval('5m')">5m</button>
-                                <button class="tf-btn" onclick="changeChartInterval('15m')">15m</button>
-                                <button class="tf-btn" onclick="changeChartInterval('1h')">1h</button>
-                                <button class="tf-btn" onclick="changeChartInterval('4h')">4h</button>
-                                <button class="tf-btn active" onclick="changeChartInterval('1d')">1G</button>
-                                <button class="tf-btn" onclick="changeChartInterval('1wk')">1H</button>
-                                <button class="tf-btn" onclick="changeChartInterval('1mo')">1A</button>
+                                <button class="tf-btn" onclick="changeChartInterval('5m', event)">5m</button>
+                                <button class="tf-btn" onclick="changeChartInterval('15m', event)">15m</button>
+                                <button class="tf-btn" onclick="changeChartInterval('1h', event)">1h</button>
+                                <button class="tf-btn" onclick="changeChartInterval('4h', event)">4h</button>
+                                <button class="tf-btn active" onclick="changeChartInterval('1d', event)">1G</button>
+                                <button class="tf-btn" onclick="changeChartInterval('1wk', event)">1H</button>
+                                <button class="tf-btn" onclick="changeChartInterval('1mo', event)">1A</button>
                                 <button class="tf-btn" onclick="resetChartView()" style="background:var(--accent-blue); color:white; margin-left: 10px;"><i class="fa-solid fa-expand"></i> Sıfırla</button>
                             </div>
                         </div>
@@ -2343,7 +2343,7 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="app.js?v=20261003_v24_fs_swipe"></script>
+    <script src="app.js?v=20261003_v25_mini_chart"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js?v=20260916_v13"></script>
     <script>
