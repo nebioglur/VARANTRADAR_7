@@ -7277,10 +7277,13 @@ function injectMiniChartButtons() {
         document.querySelectorAll('table[id^="tb-"] tbody tr').forEach(tr => {
             if (tr.closest('.modal-overlay, #tavan-audit-modal, #indicator-modal')) return;
             const cell = tr.cells && tr.cells[0];
-            if (!cell || cell.querySelector('.mini-g-btn')) return;
+            if (!cell || tr.querySelector('.mini-g-btn')) return;
             const sym = _extractSymbol(cell.textContent);
             if (!sym) return;
-            cell.appendChild(_makeMiniGButton(sym));
+            const chartCell = document.createElement('td');
+            chartCell.className = 'mini-g-cell';
+            chartCell.appendChild(_makeMiniGButton(sym));
+            tr.insertBefore(chartCell, cell.nextSibling);
         });
     }
     // Mobil kartlar: mt-sym başlıklarına G düğmesi
