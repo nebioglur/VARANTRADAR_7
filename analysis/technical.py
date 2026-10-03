@@ -369,6 +369,10 @@ class TechnicalEngine(BaseEngine):
     def get_chart_data(cls, symbol: str, interval: str = '1d') -> Dict[str, Any]:
         import yfinance as yf
         import numpy as np
+        # BIST sembol normalizasyonu: ek'siz gelen sembollere (.IS) otomatik ekle
+        symbol = str(symbol or '').strip().upper()
+        if symbol and '.' not in symbol:
+            symbol += '.IS'
         period_map = {'5m': '5d', '15m': '5d', '1h': '1mo', '4h': '1mo', '1d': '1y', '1wk': '2y', '1mo': '5y'}
         period = period_map.get(interval, '1y')
         df = yf.Ticker(symbol).history(period=period, interval=interval)

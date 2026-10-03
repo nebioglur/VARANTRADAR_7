@@ -1900,11 +1900,26 @@ window.onload = function() {
     dashboardPollInterval = setInterval(fetchDashboardData, 15000);
     
     // KULLANICI İSTEĞİ: TABLOYA ÇİFT TIKLAYINCA TAM TABLOYU TEK GÖSTER
+    const FS_STYLE_ID = 'radar-fs-style';
+    const ensureFsStyle = () => {
+        if (document.getElementById(FS_STYLE_ID)) return;
+        const st = document.createElement('style');
+        st.id = FS_STYLE_ID;
+        // Medya sorgusu ve dvh desteklemeyen eski WebView'larda bile tam ekran garanti:
+        // position:fixed + tum kenarlar 0 + yuzde olculer = her zaman gorunur alan kadar.
+        st.textContent = '#radar-cards-grid .card.fullscreen-card{position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;width:100%!important;max-width:100%!important;height:100%!important;min-height:100%!important;margin:0!important;padding:0.6rem!important;border-radius:0!important;box-shadow:none!important;z-index:999999!important;}';
+        document.body.appendChild(st);
+    };
+    const removeFsStyle = () => {
+        const st = document.getElementById(FS_STYLE_ID);
+        if (st) st.remove();
+    };
     const toggleRadarFullscreen = (card) => {
         const active = !card.classList.contains('fullscreen-card');
         card.classList.toggle('fullscreen-card', active);
         document.body.classList.toggle('fullscreen-table-open', active);
         if (active) {
+            ensureFsStyle();
             // Dinamik tam ekran: ekran boyutunu px olarak hesapla (dvh desteklemeyen eski WebView'lar icin)
             const applyBounds = () => {
                 card.style.width = window.innerWidth + 'px';
@@ -1929,6 +1944,7 @@ window.onload = function() {
                 zIndex: '999999'
             });
         } else {
+            removeFsStyle();
             window.removeEventListener('resize', card._fsBoundsHandler || (() => {}));
             window.removeEventListener('orientationchange', card._fsBoundsHandler || (() => {}));
             delete card._fsBoundsHandler;
