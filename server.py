@@ -407,6 +407,7 @@ def _background_scanner_impl():
     sent_tavan = {}
     sent_1h = {}
     sent_5m = {}
+    sent_special_ranking = {"date": None, "sent_symbols": set(), "last_sent_ts": 0.0}
     
     # Sunucu başlatıldığında tek seferlik Telegram kontrol/açılış bildirimi gönder
     try:
@@ -419,19 +420,11 @@ def _background_scanner_impl():
             return
         today_str = datetime.now().strftime("%Y-%m-%d")
         
-        # 1. Tavan Adayları Bildirimleri (Aynı gün sadece 1 kez gönder)
-        # KULLANICI İSTEĞİ: "Erken Kopuş" / "DAĞ" / kekliği / tavan radarı bildirimleri iptal
+        # 1. Tavan Adayları Bildirimleri (Aynı gün sadece 1 kez gönder, Dağ Kekliği dahil)
         for tavan in results.get("tavan_adaylari", []):
             sym = tavan.get("Symbol")
             if sym and sent_tavan.get(sym) != today_str:
-                phase = str(tavan.get("Phase_Badge", ""))
                 score = tavan.get("Score", 0)
-                # Erken / DAĞ / kekliği / tavan radarı gibi spam bildirimler iptal
-                skip_keywords = ["Erken", "DAĞ", "kek", "tavan radar", "Erken Kopuş"]
-                if any(k.lower() in phase.lower() for k in skip_keywords):
-                    print(f"[BACKGROUND] Telegram tavan bildirimi atlandi ({sym}): {phase}")
-                    sent_tavan[sym] = today_str
-                    continue
                 notif.send_tavan_alert(sym, score, tavan.get("Report", ""), tavan.get("Position"), extra=tavan)
                 sent_tavan[sym] = today_str
                 time.sleep(0.5) # Telegram API rate limit önlemi
@@ -454,6 +447,38 @@ def _background_scanner_impl():
                 notif.send_5m_rsi_alert(sym, sig, rsi.get("RSI", 0), rsi.get("Price", 0))
                 sent_5m[sym] = sig_key
                 time.sleep(0.5)
+
+        # 4. Özel Sıralama Bildirimleri (Akıllı Seçim: Hacim Gücü Yüksek, Gün İçi Güç Yüksek, Değişim Az)
+        try:
+            from services.telegram_bot import get_special_ranking_candidates, send_special_ranking_alert
+            all_stats = results.get("all_symbols_stats", {})
+            if all_stats and len(all_stats) > 30:
+                from zoneinfo import ZoneInfo
+                local_now = datetime.now(ZoneInfo("Europe/Istanbul"))
+                now_ts = time.time()
+                if sent_special_ranking["date"] != today_str:
+                    sent_special_ranking["date"] = today_str
+                    sent_special_ranking["sent_symbols"] = set()
+                    sent_special_ranking["last_sent_ts"] = 0.0
+
+                is_market_session = (local_now.weekday() < 5 and (
+                    (local_now.hour == 10 and local_now.minute >= 15) or
+                    (11 <= local_now.hour < 18)
+                ))
+
+                # Seans saatlerinde en az 45 dakika arayla veya yeni gün başlangıcında
+                if is_market_session and (now_ts - sent_special_ranking["last_sent_ts"] >= 2700):
+                    candidates = get_special_ranking_candidates(all_stats, top_n=5)
+                    new_candidates = [c for c in candidates if c["symbol"] not in sent_special_ranking["sent_symbols"]]
+                    if candidates and len(new_candidates) >= 1:
+                        success = send_special_ranking_alert(candidates)
+                        if success:
+                            sent_special_ranking["last_sent_ts"] = now_ts
+                            for c in candidates:
+                                sent_special_ranking["sent_symbols"].add(c["symbol"])
+                            print(f"[BACKGROUND] Telegram Özel Sıralama gönderildi: {[c['symbol'] for c in candidates]}")
+        except Exception as e_special:
+            print(f"[BACKGROUND] Özel Sıralama Telegram hatası: {e_special}")
     
     # Hızlı Başlangıç (Fast Start): Eğer cache boşsa kullanıcıyı bekletmemek için sadece BIST 50'yi anında tara
     if not GLOBAL_DASHBOARD_CACHE:
@@ -2712,6 +2737,37 @@ def api_telegram_test():
         if ok:
             return jsonify({"status": "success", "message": "Test mesaji gonderildi. Telegram'ı kontrol edin."})
         return jsonify({"status": "error", "message": "Gonderim basarisiz. Token/Chat ID'yi ve botun sohbeti baslattigini kontrol edin."}), 500
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/telegram/send_special_ranking', methods=['POST'])
+def api_telegram_send_special_ranking():
+    """Özel Sıralama akıllı hisse seçimlerini Telegram'a manuel veya test amaçlı gönderir."""
+    try:
+        from services.telegram_bot import get_special_ranking_candidates, send_special_ranking_alert, get_telegram_credentials
+        bt, cid = get_telegram_credentials(force=True)
+        if not bt or not cid:
+            return jsonify({"status": "error", "message": "Telegram ayarları eksik. Lütfen önce Token ve Chat ID kaydedin."}), 400
+
+        all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {}) if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else {}
+        if not all_stats:
+            return jsonify({"status": "error", "message": "Henüz hisse istatistikleri yüklenmedi. Lütfen taramanın tamamlanmasını bekleyin."}), 400
+
+        candidates = get_special_ranking_candidates(all_stats, top_n=5)
+        if not candidates:
+            return jsonify({"status": "warning", "message": "Şu an kriterlere tam uyan (yüksek hacim + gün içi güç + düşük değişim) hisse bulunamadı."})
+
+        ok = send_special_ranking_alert(candidates)
+        if ok:
+            symbols = [c["symbol"] for c in candidates]
+            return jsonify({
+                "status": "success",
+                "message": f"Özel Sıralama Telegram'a gönderildi: {', '.join(symbols)}",
+                "candidates": candidates
+            })
+        else:
+            return jsonify({"status": "error", "message": "Telegram gönderimi başarısız oldu. Token/Chat ID ve bot izinlerini kontrol edin."}), 500
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 

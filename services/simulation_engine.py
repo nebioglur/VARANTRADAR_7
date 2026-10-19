@@ -143,25 +143,25 @@ class SimulationEngine:
         return False, ""
 
     def _entry_setup(self, sub_df, entry_price):
-        # 5dk veride sinyal saatinde (or. 10:15) 22 bar yok; esnek olmak icin
-        # minimum 12 bar (1 saat) yeterli. EMA21 hesaplanamazsa EMA9 trendi kullanilir.
-        if len(sub_df) < 12:
+        # 5dk veride sinyal saatinde (or. 10:15-10:30) az sayida bar bulunur;
+        # Sabah erken saatlerde firsatlari kacirmamak icin minimum 4 bar (20 dk) yeterlidir.
+        if len(sub_df) < 4:
             return None
 
         close = pd.to_numeric(sub_df['Close'], errors='coerce').dropna()
         high = pd.to_numeric(sub_df['High'], errors='coerce').reindex(close.index)
         low = pd.to_numeric(sub_df['Low'], errors='coerce').reindex(close.index)
-        if len(close) < 12 or high.isna().any() or low.isna().any():
+        if len(close) < 4 or high.isna().any() or low.isna().any():
             return None
 
         ema9 = close.ewm(span=9, adjust=False).mean()
         ema21 = close.ewm(span=21, adjust=False).mean()
 
         ema9_ok = ema9.iloc[-1] > ema9.iloc[-2] and close.iloc[-1] >= ema9.iloc[-1]
-        if len(ema21.dropna()) >= 2:
+        if len(ema21.dropna()) >= 2 and len(close) >= 12:
             ema_confirmed = ema9_ok and (ema9.iloc[-1] > ema21.iloc[-1])
         else:
-            # EMA21 henuz guvenilir degilse sadece EMA9 momentumuyla ilerle
+            # Erken saatlerde EMA21 henuz olusmamissa EMA9 momentumu yeterlidir
             ema_confirmed = ema9_ok
         if not ema_confirmed:
             return None
@@ -172,9 +172,12 @@ class SimulationEngine:
             (high - prev_close).abs(),
             (low - prev_close).abs()
         ], axis=1).max(axis=1)
-        atr = float(true_range.rolling(14, min_periods=5).mean().iloc[-1])
+        atr_series = true_range.rolling(14, min_periods=3).mean()
+        atr = float(atr_series.iloc[-1]) if len(atr_series) > 0 and pd.notna(atr_series.iloc[-1]) else None
+        if atr is None or atr <= 0:
+            atr = float((high - low).mean()) if len(high) > 0 else (entry_price * 0.02)
         if not pd.notna(atr) or atr <= 0:
-            return None
+            atr = entry_price * 0.02
 
         stop_pct = min(0.045, max(0.015, (atr / entry_price) * 1.6))
         stop_price = entry_price * (1 - stop_pct)
@@ -495,12 +498,14 @@ class SimulationEngine:
                 if df is None or current_time not in df.index:
                     continue
 
-                # Verisi erken kesilen hissede islem acma (veri saglayici
-                # bazi sembollerde gunu yari yolda bitiriyor; giris=çikis
-                # ayni dakika kaliyordu). Yine de erken saatlerde pozisyon
-                # acilabilmesi icin en az 3 bar (15 dk) yonetilebilir veri sart.
+                # Gecmis gunlerde veri erken kesilmisse (veri hatasi) islem acma.
+                # Ancak BUGUNKU canli seansta henuz yeni barlar olusmakta oldugu icin
+                # seans icinde (17:30 oncesi) bu engelleme calistirilmaz.
+                from datetime import datetime as _dt_cls
+                today_now_str = _dt_cls.now().strftime("%Y-%m-%d")
+                is_live_today = (date_str == today_now_str and current_time.time() < time(17, 30))
                 remaining_bars = int((df.index > current_time).sum())
-                if remaining_bars < 3:
+                if not is_live_today and remaining_bars < 3:
                     to_remove.append(s)
                     continue
 

@@ -66,6 +66,16 @@ def set_telegram_credentials(token: str, chat_id: str) -> bool:
                       "ON CONFLICT(key) DO UPDATE SET value=excluded.value", (k, str(v).strip()))
         conn.commit()
         conn.close()
+
+        # DBManager ile de senkronize et
+        try:
+            from database.db_manager import DBManager
+            db = DBManager()
+            db.save_setting('telegram_token', str(token).strip())
+            db.save_setting('telegram_chat_id', str(chat_id).strip())
+        except Exception as e_db:
+            logger.warning(f"DBManager telegram ayari senkronize edilemedi: {e_db}")
+
         get_telegram_credentials(force=True)
         logger.info("Telegram ayarlari kalici olarak kaydedildi.")
         return True
@@ -76,35 +86,42 @@ def set_telegram_credentials(token: str, chat_id: str) -> bool:
 
 def send_telegram_message(text: str, parse_mode: str = "HTML") -> bool:
     """
-    Belirlenen Chat ID'ye Telegram uzerinden mesaj gonderir.
+    Belirlenen Chat ID'ye veya virgülle ayrılmış birden fazla Chat ID'ye Telegram mesajı gönderir.
     """
-    bot_token, chat_id = get_telegram_credentials()
-    if not bot_token or not chat_id:
+    bot_token, raw_chat_id = get_telegram_credentials()
+    if not bot_token or not raw_chat_id:
         logger.error("Telegram ayarlari eksik (env + veritabani bos). Bildirim gonderilemedi! "
                      "Uygulamadan Telegram ayarlarini kaydedin.")
         return False
 
-    try:
-        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-        payload = {
-            "chat_id": chat_id,
-            "text": text,
-            "parse_mode": parse_mode
-        }
-
-        response = requests.post(url, json=payload, timeout=10)
-        response_data = response.json()
-
-        if response.status_code == 200 and response_data.get("ok"):
-            logger.info(f"Telegram mesaji basariyla gonderildi: {text[:50]}...")
-            return True
-        else:
-            logger.error(f"Telegram mesaji gonderilemedi! Hata: {response_data}")
-            return False
-
-    except Exception as e:
-        logger.error(f"Telegram API cagrisi sirasinda hata olustu: {str(e)}")
+    chat_ids = [cid.strip() for cid in str(raw_chat_id).split(",") if cid.strip()]
+    if not chat_ids:
         return False
+
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    any_success = False
+
+    for cid in chat_ids:
+        try:
+            payload = {
+                "chat_id": cid,
+                "text": text,
+                "parse_mode": parse_mode,
+                "disable_web_page_preview": True
+            }
+
+            response = requests.post(url, json=payload, timeout=10)
+            response_data = response.json()
+
+            if response.status_code == 200 and response_data.get("ok"):
+                logger.info(f"Telegram mesaji basariyla gonderildi ({cid}): {text[:50]}...")
+                any_success = True
+            else:
+                logger.error(f"Telegram mesaji gonderilemedi ({cid})! Hata: {response_data}")
+        except Exception as e:
+            logger.error(f"Telegram API cagrisi sirasinda hata olustu ({cid}): {str(e)}")
+
+    return any_success
 
 def send_vip_signal(stock_data: dict) -> bool:
     """
@@ -213,10 +230,10 @@ _ASSETS_DIR = _os.path.join(_os.path.dirname(__file__), "assets")
 
 
 def send_voice_alert(alert_type: str, caption: str) -> bool:
-    """Sesli uyarI gonderir: buy_alert / sell_alert mp3 + mesaj.
+    """Sesli uyari gonderir: buy_alert / sell_alert mp3 + mesaj.
     Ses dosyasi yoksa duz mesaj fallback."""
-    bot_token, chat_id = get_telegram_credentials()
-    if not bot_token or not chat_id:
+    bot_token, raw_chat_id = get_telegram_credentials()
+    if not bot_token or not raw_chat_id:
         return send_telegram_message(caption)
 
     file_map = {
@@ -227,24 +244,32 @@ def send_voice_alert(alert_type: str, caption: str) -> bool:
     if not path or not _os.path.exists(path):
         return send_telegram_message(caption)
 
-    try:
-        url = f"https://api.telegram.org/bot{bot_token}/sendAudio"
-        with open(path, "rb") as f:
-            response = requests.post(
-                url,
-                data={"chat_id": chat_id, "caption": caption, "parse_mode": "HTML"},
-                files={"audio": (_os.path.basename(path), f, "audio/mpeg")},
-                timeout=20,
-            )
-        data = response.json()
-        if response.status_code == 200 and data.get("ok"):
-            logger.info(f"Telegram sesli uyari gonderildi ({alert_type}): {caption[:50]}")
-            return True
-        logger.error(f"Telegram sesli uyari hatasi: {data}")
+    chat_ids = [cid.strip() for cid in str(raw_chat_id).split(",") if cid.strip()]
+    if not chat_ids:
         return False
-    except Exception as e:
-        logger.error(f"Telegram sesli uyari exception: {e}")
-        return False
+
+    url = f"https://api.telegram.org/bot{bot_token}/sendAudio"
+    any_success = False
+
+    for cid in chat_ids:
+        try:
+            with open(path, "rb") as f:
+                response = requests.post(
+                    url,
+                    data={"chat_id": cid, "caption": caption, "parse_mode": "HTML"},
+                    files={"audio": (_os.path.basename(path), f, "audio/mpeg")},
+                    timeout=20,
+                )
+            data = response.json()
+            if response.status_code == 200 and data.get("ok"):
+                logger.info(f"Telegram sesli uyari gonderildi ({alert_type}, {cid}): {caption[:50]}")
+                any_success = True
+            else:
+                logger.error(f"Telegram sesli uyari hatasi ({cid}): {data}")
+        except Exception as e:
+            logger.error(f"Telegram sesli uyari exception ({cid}): {e}")
+
+    return any_success
 
 
 def notify_buy(symbol: str, price: float, qty: int, source: str = "") -> bool:
@@ -467,3 +492,135 @@ def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.
         if reason:
             text += "\n💡 <b>Neden:</b> " + reason
         return _send_once(text)
+
+
+# ========== ÖZEL SIRALAMA (AKILLI SEÇİM) BİLDİRİMLERİ ==========
+
+def get_special_ranking_candidates(all_symbols_stats: dict, top_n: int = 5) -> list:
+    """
+    En hacim gücü yüksek, gün içi güç yüksek ve % değişimi az (henüz fiyatlanmamış)
+    akıllı hisse seçimlerini hesaplar ve sıralar.
+    Web arayüzündeki 'Özel Sıralama' algoritmasıyla birebir uyumludur.
+    """
+    if not all_symbols_stats or not isinstance(all_symbols_stats, dict):
+        return []
+
+    scored_list = []
+
+    for sym, data in all_symbols_stats.items():
+        if not isinstance(data, dict):
+            continue
+
+        clean_sym = sym.replace(".IS", "").replace(".is", "").upper().strip()
+        price = float(data.get("Price") or data.get("Daily_Close") or 0.0)
+        change = float(data.get("Change_Pct") or 0.0)
+        vol_lot = float(data.get("Volume") or 0.0)
+        vol_tl = vol_lot * price
+
+        # Göreceli Hacim (Hacim Gücü)
+        v8 = data.get("v8_discovery") or {}
+        v8_metrics = v8.get("metrics") or {} if isinstance(v8, dict) else {}
+        rel_vol = float(v8_metrics.get("relative_volume") or data.get("Vol_Multiplier") or data.get("rel_vol") or 0.0)
+        state = v8.get("state", "NONE") if isinstance(v8, dict) else "NONE"
+        prep_score = float(v8.get("preparation_score", 0.0)) if isinstance(v8, dict) else 0.0
+
+        # Gün içi güç metrikleri
+        intra = data.get("intraday_strength") or {}
+        if not isinstance(intra, dict):
+            intra = {}
+        intra_change = float(intra.get("intraday_change_pct") or 0.0)
+        if intra_change == 0.0:
+            low = float(data.get("Low") or price)
+            if low > 0 and price > low:
+                intra_change = round(((price - low) / low) * 100, 2)
+            elif change > 0:
+                intra_change = round(change, 2)
+
+        hourly_flow = str(intra.get("hourly_flow") or "Denge")
+        acc_score = float(intra.get("accumulation_score") or 0.0)
+
+        # Temel Filtreler:
+        # 1. Fiyat geçerli olmalı
+        if price <= 0.5:
+            continue
+
+        # 2. Minimum likidite kontrolü (sığ hisse tuzağını engeller)
+        if vol_tl < 1_000_000 and vol_lot < 20_000:
+            continue
+
+        # 3. % Değişim az olmalı (Henüz kopmamış / aşırı primlenmemiş: -3.0% ile +6.0% arası)
+        if change < -3.0 or change > 6.0:
+            continue
+
+        # --- Akıllı Özel Sıralama Skoru ---
+        # 1) Gün içi güç ağırlığı (En önemli kriter)
+        intra_score = max(intra_change, 0.0) * 6.0
+
+        # 2) Hacim gücü ağırlığı
+        vol_score = min(rel_vol, 5.0) * 3.5
+
+        # 3) Fiyatlanmamış filtresi: Ne kadar az primliyse o kadar avantajlı
+        change_penalty = abs(change) * 2.0
+
+        # 4) Saatlik para akışı bonusu
+        flow_bonus = 6.0 if hourly_flow == "Toplanıyor" else (0.0 if hourly_flow == "Denge" else -6.0)
+
+        # 5) Teknik hazırlık (V8 / Breakout) bonusu
+        tech_bonus = 8.0 if state in ("BREAKOUT", "PRE_BREAKOUT") else (prep_score * 0.3)
+
+        raw_score = 45.0 + intra_score + vol_score - change_penalty + flow_bonus + tech_bonus
+        special_score = round(min(max(raw_score, 10.0), 99.0), 1)
+
+        scored_list.append({
+            "symbol": clean_sym,
+            "raw_symbol": sym,
+            "price": price,
+            "change": change,
+            "intra_change": intra_change,
+            "rel_vol": rel_vol,
+            "hourly_flow": hourly_flow,
+            "acc_score": acc_score,
+            "volume_tl": vol_tl,
+            "state": state,
+            "special_score": special_score,
+        })
+
+    # Sıralama: Özel puana göre en yüksekten düşüğe
+    scored_list.sort(key=lambda x: (x["special_score"], x["rel_vol"], x["intra_change"]), reverse=True)
+    return scored_list[:top_n]
+
+
+def send_special_ranking_alert(candidates: list) -> bool:
+    """
+    En iyi özel sıralama adaylarını tek bir şık Telegram mesajında gönderir.
+    """
+    if not candidates:
+        return False
+
+    medals = ["🥇", "🥈", "🥉", "🎖️", "🏅"]
+
+    text = "🌟 <b>ÖZEL SIRALAMA (AKILLI SEÇİM)</b> 🌟\n"
+    text += "🎯 <i>Yüksek Hacim & Gün İçi Güç — Henüz Fiyatlanmamış Potansiyeller</i>\n\n"
+
+    for idx, item in enumerate(candidates):
+        medal = medals[idx] if idx < len(medals) else f"🔹 {idx+1}."
+        sym = item.get("symbol", "")
+        price = item.get("price", 0.0)
+        chg = item.get("change", 0.0)
+        intra_chg = item.get("intra_change", 0.0)
+        r_vol = item.get("rel_vol", 0.0)
+        flow = item.get("hourly_flow", "Denge")
+        score = item.get("special_score", 0.0)
+
+        chg_sign = "+" if chg >= 0 else ""
+        intra_sign = "+" if intra_chg >= 0 else ""
+
+        text += f"{medal} <b>#{sym}</b> — ₺{price:.2f}\n"
+        text += f"   📊 Günlük Değişim: <b>{chg_sign}{chg:.2f}%</b> (Fiyatlanmamış)\n"
+        text += f"   ⚡ Gün İçi Güç: <b>{intra_sign}{intra_chg:.2f}%</b> | 🔊 Hacim Gücü: <b>{r_vol:.1f}x</b>\n"
+        text += f"   🌊 Akış: <b>{flow}</b> | 🧠 Özel Skor: <b>{score:.0f}/100</b>\n\n"
+
+    text += "💡 <i>Not: Bu hisseler gün içi para girişi ve hacim toplamasına rağmen henüz sert prim yapmamış, akıllı seçim kriterlerine uyan hisselerdir.</i>"
+
+    return send_telegram_message(text)
+

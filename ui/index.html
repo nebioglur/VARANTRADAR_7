@@ -301,6 +301,11 @@
                                 style="font-size:0.75rem; background:rgba(234,179,8,0.2); padding:3px 8px; border-radius:12px; color:#facc15; border:1px solid rgba(234,179,8,0.3); cursor:pointer;">
                                 <i class="fa-solid fa-star"></i> <span id="all-stocks-special-sort-label">Özel Sıralama</span>
                             </button>
+                            <button id="all-stocks-tg-send-btn" type="button" onclick="sendSpecialRankingTelegram()"
+                                title="Özel Sıralama Akıllı Seçimlerini Telegram'a Gönder"
+                                style="font-size:0.75rem; background:rgba(41,163,255,0.2); padding:3px 8px; border-radius:12px; color:#38bdf8; border:1px solid rgba(41,163,255,0.3); cursor:pointer;">
+                                <i class="fa-brands fa-telegram"></i> <span>Telegram'a At</span>
+                            </button>
                         </div>
                     </h3>
                     <div class="table-scroll-wrapper" style="max-height:350px; overflow-y:auto; overflow-x:auto; padding-right:5px; margin-top:10px;">
@@ -1704,12 +1709,12 @@
                         <span id="tg-status-badge" class="sim-notify-badge">Durum kontrol ediliyor...</span>
                     </div>
                     <p style="color:var(--text-muted); font-size:0.82rem; margin-bottom:0.9rem;">
-                        Simülasyon AL/SAT işlemleri, saat detaylarıyla bu Telegram kanalına gider. Bot tokenı ve Chat ID'yi kaydedin; ayarlar kalıcıdır.
+                        Simülasyon AL/SAT işlemleri ve Özel Sıralama bildirimleri bu Telegram sohbetine/kanalına gider. Bot tokenı ve Chat ID'yi (veya virgülle ayrılmış birden fazla ID'yi) kaydedin; ayarlar kalıcıdır.
                     </p>
                     <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:0.75rem; margin-bottom:0.9rem;">
                         <input type="text" id="tg-token-input" placeholder="Bot Token (örn. 123456:AAH...)" autocomplete="off"
                                style="width:100%; padding:0.55rem 0.75rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-base); color:var(--text-main); font-size:0.85rem;">
-                        <input type="text" id="tg-chat-input" placeholder="Chat ID (örn. 123456789)" autocomplete="off"
+                        <input type="text" id="tg-chat-input" placeholder="Chat ID (örn. 123456789 veya -100... kanal ID)" autocomplete="off"
                                style="width:100%; padding:0.55rem 0.75rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-base); color:var(--text-main); font-size:0.85rem;">
                     </div>
                     <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
@@ -1718,6 +1723,9 @@
                         </button>
                         <button type="button" class="sim-pill" onclick="testTelegramSettings()">
                             <i class="fa-solid fa-paper-plane"></i> Test Mesajı Gönder
+                        </button>
+                        <button type="button" class="sim-pill" onclick="sendSpecialRankingTelegram()" style="border-color:rgba(234,179,8,0.4); color:#facc15;">
+                            <i class="fa-solid fa-star"></i> Özel Sıralamayı Telegram'a Gönder
                         </button>
                     </div>
                     <div id="tg-settings-msg" style="margin-top:0.6rem; font-size:0.82rem; display:none;"></div>
@@ -2343,7 +2351,7 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="app.js?v=20261002_v13_auth_detective_v8"></script>
+    <script src="app.js?v=20261019_v1"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js?v=20260916_v13"></script>
     <script>
