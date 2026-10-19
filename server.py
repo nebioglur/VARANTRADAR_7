@@ -437,9 +437,11 @@ def _background_scanner_impl():
         # 1. Tavan Adayları Bildirimleri (Aynı gün sadece 1 kez gönder, Dağ Kekliği dahil)
         for tavan in results.get("tavan_adaylari", []):
             sym = tavan.get("Symbol")
-            if sym and sent_tavan.get(sym) != today_str:
+            clean_sym = sym.replace(".IS", "") if sym else None
+            if clean_sym and sent_tavan.get(clean_sym) != today_str and sent_tavan.get(sym) != today_str:
                 score = tavan.get("Score", 0)
                 notif.send_tavan_alert(sym, score, tavan.get("Report", ""), tavan.get("Position"), extra=tavan)
+                sent_tavan[clean_sym] = today_str
                 sent_tavan[sym] = today_str
                 time.sleep(0.5) # Telegram API rate limit önlemi
                 
@@ -2851,6 +2853,57 @@ def api_telegram_send_morning_compass():
             })
         else:
             return jsonify({"status": "error", "message": "Telegram gönderimi başarısız oldu. Token/Chat ID ve bot izinlerini kontrol edin."}), 500
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/telegram/send_tavan_candidates', methods=['POST'])
+def api_telegram_send_tavan_candidates():
+    """Dağ Kekliği & Tavan Adayları sinyallerini (Özet liste + Detaylı kartlar) Telegram'a manuel veya test amaçlı gönderir."""
+    try:
+        from services.telegram_bot import send_batch_vip_signals, get_telegram_credentials
+        from services.notification_manager import NotificationManager
+        import json, os, time
+
+        bt, cid = get_telegram_credentials(force=True)
+        if not bt or not cid:
+            return jsonify({"status": "error", "message": "Telegram ayarları eksik. Lütfen önce Token ve Chat ID kaydedin."}), 400
+
+        tavan_list = GLOBAL_DASHBOARD_CACHE.get("tavan_adaylari", []) if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else []
+        if not tavan_list and os.path.exists("dashboard_cache.json"):
+            try:
+                with open("dashboard_cache.json", "r", encoding="utf-8") as f:
+                    disk_cache = json.load(f)
+                    tavan_list = disk_cache.get("tavan_adaylari", [])
+            except Exception:
+                pass
+
+        if not tavan_list:
+            return jsonify({"status": "warning", "message": "Şu an tespit edilmiş tavan veya Dağ Kekliği adayı bulunamadı."})
+
+        # Score 100 veya en yüksek puanlı ilk 5 adayı seç
+        selected = sorted(tavan_list, key=lambda x: (-x.get("Score", 0), -x.get("Vol_Multiplier", 0)))[:5]
+
+        # 1. Toplu VIP Özeti Gönder
+        send_batch_vip_signals(selected)
+
+        # 2. Her bir aday için Detaylı Erken Kopuş / Dağ Kekliği Kartı Gönder
+        notif = NotificationManager()
+        sent_names = []
+        for v in selected:
+            time.sleep(0.5)
+            sym = v.get("Symbol")
+            score = v.get("Score", 100)
+            report = v.get("Report", "")
+            position = v.get("Position")
+            notif.send_tavan_alert(sym, score, report, position, extra=v)
+            sent_names.append(sym.replace(".IS", ""))
+
+        return jsonify({
+            "status": "success",
+            "message": f"Dağ Kekliği & Tavan Radarı başarıyla Telegram'a gönderildi: {', '.join(sent_names)}",
+            "count": len(selected)
+        })
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 

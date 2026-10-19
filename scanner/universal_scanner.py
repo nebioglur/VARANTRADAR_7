@@ -598,7 +598,7 @@ class UniversalScanner:
         tavan_adaylari = sorted(
             tavan_adaylari,
             key=lambda x: (-x.get("Score", 0), -x.get("Vol_Multiplier", 0), x.get("Distance_To_Ceiling_Pct", 99))
-        )[:10]
+        )[:30]
         
         stay_away_1h = sorted(stay_away_1h, key=lambda x: (x.get("Crossover_Bars_Ago", 999), x.get("EMA_Gap_Pct", 0)))
         
@@ -613,8 +613,10 @@ class UniversalScanner:
         try:
             import os
             import json
+            import time
             from datetime import datetime
             from services.telegram_bot import send_batch_vip_signals
+            from services.notification_manager import NotificationManager
             
             today = datetime.now().strftime("%Y-%m-%d")
             cache_file = "data/sent_vip_signals.json"
@@ -634,12 +636,25 @@ class UniversalScanner:
             new_vips = [v for v in vips if v["Symbol"] not in sent_data["symbols"]]
             
             if new_vips:
-                # Sinyalleri toplu gönder
+                # 1. VIP Toplu Sinyal Özet Listesi (Günün En İyi VIP Hisseleri)
                 success = send_batch_vip_signals(new_vips)
                 if success:
                     for v in new_vips:
                         sent_data["symbols"].append(v["Symbol"])
                     with open(cache_file, "w") as f:
                         json.dump(sent_data, f)
+                
+                # 2. Her bir VIP / Dağ Kekliği adayı için DETAYLI ERKEN KOPUŞ KARTINI kanala gönder
+                notif = NotificationManager()
+                for v in new_vips:
+                    try:
+                        time.sleep(0.5)
+                        sym = v.get("Symbol")
+                        score = v.get("Score", 100)
+                        report = v.get("Report", "")
+                        position = v.get("Position")
+                        notif.send_tavan_alert(sym, score, report, position, extra=v)
+                    except Exception as e_card:
+                        print(f"[VIP DETAYLI KART HATA] {v.get('Symbol')}: {e_card}")
         except Exception as e:
             print(f"[VIP BATCH SİNYAL HATA] {str(e)}")

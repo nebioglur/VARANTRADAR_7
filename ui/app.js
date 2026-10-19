@@ -4251,6 +4251,27 @@ async function sendMorningCompassTelegram() {
     }
 }
 
+async function sendTavanCandidatesTelegram() {
+    _tgShowMsg('Dağ Kekliği & Tavan Sinyalleri Telegram\'a gönderiliyor...', true);
+    try {
+        const res = await vrAuthorizedFetch('/api/telegram/send_tavan_candidates', { method: 'POST' });
+        const data = await res.json();
+        if (data.status === 'success') {
+            _tgShowMsg('✅ ' + data.message, true);
+            alert('✅ ' + data.message);
+        } else if (data.status === 'warning') {
+            _tgShowMsg('⚠️ ' + data.message, false);
+            alert('⚠️ ' + data.message);
+        } else {
+            _tgShowMsg('❌ Hata: ' + (data.message || 'Gönderilemedi.'), false);
+            alert('❌ ' + (data.message || 'Gönderilemedi.'));
+        }
+    } catch (e) {
+        _tgShowMsg('❌ Bağlantı hatası: ' + e.message, false);
+        alert('❌ Bağlantı hatası: ' + e.message);
+    }
+}
+
 async function fetchSimulationData() {
     const tbody = document.getElementById('sim-trade-log-tbody');
     if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> İşlem Geçmişi Yükleniyor...</td></tr>';

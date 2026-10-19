@@ -70,7 +70,8 @@ class NotificationManager:
         
         # Fiyat Bilgisi
         raw_price = extra.get("Price") or extra.get("Close") or (position.get("Entry") if position else None)
-        price_str = f"{float(raw_price):.2f}" if raw_price is not None else "-"
+        price_val = float(raw_price) if raw_price is not None else 0.0
+        price_str = f"{price_val:.2f}" if price_val > 0 else "-"
         
         # Yüzde Değişim
         chg_val = extra.get("Daily_Change_Pct") or extra.get("Change_Pct")
@@ -110,7 +111,7 @@ class NotificationManager:
 
         # Dağ Kekliği / Erken Kopuş veya Klasik Tavan başlığı
         if "Erken" in phase or "DAĞ" in phase.upper() or "KEK" in phase.upper():
-            badge_title = "🌾 <b>[DAĞ KEKLİĞİ / ERKEN KOPUŞ] VIP TAVAN ADAYI</b> 🌾"
+            badge_title = "🚀 <b>[ERKEN KOPUŞ] DAĞ KEKLİĞİ TAVAN RADARI</b> 🚀"
         else:
             badge_title = f"🚀 <b>[{phase}] VIP TAVAN RADARI</b> 🚀"
         
