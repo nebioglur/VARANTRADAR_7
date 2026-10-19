@@ -648,13 +648,75 @@ def send_special_ranking_alert(candidates: list) -> bool:
 
         flow_badge = "🟢 Toplanıyor" if flow == "Toplanıyor" else ("🔴 Satılıyor" if flow == "Satılıyor" else "⚪ Denge")
 
+        # Aksiyon Planı Hesaplamaları
+        stop_val = round(h_s1 * 0.985, 2)
+        stop_pct = abs(round(((price - stop_val) / price) * 100, 1)) if price > 0 else 2.0
+        tp1_val = round(price + (h_r1 - price) * 0.85, 2) if h_r1 > price else round(price * 1.035, 2)
+        tp1_pct = abs(round(((tp1_val - price) / price) * 100, 1)) if price > 0 else 3.5
+        tp2_val = round(max(d_r1, price * 1.065), 2)
+        tp2_pct = abs(round(((tp2_val - price) / price) * 100, 1)) if price > 0 else 6.5
+
         text += f"{medal} <b>#{sym}</b> — ₺{price:.2f} (<b>{chg_sign}{chg:.2f}%</b>)\n"
         text += f"   ⚡ Gün İçi Güç: <b>{intra_sign}{intra_chg:.2f}%</b> | 🔊 Hacim Gücü: <b>{r_vol:.1f}x</b>\n"
         text += f"   🕒 Saatlik Akış: <b>{flow_badge}</b> | 🧠 Özel Skor: <b>{score:.0f}/100</b>\n"
-        text += f"   🛡️ <b>Destek:</b> ₺{h_s1:.2f} (-%{h_s1_p} Saatlik) / ₺{d_s1:.2f} (Günlük)\n"
-        text += f"   🎯 <b>Direnç:</b> ₺{h_r1:.2f} (+%{h_r1_p} Saatlik) / ₺{d_r1:.2f} (Günlük)\n\n"
+        text += f"   🛡️ Destek: ₺{h_s1:.2f} (-%{h_s1_p}) | 🎯 Direnç: ₺{h_r1:.2f} (+%{h_r1_p})\n"
+        text += f"   📋 <b>CANLI AKSİYON PLANI:</b>\n"
+        text += f"      🟢 <b>Alış Bölgesi:</b> ₺{h_s1:.2f} – ₺{price:.2f}\n"
+        text += f"      🛑 <b>Stop (Zarar Kes):</b> ₺{stop_val:.2f} (-%{stop_pct})\n"
+        text += f"      💰 <b>1. Kâr Al (%50 Sat):</b> ₺{tp1_val:.2f} (+%{tp1_pct}) ➡️ <i>Stop maliyete!</i>\n"
+        text += f"      🏁 <b>2. Hedef (Direnç):</b> ₺{tp2_val:.2f} (+%{tp2_pct})\n\n"
 
-    text += "💡 <i>Kriter: Gün içi para girişi ve hacim toplamasına rağmen henüz sert prim yapmamış, saatlik destek üzerinde güçlenen hisselerdir.</i>"
+    text += "💡 <i>Kural: Desteğe yakın toplayın, 1. Kâr Al seviyesinde yarısını satıp stopu maliyete çekerek sıfır riskle trendi izleyin.</i>"
 
+    return send_telegram_message(text)
+
+
+def send_morning_compass_bulletin() -> bool:
+    """
+    Hergün 09:50'de Telegram kanalına gönderilen 'Günün Pusulası & Seans Öncesi Taktik Bülteni'.
+    """
+    from datetime import datetime
+    today_date = datetime.now().strftime("%d.%m.%Y")
+
+    text = "🧭 <b>GÜNÜN PİYASA PUSULASI & SEANS STRATEJİSİ</b> 🧭\n"
+    text += f"📅 <i>{today_date} | Seans Öncesi Taktik Bülteni</i>\n\n"
+
+    text += "📊 <b>Piyasa Genel Durumu:</b>\n"
+    text += "• <b>BIST 100:</b> Seans açılışındaki ilk 15 dakika (10:00 - 10:15) volatiliteye karşı temkinli izleme önerilir.\n"
+    text += "• <b>Odak Sektörler:</b> Hacim toplanması Savunma, Havacılık ve Enerji kümelerinde yoğunlaşıyor.\n\n"
+
+    text += "🏆 <b>BUGÜNÜN 4 ALTIN KAZANÇ KURALI:</b>\n"
+    text += "1️⃣ <b>10:15 - 11:30 Dağ Kekliği Avı:</b> Hacmi katlamış ama primi +%1.5 ile +%4 arasında kalmış erken kopuş adaylarına odaklanın.\n"
+    text += "2️⃣ <b>Destek Altı Stop:</b> Bildirimdeki 'Saatlik Destek' seviyesinin altına mutlaka zarar kes stopu koyun.\n"
+    text += "3️⃣ <b>+%3.5 Kârda %50 Satış:</b> İlk hedefe ulaşıldığında pozisyonun yarısını satın, kalan için stopu maliyet seviyenize çekin. (Sıfır Risk Prensibi)\n"
+    text += "4️⃣ <b>Tuzaklara Düşmeyin:</b> %6 üzeri aşırı koşmuş veya üst fitili uzamış hisselere tepeden FOMO ile girmeyin.\n\n"
+
+    text += "💡 <i>Özel Sıralama (Aksiyon Planlı) ve Dağ Kekliği sinyalleri 10:15'ten itibaren anlık olarak kanala iletilecektir. Bol kazançlar dileriz!</i> 🚀"
+
+    return send_telegram_message(text)
+
+
+def notify_tp1_reached(symbol: str, price: float, gain_pct: float) -> bool:
+    """Hisse 1. Kâr Al hedefine ulaştığında tebrik ve yönlendirme uyarısı."""
+    clean = symbol.replace(".IS", "").upper()
+    text = f"🎉 <b>[HEDEF 1 ULAŞILDI!] #{clean}</b>\n\n"
+    text += f"💰 <b>Anlık Fiyat:</b> ₺{price:.2f} (<b>+%{gain_pct:.1f}</b> kâr)\n\n"
+    text += f"📋 <b>AKSYON REHBERİ:</b>\n"
+    text += f"   ✅ Pozisyonun <b>%50'sini satın</b> ve kârı cebe koyun.\n"
+    text += f"   🛡️ Kalan yarısının stop seviyesini derhal <b>alış maliyetinize çekin</b>.\n"
+    text += f"   🚀 Artık bu işlemde zarar riski sıfırdır, tavan kilidine kadar izleyin!"
+    return send_telegram_message(text)
+
+
+def notify_trap_warning(symbol: str, price: float, reason: str) -> bool:
+    """Hissede ani tuzak, fitil veya satış baskısı oluştuğunda koruma uyarısı."""
+    clean = symbol.replace(".IS", "").upper()
+    text = f"⚠️ <b>[DİKKAT: TUZAK / DÖNÜŞ RİSKİ] #{clean}</b>\n\n"
+    text += f"💰 <b>Anlık Fiyat:</b> ₺{price:.2f}\n"
+    text += f"🚨 <b>Uyarı Nedeni:</b> {reason}\n\n"
+    text += f"📋 <b>AKSYON REHBERİ:</b>\n"
+    text += f"   • Üst fitil uzadı veya hacimli kâr satışı belirdi.\n"
+    text += f"   • Kârınızı realize edin veya iz süren stopu sıkılaştırın!\n"
+    text += f"   • Yeni alım yapmaktan kaçının."
     return send_telegram_message(text)
 

@@ -4233,6 +4233,24 @@ async function sendSpecialRankingTelegram() {
     }
 }
 
+async function sendMorningCompassTelegram() {
+    _tgShowMsg('Günün Pusulası Telegram\'a gönderiliyor...', true);
+    try {
+        const res = await vrAuthorizedFetch('/api/telegram/send_morning_compass', { method: 'POST' });
+        const data = await res.json();
+        if (data.status === 'success') {
+            _tgShowMsg('✅ ' + data.message, true);
+            alert('✅ ' + data.message);
+        } else {
+            _tgShowMsg('❌ Hata: ' + (data.message || 'Gönderilemedi.'), false);
+            alert('❌ ' + (data.message || 'Gönderilemedi.'));
+        }
+    } catch (e) {
+        _tgShowMsg('❌ Bağlantı hatası: ' + e.message, false);
+        alert('❌ Bağlantı hatası: ' + e.message);
+    }
+}
+
 async function fetchSimulationData() {
     const tbody = document.getElementById('sim-trade-log-tbody');
     if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> İşlem Geçmişi Yükleniyor...</td></tr>';
@@ -6595,7 +6613,8 @@ function renderAllStocksTable() {
         const sym = s.symbol.replace('.IS', '');
         let actionBtns = `<button onclick="quickTradeBuy('${sym}')" style="background:rgba(34,197,94,0.2); color:#22c55e; border:1px solid rgba(34,197,94,0.5); border-radius:4px; padding:3px 10px; cursor:pointer; font-weight:bold; font-size:0.75rem; margin-right:4px; transition:0.2s;" onmouseover="this.style.background='#22c55e'; this.style.color='#fff';" onmouseout="this.style.background='rgba(34,197,94,0.2)'; this.style.color='#22c55e';">AL</button>
                           <button onclick="quickTradeBuy('${sym}')" style="background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid rgba(239,68,68,0.5); border-radius:4px; padding:3px 10px; cursor:pointer; font-weight:bold; font-size:0.75rem; transition:0.2s;" onmouseover="this.style.background='#ef4444'; this.style.color='#fff';" onmouseout="this.style.background='rgba(239,68,68,0.2)'; this.style.color='#ef4444';">SAT</button>
-                          <button onclick="showSR('${sym}', ${s.price}, ${s.high}, ${s.low})" style="background:rgba(59,130,246,0.2); color:#3b82f6; border:1px solid rgba(59,130,246,0.5); border-radius:4px; padding:3px 6px; cursor:pointer; font-weight:bold; font-size:0.7rem; transition:0.2s;" onmouseover="this.style.background='#3b82f6'; this.style.color='#fff';" onmouseout="this.style.background='rgba(59,130,246,0.2)'; this.style.color='#3b82f6';" title="Destek ve Direnc Seviyeleri">D/D</button>`;
+                          <button onclick="showSR('${sym}', ${s.price}, ${s.high}, ${s.low})" style="background:rgba(59,130,246,0.2); color:#3b82f6; border:1px solid rgba(59,130,246,0.5); border-radius:4px; padding:3px 6px; cursor:pointer; font-weight:bold; font-size:0.7rem; margin-left:3px; transition:0.2s;" onmouseover="this.style.background='#3b82f6'; this.style.color='#fff';" onmouseout="this.style.background='rgba(59,130,246,0.2)'; this.style.color='#3b82f6';" title="Destek ve Direnc Seviyeleri">D/D</button>
+                          <button onclick="showStockActionGuide('${sym}', ${s.price}, ${s.high}, ${s.low}, ${s.change}, ${s.rel_vol}, '${s.hourly_flow || '-'}')" style="background:rgba(234,179,8,0.2); color:#eab308; border:1px solid rgba(234,179,8,0.5); border-radius:4px; padding:3px 6px; cursor:pointer; font-weight:bold; font-size:0.7rem; margin-left:3px; transition:0.2s;" onmouseover="this.style.background='#eab308'; this.style.color='#000';" onmouseout="this.style.background='rgba(234,179,8,0.2)'; this.style.color='#eab308';" title="Aksiyon & Taktik Rehberi (Hedef, Stop, Varant)">💡 Taktik</button>`;
         
         let prevClose = s.price / (1 + (s.change / 100));
         return `
@@ -6763,7 +6782,8 @@ function renderSuper12Table() {
         const sym = s.symbol.replace('.IS', '');
         let actionBtns = '<div style="white-space:nowrap; display:flex; gap:4px; align-items:center;"><button onclick="quickTradeBuy(\'' + sym + '\')" style="background:rgba(34,197,94,0.2); color:#22c55e; border:1px solid rgba(34,197,94,0.5); border-radius:4px; padding:3px 10px; cursor:pointer; font-weight:bold; font-size:0.75rem; margin-right:4px; transition:0.2s;" onmouseover="this.style.background=\'#22c55e\'; this.style.color=\'#fff\';" onmouseout="this.style.background=\'rgba(34,197,94,0.2)\'; this.style.color=\'#22c55e\';">AL</button>' +
                          '<button onclick="quickTradeBuy(\'' + sym + '\')" style="background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid rgba(239,68,68,0.5); border-radius:4px; padding:3px 10px; cursor:pointer; font-weight:bold; font-size:0.75rem; transition:0.2s;" onmouseover="this.style.background=\'#ef4444\'; this.style.color=\'#fff\';" onmouseout="this.style.background=\'rgba(239,68,68,0.2)\'; this.style.color=\'#ef4444\';">SAT</button>' +
-                         ' <button onclick="showSR(\'' + sym + '\', ' + s.price + ', ' + s.high + ', ' + s.low + ')" style="background:rgba(59,130,246,0.2); color:#3b82f6; border:1px solid rgba(59,130,246,0.5); border-radius:4px; padding:3px 6px; cursor:pointer; font-weight:bold; font-size:0.7rem; transition:0.2s;" onmouseover="this.style.background=\'#3b82f6\'; this.style.color=\'#fff\';" onmouseout="this.style.background=\'rgba(59,130,246,0.2)\'; this.style.color=\'#3b82f6\';" title="Destek ve Direnc Seviyeleri">D/D</button></div>';
+                         ' <button onclick="showSR(\'' + sym + '\', ' + s.price + ', ' + s.high + ', ' + s.low + ')" style="background:rgba(59,130,246,0.2); color:#3b82f6; border:1px solid rgba(59,130,246,0.5); border-radius:4px; padding:3px 6px; cursor:pointer; font-weight:bold; font-size:0.7rem; transition:0.2s;" onmouseover="this.style.background=\'#3b82f6\'; this.style.color=\'#fff\';" onmouseout="this.style.background=\'rgba(59,130,246,0.2)\'; this.style.color=\'#3b82f6\';" title="Destek ve Direnc Seviyeleri">D/D</button>' +
+                         ' <button onclick="showStockActionGuide(\'' + sym + '\', ' + s.price + ', ' + s.high + ', ' + s.low + ', ' + s.change + ', ' + s.rel_vol + ', \'' + (s.hourly_flow || '-') + '\')" style="background:rgba(234,179,8,0.2); color:#eab308; border:1px solid rgba(234,179,8,0.5); border-radius:4px; padding:3px 6px; cursor:pointer; font-weight:bold; font-size:0.7rem; transition:0.2s;" onmouseover="this.style.background=\'#eab308\'; this.style.color=\'#000\';" onmouseout="this.style.background=\'rgba(234,179,8,0.2)\'; this.style.color=\'#eab308\';" title="Aksiyon & Taktik Rehberi (Hedef, Stop, Varant)">💡 Taktik</button></div>';
         
         let rankBadge = '<span style="display:inline-block; width:30px; text-align:center; color:var(--text-muted); font-size:0.85rem; font-weight:bold; margin-right:5px; background:rgba(0,0,0,0.05); border-radius:4px;">#' + (index+1) + '</span>';
                         
@@ -6830,6 +6850,100 @@ window.showSR = function(sym, price, high, low) {
     } catch(e) {
         console.error("showSR error:", e);
         alert("Destek/Direnc gosterilirken hata: " + e.message);
+    }
+};
+
+window.showStockActionGuide = function(sym, price, high, low, change, r_vol, flow) {
+    try {
+        price = parseFloat(price) || 0;
+        high = parseFloat(high) || price;
+        low = parseFloat(low) || price;
+        change = parseFloat(change) || 0;
+        r_vol = parseFloat(r_vol) || 1.0;
+        flow = flow || '-';
+
+        let p_val = (high + low + price) / 3.0;
+        let dR1 = (2 * p_val) - low;
+        let dS1 = (2 * p_val) - high;
+        if (price > dR1) dR1 = p_val + (high - low);
+        if (price < dS1) dS1 = p_val - (high - low);
+        let hR1 = price + (dR1 - price) * 0.4;
+        let hS1 = price - (price - dS1) * 0.4;
+
+        let stopVal = Number((hS1 * 0.985).toFixed(2));
+        let stopPct = price > 0 ? Math.abs(((price - stopVal) / price) * 100).toFixed(1) : "2.0";
+        let tp1Val = hR1 > price ? Number((price + (hR1 - price) * 0.85).toFixed(2)) : Number((price * 1.035).toFixed(2));
+        let tp1Pct = price > 0 ? Math.abs(((tp1Val - price) / price) * 100).toFixed(1) : "3.5";
+        let tp2Val = Number((Math.max(dR1, price * 1.065)).toFixed(2));
+        let tp2Pct = price > 0 ? Math.abs(((tp2Val - price) / price) * 100).toFixed(1) : "6.5";
+
+        let rrRatio = (parseFloat(tp1Pct) / Math.max(parseFloat(stopPct), 0.5)).toFixed(1);
+
+        const warrantAssets = [
+            'THYAO', 'AKBNK', 'GARAN', 'ISCTR', 'YKBNK', 'EREGL', 'TUPRS', 
+            'KCHOL', 'SAHOL', 'SISE', 'PETKM', 'BIMAS', 'ASELS', 'EKGYO', 
+            'FROTO', 'TOASO', 'TCELL', 'PGSUS'
+        ];
+        const isWarrant = warrantAssets.includes(sym.toUpperCase());
+
+        let warrantBadge = isWarrant 
+            ? `<div style="background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.4); border-radius:8px; padding:10px; margin-top:12px; font-size:0.83rem; line-height:1.4;">
+                <b style="color:#38bdf8;"><i class="fa-solid fa-bolt"></i> BIST 30 Varant Dayanak Varlığı</b><br>
+                <span>Spot hisse yerine 3x - 5x kaldıraçlı <b>ALIM (CALL)</b> varantı değerlendirilebilir. (Kaldıraçta stop kuralına sadakat 2 kat daha kritiktir!)</span>
+               </div>`
+            : '';
+
+        let flowBadge = flow === 'Toplanıyor' 
+            ? '<span style="color:#22c55e; font-weight:bold;">🟢 Toplanıyor</span>'
+            : (flow === 'Satılıyor' ? '<span style="color:#ef4444; font-weight:bold;">🔴 Satılıyor</span>' : '<span style="color:var(--text-muted);">⚪ Denge</span>');
+
+        let html = `
+        <div style="text-align:left; font-size:0.92rem; line-height:1.55; color:var(--text-main);">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px; margin-bottom:12px;">
+                <h3 style="color:#eab308; margin:0; font-size:1.25rem;"><i class="fa-solid fa-lightbulb"></i> #${sym} Canlı Taktik & Aksiyon Planı</h3>
+                <span style="background:rgba(34,197,94,0.15); color:#22c55e; border:1px solid rgba(34,197,94,0.4); padding:3px 8px; border-radius:6px; font-weight:bold; font-size:0.8rem;">R:R = 1 : ${rrRatio}</span>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; font-size:0.85rem; background:rgba(0,0,0,0.25); padding:8px 12px; border-radius:8px;">
+                <div><b>Fiyat:</b> ₺${price.toFixed(2)} (${change >= 0 ? '+' : ''}${change.toFixed(2)}%)</div>
+                <div><b>Hacim Gücü:</b> ${r_vol.toFixed(1)}x</div>
+                <div><b>Saatlik Akış:</b> ${flowBadge}</div>
+                <div><b>Saatlik Destek:</b> ₺${hS1.toFixed(2)}</div>
+            </div>
+
+            <div style="background:rgba(30,41,59,0.7); border:1px solid rgba(234,179,8,0.3); border-radius:8px; padding:12px; margin-bottom:12px;">
+                <b style="color:#facc15; font-size:0.95rem;"><i class="fa-solid fa-list-check"></i> 4 ADIMDA MAKSİMUM KÂR PLANI:</b>
+                <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
+                    <div>🟢 <b>1. Alış Bölgesi:</b> ₺${hS1.toFixed(2)} – ₺${price.toFixed(2)} <span style="color:var(--text-muted); font-size:0.8rem;">(Desteğe yakın maliyetlenin)</span></div>
+                    <div>🛑 <b>2. Stop Loss (Zarar Kes):</b> <span style="color:#ef4444; font-weight:bold;">₺${stopVal.toFixed(2)} (-%${stopPct})</span> <span style="color:var(--text-muted); font-size:0.8rem;">(Saatlik destek altı)</span></div>
+                    <div>💰 <b>3. 1. Kâr Al (%50 Satış):</b> <span style="color:#22c55e; font-weight:bold;">₺${tp1Val.toFixed(2)} (+%${tp1Pct})</span> ➡️ <i style="color:#38bdf8;">Kalanın stopunu derhal maliyete çekin!</i></div>
+                    <div>🏁 <b>4. Ana Hedef (Direnç):</b> <span style="color:#38bdf8; font-weight:bold;">₺${tp2Val.toFixed(2)} (+%${tp2Pct})</span> <span style="color:var(--text-muted); font-size:0.8rem;">(Sıfır riskle trendi sürün)</span></div>
+                </div>
+            </div>
+
+            ${warrantBadge}
+
+            <div style="margin-top:14px; display:flex; gap:8px;">
+                <button onclick="quickTradeBuy('${sym}'); Swal.close();" style="flex:1; background:#22c55e; color:#fff; border:none; border-radius:6px; padding:8px; font-weight:bold; cursor:pointer; font-size:0.85rem;"><i class="fa-solid fa-cart-shopping"></i> Portföye Ekle (Hızlı Al)</button>
+            </div>
+        </div>`;
+
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                html: html,
+                background: 'var(--bg-base, #0f172a)',
+                color: 'var(--text-main, #f8fafc)',
+                showConfirmButton: true,
+                confirmButtonText: 'Kapat',
+                confirmButtonColor: '#64748b',
+                width: 520
+            });
+        } else {
+            alert(`${sym} Taktik Planı:\nAlış: ₺${hS1.toFixed(2)} - ₺${price.toFixed(2)}\nStop: ₺${stopVal.toFixed(2)} (-%${stopPct})\nTP1: ₺${tp1Val.toFixed(2)} (+%${tp1Pct})\nTP2: ₺${tp2Val.toFixed(2)} (+%${tp2Pct})`);
+        }
+    } catch (e) {
+        console.error("showStockActionGuide error:", e);
+        alert("Aksiyon rehberi hatası: " + e.message);
     }
 };
 

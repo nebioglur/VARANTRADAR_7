@@ -408,6 +408,7 @@ def _background_scanner_impl():
     sent_1h = {}
     sent_5m = {}
     sent_special_ranking = {"date": None, "sent_symbols": set(), "last_sent_ts": 0.0}
+    sent_compass = {"date": None}
     
     # Sunucu başlatıldığında tek seferlik Telegram kontrol/açılış bildirimi gönder
     try:
@@ -419,6 +420,19 @@ def _background_scanner_impl():
         if not results or not isinstance(results, dict):
             return
         today_str = datetime.now().strftime("%Y-%m-%d")
+
+        # 0. Günün Pusulası (09:50 Seans Öncesi Bülten)
+        try:
+            from zoneinfo import ZoneInfo
+            from services.telegram_bot import send_morning_compass_bulletin
+            local_now = datetime.now(ZoneInfo("Europe/Istanbul"))
+            if local_now.weekday() < 5 and (local_now.hour == 9 and local_now.minute >= 50) and sent_compass.get("date") != today_str:
+                success = send_morning_compass_bulletin()
+                if success:
+                    sent_compass["date"] = today_str
+                    print(f"[BACKGROUND] 09:50 Günün Pusulası Telegram bülteni gönderildi.")
+        except Exception as e_compass:
+            print(f"[BACKGROUND] Günün Pusulası bülten hatası: {e_compass}")
         
         # 1. Tavan Adayları Bildirimleri (Aynı gün sadece 1 kez gönder, Dağ Kekliği dahil)
         for tavan in results.get("tavan_adaylari", []):
@@ -476,6 +490,24 @@ def _background_scanner_impl():
                             print(f"[BACKGROUND] Telegram Özel Sıralama gönderildi: {[c['symbol'] for c in candidates]}")
         except Exception as e_special:
             print(f"[BACKGROUND] Özel Sıralama Telegram hatası: {e_special}")
+
+        # 5. Seans İçi Dinamik Tuzak / Ters Dönüş Uyarıları
+        try:
+            from services.telegram_bot import notify_trap_warning
+            for tavan in results.get("tavan_adaylari", []):
+                sym = tavan.get("Symbol")
+                high = float(tavan.get("Daily_High") or tavan.get("High") or 0)
+                price = float(tavan.get("Price") or tavan.get("Daily_Close") or 0)
+                chg = float(tavan.get("Change") or tavan.get("Daily_Change") or 0)
+                # Eğer günün en yükseğinden %3.5'ten fazla geri çekilmiş ve prim hala %3+ ise (üst fitil oluştuysa)
+                if sym and high > 0 and price > 0 and chg >= 3.0:
+                    pullback_from_high = ((high - price) / high) * 100
+                    trap_key = f"{today_str}_{sym}_trap"
+                    if pullback_from_high >= 3.5 and sent_tavan.get(trap_key) != today_str:
+                        notify_trap_warning(sym, price, f"Günün zirvesinden (₺{high:.2f}) %{pullback_from_high:.1f} geri çekildi, üst fitil uzadı!")
+                        sent_tavan[trap_key] = today_str
+        except Exception as e_trap:
+            print(f"[BACKGROUND] Tuzak uyarısı kontrol hatası: {e_trap}")
     
     # Hızlı Başlangıç (Fast Start): Eğer cache boşsa kullanıcıyı bekletmemek için sadece BIST 50'yi anında tara
     if not GLOBAL_DASHBOARD_CACHE:
@@ -760,6 +792,30 @@ def simulation_loop():
             t_open = now.replace(hour=10, minute=0, second=0, microsecond=0)
             t_close = now.replace(hour=18, minute=10, second=0, microsecond=0)
             in_market = t_open <= now <= t_close
+
+            # 09:50 Günün Pusulası & Seans Öncesi Bülten Kontrolü
+            if now.weekday() < 5 and (now.hour == 9 and now.minute >= 50):
+                try:
+                    import json, os
+                    from services.telegram_bot import send_morning_compass_bulletin
+                    compass_cache = "data/sent_compass.json"
+                    sent_c_today = False
+                    if os.path.exists(compass_cache):
+                        try:
+                            with open(compass_cache, "r") as f:
+                                cd = json.load(f)
+                                if cd.get("date") == d_str:
+                                    sent_c_today = True
+                        except Exception:
+                            pass
+                    if not sent_c_today:
+                        succ = send_morning_compass_bulletin()
+                        if succ:
+                            with open(compass_cache, "w") as f:
+                                json.dump({"date": d_str}, f)
+                            print(f"[SIMLOOP] 09:50 Günün Pusulası bülteni başarıyla gönderildi.")
+                except Exception as _c_err:
+                    print(f"[SIMLOOP] Compass hata: {_c_err}")
 
             if in_market:
                 try:
@@ -2771,6 +2827,27 @@ def api_telegram_send_special_ranking():
                 "status": "success",
                 "message": f"Özel Sıralama Telegram'a gönderildi: {', '.join(symbols)}",
                 "candidates": candidates
+            })
+        else:
+            return jsonify({"status": "error", "message": "Telegram gönderimi başarısız oldu. Token/Chat ID ve bot izinlerini kontrol edin."}), 500
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/telegram/send_morning_compass', methods=['POST'])
+def api_telegram_send_morning_compass():
+    """Günün Pusulası & Seans Öncesi Taktik Bültenini Telegram'a manuel veya test amaçlı gönderir."""
+    try:
+        from services.telegram_bot import send_morning_compass_bulletin, get_telegram_credentials
+        bt, cid = get_telegram_credentials(force=True)
+        if not bt or not cid:
+            return jsonify({"status": "error", "message": "Telegram ayarları eksik. Lütfen önce Token ve Chat ID kaydedin."}), 400
+
+        ok = send_morning_compass_bulletin()
+        if ok:
+            return jsonify({
+                "status": "success",
+                "message": "Günün Pusulası & Seans Öncesi Taktik Bülteni Telegram'a başarıyla gönderildi."
             })
         else:
             return jsonify({"status": "error", "message": "Telegram gönderimi başarısız oldu. Token/Chat ID ve bot izinlerini kontrol edin."}), 500

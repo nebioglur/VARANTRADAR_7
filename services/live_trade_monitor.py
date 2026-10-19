@@ -410,6 +410,11 @@ def monitor_once():
             # Trailing stop yonetimi
             if trail_pct > 0 and not trailing_active and gain_pct >= TRAIL_ACTIVATION:
                 trailing_active = True
+                try:
+                    from services.telegram_bot import notify_tp1_reached
+                    notify_tp1_reached(sym, price, gain_pct)
+                except Exception as _tperr:
+                    print(f"[LIVE MONITOR] TP1 notify error: {_tperr}")
             if trailing_active:
                 hwm = max(hwm, price)
                 new_stop = round(hwm * (1 - trail_pct / 100.0), 2)
