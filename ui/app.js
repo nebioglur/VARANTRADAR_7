@@ -5948,8 +5948,9 @@ function fetchDetective(attempt) {
         return r.json();
     }).then(d => {
         if (d.status === 'error') {
+            const errMsg = d.message || d.error || 'Veriler hazırlanıyor';
             if (tb) tb.innerHTML =
-                `<tr><td colspan="12" style="text-align:center; color:#ef4444; padding:1.5rem;">Hata: ${d.message || 'bilinmeyen'}</td></tr>`;
+                `<tr><td colspan="12" style="text-align:center; color:#ef4444; padding:1.5rem;">Hata: ${errMsg} — <a href="#" onclick="fetchDetective(0); return false;" style="color:#f97316; text-decoration:underline;">Tekrar dene</a></td></tr>`;
             return;
         }
         if (d.status === 'building') {

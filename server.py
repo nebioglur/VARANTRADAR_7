@@ -2875,12 +2875,6 @@ def get_xu100_change():
 @app.route('/api/v8/learning/outcomes', methods=['GET'])
 def api_v8_learning_outcomes():
     try:
-        import requests
-        r = requests.get("https://varantradar-7-u1f8z6s.verdent.app/api/v8/learning/outcomes", timeout=8)
-        if r.status_code == 200: return jsonify(r.json())
-    except: pass
-
-    try:
         from v8_engine.database import V8Database
         conn = V8Database.get_connection()
         cursor = conn.cursor()
@@ -2932,12 +2926,6 @@ def api_v8_learning_outcomes():
 
 @app.route('/api/v8/radar/breakout', methods=['GET'])
 def api_v8_radar_breakout():
-    try:
-        import requests
-        r = requests.get("https://varantradar-7-u1f8z6s.verdent.app/api/v8/radar/breakout", timeout=8)
-        if r.status_code == 200: return jsonify(r.json())
-    except: pass
-
     all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
     breakout_list = []
     
@@ -2958,12 +2946,6 @@ def api_v8_radar_breakout():
 
 @app.route('/api/v8/radar/discovery', methods=['GET'])
 def api_v8_radar_discovery():
-    try:
-        import requests
-        r = requests.get("https://varantradar-7-u1f8z6s.verdent.app/api/v8/radar/discovery", timeout=8)
-        if r.status_code == 200: return jsonify(r.json())
-    except: pass
-
     all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
     discovery_list = []
     
@@ -2983,12 +2965,6 @@ def api_v8_radar_discovery():
 
 @app.route('/api/v8/market/regime', methods=['GET'])
 def api_v8_market_regime():
-    try:
-        import requests
-        r = requests.get("https://varantradar-7-u1f8z6s.verdent.app/api/v8/market/regime", timeout=8)
-        if r.status_code == 200: return jsonify(r.json())
-    except: pass
-
     regime_data = GLOBAL_DASHBOARD_CACHE.get("v8_market_regime", {"regime": "UNKNOWN", "score": 50.0, "xu100_trend": 0.0})
     return jsonify(regime_data)
 
@@ -3013,29 +2989,20 @@ def api_logs():
 @app.route('/api/detective', methods=['GET'])
 def api_detective():
     """PIYASA DEDEKTIFI: tum hisseler icin davranissal metrik satirlari."""
-    # PROXY TO VERDENT (Render IP engeli asilmasi icin)
-    try:
-        import requests
-        h = {}
-        if 'Authorization' in request.headers: h['Authorization'] = request.headers['Authorization']
-        r = requests.get("https://varantradar-7-u1f8z6s.verdent.app/api/detective", timeout=8, cookies=request.cookies, headers=h)
-        if r.status_code == 200:
-            return jsonify(r.json())
-        print(f"[PROXY] Verdent returned status {r.status_code}: {r.text[:100]}")
-    except Exception as e:
-        print(f"[PROXY] Verdent /api/detective ulaşılamadı: {e}")
-
-    # FALLBACK: Eger proxy calismazsa lokalden cekmeye calis
     try:
         from services.detective_engine import get_rows, start_background_loop
         start_background_loop()  # gunicorn worker'larda garanti baslatma
         data = get_rows()
         safe_data = sanitize_for_json(data)
-        return jsonify({"status": safe_data.get("status", "ok"),
-                        "rows": safe_data.get("rows", []),
-                        "summary": safe_data.get("summary", {}),
-                        "built_at": safe_data.get("built_at"),
-                        "error": safe_data.get("error")})
+        err_msg = safe_data.get("error") or safe_data.get("message") or ""
+        return jsonify({
+            "status": safe_data.get("status", "ok"),
+            "message": err_msg,
+            "rows": safe_data.get("rows", []),
+            "summary": safe_data.get("summary", {}),
+            "built_at": safe_data.get("built_at"),
+            "error": err_msg
+        })
     except Exception as e:
         import traceback
         return jsonify({"status": "error", "message": str(e), "trace": traceback.format_exc()}), 500
@@ -3044,15 +3011,6 @@ def api_detective():
 @app.route('/api/detective/detail/<symbol>', methods=['GET'])
 def api_detective_detail(symbol):
     """Dedektif paneli: olay zinciri, ayni gecmis, karakter, hareket zinciri."""
-    # PROXY TO VERDENT
-    try:
-        import requests
-        r = requests.get(f"https://varantradar-7-u1f8z6s.verdent.app/api/detective/detail/{symbol}", timeout=8)
-        if r.status_code == 200:
-            return jsonify(r.json())
-    except Exception as e:
-        print(f"[PROXY] Verdent /api/detective/detail/{symbol} ulaşılamadı: {e}")
-
     try:
         from services.detective_engine import get_detail
         d = get_detail(symbol)
