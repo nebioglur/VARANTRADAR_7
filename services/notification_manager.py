@@ -152,6 +152,27 @@ class NotificationManager:
             msg += f"\n🛡 <b>İz Süren Stop (SL):</b> ₺{sl_val}\n"
             msg += f"🎯 <b>İlk Kâr Al (TP1):</b> ₺{tp1_val}\n"
             msg += f"⚖️ <b>Risk/Kazanç (R:R):</b> 1:{position.get('RR', '-')}\n"
+
+        # Destek ve Direnç Seviyeleri (Saatlik ve Günlük)
+        try:
+            high_val = float(extra.get("High") or (price_val * 1.02 if price_val else 0))
+            low_val = float(extra.get("Low") or (price_val * 0.98 if price_val else 0))
+            if price_val and price_val > 0:
+                p_val = (high_val + low_val + price_val) / 3.0
+                d_r1 = (2 * p_val) - low_val
+                d_s1 = (2 * p_val) - high_val
+                if price_val > d_r1: d_r1 = p_val + (high_val - low_val)
+                if price_val < d_s1: d_s1 = p_val - (high_val - low_val)
+                h_r1 = price_val + (d_r1 - price_val) * 0.4
+                h_s1 = price_val - (price_val - d_s1) * 0.4
+                if d_r1 <= price_val: d_r1 = price_val * 1.025
+                if d_s1 >= price_val: d_s1 = price_val * 0.975
+                if h_r1 <= price_val: h_r1 = price_val * 1.012
+                if h_s1 >= price_val: h_s1 = price_val * 0.988
+                msg += f"\n🛡️ <b>Destek:</b> ₺{h_s1:.2f} <i>(Saatlik)</i> | ₺{d_s1:.2f} <i>(Günlük)</i>\n"
+                msg += f"🎯 <b>Direnç:</b> ₺{h_r1:.2f} <i>(Saatlik)</i> | ₺{d_r1:.2f} <i>(Günlük)</i>\n"
+        except Exception:
+            pass
             
         if reason:
             msg += f"\n💡 <b>Teknik Gerekçe:</b> {reason}\n"

@@ -529,8 +529,9 @@ def get_special_ranking_candidates(all_symbols_stats: dict, top_n: int = 5) -> l
         if not isinstance(intra, dict):
             intra = {}
         intra_change = float(intra.get("intraday_change_pct") or 0.0)
+        high = float(data.get("High") or price)
+        low = float(data.get("Low") or price)
         if intra_change == 0.0:
-            low = float(data.get("Low") or price)
             if low > 0 and price > low:
                 intra_change = round(((price - low) / low) * 100, 2)
             elif change > 0:
@@ -551,6 +552,23 @@ def get_special_ranking_candidates(all_symbols_stats: dict, top_n: int = 5) -> l
         # 3. % Değişim az olmalı (Henüz kopmamış / aşırı primlenmemiş: -3.0% ile +6.0% arası)
         if change < -3.0 or change > 6.0:
             continue
+
+        # --- Pivot Destek / Direnç Seviyeleri (Saatlik ve Günlük) ---
+        p_val = (high + low + price) / 3.0
+        daily_r1 = (2 * p_val) - low
+        daily_s1 = (2 * p_val) - high
+        if price > daily_r1: daily_r1 = p_val + (high - low)
+        if price < daily_s1: daily_s1 = p_val - (high - low)
+        hourly_r1 = price + (daily_r1 - price) * 0.4
+        hourly_s1 = price - (price - daily_s1) * 0.4
+
+        if daily_r1 <= price: daily_r1 = price * 1.025
+        if daily_s1 >= price: daily_s1 = price * 0.975
+        if hourly_r1 <= price: hourly_r1 = price * 1.012
+        if hourly_s1 >= price: hourly_s1 = price * 0.988
+
+        h_s1_pct = abs((hourly_s1 - price) / price * 100) if price > 0 else 0.0
+        h_r1_pct = abs((hourly_r1 - price) / price * 100) if price > 0 else 0.0
 
         # --- Akıllı Özel Sıralama Skoru ---
         # 1) Gün içi güç ağırlığı (En önemli kriter)
@@ -583,6 +601,12 @@ def get_special_ranking_candidates(all_symbols_stats: dict, top_n: int = 5) -> l
             "volume_tl": vol_tl,
             "state": state,
             "special_score": special_score,
+            "hourly_s1": round(hourly_s1, 2),
+            "hourly_r1": round(hourly_r1, 2),
+            "daily_s1": round(daily_s1, 2),
+            "daily_r1": round(daily_r1, 2),
+            "h_s1_pct": round(h_s1_pct, 1),
+            "h_r1_pct": round(h_r1_pct, 1),
         })
 
     # Sıralama: Özel puana göre en yüksekten düşüğe
@@ -592,12 +616,13 @@ def get_special_ranking_candidates(all_symbols_stats: dict, top_n: int = 5) -> l
 
 def send_special_ranking_alert(candidates: list) -> bool:
     """
-    En iyi özel sıralama adaylarını tek bir şık Telegram mesajında gönderir.
+    En iyi özel sıralama adaylarını destek, direnç ve saatlik akış detaylarıyla
+    tek bir şık Telegram mesajında gönderir.
     """
     if not candidates:
         return False
 
-    medals = ["🥇", "🥈", "🥉", "🎖️", "🏅"]
+    medals = ["🥇", "🥈", "🥉", "🎖️", "🏅", "🔹", "🔹", "🔹"]
 
     text = "🌟 <b>ÖZEL SIRALAMA (AKILLI SEÇİM)</b> 🌟\n"
     text += "🎯 <i>Yüksek Hacim & Gün İçi Güç — Henüz Fiyatlanmamış Potansiyeller</i>\n\n"
@@ -611,16 +636,25 @@ def send_special_ranking_alert(candidates: list) -> bool:
         r_vol = item.get("rel_vol", 0.0)
         flow = item.get("hourly_flow", "Denge")
         score = item.get("special_score", 0.0)
+        h_s1 = item.get("hourly_s1", 0.0)
+        h_r1 = item.get("hourly_r1", 0.0)
+        d_s1 = item.get("daily_s1", 0.0)
+        d_r1 = item.get("daily_r1", 0.0)
+        h_s1_p = item.get("h_s1_pct", 0.0)
+        h_r1_p = item.get("h_r1_pct", 0.0)
 
         chg_sign = "+" if chg >= 0 else ""
         intra_sign = "+" if intra_chg >= 0 else ""
 
-        text += f"{medal} <b>#{sym}</b> — ₺{price:.2f}\n"
-        text += f"   📊 Günlük Değişim: <b>{chg_sign}{chg:.2f}%</b> (Fiyatlanmamış)\n"
-        text += f"   ⚡ Gün İçi Güç: <b>{intra_sign}{intra_chg:.2f}%</b> | 🔊 Hacim Gücü: <b>{r_vol:.1f}x</b>\n"
-        text += f"   🌊 Akış: <b>{flow}</b> | 🧠 Özel Skor: <b>{score:.0f}/100</b>\n\n"
+        flow_badge = "🟢 Toplanıyor" if flow == "Toplanıyor" else ("🔴 Satılıyor" if flow == "Satılıyor" else "⚪ Denge")
 
-    text += "💡 <i>Not: Bu hisseler gün içi para girişi ve hacim toplamasına rağmen henüz sert prim yapmamış, akıllı seçim kriterlerine uyan hisselerdir.</i>"
+        text += f"{medal} <b>#{sym}</b> — ₺{price:.2f} (<b>{chg_sign}{chg:.2f}%</b>)\n"
+        text += f"   ⚡ Gün İçi Güç: <b>{intra_sign}{intra_chg:.2f}%</b> | 🔊 Hacim Gücü: <b>{r_vol:.1f}x</b>\n"
+        text += f"   🕒 Saatlik Akış: <b>{flow_badge}</b> | 🧠 Özel Skor: <b>{score:.0f}/100</b>\n"
+        text += f"   🛡️ <b>Destek:</b> ₺{h_s1:.2f} (-%{h_s1_p} Saatlik) / ₺{d_s1:.2f} (Günlük)\n"
+        text += f"   🎯 <b>Direnç:</b> ₺{h_r1:.2f} (+%{h_r1_p} Saatlik) / ₺{d_r1:.2f} (Günlük)\n\n"
+
+    text += "💡 <i>Kriter: Gün içi para girişi ve hacim toplamasına rağmen henüz sert prim yapmamış, saatlik destek üzerinde güçlenen hisselerdir.</i>"
 
     return send_telegram_message(text)
 

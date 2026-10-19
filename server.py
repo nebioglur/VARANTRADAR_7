@@ -466,16 +466,13 @@ def _background_scanner_impl():
                     (11 <= local_now.hour < 18)
                 ))
 
-                # Seans saatlerinde en az 45 dakika arayla veya yeni gün başlangıcında
-                if is_market_session and (now_ts - sent_special_ranking["last_sent_ts"] >= 2700):
-                    candidates = get_special_ranking_candidates(all_stats, top_n=5)
-                    new_candidates = [c for c in candidates if c["symbol"] not in sent_special_ranking["sent_symbols"]]
-                    if candidates and len(new_candidates) >= 1:
+                # Seans saatlerinde her 20 dakikada bir güncel liste gönder (kullanıcı isteği: daha sık gelsin)
+                if is_market_session and (now_ts - sent_special_ranking["last_sent_ts"] >= 1200):
+                    candidates = get_special_ranking_candidates(all_stats, top_n=6)
+                    if candidates and len(candidates) >= 1:
                         success = send_special_ranking_alert(candidates)
                         if success:
                             sent_special_ranking["last_sent_ts"] = now_ts
-                            for c in candidates:
-                                sent_special_ranking["sent_symbols"].add(c["symbol"])
                             print(f"[BACKGROUND] Telegram Özel Sıralama gönderildi: {[c['symbol'] for c in candidates]}")
         except Exception as e_special:
             print(f"[BACKGROUND] Özel Sıralama Telegram hatası: {e_special}")
@@ -2752,9 +2749,18 @@ def api_telegram_send_special_ranking():
 
         all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {}) if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else {}
         if not all_stats:
+            import json, os
+            if os.path.exists("dashboard_cache.json"):
+                try:
+                    with open("dashboard_cache.json", "r", encoding="utf-8") as f:
+                        disk_cache = json.load(f)
+                        all_stats = disk_cache.get("all_symbols_stats", {})
+                except Exception:
+                    pass
+        if not all_stats:
             return jsonify({"status": "error", "message": "Henüz hisse istatistikleri yüklenmedi. Lütfen taramanın tamamlanmasını bekleyin."}), 400
 
-        candidates = get_special_ranking_candidates(all_stats, top_n=5)
+        candidates = get_special_ranking_candidates(all_stats, top_n=6)
         if not candidates:
             return jsonify({"status": "warning", "message": "Şu an kriterlere tam uyan (yüksek hacim + gün içi güç + düşük değişim) hisse bulunamadı."})
 
