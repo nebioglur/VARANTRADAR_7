@@ -26,8 +26,15 @@ class MarketRegimeEngine:
             low_col = 'low' if 'low' in df.columns else 'Low'
             
             close = df[close_col]
+            # CANLI gun ici fiyati kullan (1h bar): gun icindeki sert ralli/dusus
+            # son gunluk bar kapanisinda sakli kaliyor; +3%'luk gun bile "AYI" okunuyordu.
             current_price = float(close.iloc[-1])
             prev_price = float(close.iloc[-2]) if len(close) > 1 else current_price
+            live_price = self._fetch_live_price()
+            if live_price is not None and len(close) > 1:
+                current_price = live_price
+                # Onceki gun kapanisi: son gunluk bugunun bar'i ise bir onceki bar
+                prev_price = float(close.iloc[-2])
             
             # EMA Hesaplamalari (1mo data oldugu icin approximation yapariz, tam deger olmayabilir, 
             # ama kisa-orta vade trend yonunu belirler)
@@ -65,13 +72,23 @@ class MarketRegimeEngine:
             elif change_pct < -1.0: score -= 10
             elif change_pct > 0: score += 5
             elif change_pct < 0: score -= 5
-            
+
+            # Guclu gunluk ralli/dusus daha agirlıklı olsun (+%2 uzeri belirleyici)
+            if change_pct > 2.0: score += 10
+            elif change_pct < -2.0: score -= 10
+
             # Rejim Karari
             regime = "NEUTRAL"
             if score >= 80: regime = "STRONG_BULL"
             elif score >= 60: regime = "BULL"
             elif score <= 20: regime = "STRONG_BEAR"
             elif score <= 40: regime = "BEAR"
+
+            # Celiski onleme: +%2.5 uzeri gunluk ralli AYI okumasi veremez
+            if change_pct >= 2.5 and regime in ("BEAR", "STRONG_BEAR"):
+                regime = "NEUTRAL"
+            if change_pct <= -2.5 and regime in ("BULL", "STRONG_BULL"):
+                regime = "NEUTRAL"
             
             if volatility_state == "HIGH" and regime in ["NEUTRAL", "BEAR"]:
                 regime = "HIGH_VOLATILITY"
@@ -93,6 +110,29 @@ class MarketRegimeEngine:
         except Exception as e:
             print(f"[V8 Regime Engine] Error: {e}")
             return self._last_known_regime("ERROR")
+
+    def _fetch_live_price(self):
+        """XU100 gun ici (1h) son fiyati: gun icindeki ani yon degisimlerini yakalar."""
+        try:
+            data = yf.download(self.index_symbol, period="5d", interval="1h", progress=False)
+            if data is not None and not data.empty:
+                if hasattr(data.columns, 'nlevels') and data.columns.nlevels > 1:
+                    data.columns = data.columns.droplevel(1)
+                c_col = 'close' if 'close' in data.columns else 'Close'
+                val = float(data[c_col].iloc[-1])
+                if val > 0:
+                    return val
+        except Exception:
+            pass
+        try:
+            hist = yf.Ticker(self.index_symbol).history(period="5d", interval="1h")
+            if hist is not None and not hist.empty:
+                val = float(hist['Close'].iloc[-1])
+                if val > 0:
+                    return val
+        except Exception:
+            pass
+        return None
 
     def _fetch_index_df(self):
         """XU100 gunluk verisini ceker: once bulk download, basarisizsa Ticker fallback."""

@@ -405,6 +405,13 @@ class UniversalScanner:
             
             vol_sma = df['volume'].rolling(10).mean()
             tech_result["Vol_SMA10"] = float(vol_sma.iloc[-1])
+            # Gercek goreceli hacim (hacim gucu): bugunun hacmi / 10 gunluk ortalama
+            try:
+                _vs = float(vol_sma.iloc[-1])
+                if _vs > 0:
+                    tech_result["Vol_Multiplier"] = round(volume_today / _vs, 2)
+            except Exception:
+                pass
         except:
             pass
         tech_result["Price"] = round(close_today, 2)

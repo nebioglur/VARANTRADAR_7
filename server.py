@@ -2891,6 +2891,20 @@ def api_v8_learning_outcomes():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
+def _stats_rel_vol(data: dict) -> float:
+    """Gunluk istatistikten gercek goreceli hacim uretir (1.0x donmasin)."""
+    try:
+        vm = data.get("Vol_Multiplier") or data.get("Volume_Ratio")
+        if vm:
+            return float(vm)
+        v = float(data.get("Volume") or 0)
+        vs = float(data.get("Vol_SMA10") or 0)
+        if v > 0 and vs > 0:
+            return round(v / vs, 2)
+    except Exception:
+        pass
+    return 1.0
+
 @app.route('/api/v8/radar/breakout', methods=['GET'])
 def api_v8_radar_breakout():
     all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
@@ -2960,7 +2974,7 @@ def api_v8_radar_breakout():
             # kaybetme; bunları AL değil, düşük öncelikli BEKLE adayı yap.
             price = float(data.get("Daily_Close") or data.get("Price") or 0)
             change = float(data.get("Change_Pct") or 0)
-            rel_vol = float(data.get("Vol_Multiplier") or data.get("Volume_Ratio") or 1)
+            rel_vol = _stats_rel_vol(data)
             fallback_score = max(35.0, min(65.0, 48.0 + change * 2.0 + (rel_vol - 1.0) * 5.0))
             breakout_list.append({
                 "symbol": sym,
@@ -3043,7 +3057,7 @@ def api_v8_radar_discovery():
         elif data.get("Daily_Close") or data.get("Price"):
             price = float(data.get("Daily_Close") or data.get("Price") or 0)
             change = float(data.get("Change_Pct") or 0)
-            rel_vol = float(data.get("Vol_Multiplier") or data.get("Volume_Ratio") or 1)
+            rel_vol = _stats_rel_vol(data)
             discovery_list.append({
                 "symbol": sym,
                 "price": price,
