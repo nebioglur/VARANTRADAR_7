@@ -1,5 +1,5 @@
 /* VARANTRADAR service worker: anında güncelleme + network-first politika */
-const CACHE = 'vr-static-v15';
+const CACHE = 'vr-static-v16';
 const CORE = ['/', '/login', '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {

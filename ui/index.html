@@ -1787,7 +1787,7 @@
                             </tr>
                         </thead>
                         <tbody id="sim-trade-log-tbody">
-                            <tr><td colspan="8" class="text-muted text-center" style="padding:3rem;"><i class="fa-solid fa-spinner fa-spin"></i> İşlem Geçmişi Yükleniyor...</td></tr>
+                            <tr><td colspan="14" class="text-muted text-center" style="padding:3rem;"><i class="fa-solid fa-spinner fa-spin"></i> İşlem Geçmişi Yükleniyor...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -2177,18 +2177,24 @@
                 <table class="data-table" style="width:100%; white-space:nowrap; font-size:0.8rem;">
                     <thead style="position:sticky; top:0; background:var(--bg-base); z-index:10;">
                         <tr>
-                            <th>Tarih / Saat</th>
+                            <th>Tarih</th>
                             <th>Hisse</th>
-                            <th style="text-align:right;">Giriş Fiyatı</th>
-                            <th style="text-align:right;">15 dk Sonra</th>
-                            <th style="text-align:right;">1 Saat Sonra</th>
-                            <th style="text-align:right;">Zirve Kâr (En Yüksek)</th>
-                            <th style="text-align:right;">Dip (En Düşük)</th>
-                            <th style="text-align:center;">İşlem Durumu</th>
+                            <th style="text-align:right;">Giriş</th>
+                            <th style="text-align:right;">T+3dk</th>
+                            <th style="text-align:right;">T+5dk</th>
+                            <th style="text-align:right;">T+10dk</th>
+                            <th style="text-align:right;">T+15dk</th>
+                            <th style="text-align:right;">T+30dk</th>
+                            <th style="text-align:right;">T+60dk</th>
+                            <th style="text-align:right;">T+120dk</th>
+                            <th style="text-align:right;">T+240dk</th>
+                            <th style="text-align:right;">Zirve Kâr (MFE)</th>
+                            <th style="text-align:right;">En Derin Dip (MAE)</th>
+                            <th style="text-align:center;">Durum</th>
                         </tr>
                     </thead>
                     <tbody id="v8-learning-tbody">
-                        <tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:1rem;">Yükleniyor...</td></tr>
+                        <tr><td colspan="14" style="text-align:center; color:var(--text-muted); padding:1rem;">Yükleniyor...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -2232,7 +2238,7 @@
                     </tr>
                 </thead>
                 <tbody id="tb-super12-stocks">
-                    <tr><td colspan="8" style="text-align:center; padding:2rem;">Veriler hesaplaniyor...</td></tr>
+                    <tr><td colspan="14" style="text-align:center; padding:2rem;">Veriler hesaplaniyor...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -2418,7 +2424,7 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="app.js?v=20261021_v4"></script>
+    <script src="app.js?v=20261022_v5"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js?v=20260916_v13"></script>
     <script>

@@ -5734,11 +5734,12 @@ const V8_API = '/api/v8';
 let v8Interval = null;
 
 function formatV8Price(entry, current) {
-    if (!entry || !current || current <= 0) return '<span style="color:var(--text-muted); font-size:0.75rem; font-style:italic;">⏳ Dolmadı</span>';
+    if (!entry || !current || current <= 0) return '<span style="color:var(--text-muted); font-size:0.75rem;">-</span>';
     const chg = ((current - entry) / entry) * 100;
     const color = chg > 0 ? "color:#10b981; font-weight:600;" : (chg < 0 ? "color:#ef4444; font-weight:600;" : "color:var(--text-muted);");
     const sign = chg > 0 ? "+" : "";
     return `<span style="${color}">${current.toFixed(2)} (${sign}${chg.toFixed(2)}%)</span>`;
+}">${current.toFixed(2)} (${sign}${chg.toFixed(2)}%)</span>`;
 }
 
 function translateV8Reason(r) {
@@ -5749,6 +5750,27 @@ function translateV8Reason(r) {
         "WATCH": "İZLEMEDE",
         "STRONG_BEAR": "GÜÇLÜ AYI",
         "STRONG BEAR": "GÜÇLÜ AYI",
+        "BEAR": "AYI (DÜŞÜŞ BASKISI)",
+        "STRONG_BULL": "GÜÇLÜ BOĞA",
+        "STRONG BULL": "GÜÇLÜ BOĞA",
+        "BULL": "BOĞA (YÜKSELİŞ TRENDİ)",
+        "NEUTRAL": "NÖTR (DENGE)",
+        "NORMAL": "Normal",
+        "EXPLOSIVE": "Patlama (Çok Güçlü)",
+        "STRONG": "Güçlü",
+        "WEAK": "Zayıf",
+        "CLOSED": "KAPANDI",
+        "ACTIVE": "İŞLEMDE (AÇIK)",
+        "Breakout score is too weak.": "Kırılım gücü zayıf, izleniyor",
+        "Breakout score is too weak": "Kırılım gücü zayıf, izleniyor",
+        "Strong Breakout with low fakeout risk.": "Düşük tuzak riskli, güçlü kırılım onayı (AL)",
+        "Strong Breakout with low fakeout risk": "Düşük tuzak riskli, güçlü kırılım onayı (AL)",
+        "Momentum is high but breakout lacks absolute strength. Wait for retest.": "Momentum yüksek, retest (düzeltme) beklenmeli",
+        "Momentum is high but breakout lacks absolute strength. Wait for retest": "Momentum yüksek, retest (düzeltme) beklenmeli",
+        "Breakout started but needs more volume/time confirmation.": "Kırılım başladı, hacim ve yön teyidi bekleniyor",
+        "Breakout started but needs more volume/time confirmation": "Kırılım başladı, hacim ve yön teyidi bekleniyor",
+        "High Fakeout Risk (>50%)": "Yüksek tuzak riski (>%50)",
+        "Price is heavily overbought": "Fiyat aşırı primli (kovalamak riskli)",
         "Broke recent local resistance": "Son yerel direnç aşıldı",
         "Broke BB Upper": "Bollinger üst bandı aşıldı",
         "Massive Volume Push": "Çok yüksek hacim patlaması (Alıcı baskısı)",
@@ -5759,18 +5781,16 @@ function translateV8Reason(r) {
         "Fakeout Risk: Bearish Market Regime": "Piyasada satış baskısı mevcut",
         "Fakeout Risk: High Market Volatility": "Yüksek piyasa dalgalanması",
         "Fakeout Risk: Extremely Overbought (Exhaustion)": "Tuzak Riski: Aşırı alım yorgunluğu",
-        "Multi-Timeframe Compression": "Çoklu periyotta volatilite sıkışması",
+        "Multi-Timeframe Compression": "Çoklu periyotta volatilite daralması",
         "Cross-Timeframe Volume Build": "Kademeli hacim artışı ve para girişi",
         "Tight Range & EMA Alignment": "Dar bant konsolidasyonu & EMA desteği",
         "Volatility is dropping": "Volatilite daralıyor, patlama yakın",
         "Relative volume rising": "Göreceli hacim artış trendinde",
-        "High Fakeout Risk (>50%)": "Yüksek tuzak riski (>%50)",
         "Market is too bearish for average breakouts": "Piyasada sert satış baskısı var",
         "Low volume speed for this breakout": "Hacim desteği kırılım için zayıf",
-        "Strong Breakout with low fakeout risk.": "Düşük tuzak riskli, güçlü kırılım onayı (AL)",
-        "Breakout started but needs more volume/time confirmation.": "Kırılım başladı, hacim ve yön teyidi bekleniyor",
-        "Momentum is high but breakout lacks absolute strength. Wait for retest.": "Momentum yüksek fakat retest (geri çekilme) beklenmeli",
-        "Price is heavily overbought": "Fiyat aşırı alım bölgesinde, düzeltme riski"
+        "WAIT_PULLBACK": "DÜZELTME / RETEST BEKLE",
+        "NO_ENTRY": "GİRİŞE UYGUN DEĞİL",
+        "ENTRY": "GİRİŞ ONAYLI (AL)"
     };
     let out = String(r);
     for (const [en, tr] of Object.entries(map)) {
@@ -6034,7 +6054,7 @@ function loadV8Learning() {
             if(!tbody) return;
             tbody.innerHTML = '';
 
-            // Update Scorecard summary if present
+            // Özet Başarı Karnesi Metrikleri
             if (json.summary) {
                 const s = json.summary;
                 const elTot = document.getElementById('v8-metric-total');
@@ -6048,16 +6068,17 @@ function loadV8Learning() {
             }
 
             if (!json.data || json.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:1.5rem; color:var(--text-muted);">Henüz V8 tarafından alınan bir pozisyon kaydı yok.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="14" style="text-align:center; padding:1.5rem; color:var(--text-muted);">Henüz V8 tarafından alınan bir pozisyon kaydı yok.</td></tr>';
                 return;
             }
 
             json.data.forEach(d => {
                 const tr = document.createElement('tr');
                 const timeStr = new Date(d.timestamp).toLocaleString('tr-TR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
-                const mfeColor = d.mfe >= 3.0 ? 'color:#10b981; font-weight:bold;' : 'color:rgba(16,185,129,0.8);';
-                const maeColor = d.mae <= -3.0 ? 'color:#ef4444; font-weight:bold;' : 'color:rgba(225,29,72,0.8);';
+                const mfeColor = d.mfe >= 3.0 ? 'color:#10b981; font-weight:bold;' : 'color:rgba(16,185,129,0.85);';
+                const maeColor = d.mae <= -3.0 ? 'color:#ef4444; font-weight:bold;' : 'color:rgba(225,29,72,0.85);';
                 
+                let rawStat = String(d.final_result || d.status || 'ACTIVE').toUpperCase();
                 let statBadge = `<span style="color:var(--text-muted);">${d.result_label || d.status || '—'}</span>`;
                 if (d.result_label) {
                     let badgeBg = 'rgba(255,255,255,0.05)';
@@ -6073,14 +6094,24 @@ function loadV8Learning() {
                         badgeColor = '#38bdf8';
                     }
                     statBadge = `<span style="display:inline-block; padding:0.25rem 0.6rem; border-radius:6px; font-size:0.75rem; font-weight:700; background:${badgeBg}; color:${badgeColor}; border:1px solid ${badgeColor}33;">${d.result_label}</span>`;
+                } else if (rawStat === 'CLOSED') {
+                    statBadge = `<span style="display:inline-block; padding:0.25rem 0.6rem; border-radius:6px; font-size:0.75rem; font-weight:700; background:rgba(255,255,255,0.06); color:#94a3b8;">✅ KAPANDI</span>`;
+                } else {
+                    statBadge = `<span style="display:inline-block; padding:0.25rem 0.6rem; border-radius:6px; font-size:0.75rem; font-weight:700; background:rgba(56,189,248,0.15); color:#38bdf8;">🟢 İŞLEMDE (AÇIK)</span>`;
                 }
 
                 tr.innerHTML = `
                     <td style="font-size:0.78rem; color:var(--text-muted);">${timeStr}</td>
                     <td style="font-weight:bold; color:var(--text-light);"><span style="background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:4px;">${d.symbol}</span></td>
-                    <td style="text-align:right; font-weight:600;">${d.entry_price ? d.entry_price.toFixed(2) : '-'} TL</td>
-                    <td style="text-align:right; font-size:0.82rem;">${formatV8Price(d.entry_price, d.t_15m_price)}</td>
-                    <td style="text-align:right; font-size:0.82rem;">${formatV8Price(d.entry_price, d.t_60m_price)}</td>
+                    <td style="text-align:right; font-weight:600;">${d.entry_price ? d.entry_price.toFixed(2) : '-'}</td>
+                    <td style="text-align:right; font-size:0.8rem;">${formatV8Price(d.entry_price, d.t_3m_price)}</td>
+                    <td style="text-align:right; font-size:0.8rem;">${formatV8Price(d.entry_price, d.t_5m_price)}</td>
+                    <td style="text-align:right; font-size:0.8rem;">${formatV8Price(d.entry_price, d.t_10m_price)}</td>
+                    <td style="text-align:right; font-size:0.8rem;">${formatV8Price(d.entry_price, d.t_15m_price)}</td>
+                    <td style="text-align:right; font-size:0.8rem;">${formatV8Price(d.entry_price, d.t_30m_price)}</td>
+                    <td style="text-align:right; font-size:0.8rem;">${formatV8Price(d.entry_price, d.t_60m_price)}</td>
+                    <td style="text-align:right; font-size:0.8rem;">${formatV8Price(d.entry_price, d.t_120m_price)}</td>
+                    <td style="text-align:right; font-size:0.8rem;">${formatV8Price(d.entry_price, d.t_240m_price)}</td>
                     <td style="text-align:right; ${mfeColor}">+${d.mfe ? d.mfe.toFixed(2) : '0.00'}%</td>
                     <td style="text-align:right; ${maeColor}">${d.mae ? d.mae.toFixed(2) : '0.00'}%</td>
                     <td style="text-align:center;">${statBadge}</td>
@@ -6089,7 +6120,6 @@ function loadV8Learning() {
             });
         }).catch(e => console.error(e));
 }
-
 function refreshV8Data() {
     const v8wrapper = document.getElementById('v8-wrapper');
     if(v8wrapper && v8wrapper.style.display !== 'none') {
