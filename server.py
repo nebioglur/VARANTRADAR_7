@@ -110,10 +110,38 @@ def _cache_is_stale(data):
     return False, "yas bilinmiyor"
 
 
+def _cache_age_hours(data):
+    """Cache'in saat cinsinden yasi (cache_timestamp yoksa None)."""
+    import time as _time
+    ts = data.get("cache_timestamp") if isinstance(data, dict) else None
+    if not ts:
+        return None
+    try:
+        return (_time.time() - float(ts)) / 3600.0
+    except Exception:
+        return None
+
+
 def load_dashboard_cache():
     import json, os
     from datetime import datetime
-    
+
+    def _accept(data, reason):
+        """Bugunun cache'i her zaman kabul. Onceki gunun cache'i piyasa kapaliyken
+        'Kapanis Verisi' olarak gosterilmek uzere son 72 saat icinde kabul edilir;
+        boylece her yeniden baslatma sonrasi tablolar bos kalmaz."""
+        if not isinstance(data, dict) or not data:
+            return False
+        stale, _ = _cache_is_stale(data)
+        if not stale:
+            return True
+        age_h = _cache_age_hours(data)
+        if age_h is not None and age_h <= 72:
+            print(f"[CACHE] {reason}: son kapanis snapshot'i yuklenecek ({len(data.get('all_symbols_stats', {}))} hisse, yas {age_h:.1f} saat) - piyasa acilinca taze tarama gelir")
+            return True
+        print(f"[CACHE] {reason}: cok eski ({age_h if age_h is not None else 'bilinmiyor'} saat) - bos baslanacak")
+        return False
+
     # Once DB'den (kalici veritabanindan) yuklemeyi dene
     try:
         from services.trade_database import get_connection
@@ -123,26 +151,20 @@ def load_dashboard_cache():
             row = cur.fetchone()
             if row and row["value"]:
                 data = json.loads(row["value"])
-                stale, reason = _cache_is_stale(data)
-                if stale:
-                    print(f"[CACHE] DB'den {reason} yuklendi ({len(data.get('all_symbols_stats', {}))} hisse) - taze tarama baslayacak")
-                    return {}
-                print(f"[CACHE] DB'den BUGUNUN cache'i yuklendi ({len(data.get('all_symbols_stats', {}))} hisse, tarih {data.get('cache_date')})")
-                return data
+                if _accept(data, "DB"):
+                    print(f"[CACHE] DB'den yuklendi ({len(data.get('all_symbols_stats', {}))} hisse, tarih {data.get('cache_date')})")
+                    return data
     except Exception as e:
         print(f"[CACHE] DB yukleme hatasi: {e}")
-        
+
     # Eger DB bos ise (veya hata verdiyse), dosyadan yuklemeyi dene
     try:
         if os.path.exists(CACHE_FILE):
             with open(CACHE_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                stale, reason = _cache_is_stale(data)
-                if stale:
-                    print(f"[CACHE] DOSYADAN {reason} yuklendi ({len(data.get('all_symbols_stats', {}))} hisse) - taze tarama baslayacak")
-                    return {}
-                print(f"[CACHE] DOSYADAN BUGUNUN cache'i yuklendi ({len(data.get('all_symbols_stats', {}))} hisse, tarih {data.get('cache_date')})")
-                return data
+                if _accept(data, "DOSYA"):
+                    print(f"[CACHE] DOSYADAN yuklendi ({len(data.get('all_symbols_stats', {}))} hisse, tarih {data.get('cache_date')})")
+                    return data
     except Exception:
         pass
     return {}
