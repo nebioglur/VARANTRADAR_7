@@ -6096,7 +6096,7 @@ function loadV8Learning() {
             tbody.innerHTML = '';
 
             if (!json.data || json.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="13" style="text-align:center; padding:1rem; color:var(--text-muted);">Henüz V8 tarafından alınan bir pozisyon kaydı yok.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="14" style="text-align:center; padding:1rem; color:var(--text-muted);">Henüz V8 tarafından alınan bir pozisyon kaydı yok.</td></tr>';
                 const wrTotal = document.getElementById('v8-wr-total');
                 if (wrTotal) wrTotal.textContent = '0';
                 return;
@@ -6149,6 +6149,7 @@ function loadV8Learning() {
 
             json.data.forEach(d => {
                 const tr = document.createElement('tr');
+                const timeStr = new Date(d.timestamp).toLocaleString('tr-TR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
                 const mfeVal = d.mfe || 0;
                 const maeVal = d.mae || 0;
                 const mfeColor = mfeVal > 2.0 ? 'color:#10b981; font-weight:bold;' : 'color:rgba(16,185,129,0.75);';
@@ -6157,6 +6158,7 @@ function loadV8Learning() {
                 const windowCells = TDK_WINDOWS.map(w => v8PencereHucre(d[w.key], d.entry_price)).join('');
 
                 tr.innerHTML = `
+                    <td style="font-size:0.75rem; color:var(--text-muted); white-space:nowrap;">${timeStr}</td>
                     <td style="font-weight:bold; color:var(--text-main);">${d.symbol}</td>
                     <td style="text-align:right; font-weight:bold; color:var(--text-main);">${(d.entry_price || 0).toFixed(2)}</td>
                     ${windowCells}
