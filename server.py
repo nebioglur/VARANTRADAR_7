@@ -3159,8 +3159,8 @@ def api_v8_radar_breakout():
             raw_speed = v8_exec.get("momentum_speed", "NORMAL")
             
             item["symbol"] = sym
-            item["price"] = data.get("Daily_Close", 0.0)
-            item["change_pct"] = data.get("Change_Pct", 0.0)
+            item["price"] = data.get("Daily_Close") or data.get("Price") or 0.0
+            item["change_pct"] = data.get("Change_Pct") or data.get("intraday_change_pct") or 0.0
             item["volume"] = data.get("Volume", 0)
             item["entry_status_code"] = raw_status
             item["entry_status"] = raw_status
@@ -3168,7 +3168,10 @@ def api_v8_radar_breakout():
             
             item["momentum_speed"] = speed_map.get(raw_speed, "Normal")
             item["momentum_speed_label"] = speed_map.get(raw_speed, "Normal")
-            item["timeframe_quality"] = v8_exec.get("timeframe_quality", 0.0)
+            tf_q = v8_exec.get("timeframe_quality", 0.0)
+            if not tf_q or tf_q <= 0:
+                tf_q = round(min(95.0, max(45.0, float(bo.get("breakout_score", 60)) * 0.85 - float(bo.get("fakeout_risk", 10)) * 0.2)), 1)
+            item["timeframe_quality"] = tf_q
             item["varrant_info"] = data.get("v8_varrant", {})
             
             raw_reasons = v8_exec.get("reasons", []) or bo.get("reasons", [])
@@ -3203,9 +3206,16 @@ def api_v8_radar_discovery():
         if disc and (raw_state in ["READY", "PREPARING", "WATCH"] or any(k in raw_state for k in ["HAZIR", "SIKIŞMA", "İZLEME"])):
             item = dict(disc)
             item["symbol"] = sym
-            item["price"] = data.get("Daily_Close", 0.0)
-            item["change_pct"] = data.get("Change_Pct", 0.0)
+            item["price"] = data.get("Daily_Close") or data.get("Price") or 0.0
+            item["change_pct"] = data.get("Change_Pct") or data.get("intraday_change_pct") or 0.0
             item["volume"] = data.get("Volume", 0)
+            
+            # Dinamik Hacim Gücü (RVOL / Hacim Katı)
+            hacim_gucu = data.get("Volume_Ratio") or data.get("Hacim_Gucu") or (item.get("metrics") or {}).get("relative_volume", 1.0)
+            if "metrics" not in item or not isinstance(item["metrics"], dict):
+                item["metrics"] = {}
+            item["metrics"]["relative_volume"] = round(float(hacim_gucu or 1.0), 2)
+            item["relative_volume"] = round(float(hacim_gucu or 1.0), 2)
             
             # Anlaşılır durum ve beklenti etiketleri
             if "READY" in raw_state or "HAZIR" in raw_state:
