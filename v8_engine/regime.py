@@ -185,7 +185,8 @@ class MarketRegimeEngine:
             regime_label = self.REGIME_TR_MAP.get(regime, regime)
             
             result = {
-                "regime": regime,
+                "regime": regime_label,
+                "regime_code": regime,
                 "regime_label": regime_label,
                 "score": round(score, 1),
                 "xu100_trend": round(change_pct, 2),
@@ -230,10 +231,12 @@ class MarketRegimeEngine:
             row = c.fetchone()
             conn.close()
             if row is not None:
-                regime = row["regime"]
+                reg_raw = row["regime"]
+                regime_tr = self.REGIME_TR_MAP.get(reg_raw, reg_raw)
                 return {
-                    "regime": regime,
-                    "regime_label": self.REGIME_TR_MAP.get(regime, regime),
+                    "regime": regime_tr,
+                    "regime_code": reg_raw,
+                    "regime_label": regime_tr,
                     "score": row["regime_score"],
                     "xu100_trend": row["xu100_trend"] or 0.0,
                     "volatility_state": row["volatility_state"] or "NORMAL",
@@ -254,7 +257,7 @@ class MarketRegimeEngine:
                 VALUES (?, ?, ?, ?, ?)
             ''', (
                 regime_data["timestamp"],
-                regime_data["regime"],
+                regime_data.get("regime_code", regime_data["regime"]),
                 regime_data["score"],
                 regime_data["xu100_trend"],
                 regime_data["volatility_state"]
@@ -265,9 +268,11 @@ class MarketRegimeEngine:
             print(f"[V8 Regime Engine] DB Error: {e}")
 
     def _default_regime(self, status="NEUTRAL"):
+        tr_label = self.REGIME_TR_MAP.get(status, "NÖTR (YATAY / DENGE)")
         return {
-            "regime": status,
-            "regime_label": self.REGIME_TR_MAP.get(status, status),
+            "regime": tr_label,
+            "regime_code": status,
+            "regime_label": tr_label,
             "score": 50.0,
             "xu100_trend": 0.0,
             "volatility_state": "NORMAL",

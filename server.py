@@ -3065,22 +3065,56 @@ def api_v8_radar_breakout():
     all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
     breakout_list = []
     
+    speed_map = {
+        "EXPLOSIVE": "Patlama (Çok Güçlü)",
+        "STRONG": "Güçlü Momentum",
+        "NORMAL": "Normal",
+        "WEAK": "Zayıf"
+    }
+    status_map = {
+        "ENTER": "GİRİŞ ONAYLI (AL)",
+        "WAIT_PULLBACK": "RETEST BEKLE",
+        "WAIT_CONFIRMATION": "TEYİT BEKLE",
+        "CHASE_RISK": "AŞIRI YÜKSELMİŞ",
+        "NO_ENTRY": "GİRİŞE UYGUN DEĞİL"
+    }
+    reason_map = {
+        "Strong Breakout with low fakeout risk.": "Düşük tuzak riskli, güçlü kırılım onayı (AL)",
+        "Breakout started but needs more volume/time confirmation.": "Kırılım başladı, hacim ve yön teyidi bekleniyor",
+        "High Fakeout Risk (>50%)": "Yüksek tuzak riski (>%50)",
+        "Price is heavily overbought": "Fiyat aşırı primli (kovalamak riskli)",
+        "Momentum is high but breakout lacks absolute strength. Wait for retest.": "Momentum yüksek, retest (geri çekilme) bekleniyor"
+    }
+
     for sym, data in all_stats.items():
         bo = data.get("v8_breakout")
         if bo and bo.get("is_breakout"):
+            item = dict(bo)
             v8_exec = data.get("v8_execution", {})
-            bo["symbol"] = sym
-            bo["price"] = data.get("Daily_Close", 0.0)
-            bo["change_pct"] = data.get("Change_Pct", 0.0)
-            bo["volume"] = data.get("Volume", 0)
-            bo["entry_status"] = v8_exec.get("entry_status", "UNKNOWN")
-            bo["entry_status_label"] = v8_exec.get("entry_status_label", "")
-            bo["entry_reasons"] = v8_exec.get("reasons", [])
-            bo["momentum_speed"] = v8_exec.get("momentum_speed", "NORMAL")
-            bo["momentum_speed_label"] = v8_exec.get("momentum_speed_label", "Normal")
-            bo["timeframe_quality"] = v8_exec.get("timeframe_quality", 0.0)
-            bo["varrant_info"] = data.get("v8_varrant", {})
-            breakout_list.append(bo)
+            raw_status = v8_exec.get("entry_status", "UNKNOWN")
+            raw_speed = v8_exec.get("momentum_speed", "NORMAL")
+            
+            item["symbol"] = sym
+            item["price"] = data.get("Daily_Close", 0.0)
+            item["change_pct"] = data.get("Change_Pct", 0.0)
+            item["volume"] = data.get("Volume", 0)
+            item["entry_status_code"] = raw_status
+            item["entry_status"] = raw_status # code uyumu
+            item["entry_status_label"] = status_map.get(raw_status, raw_status)
+            
+            # Momentum Hızı ve Gerekçeler Türkçe
+            item["momentum_speed"] = speed_map.get(raw_speed, "Normal")
+            item["momentum_speed_label"] = speed_map.get(raw_speed, "Normal")
+            item["timeframe_quality"] = v8_exec.get("timeframe_quality", 0.0)
+            item["varrant_info"] = data.get("v8_varrant", {})
+            
+            raw_reasons = v8_exec.get("reasons", []) or bo.get("reasons", [])
+            clean_reasons = [reason_map.get(r, r) for r in raw_reasons]
+            if not clean_reasons:
+                clean_reasons = ["Düşük tuzak riskli, güçlü kırılım onayı (AL)"]
+            item["entry_reasons"] = clean_reasons
+            
+            breakout_list.append(item)
             
     # Siralama: Oncelikle kaliteli kirilimlar
     breakout_list = sorted(breakout_list, key=lambda x: x.get("breakout_score", 0) - x.get("fakeout_risk", 0), reverse=True)
@@ -3091,15 +3125,47 @@ def api_v8_radar_discovery():
     all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
     discovery_list = []
     
+    state_map = {
+        "READY": "HAZIR (KIRILIM YAKIN)",
+        "PREPARING": "SIKIŞMA (HAZIRLIK)",
+        "WATCH": "İZLEMEDE",
+        "NONE": "NÖTR"
+    }
+
+    reason_tr = {
+        "Multi-Timeframe Compression": "Çoklu periyotta volatilite daralması",
+        "Cross-Timeframe Volume Build": "Kademeli hacim birikimi ve para girişi",
+        "Tight Range & EMA Alignment": "Dar bant konsolidasyonu & EMA desteği",
+        "Volatility is dropping": "Volatilite daralıyor, patlama yakın",
+        "Relative volume rising": "Göreceli hacim artış trendinde",
+        "Günlük tarama adayı; V8 hazırlık teyidi bekleniyor.": "Kırılım hazırlığı ve hacim teyidi izleniyor"
+    }
+
     for sym, data in all_stats.items():
         disc = data.get("v8_discovery")
-        if disc and disc.get("state") in ["READY", "PREPARING", "WATCH"]:
-            # Combine some essential pricing data
-            disc["symbol"] = sym
-            disc["price"] = data.get("Daily_Close", 0.0)
-            disc["change_pct"] = data.get("Change_Pct", 0.0)
-            disc["volume"] = data.get("Volume", 0)
-            discovery_list.append(disc)
+        raw_state = str(disc.get("state") if disc else "").upper()
+        if disc and (raw_state in ["READY", "PREPARING", "WATCH"] or any(k in raw_state for k in ["HAZIR", "SIKIŞMA", "İZLEME"])):
+            item = dict(disc)
+            item["symbol"] = sym
+            item["price"] = data.get("Daily_Close", 0.0)
+            item["change_pct"] = data.get("Change_Pct", 0.0)
+            item["volume"] = data.get("Volume", 0)
+            
+            # KESİN TÜRKÇELEŞTİRME (d.state yazdıran eski arayüzler için doğrudan Türkçe yap)
+            tr_label = state_map.get(raw_state, "İZLEMEDE")
+            item["state_code"] = raw_state
+            item["state"] = tr_label
+            item["state_label"] = tr_label
+            
+            clean_reasons = []
+            for r in item.get("reasons", []):
+                tr_r = reason_tr.get(r, r)
+                clean_reasons.append(tr_r)
+            if not clean_reasons:
+                clean_reasons = ["Kırılım hazırlığı ve hacim teyidi izleniyor"]
+            item["reasons"] = clean_reasons
+
+            discovery_list.append(item)
             
     # Puanlara gore sirala
     discovery_list = sorted(discovery_list, key=lambda x: x.get("preparation_score", 0), reverse=True)
@@ -3115,8 +3181,25 @@ def api_v8_market_regime():
             regime_data = re_engine.determine_regime()
             GLOBAL_DASHBOARD_CACHE["v8_market_regime"] = regime_data
         except Exception:
-            regime_data = {"regime": "NEUTRAL", "regime_label": "NÖTR (YATAY / DENGE)", "score": 50.0, "xu100_trend": 0.0}
-    return jsonify(regime_data)
+            regime_data = {"regime": "NÖTR (YATAY / DENGE)", "score": 50.0, "xu100_trend": 0.0}
+
+    # KESİN TÜRKÇELEŞTİRME:
+    reg_code = str(regime_data.get("regime", "")).upper()
+    tr_map = {
+        "STRONG_BULL": "GÜÇLÜ BOĞA (RALLİ)",
+        "BULL": "BOĞA (YÜKSELİŞ TRENDİ)",
+        "NEUTRAL": "NÖTR (YATAY / DENGE)",
+        "BEAR": "AYI (DÜŞÜŞ BASKISI)",
+        "STRONG_BEAR": "GÜÇLÜ AYI (SERT SATIŞ)",
+        "HIGH_VOLATILITY": "YÜKSEK VOLATİLİTE (DALGALI)"
+    }
+    label = tr_map.get(reg_code, regime_data.get("regime_label", reg_code))
+    
+    resp = dict(regime_data)
+    resp["regime_code"] = reg_code
+    resp["regime"] = label
+    resp["regime_label"] = label
+    return jsonify(resp)
 
 @app.route('/api/logs', methods=['GET'])
 def api_logs():

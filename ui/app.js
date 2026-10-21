@@ -5801,7 +5801,14 @@ function loadV8Regime() {
         .then(data => {
             const el = document.getElementById('regime-status');
             if(!el) return;
-            const label = data.regime_label || getV8RegimeTr(data.regime);
+            let label = data.regime_label || data.regime || "NÖTR";
+            const upLabel = String(label).toUpperCase();
+            if (upLabel.includes("STRONG_BEAR") || upLabel === "STRONG_BEAR") label = "GÜÇLÜ AYI (SERT SATIŞ)";
+            else if (upLabel.includes("BEAR") && !upLabel.includes("AYI")) label = "AYI (DÜŞÜŞ BASKISI)";
+            else if (upLabel.includes("STRONG_BULL") || upLabel === "STRONG_BULL") label = "GÜÇLÜ BOĞA (RALLİ)";
+            else if (upLabel.includes("BULL") && !upLabel.includes("BOĞA")) label = "BOĞA (YÜKSELİŞ TRENDİ)";
+            else if (upLabel.includes("VOLATILITY")) label = "YÜKSEK VOLATİLİTE (DALGALI)";
+            else if (upLabel.includes("NEUTRAL") && !upLabel.includes("NÖTR")) label = "NÖTR (YATAY / DENGE)";
             el.textContent = label;
             
             let bg = "var(--bg-lighter)";
@@ -5850,12 +5857,22 @@ function loadV8Discovery() {
 
             data.slice(0, 30).forEach(d => {
                 const tr = document.createElement('tr');
-                let stateLabel = d.state_label || d.state || '—';
-                let stateStyle = 'color:var(--text-muted)';
-                if (d.state === 'READY') { stateLabel = '🟢 HAZIR (KIRILIM YAKIN)'; stateStyle = 'color:#10b981; font-weight:bold;'; }
-                else if (d.state === 'PREPARING') { stateLabel = '🔵 SIKIŞMA (HAZIRLIK)'; stateStyle = 'color:#60a5fa; font-weight:600;'; }
-                else if (d.state === 'PRE_BREAKOUT') { stateLabel = '⚡ KIRILIM EŞİĞİNDE'; stateStyle = 'color:#facc15; font-weight:bold;'; }
-                else if (d.state === 'WATCH') { stateLabel = '🟡 İZLEMEDE'; stateStyle = 'color:#f59e0b;'; }
+                const rawSt = String(d.state || d.state_label || '').toUpperCase();
+                let stateLabel = '🟡 İZLEMEDE';
+                let stateStyle = 'color:#f59e0b;';
+                if (rawSt.includes('READY') || rawSt.includes('HAZIR')) {
+                    stateLabel = '🟢 HAZIR (KIRILIM YAKIN)';
+                    stateStyle = 'color:#10b981; font-weight:bold;';
+                } else if (rawSt.includes('PREPARING') || rawSt.includes('SIKIŞMA')) {
+                    stateLabel = '🔵 SIKIŞMA (HAZIRLIK)';
+                    stateStyle = 'color:#60a5fa; font-weight:600;';
+                } else if (rawSt.includes('PRE_BREAKOUT') || rawSt.includes('EŞİK')) {
+                    stateLabel = '⚡ KIRILIM EŞİĞİNDE';
+                    stateStyle = 'color:#facc15; font-weight:bold;';
+                } else {
+                    stateLabel = '🟡 İZLEMEDE';
+                    stateStyle = 'color:#f59e0b;';
+                }
 
                 const vol = d.metrics ? `${(d.metrics.relative_volume || 0).toFixed(1)}x` : '—';
                 const reasonRaw = (d.reasons || []).slice(0, 1).join('') || '—';

@@ -1,9 +1,11 @@
-/* VARANTRADAR minimal service worker: uygulama kurulumu + temel statik onbellek. */
-const CACHE = 'vr-static-v12';
+/* VARANTRADAR service worker: anında güncelleme + network-first politika */
+const CACHE = 'vr-static-v14';
 const CORE = ['/', '/login', '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
-    e.waitUntil(caches.open(CACHE).then((c) => c.addAll(CORE).catch(() => {})).then(() => self.skipWaiting()));
+    e.waitUntil(
+        caches.open(CACHE).then((c) => c.addAll(CORE).catch(() => {})).then(() => self.skipWaiting())
+    );
 });
 
 self.addEventListener('activate', (e) => {
@@ -17,26 +19,18 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
     const url = new URL(e.request.url);
     if (e.request.method !== 'GET' || url.origin !== self.location.origin) return;
-    if (url.pathname.startsWith('/api/')) return; // canli veri hic onbelleklenmez
+    if (url.pathname.startsWith('/api/')) return; // Canlı veriler asla önbelleklenmez
 
-    // Sayfa gezinmeleri: once ag, olmazsa onbellek (cevrimdisi acilis)
-    if (e.request.mode === 'navigate') {
-        e.respondWith(
-            fetch(e.request).then((r) => {
-                const copy = r.clone();
-                caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
-                return r;
-            }).catch(() => caches.match(e.request).then((m) => m || caches.match('/')))
-        );
-        return;
-    }
-
-    // Statik dosyalar: once onbellek
+    // Ağ öncelikli (Network First): Her zaman sunucudan en güncel dosyayı çek, yoksa önbellekten sun
     e.respondWith(
-        caches.match(e.request).then((m) => m || fetch(e.request).then((r) => {
-            const copy = r.clone();
-            caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
-            return r;
-        }))
+        fetch(e.request)
+            .then((r) => {
+                if (r && r.status === 200) {
+                    const copy = r.clone();
+                    caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
+                }
+                return r;
+            })
+            .catch(() => caches.match(e.request).then((m) => m || (e.request.mode === 'navigate' ? caches.match('/') : null)))
     );
 });

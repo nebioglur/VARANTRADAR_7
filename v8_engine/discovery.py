@@ -157,11 +157,13 @@ class DiscoveryEngine:
             latest_rvol = round(float(rel_vol.iloc[-1]), 2)
             latest_dist = round(float(dist_ema20.iloc[-1]), 2)
 
+            state_tr = self.STATE_TR_MAP.get(state, "İZLEMEDE")
             return {
                 "symbol": symbol,
                 "preparation_score": round(total_score, 1),
-                "state": state,
-                "state_label": self.STATE_TR_MAP.get(state, state),
+                "state": state_tr,
+                "state_code": state,
+                "state_label": state_tr,
                 "reasons": reasons,
                 "timeframe_breakdown": tf_scores,
                 "metrics": {
@@ -177,11 +179,13 @@ class DiscoveryEngine:
             return self._default_result(symbol, "ERROR")
 
     def _default_result(self, symbol, state):
+        state_tr = self.STATE_TR_MAP.get(state, "İZLEMEDE")
         return {
             "symbol": symbol,
             "preparation_score": 0.0,
-            "state": state,
-            "state_label": self.STATE_TR_MAP.get(state, state),
+            "state": state_tr,
+            "state_code": state,
+            "state_label": state_tr,
             "reasons": ["Yetersiz veri veya hesaplama yapılamadı"],
             "timeframe_breakdown": {},
             "metrics": {
