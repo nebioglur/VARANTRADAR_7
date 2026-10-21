@@ -6629,6 +6629,21 @@ function renderAllStocksTable() {
         let intra_change = intra.intraday_change_pct || 0;
         let hourly_flow = intra.hourly_flow || '-';
         let acc_score = intra.accumulation_score || 0;
+
+        // Risk yonetimi: ATR bazli stop/hedef + para girisi + trend
+        let atr = 0;
+        try { atr = parseFloat(data.ATR) || 0; } catch (e) { atr = 0; }
+        let hi = data.High || 0, lo = data.Low || 0;
+        if (!atr && hi > 0 && lo > 0 && hi > lo) atr = hi - lo; // ATR yoksa gun araligi yaklasimi
+        let price0 = data.Price || data.Daily_Close || 0;
+        let stopLvl = atr > 0 ? price0 - 1.5 * atr : 0;
+        let tgt1Lvl = atr > 0 ? price0 + 1.5 * atr : 0;
+        let tgt2Lvl = atr > 0 ? price0 + 2.5 * atr : 0;
+        let atrPct = price0 > 0 ? (atr / price0) * 100 : 0;
+
+        let ema50 = parseFloat(data.Daily_EMA50) || 0;
+        let ema200 = parseFloat(data.Daily_EMA200) || 0;
+        let moneyVol = parseFloat(data.Money_Volume) || (volLot > 0 ? volLot * price0 : 0);
         
         let tScore = 50;
         if (change > 0 && change <= 7) tScore += (change * 3);
@@ -6665,6 +6680,31 @@ function renderAllStocksTable() {
         if (change > 7) opp = Math.max(0, opp - 10);
         opp = Math.round(Math.min(opp, 100) * 10) / 10;
 
+        // ===== GUVEN SKORU (0-100): "hangi hisse daha garanti firsat?" =====
+        // 1) Trend guveni %30: fiyat EMA50/EMA200 uzerinde mi?
+        let trendPts = 0;
+        if (ema50 > 0 && ema200 > 0) {
+            if (price0 > ema50 && ema50 > ema200) trendPts = 30;        // tam trend
+            else if (price0 > ema50) trendPts = 20;                      // kisa trend
+            else if (ema50 > ema200) trendPts = 10;                      // trend donecek
+        } else if (ema50 > 0 && price0 > ema50) trendPts = 15;
+        let trust = trendPts;
+        // 2) Gercek para girisi %25: 150M+ TL tam puan
+        trust += Math.min(moneyVol / 150e6, 1) * 25;
+        // 3) Firsat skoru katkisi %20
+        trust += (opp / 100) * 20;
+        // 4) Makul volatilite %15: %1.5-%4 ATR ideal; asiri dalgalanma risk
+        if (atrPct >= 1.5 && atrPct <= 4) trust += 15;
+        else if (atrPct > 0 && atrPct < 1.5) trust += 8;
+        else if (atrPct > 4 && atrPct <= 7) trust += 6;
+        // 5) Saatlik toplanma %10
+        if (hourly_flow === 'Toplanıyor') trust += 10;
+        // 6) Ceza: asiri uzama ya da sert duseteki hisse "garanti" olamaz
+        if (change > 7) trust = Math.max(0, trust - 10);
+        if (change < -3) trust = Math.max(0, trust - 10);
+        if (moneyVol < 20e6) trust = Math.max(0, trust - 5); // cok dusuk likidite
+        trust = Math.round(Math.min(trust, 100) * 10) / 10;
+
         return {
             symbol: sym,
             price: price,
@@ -6677,6 +6717,15 @@ function renderAllStocksTable() {
             rel_vol: rVol,
             tavan_score: tScore,
             opportunity: opp,
+            trust: trust,
+            stop: stopLvl,
+            tgt1: tgt1Lvl,
+            tgt2: tgt2Lvl,
+            atr_pct: atrPct,
+            ema50: ema50,
+            ema200: ema200,
+            money_vol: moneyVol,
+            trend_up: ema50 > 0 && price0 > ema50,
             time: data.Time || '-',
             state: state,
             intra_change: intra_change,
@@ -6767,12 +6816,17 @@ function renderAllStocksTable() {
     });
     
     if (!allStats.length) {
-        tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; color:var(--text-muted); padding:1.5rem;">
+        tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; color:var(--text-muted); padding:1.5rem;">
             <i class="fa-solid fa-magnifying-glass" style="margin-right:0.4rem;"></i>
             “${allStocksSearchTerm}” ile eşleşen hisse bulunamadı.
         </td></tr>`;
         return;
     }
+
+    // "Daha garanti firsat" vurgusu: guven skorunun ilk 3'u altin cerceve ile isaretlenir
+    const topTrustSet = new Set(
+        [...allStats].sort((a, b) => b.trust - a.trust).slice(0, 3).map(x => x.symbol)
+    );
 
     tbody.innerHTML = allStats.map(s => {
         const color = s.change > 0 ? 'var(--accent-green)' : (s.change < 0 ? 'var(--accent-red)' : 'var(--text-color)');
@@ -6869,9 +6923,52 @@ function renderAllStocksTable() {
                           <button onclick="showSR('${sym}', ${s.price}, ${s.high}, ${s.low})" style="background:rgba(59,130,246,0.2); color:#3b82f6; border:1px solid rgba(59,130,246,0.5); border-radius:4px; padding:3px 6px; cursor:pointer; font-weight:bold; font-size:0.7rem; transition:0.2s;" onmouseover="this.style.background='#3b82f6'; this.style.color='#fff';" onmouseout="this.style.background='rgba(59,130,246,0.2)'; this.style.color='#3b82f6';" title="Destek ve Direnc Seviyeleri">D/D</button>`;
         
         let prevClose = s.price / (1 + (s.change / 100));
+
+        // Trend rozeti (EMA50/200)
+        const trendBadge = s.ema50 > 0
+            ? (s.trend_up
+                ? `<span title="Fiyat 50 günlük ortalamanın üzerinde — yükseliş trendi" style="font-size:0.6rem; color:#10b981; margin-left:3px;">▲</span>`
+                : `<span title="Fiyat 50 günlük ortalamanın altında — trend zayıf" style="font-size:0.6rem; color:#ef4444; margin-left:3px;">▼</span>`)
+            : '';
+
+        // Stop/Hedef hucresi (ATR bazli)
+        let stopCell = '<td style="font-size:0.65rem; line-height:1.3; min-width:120px;">';
+        if (s.stop > 0) {
+            const stopP = s.price > 0 ? ((s.stop - s.price) / s.price) * 100 : 0;
+            const t1P = s.price > 0 ? ((s.tgt1 - s.price) / s.price) * 100 : 0;
+            const t2P = s.price > 0 ? ((s.tgt2 - s.price) / s.price) * 100 : 0;
+            stopCell += `<div style="display:flex; justify-content:space-between;"><span style="color:var(--text-muted);">S:</span><span style="color:#ef4444;">${s.stop.toFixed(2)} (%${stopP.toFixed(1)})</span></div>` +
+                        `<div style="display:flex; justify-content:space-between;"><span style="color:var(--text-muted);">H1:</span><span style="color:#10b981;">${s.tgt1.toFixed(2)} (+%${t1P.toFixed(1)})</span></div>` +
+                        `<div style="display:flex; justify-content:space-between;"><span style="color:var(--text-muted);">H2:</span><span style="color:#10b981;">${s.tgt2.toFixed(2)} (+%${t2P.toFixed(1)})</span></div>`;
+        } else {
+            stopCell += '<span style="color:var(--text-muted);">—</span>';
+        }
+        stopCell += '</td>';
+
+        // Para girisi hucresi (gercek TL bazli islem tutari)
+        const moneyVolM = (s.money_vol / 1e6).toFixed(1) + 'M ₺';
+        const mvColor = s.money_vol >= 150e6 ? '#10b981' : (s.money_vol >= 50e6 ? '#60a5fa' : 'var(--text-muted)');
+        const moneyCell = `<td style="color:${mvColor}; font-weight:${s.money_vol >= 150e6 ? 'bold' : 'normal'};" title="TL bazlı işlem tutarı: 150M ₺ üzeri güçlü para girişi">${moneyVolM}</td>`;
+
+        // Guven rozeti: "hangi hisse daha garanti?"
+        const isTop = topTrustSet.has(s.symbol);
+        let tColor = '#ef4444';
+        if (s.trust >= 70) tColor = '#22c55e';
+        else if (s.trust >= 50) tColor = '#3b82f6';
+        else if (s.trust >= 35) tColor = '#f97316';
+        const trustTitle = `Güven Skoru: ${s.trust}/100 — hangi hisse daha güvenilir fırsat?\n` +
+            `Trend (EMA50/200): ${s.trend_up ? 'Yükseliş trendinde ▲' : 'Trend zayıf ▼'}\n` +
+            `Para girişi: ${moneyVolM}\n` +
+            `Fırsat puanı katkısı: ${(s.opportunity * 0.2).toFixed(1)}/20\n` +
+            `Volatilite (ATR%): ${s.atr_pct.toFixed(1)}% ${s.atr_pct >= 1.5 && s.atr_pct <= 4 ? '(ideal bant)' : ''}\n` +
+            `Saatlik akış: ${s.hourly_flow}` +
+            (isTop ? '\n🏆 İLK 3 GÜVENİLİR FIRSAT' : '');
+        const trustBadge = `<span title="${trustTitle}" style="font-weight:900; padding:3px 10px; border-radius:12px; background:${tColor}22; color:${tColor}; border:1px solid ${tColor}66; min-width:35px; display:inline-block; text-align:center; cursor:help; ${isTop ? 'box-shadow:0 0 8px rgba(250,204,21,0.6); border-color:#facc15;' : ''}">${isTop ? '🏆 ' : ''}${s.trust.toFixed(1)}</span>`;
+
+        const rowStyle = isTop ? 'box-shadow: inset 3px 0 0 #facc15;' : '';
         return `
-            <tr>
-                <td style="font-weight:bold; cursor:pointer; color:${color};" onclick="openGraphicTab('${s.symbol}')">${sym}</td>
+            <tr style="${rowStyle}">
+                <td style="font-weight:bold; cursor:pointer; color:${color};" onclick="openGraphicTab('${s.symbol}')">${sym}${trendBadge}</td>
                 <td style="font-weight:600; color:${color};">₺${s.price.toFixed(2)}</td>
                 <td style="color:var(--text-muted);">₺${prevClose.toFixed(2)}</td>
                 <td style="color:${color}; font-weight:bold;">${sign}${s.change.toFixed(2)}%</td>
@@ -6880,8 +6977,10 @@ function renderAllStocksTable() {
                 <td style="color:var(--text-muted);">${volTLM}</td>
                 <td style="color:var(--text-muted);">${volLotM}</td>
                 <td style="color:${color}; font-weight:bold;">${relVolText}</td>
-                  
+                ${stopCell}
+                ${moneyCell}
                 <td>${scoreBadge}</td>
+                <td>${trustBadge}</td>
                 <td>${actionBtns}</td>
             </tr>
         `;
