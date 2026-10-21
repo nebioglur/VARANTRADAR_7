@@ -19,8 +19,29 @@ class OutcomeEngine:
     def register_signal(self, symbol: str, entry_price: float, breakout_data: dict, execution_data: dict, regime: str):
         """
         Yeni bir sinyali veritabanına DNA (Snapshot) ile birlikte kaydeder.
+        Aynı gün aynı sembol için mükerrer kayıt açmaz.
         """
         from v8_engine.database import V8Database
+
+        # Sunucu TZ'sinden bagimsiz olarak Istanbul naive zaman damgasi
+        try:
+            from zoneinfo import ZoneInfo
+            _now = datetime.now(ZoneInfo("Europe/Istanbul")).replace(tzinfo=None)
+        except Exception:
+            _now = datetime.now()
+
+        # Aynı gün aynı hisse zaten kayıtlıysa tekrar ekleme (Mükerrerlik engeli)
+        try:
+            conn = V8Database.get_connection()
+            c = conn.cursor()
+            today_str = _now.strftime("%Y-%m-%d")
+            c.execute("SELECT signal_id FROM v8_signals WHERE symbol=? AND timestamp LIKE ? ORDER BY timestamp DESC LIMIT 1", (symbol, f"{today_str}%"))
+            existing = c.fetchone()
+            conn.close()
+            if existing:
+                return existing["signal_id"]
+        except Exception:
+            pass
 
         signal_id = str(uuid.uuid4())
 
@@ -154,8 +175,10 @@ class OutcomeEngine:
 
                             def _price_at(mins_after):
                                 """Hedef andan itibaren ilk mevcut barin close'u (backfill)."""
+                                if elapsed_mins < mins_after:
+                                    return None
                                 target_ts = sig_time + pd.Timedelta(minutes=mins_after)
-                                sub = df[df.index >= target_ts]
+                                sub = df[(df.index >= target_ts) & (df.index.date == sig_time.date())]
                                 if sub.empty: return None
                                 return float(sub['Close'].iloc[0])
 
@@ -194,22 +217,23 @@ class OutcomeEngine:
                             mfe = _get_existing('max_favorable_excursion') or 0.0
                             mae = _get_existing('max_adverse_excursion') or 0.0
 
-                            # MFE/MAE: giristen bugunku tum barlar uzerinden
+                            # MFE/MAE: SADECE giriş anından sonraki ve AYNI GÜNE ait barlar üzerinden
                             try:
                                 entry_ts = sig_time
-                                bars = df.loc[df.index >= entry_ts, 'Close']
+                                # Asla önceki günlerin geçmiş barlarını alma
+                                bars = df.loc[(df.index >= entry_ts) & (df.index.date == sig_time.date()), 'Close']
                                 if bars.empty:
-                                    bars = df['Close']
+                                    bars = pd.Series([current_price])
                                 pcts = ((bars - entry_price) / entry_price) * 100.0
                                 if not pcts.empty:
                                     day_max = float(pcts.max())
                                     day_min = float(pcts.min())
-                                    mfe = max(mfe, day_max)
-                                    mae = min(mae, day_min)
+                                    mfe = max(0.0, max(mfe, day_max))
+                                    mae = min(0.0, min(mae, day_min))
                             except Exception:
                                 pct_change = ((current_price - entry_price) / entry_price) * 100
-                                if pct_change > mfe: mfe = pct_change
-                                if pct_change < mae: mae = pct_change
+                                if pct_change > mfe: mfe = max(0.0, pct_change)
+                                if pct_change < mae: mae = min(0.0, pct_change)
 
                             status_update = "ACTIVE"
                             # Sinyal gun sonunda kapanir (seans bitisi ~18:15) ya da 6 saat

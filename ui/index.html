@@ -2149,21 +2149,42 @@
         <!-- SONUÇ TAKİBİ — DARALTILMIŞ -->
         <details>
             <summary style="cursor:pointer; font-size:0.92rem; font-weight:700; color:#c084fc; padding:0.6rem 0.5rem; border-bottom:1px solid rgba(168,85,247,0.2); list-style:none; display:flex; align-items:center; gap:0.5rem; user-select:none;">
-                <i class="fa-solid fa-chart-bar"></i> Sonuç Takibi (Geçmiş İşlemler)
+                <i class="fa-solid fa-chart-line"></i> V8 Algoritması İşlem Sonuçları & Başarı Karnesi
                 <i class="fa-solid fa-chevron-down" style="margin-left:auto; font-size:0.68rem; color:var(--text-muted);"></i>
             </summary>
-            <div class="table-responsive" style="max-height:300px; overflow-y:auto; margin-top:0.75rem;">
+
+            <!-- ÖZET BAŞARI KARNESİ -->
+            <div id="v8-outcomes-scorecard" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:0.6rem; margin:0.8rem 0 0.5rem;">
+                <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:0.6rem; text-align:center;">
+                    <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase;">Toplam Sinyal</div>
+                    <div id="v8-metric-total" style="font-size:1.15rem; font-weight:bold; color:var(--text-light); margin-top:0.2rem;">-</div>
+                </div>
+                <div style="background:rgba(16,185,129,0.05); border:1px solid rgba(16,185,129,0.2); border-radius:8px; padding:0.6rem; text-align:center;">
+                    <div style="font-size:0.72rem; color:#10b981; text-transform:uppercase;">Başarı Oranı</div>
+                    <div id="v8-metric-winrate" style="font-size:1.15rem; font-weight:bold; color:#10b981; margin-top:0.2rem;">-%</div>
+                </div>
+                <div style="background:rgba(59,130,246,0.05); border:1px solid rgba(59,130,246,0.2); border-radius:8px; padding:0.6rem; text-align:center;">
+                    <div style="font-size:0.72rem; color:#60a5fa; text-transform:uppercase;">Ort. Zirve Kâr</div>
+                    <div id="v8-metric-avgmfe" style="font-size:1.15rem; font-weight:bold; color:#60a5fa; margin-top:0.2rem;">+-%</div>
+                </div>
+                <div style="background:rgba(239,68,68,0.05); border:1px solid rgba(239,68,68,0.2); border-radius:8px; padding:0.6rem; text-align:center;">
+                    <div style="font-size:0.72rem; color:#f87171; text-transform:uppercase;">Ort. Maks. Risk</div>
+                    <div id="v8-metric-avgmae" style="font-size:1.15rem; font-weight:bold; color:#f87171; margin-top:0.2rem;">-%</div>
+                </div>
+            </div>
+
+            <div class="table-responsive" style="max-height:320px; overflow-y:auto; margin-top:0.5rem;">
                 <table class="data-table" style="width:100%; white-space:nowrap; font-size:0.8rem;">
                     <thead style="position:sticky; top:0; background:var(--bg-base); z-index:10;">
                         <tr>
-                            <th>Tarih</th>
+                            <th>Tarih / Saat</th>
                             <th>Hisse</th>
-                            <th>Giriş</th>
-                            <th>T+15dk</th>
-                            <th>T+60dk</th>
-                            <th>Max Kâr (MFE)</th>
-                            <th>Max Zarar (MAE)</th>
-                            <th>Sonuç</th>
+                            <th style="text-align:right;">Giriş Fiyatı</th>
+                            <th style="text-align:right;">15 dk Sonra</th>
+                            <th style="text-align:right;">1 Saat Sonra</th>
+                            <th style="text-align:right;">Zirve Kâr (En Yüksek)</th>
+                            <th style="text-align:right;">Dip (En Düşük)</th>
+                            <th style="text-align:center;">İşlem Durumu</th>
                         </tr>
                     </thead>
                     <tbody id="v8-learning-tbody">
@@ -2397,7 +2418,7 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="app.js?v=20261021_v3"></script>
+    <script src="app.js?v=20261021_v4"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js?v=20260916_v13"></script>
     <script>

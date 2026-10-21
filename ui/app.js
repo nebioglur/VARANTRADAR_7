@@ -5734,9 +5734,9 @@ const V8_API = '/api/v8';
 let v8Interval = null;
 
 function formatV8Price(entry, current) {
-    if (!entry || !current) return "-";
+    if (!entry || !current || current <= 0) return '<span style="color:var(--text-muted); font-size:0.75rem; font-style:italic;">⏳ Dolmadı</span>';
     const chg = ((current - entry) / entry) * 100;
-    const color = chg > 0 ? "color:var(--accent-green)" : (chg < 0 ? "color:var(--accent-red)" : "color:var(--text-muted)");
+    const color = chg > 0 ? "color:#10b981; font-weight:600;" : (chg < 0 ? "color:#ef4444; font-weight:600;" : "color:var(--text-muted);");
     const sign = chg > 0 ? "+" : "";
     return `<span style="${color}">${current.toFixed(2)} (${sign}${chg.toFixed(2)}%)</span>`;
 }
@@ -5744,6 +5744,11 @@ function formatV8Price(entry, current) {
 function translateV8Reason(r) {
     if (!r) return "—";
     const map = {
+        "Günlük tarama adayı; V8 hazırlık teyidi bekleniyor.": "Direnç aşımı ve hacim teyidiyle anlık AL onayı bekleniyor",
+        "Günlük tarama adayı; hazırlık teyidi bekleniyor": "Direnç aşımı ve hacim teyidiyle anlık AL onayı bekleniyor",
+        "WATCH": "İZLEMEDE",
+        "STRONG_BEAR": "GÜÇLÜ AYI",
+        "STRONG BEAR": "GÜÇLÜ AYI",
         "Broke recent local resistance": "Son yerel direnç aşıldı",
         "Broke BB Upper": "Bollinger üst bandı aşıldı",
         "Massive Volume Push": "Çok yüksek hacim patlaması (Alıcı baskısı)",
@@ -6029,6 +6034,19 @@ function loadV8Learning() {
             if(!tbody) return;
             tbody.innerHTML = '';
 
+            // Update Scorecard summary if present
+            if (json.summary) {
+                const s = json.summary;
+                const elTot = document.getElementById('v8-metric-total');
+                const elWin = document.getElementById('v8-metric-winrate');
+                const elMfe = document.getElementById('v8-metric-avgmfe');
+                const elMae = document.getElementById('v8-metric-avgmae');
+                if (elTot) elTot.textContent = s.total_signals ?? 0;
+                if (elWin) elWin.textContent = `%${s.win_rate ?? 0}`;
+                if (elMfe) elMfe.textContent = `+${s.avg_mfe ?? 0}%`;
+                if (elMae) elMae.textContent = `${s.avg_mae ?? 0}%`;
+            }
+
             if (!json.data || json.data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:1.5rem; color:var(--text-muted);">Henüz V8 tarafından alınan bir pozisyon kaydı yok.</td></tr>';
                 return;
@@ -6037,25 +6055,35 @@ function loadV8Learning() {
             json.data.forEach(d => {
                 const tr = document.createElement('tr');
                 const timeStr = new Date(d.timestamp).toLocaleString('tr-TR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
-                const mfeColor = d.mfe > 2.0 ? 'color:#10b981; font-weight:bold;' : 'color:rgba(16,185,129,0.7);';
-                const maeColor = d.mae < -2.0 ? 'color:#ef4444; font-weight:bold;' : 'color:rgba(225,29,72,0.7);';
+                const mfeColor = d.mfe >= 3.0 ? 'color:#10b981; font-weight:bold;' : 'color:rgba(16,185,129,0.8);';
+                const maeColor = d.mae <= -3.0 ? 'color:#ef4444; font-weight:bold;' : 'color:rgba(225,29,72,0.8);';
                 
-                let statBadge = `<span style="color:var(--text-muted);">${d.status || '—'}</span>`;
-                if (d.status === 'ACTIVE') statBadge = `<span style="color:#60a5fa; font-weight:bold;">🟢 AKTİF</span>`;
-                else if (d.status === 'COMPLETED') statBadge = `<span style="color:#10b981; font-weight:bold;">✅ BAŞARILI</span>`;
-                else if (d.status === 'STOPPED') statBadge = `<span style="color:#ef4444; font-weight:bold;">🛑 STOP</span>`;
-                else if (d.status === 'EXPIRED') statBadge = `<span style="color:var(--text-muted);">⏱️ SÜRE DOLDU</span>`;
-                else if (d.status === 'PENDING') statBadge = `<span style="color:#facc15;">⏳ İZLENİYOR</span>`;
+                let statBadge = `<span style="color:var(--text-muted);">${d.result_label || d.status || '—'}</span>`;
+                if (d.result_label) {
+                    let badgeBg = 'rgba(255,255,255,0.05)';
+                    let badgeColor = 'var(--text-light)';
+                    if (d.result_status === 'WIN') {
+                        badgeBg = 'rgba(16,185,129,0.15)';
+                        badgeColor = '#10b981';
+                    } else if (d.result_status === 'LOSS') {
+                        badgeBg = 'rgba(239,68,68,0.15)';
+                        badgeColor = '#ef4444';
+                    } else {
+                        badgeBg = 'rgba(56,189,248,0.15)';
+                        badgeColor = '#38bdf8';
+                    }
+                    statBadge = `<span style="display:inline-block; padding:0.25rem 0.6rem; border-radius:6px; font-size:0.75rem; font-weight:700; background:${badgeBg}; color:${badgeColor}; border:1px solid ${badgeColor}33;">${d.result_label}</span>`;
+                }
 
                 tr.innerHTML = `
                     <td style="font-size:0.78rem; color:var(--text-muted);">${timeStr}</td>
-                    <td style="font-weight:bold; color:var(--text-light);">${d.symbol}</td>
-                    <td style="text-align:right;">${d.entry_price.toFixed(2)}</td>
+                    <td style="font-weight:bold; color:var(--text-light);"><span style="background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:4px;">${d.symbol}</span></td>
+                    <td style="text-align:right; font-weight:600;">${d.entry_price ? d.entry_price.toFixed(2) : '-'} TL</td>
                     <td style="text-align:right; font-size:0.82rem;">${formatV8Price(d.entry_price, d.t_15m_price)}</td>
                     <td style="text-align:right; font-size:0.82rem;">${formatV8Price(d.entry_price, d.t_60m_price)}</td>
-                    <td style="text-align:right; ${mfeColor}">+${d.mfe.toFixed(2)}%</td>
-                    <td style="text-align:right; ${maeColor}">${d.mae.toFixed(2)}%</td>
-                    <td style="text-align:center; font-size:0.78rem;">${statBadge}</td>
+                    <td style="text-align:right; ${mfeColor}">+${d.mfe ? d.mfe.toFixed(2) : '0.00'}%</td>
+                    <td style="text-align:right; ${maeColor}">${d.mae ? d.mae.toFixed(2) : '0.00'}%</td>
+                    <td style="text-align:center;">${statBadge}</td>
                 `;
                 tbody.appendChild(tr);
             });
