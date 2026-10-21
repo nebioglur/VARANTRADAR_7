@@ -46,7 +46,7 @@ class BreakoutEngine:
             # 2. Kırılım Gerçekleşmiş mi?
             if c > local_resistance:
                 is_breakout = True
-                reasons.append("Broke recent local resistance")
+                reasons.append("Yakın direnci aştı")
 
             # Alternatif Kırılım: Bollinger Üst Bandını sert kesme
             bb_mean = close.rolling(20).mean()
@@ -55,7 +55,7 @@ class BreakoutEngine:
             c_bb_upper = float(bb_upper.iloc[-1])
             if c > c_bb_upper and float(close.iloc[-2]) <= float(bb_upper.iloc[-2]):
                 is_breakout = True
-                if "Broke BB Upper" not in reasons: reasons.append("Broke BB Upper")
+                if "Bollinger üst bandını kırdı" not in reasons: reasons.append("Bollinger üst bandını kırdı")
 
             if not is_breakout:
                 return self._default_result(symbol, "NO_BREAKOUT")
@@ -69,10 +69,10 @@ class BreakoutEngine:
 
             if rel_vol > 2.0:
                 breakout_score += 35
-                reasons.append("Massive Volume Push")
+                reasons.append("Çok güçlü hacim patlaması")
             elif rel_vol > 1.3:
                 breakout_score += 15
-                reasons.append("Good Volume Support")
+                reasons.append("Güçlü hacim desteği")
 
             # Mum Yapısı (Kapanışın mumun neresinde olduğu)
             candle_range = h - l
@@ -80,7 +80,7 @@ class BreakoutEngine:
                 close_position = (c - l) / candle_range # 0 = en dip, 1 = en tepe
                 if close_position > 0.8:
                     breakout_score += 25
-                    reasons.append("Closed near High (Strong Bulls)")
+                    reasons.append("Tepeden kapanış (güçlü alıcılar)")
                 elif close_position > 0.6:
                     breakout_score += 15
             
@@ -110,7 +110,7 @@ class BreakoutEngine:
             # 1. Hacimsiz kırılım
             if rel_vol < 0.9:
                 fakeout_risk += 40
-                reasons.append("Fakeout Risk: Low Volume")
+                reasons.append("Tuzak riski: hacimsiz kırılım")
                 
             # 2. Üst Fitil (Satıcılar bastırdı)
             if candle_range > 0:
@@ -118,20 +118,20 @@ class BreakoutEngine:
                 wick_ratio = upper_wick / candle_range
                 if wick_ratio > 0.4:
                     fakeout_risk += 40
-                    reasons.append("Fakeout Risk: Long Upper Wick (Rejection)")
+                    reasons.append("Tuzak riski: uzun üst fitil (satıcı baskısı)")
                     
             # 3. Market Regime Filtresi
             if market_regime in ["BEAR", "STRONG_BEAR"]:
                 fakeout_risk += 30
-                reasons.append("Fakeout Risk: Bearish Market Regime")
+                reasons.append("Tuzak riski: piyasa ayı rejiminde")
             elif market_regime == "HIGH_VOLATILITY":
                 fakeout_risk += 20
-                reasons.append("Fakeout Risk: High Market Volatility")
+                reasons.append("Tuzak riski: piyasada yüksek volatilite")
                 
             # 4. Aşırı Uzama (RSI > 85)
             if current_rsi > 85:
                 fakeout_risk += 25
-                reasons.append("Fakeout Risk: Extremely Overbought (Exhaustion)")
+                reasons.append("Tuzak riski: aşırı uzama (tükenme)")
 
             # Total Cap
             breakout_score = min(100.0, float(breakout_score))

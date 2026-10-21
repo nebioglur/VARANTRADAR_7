@@ -2098,22 +2098,28 @@
                 <i class="fa-solid fa-chart-bar"></i> Sonuç Takibi (Geçmiş İşlemler)
                 <i class="fa-solid fa-chevron-down" style="margin-left:auto; font-size:0.68rem; color:var(--text-muted);"></i>
             </summary>
-            <div class="table-responsive" style="max-height:300px; overflow-y:auto; margin-top:0.75rem;">
-                <table class="data-table" style="width:100%; white-space:nowrap; font-size:0.8rem;">
+            <div class="table-responsive" style="max-height:300px; overflow:auto; margin-top:0.75rem;">
+                <table class="data-table" style="width:100%; white-space:nowrap; font-size:0.8rem; min-width:1100px;">
                     <thead style="position:sticky; top:0; background:var(--bg-base); z-index:10;">
                         <tr>
                             <th>Tarih</th>
                             <th>Hisse</th>
                             <th>Giriş</th>
+                            <th>T+3dk</th>
+                            <th>T+5dk</th>
+                            <th>T+10dk</th>
                             <th>T+15dk</th>
+                            <th>T+30dk</th>
                             <th>T+60dk</th>
-                            <th>Max Kâr (MFE)</th>
-                            <th>Max Zarar (MAE)</th>
-                            <th>Sonuç</th>
+                            <th>T+120dk</th>
+                            <th>T+240dk</th>
+                            <th>Zirve Kâr (MFE)</th>
+                            <th>En Derin Dip (MAE)</th>
+                            <th>İşlem Durumu</th>
                         </tr>
                     </thead>
                     <tbody id="v8-learning-tbody">
-                        <tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:1rem;">Yükleniyor...</td></tr>
+                        <tr><td colspan="14" style="text-align:center; color:var(--text-muted); padding:1rem;">Yükleniyor...</td></tr>
                     </tbody>
                 </table>
             </div>

@@ -30,11 +30,11 @@ class ExecutionEngine:
         
         # 1. Temel Ret Kriterleri (Avoid Engine)
         if f_risk >= 50:
-            reasons.append("High Fakeout Risk (>50%)")
+            reasons.append("Yüksek tuzak riski (%50 üzeri)")
             return self._build_result(symbol, "NO_ENTRY", reasons, "HIGH_RISK", timeframe_quality)
             
         if market_regime in ["STRONG_BEAR"] and b_score < 70:
-            reasons.append("Market is too bearish for average breakouts")
+            reasons.append("Piyasa ayı rejiminde; ortalama kırılımlar için riskli")
             return self._build_result(symbol, "NO_ENTRY", reasons, "MARKET_REGIME", timeframe_quality)
         
         # 2. Zaman Çerçevesi / Momentum Hızı Analizi
@@ -51,31 +51,31 @@ class ExecutionEngine:
             timeframe_quality += 10
         else:
             speed = "WEAK"
-            reasons.append("Low volume speed for this breakout")
+            reasons.append("Bu kırılım için hacim hızı zayıf")
         
         # 3. Aşırı Uzama / Kovalama Riski (Chase Risk)
         if rsi > 80:
             status = "CHASE_RISK"
-            reasons.append(f"Price is heavily overbought (RSI: {rsi})")
+            reasons.append(f"Fiyat aşırı alımda (RSI: {rsi}); kovalamayın")
             timeframe_quality -= 15
             
         # 4. Pullback Bekleme
         elif rsi > 70 and b_score < 60:
             status = "WAIT_PULLBACK"
-            reasons.append("Momentum is high but breakout lacks absolute strength. Wait for retest.")
+            reasons.append("Momentum yüksek ancak kırılım mutlak güçte değil; düzeltme (retest) beklenmeli")
             timeframe_quality -= 5
             
         # 5. Temiz Giriş (Enter)
         else:
             if b_score >= 50 and f_risk <= 40:
                 status = "ENTER"
-                reasons.append("Strong Breakout with low fakeout risk.")
+                reasons.append("Düşük tuzak riskli, güçlü kırılım onayı (AL)")
             elif b_score >= 35:
                 status = "WAIT_CONFIRMATION"
-                reasons.append("Breakout started but needs more volume/time confirmation.")
+                reasons.append("Kırılım başladı; hacim/zaman teyidi bekleniyor")
             else:
                 status = "NO_ENTRY"
-                reasons.append("Breakout score is too weak.")
+                reasons.append("Kırılım gücü zayıf, izleniyor")
         
         timeframe_quality = max(0, min(100, timeframe_quality + b_score * 0.5 - f_risk * 0.3))
         

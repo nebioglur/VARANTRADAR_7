@@ -5896,18 +5896,33 @@ function formatV8Price(entry, current) {
     return `<span style="${color}">${current.toFixed(2)} (${sign}${chg.toFixed(2)}%)</span>`;
 }
 
+const V8_REGIME_TR = {
+    "STRONG_BULL": "GÜÇLÜ BOĞA (RALLİ)",
+    "BULL": "BOĞA (YÜKSELİŞ TRENDİ)",
+    "NEUTRAL": "NÖTR (YATAY / DENGE)",
+    "BEAR": "AYI (DÜŞÜŞ BASKISI)",
+    "STRONG_BEAR": "GÜÇLÜ AYI (SERT SATIŞ)",
+    "HIGH_VOLATILITY": "YÜKSEK VOLATİLİTE",
+    "UNKNOWN": "BELİRSİZ",
+    "DATA_INSUFFICIENT": "VERİ YETERSİZ",
+    "ERROR": "HATA",
+    "DATA INSUFFICIENT": "VERİ YETERSİZ"
+};
+
 function loadV8Regime() {
     vrAuthorizedFetch(`${V8_API}/market/regime`)
         .then(res => res.json())
         .then(data => {
             const el = document.getElementById('regime-status');
             if(!el) return;
-            el.textContent = data.regime || "UNKNOWN";
-            
+            const rawRegime = data.regime || "UNKNOWN";
+            el.textContent = V8_REGIME_TR[rawRegime] || rawRegime;
+
             let bg = "var(--bg-lighter)";
             let color = "var(--text-light)";
-            if(data.regime.includes("BULL")) { bg = "rgba(16,185,129,0.2)"; color = "var(--accent-green)"; }
-            if(data.regime.includes("BEAR")) { bg = "rgba(225,29,72,0.2)"; color = "var(--accent-red)"; }
+            if(rawRegime.includes("BULL")) { bg = "rgba(16,185,129,0.2)"; color = "var(--accent-green)"; }
+            if(rawRegime.includes("BEAR")) { bg = "rgba(225,29,72,0.2)"; color = "var(--accent-red)"; }
+            if(rawRegime.includes("VOLATILITY")) { bg = "rgba(250,204,21,0.2)"; color = "var(--accent-yellow, #facc15)"; }
             
             el.style.backgroundColor = bg;
             el.style.color = color;
@@ -5947,6 +5962,7 @@ function loadV8Discovery() {
                 if (d.state === 'READY') { stateLabel = '🟢 HAZIR'; stateStyle = 'color:#10b981; font-weight:bold;'; }
                 else if (d.state === 'PREPARING') { stateLabel = '🔵 Sıkışıyor'; stateStyle = 'color:#60a5fa;'; }
                 else if (d.state === 'PRE_BREAKOUT') { stateLabel = '⚡ Kırılım Yakın'; stateStyle = 'color:#facc15; font-weight:bold;'; }
+                else if (d.state === 'WATCH') { stateLabel = '🟡 İZLEMEDE'; stateStyle = 'color:#facc15;'; }
 
                 const vol = d.metrics ? `${(d.metrics.relative_volume || 0).toFixed(1)}x` : '—';
                 const reasons = (d.reasons || []).slice(0, 1).join('') || '—';
@@ -6011,8 +6027,16 @@ function loadV8Breakout() {
                 const fakeRisk = d.fakeout_risk || 0;
                 const fakeColor = fakeRisk > 50 ? '#ef4444' : fakeRisk > 30 ? '#facc15' : '#10b981';
                 const fakeLabel = fakeRisk > 50 ? '⚠️ Yüksek' : fakeRisk > 30 ? '⚡ Orta' : '✅ Düşük';
-                const speed = d.momentum_speed || 'NORMAL';
-                const speedColor = speed === 'EXPLOSIVE' ? '#10b981' : speed === 'STRONG' ? '#60a5fa' : '#94a3b8';
+                const speedRaw = d.momentum_speed || 'NORMAL';
+                const V8_SPEED_TR = {
+                    "EXPLOSIVE": "🚀 Patlama (Çok Güçlü)",
+                    "STRONG": "⚡ Güçlü Momentum",
+                    "NORMAL": "Normal",
+                    "WEAK": "Zayıf",
+                    "PREPARING": "⏳ Hazırlanıyor"
+                };
+                const speed = V8_SPEED_TR[speedRaw] || speedRaw;
+                const speedColor = speedRaw === 'EXPLOSIVE' ? '#10b981' : speedRaw === 'STRONG' ? '#60a5fa' : '#94a3b8';
                 const reason = (d.entry_reasons || [])[0] || '—';
                 const earlyBadge = d.early_candidate
                     ? `<div style="position:absolute; top:0; left:0; background:#facc15; color:#1f2937; font-size:0.68rem; font-weight:800; padding:3px 10px; border-bottom-right-radius:8px; letter-spacing:1px;">⚡ ERKEN ADAY</div>`
@@ -6070,8 +6094,27 @@ function loadV8Learning() {
             tbody.innerHTML = '';
 
             if (!json.data || json.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:1rem; color:var(--text-muted);">Henüz V8 tarafından alınan bir pozisyon kaydı yok.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="14" style="text-align:center; padding:1rem; color:var(--text-muted);">Henüz V8 tarafından alınan bir pozisyon kaydı yok.</td></tr>';
                 return;
+            }
+
+            const TDK_WINDOWS = [
+                { key: 't_3m_price', label: 'T+3dk' },
+                { key: 't_5m_price', label: 'T+5dk' },
+                { key: 't_10m_price', label: 'T+10dk' },
+                { key: 't_15m_price', label: 'T+15dk' },
+                { key: 't_30m_price', label: 'T+30dk' },
+                { key: 't_60m_price', label: 'T+60dk' },
+                { key: 't_120m_price', label: 'T+120dk' },
+                { key: 't_240m_price', label: 'T+240dk' },
+            ];
+
+            function v8DurumEtiketi(d) {
+                if (d.final_result === 'WIN' && d.status === 'CLOSED') return '<span style="color:#10b981; font-weight:bold;">🚀 HEDEF 2 (+%5)</span>';
+                if (d.final_result === 'WIN') return '<span style="color:#10b981; font-weight:bold;">🎯 HEDEF 1 (+%3)</span>';
+                if (d.final_result === 'LOSS') return '<span style="color:#ef4444; font-weight:bold;">⛔ ZARARLA KAPANDI</span>';
+                if (d.final_result === 'NEUTRAL' && d.status === 'CLOSED') return '<span style="color:var(--text-muted); font-weight:bold;">✅ KAPANDI</span>';
+                return '<span style="color:#60a5fa; font-weight:bold;">🟢 İŞLEMDE (AÇIK)</span>';
             }
 
             json.data.forEach(d => {
@@ -6079,16 +6122,26 @@ function loadV8Learning() {
                 const timeStr = new Date(d.timestamp).toLocaleString('tr-TR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
                 const mfeColor = d.mfe > 2.0 ? 'color:#10b981; font-weight:bold;' : 'color:rgba(16,185,129,0.7);';
                 const maeColor = d.mae < -2.0 ? 'color:#ef4444; font-weight:bold;' : 'color:rgba(225,29,72,0.7);';
-                const statColor = d.status === 'ACTIVE' ? 'color:#60a5fa; font-weight:bold;' : 'color:var(--text-muted);';
+
+                const windowCells = TDK_WINDOWS.map(w => {
+                    const price = d[w.key];
+                    if (price === null || price === undefined || isNaN(price)) {
+                        return `<td style="text-align:right; color:var(--text-muted);">—</td>`;
+                    }
+                    const pct = ((price - d.entry_price) / d.entry_price) * 100;
+                    const color = pct > 0.05 ? 'var(--accent-green)' : (pct < -0.05 ? 'var(--accent-red)' : 'var(--text-muted)');
+                    const sign = pct > 0 ? '+' : '';
+                    return `<td style="text-align:right; font-size:0.78rem;"><span style="color:var(--text-main);">${price.toFixed(2)}</span> <span style="color:${color}; font-size:0.72rem;">(${sign}${pct.toFixed(2)}%)</span></td>`;
+                }).join('');
+
                 tr.innerHTML = `
                     <td style="font-size:0.78rem; color:var(--text-muted);">${timeStr}</td>
                     <td style="font-weight:bold;">${d.symbol}</td>
                     <td style="text-align:right;">${d.entry_price.toFixed(2)}</td>
-                    <td style="text-align:right; font-size:0.82rem;">${formatV8Price(d.entry_price, d.t_15m_price)}</td>
-                    <td style="text-align:right; font-size:0.82rem;">${formatV8Price(d.entry_price, d.t_60m_price)}</td>
-                    <td style="text-align:right; ${mfeColor}">+${d.mfe.toFixed(2)}%</td>
-                    <td style="text-align:right; ${maeColor}">${d.mae.toFixed(2)}%</td>
-                    <td style="text-align:center; font-size:0.78rem; ${statColor}">${d.status}</td>
+                    ${windowCells}
+                    <td style="text-align:right; ${mfeColor}">+${(d.mfe || 0).toFixed(2)}%</td>
+                    <td style="text-align:right; ${maeColor}">${(d.mae || 0).toFixed(2)}%</td>
+                    <td style="text-align:center; font-size:0.75rem; white-space:nowrap;">${v8DurumEtiketi(d)}</td>
                 `;
                 tbody.appendChild(tr);
             });
