@@ -6040,7 +6040,9 @@ function loadV8Breakout() {
                 const reason = (d.entry_reasons || [])[0] || '—';
                 const earlyBadge = d.early_candidate
                     ? `<div style="position:absolute; top:0; left:0; background:#facc15; color:#1f2937; font-size:0.68rem; font-weight:800; padding:3px 10px; border-bottom-right-radius:8px; letter-spacing:1px;">⚡ ERKEN ADAY</div>`
-                    : '';
+                    : (d.intraday_signal
+                        ? `<div style="position:absolute; top:0; left:0; background:#60a5fa; color:#fff; font-size:0.68rem; font-weight:800; padding:3px 10px; border-bottom-right-radius:8px; letter-spacing:1px;">⏱ GÜN İÇİ (1 SAATLİK)</div>`
+                        : '');
                 const varrantInfo = d.varrant_info && d.varrant_info.status === 'VARRANT_FOUND'
                     ? `<div style="margin-top:0.5rem; padding:0.4rem 0.6rem; background:rgba(168,85,247,0.12); border:1px solid rgba(168,85,247,0.3); border-radius:6px; font-size:0.75rem; color:#c084fc;">
                          <i class="fa-solid fa-bolt"></i> Varant: <b>${d.varrant_info.varrant_prefix}</b> — Kaldıraç: ~${d.varrant_info.estimated_leverage}x
@@ -6095,8 +6097,23 @@ function loadV8Learning() {
 
             if (!json.data || json.data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="13" style="text-align:center; padding:1rem; color:var(--text-muted);">Henüz V8 tarafından alınan bir pozisyon kaydı yok.</td></tr>';
+                const wrTotal = document.getElementById('v8-wr-total');
+                if (wrTotal) wrTotal.textContent = '0';
                 return;
             }
+
+            // V8 kazanma orani ozeti
+            const winCount = json.data.filter(x => x.final_result === 'WIN').length;
+            const lossCount = json.data.filter(x => x.final_result === 'LOSS').length;
+            const openCount = json.data.filter(x => x.status === 'ACTIVE').length;
+            const decided = winCount + lossCount;
+            const wrRate = decided > 0 ? (winCount / decided) * 100 : null;
+            const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+            setTxt('v8-wr-total', json.data.length);
+            setTxt('v8-wr-rate', wrRate === null ? '—' : `%${wrRate.toFixed(0)}`);
+            setTxt('v8-wr-win', winCount);
+            setTxt('v8-wr-loss', lossCount);
+            setTxt('v8-wr-open', openCount);
 
             const TDK_WINDOWS = [
                 { key: 't_3m_price', label: 'T+3dk' },

@@ -520,6 +520,7 @@ class UniversalScanner:
         stay_away_1h = []
         vip_candidates = []
         all_symbols_stats = {}
+        v8_intraday = {}
         
         for sym in symbols:
             df_raw = bulk_data.get(sym)
@@ -545,6 +546,30 @@ class UniversalScanner:
                     all_symbols_stats[sym] = {"intraday_strength": intra}
             except Exception as e_intra:
                 print(f"[INTRADAY STRENGTH] {sym} hesaplanamadi: {e_intra}")
+
+            # --- V8 1 SAATLIK KIRILIM TEYIDI (tum semboller) ---
+            # Gunluk barda kirilim gorulmediginde daha erken sinyal uretmek icin
+            # 1h barda da kirilim/kalite analizi yapilir ve server'a dondurulur.
+            try:
+                from v8_engine.breakout import BreakoutEngine as _BoE
+                from v8_engine.execution import ExecutionEngine as _ExE
+                try:
+                    import server as _srv
+                    _regime_1h = _srv.GLOBAL_DASHBOARD_CACHE.get("v8_market_regime", {}).get("regime", "NEUTRAL")
+                except Exception:
+                    _regime_1h = "NEUTRAL"
+                _bo_1h = _BoE().analyze_breakout(df, sym, _regime_1h)
+                _ex_1h = _ExE().evaluate_entry(_bo_1h, _regime_1h)
+                v8_intraday[sym] = {
+                    "breakout": _bo_1h,
+                    "entry_status": _ex_1h.get("entry_status", "UNKNOWN"),
+                    "reasons": _ex_1h.get("reasons", []),
+                    "momentum_speed": _ex_1h.get("momentum_speed", "NORMAL"),
+                    "timeframe_quality": _ex_1h.get("timeframe_quality", 0),
+                }
+            except Exception as e_v8_1h:
+                print(f"[V8 1H] {sym} kirilim analizi hatasi: {e_v8_1h}")
+            # ----------------------------------------------------
             
             # --- STRICT CUSTOM STRATEGY FILTER (AL / YÜKSELİŞ) ---
             is_match_al, bars_ago_al, _ = self.tech_engine.check_custom_strict_strategy(df, direction="AL")
@@ -606,7 +631,8 @@ class UniversalScanner:
             "opportunities_1h": opportunities,
             "stay_away_1h": stay_away_1h,
             "tavan_adaylari": tavan_adaylari,
-            "all_symbols_stats": all_symbols_stats
+            "all_symbols_stats": all_symbols_stats,
+            "v8_intraday_breakout": v8_intraday
         }
 
     def _trigger_batch_vip_signals(self, vips: list):

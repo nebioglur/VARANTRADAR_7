@@ -477,6 +477,12 @@ def _background_scanner_impl():
                 GLOBAL_DASHBOARD_CACHE["opportunities_1h"] = sanitize_for_json(fast_1h_res.get("opportunities_1h", []))
                 GLOBAL_DASHBOARD_CACHE["tavan_adaylari"] = sanitize_for_json(fast_1h_res.get("tavan_adaylari", []))
                 GLOBAL_DASHBOARD_CACHE["stay_away_1h"] = sanitize_for_json(fast_1h_res.get("stay_away_1h", []))
+
+                # V8 1h kirilim teyidini gunluk istatistiklere isle
+                _v8_intra = sanitize_for_json(fast_1h_res.get("v8_intraday_breakout", {}))
+                for _sym, _v8b in _v8_intra.items():
+                    if _sym in daily_stats:
+                        daily_stats[_sym]["v8_breakout_1h"] = _v8b
                 save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
                 
                 # Hızlı Başlangıçta da sinyalleri DB'ye yaz (Simülasyon boş kalmasın)
@@ -604,6 +610,11 @@ def _background_scanner_impl():
                                 existing_stats[sym]["intraday_strength"] = stats.get("intraday_strength")
                             else:
                                 existing_stats[sym] = stats
+                        # V8 1h kirilim teyidini gunluk istatistiklere isle
+                        _v8_intra = sanitize_for_json(res_1h.get("v8_intraday_breakout", {}))
+                        for _sym, _v8b in _v8_intra.items():
+                            if _sym in existing_stats:
+                                existing_stats[_sym]["v8_breakout_1h"] = _v8b
                         GLOBAL_DASHBOARD_CACHE["all_symbols_stats"] = existing_stats
                         GLOBAL_DASHBOARD_CACHE["opportunities_1h"] = sanitize_for_json(res_1h.get("opportunities_1h", []))
                         GLOBAL_DASHBOARD_CACHE["tavan_adaylari"] = sanitize_for_json(tavan_candidates)
@@ -2898,6 +2909,25 @@ def api_v8_radar_breakout():
             breakout_list.append(row)
             continue
 
+        # Gunluk kirilim yoksa 1 saatlik kirilim teyidine bak (daha erken sinyal):
+        # 1h barda gercek kirilim + ENTER karari varsa gun ici AL adayi olarak ekle.
+        if not (bo and bo.get("is_breakout")):
+            intra = data.get("v8_breakout_1h") or {}
+            intra_bo = intra.get("breakout") or {}
+            if intra_bo.get("is_breakout") and intra.get("entry_status") == "ENTER":
+                row = dict(intra_bo)
+                row["symbol"] = sym
+                row["price"] = data.get("Daily_Close", 0.0)
+                row["change_pct"] = data.get("Change_Pct", 0.0)
+                row["volume"] = data.get("Volume", 0)
+                row["entry_status"] = "ENTER"
+                row["entry_reasons"] = ["1 saatlik barda kırılım teyidi (gün içi sinyal)"] + list(intra.get("reasons") or [])
+                row["intraday_signal"] = True
+                row["momentum_speed"] = intra.get("momentum_speed", "NORMAL")
+                row["timeframe_quality"] = intra.get("timeframe_quality", 0)
+                breakout_list.append(row)
+                continue
+
         # Kırılım yokken endpoint'in boş dönmesi V8'in 600+ hisseyi
         # taramadığı izlenimini veriyordu. Discovery sonuçlarını da bekleme
         # listesine ekle; gerçek kırılım oluştuğunda yukarıdaki karar yolu
@@ -2957,18 +2987,34 @@ def api_v8_radar_breakout():
         reverse=True,
     )[:80]
 
-    # GERCEK kirilim yoksa liste bos kalmasin: hazirligi en guclu ilk 5 adayi
+    # GERCEK kirilim yoksa liste bos kalmasin: hazirligi en guclu adaylari
     # "Erken Aday" olarak AL listesine yukselt (kullanici icin gorunur aksiyon).
+    # Rejim duyarli: ayi/yuksek volatilite piyastada daha secici ol (2 aday, yuksek skor),
+    # normal/boga piyastada 5 aday ver.
+    _regime_now = "NEUTRAL"
+    try:
+        _regime_now = (GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or {}).get("regime", "NEUTRAL")
+    except Exception:
+        _regime_now = "NEUTRAL"
+    if _regime_now in ("BEAR", "STRONG_BEAR", "HIGH_VOLATILITY"):
+        _promo_count, _promo_min_score = 2, 65
+    else:
+        _promo_count, _promo_min_score = 5, 55
+
     if not any(r.get("entry_status") == "ENTER" for r in breakout_list):
         candidates = [
             r for r in breakout_list
-            if r.get("breakout_score", 0) >= 55 and r.get("fakeout_risk", 0) < 40
+            if r.get("breakout_score", 0) >= _promo_min_score and r.get("fakeout_risk", 0) < 40
         ]
+        # Discovery READY adaylari (gercek hazirlik teyidi) one ciksin
         candidates.sort(
-            key=lambda x: x.get("breakout_score", 0) - x.get("fakeout_risk", 0),
+            key=lambda x: (
+                x.get("status") == "DISCOVERY_READY",
+                x.get("breakout_score", 0) - x.get("fakeout_risk", 0),
+            ),
             reverse=True,
         )
-        promoted = {c.get("symbol") for c in candidates[:5]}
+        promoted = {c.get("symbol") for c in candidates[:_promo_count]}
         for r in breakout_list:
             if r.get("symbol") in promoted:
                 r["entry_status"] = "ENTER"

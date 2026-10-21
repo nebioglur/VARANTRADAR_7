@@ -38,8 +38,24 @@ class OutcomeEngine:
             "fakeout_risk": breakout_data.get("fakeout_risk", 0),
             "rsi": breakout_data.get("metrics", {}).get("rsi", 50),
             "relative_volume": breakout_data.get("metrics", {}).get("relative_volume", 1),
+            "atr_pct": breakout_data.get("metrics", {}).get("atr_pct", 0),
             "entry_status": execution_data.get("entry_status", "UNKNOWN"),
         }
+
+        # ATR bazli dinamik stop/hedef: volatil hissede genis, sakin hissede sik.
+        # Guvenli bantlar: stop %2-%8, hedef1 %2-%10, hedef2 %3-%15.
+        atr_pct = 0.0
+        try:
+            atr_pct = float(breakout_data.get("metrics", {}).get("atr_pct", 0) or 0)
+        except Exception:
+            atr_pct = 0.0
+
+        if atr_pct > 0:
+            stop_dist_pct = max(2.0, min(8.0, atr_pct * 1.5))
+            tgt1_dist_pct = max(2.0, min(10.0, atr_pct * 1.5))
+            tgt2_dist_pct = max(3.0, min(15.0, atr_pct * 2.5))
+        else:
+            stop_dist_pct, tgt1_dist_pct, tgt2_dist_pct = 5.0, 3.0, 5.0
 
         signal_data = {
             "signal_id": signal_id,
@@ -49,9 +65,9 @@ class OutcomeEngine:
             "market_regime": regime,
             "score": breakout_data.get("breakout_score", 0),
             "entry_price": float(entry_price),
-            "stop_price": float(entry_price * 0.95), # Default %5 risk
-            "target1": float(entry_price * 1.03),    # Default %3 hedef
-            "target2": float(entry_price * 1.05),    # Default %5 hedef
+            "stop_price": float(entry_price * (1 - stop_dist_pct / 100.0)),
+            "target1": float(entry_price * (1 + tgt1_dist_pct / 100.0)),
+            "target2": float(entry_price * (1 + tgt2_dist_pct / 100.0)),
             "features_snapshot": features,
             "status": "ACTIVE"
         }

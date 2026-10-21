@@ -141,6 +141,19 @@ class BreakoutEngine:
             breakout_score = min(100.0, float(breakout_score))
             fakeout_risk = min(100.0, float(fakeout_risk))
 
+            # ATR (stop/hedef kaliciligi icin V8 geneline sunulur)
+            try:
+                tr1 = high - low
+                tr2 = (high - close.shift()).abs()
+                tr3 = (low - close.shift()).abs()
+                tr_atr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+                atr_val = float(tr_atr.rolling(14).mean().iloc[-1])
+                atr_pct = (atr_val / c * 100.0) if c > 0 else 0.0
+                if pd.isna(atr_pct) or atr_pct < 0:
+                    atr_pct = 0.0
+            except Exception:
+                atr_pct = 0.0
+
             status = "CONFIRMED_BREAKOUT"
             if breakout_score < 50 or fakeout_risk >= 40:
                 status = "SUSPICIOUS_BREAKOUT"
@@ -158,7 +171,8 @@ class BreakoutEngine:
                     "resistance_level": round(local_resistance, 2),
                     "close_price": round(c, 2),
                     "relative_volume": round(rel_vol, 2),
-                    "rsi": round(current_rsi, 1)
+                    "rsi": round(current_rsi, 1),
+                    "atr_pct": round(atr_pct, 2)
                 }
             }
 
