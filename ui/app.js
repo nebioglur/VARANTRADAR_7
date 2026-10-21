@@ -5741,28 +5741,91 @@ function formatV8Price(entry, current) {
     return `<span style="${color}">${current.toFixed(2)} (${sign}${chg.toFixed(2)}%)</span>`;
 }
 
+function translateV8Reason(r) {
+    if (!r) return "—";
+    const map = {
+        "Broke recent local resistance": "Son yerel direnç aşıldı",
+        "Broke BB Upper": "Bollinger üst bandı aşıldı",
+        "Massive Volume Push": "Çok yüksek hacim patlaması (Alıcı baskısı)",
+        "Good Volume Support": "Ortalama üzeri güçlü hacim desteği",
+        "Closed near High (Strong Bulls)": "Günün en yükseğine yakın kapandı (Güçlü Alıcılar)",
+        "Fakeout Risk: Low Volume": "Tuzak Riski: Hacim desteği zayıf",
+        "Fakeout Risk: Long Upper Wick (Rejection)": "Tuzak Riski: Üst fitil uzun (Satış baskısı)",
+        "Fakeout Risk: Bearish Market Regime": "Piyasada satış baskısı mevcut",
+        "Fakeout Risk: High Market Volatility": "Yüksek piyasa dalgalanması",
+        "Fakeout Risk: Extremely Overbought (Exhaustion)": "Tuzak Riski: Aşırı alım yorgunluğu",
+        "Multi-Timeframe Compression": "Çoklu periyotta volatilite sıkışması",
+        "Cross-Timeframe Volume Build": "Kademeli hacim artışı ve para girişi",
+        "Tight Range & EMA Alignment": "Dar bant konsolidasyonu & EMA desteği",
+        "Volatility is dropping": "Volatilite daralıyor, patlama yakın",
+        "Relative volume rising": "Göreceli hacim artış trendinde",
+        "High Fakeout Risk (>50%)": "Yüksek tuzak riski (>%50)",
+        "Market is too bearish for average breakouts": "Piyasada sert satış baskısı var",
+        "Low volume speed for this breakout": "Hacim desteği kırılım için zayıf",
+        "Strong Breakout with low fakeout risk.": "Düşük tuzak riskli, güçlü kırılım onayı (AL)",
+        "Breakout started but needs more volume/time confirmation.": "Kırılım başladı, hacim ve yön teyidi bekleniyor",
+        "Momentum is high but breakout lacks absolute strength. Wait for retest.": "Momentum yüksek fakat retest (geri çekilme) beklenmeli",
+        "Price is heavily overbought": "Fiyat aşırı alım bölgesinde, düzeltme riski"
+    };
+    let out = String(r);
+    for (const [en, tr] of Object.entries(map)) {
+        if (out.includes(en)) {
+            out = out.replace(en, tr);
+        }
+    }
+    return out;
+}
+
+function getV8RegimeTr(regime) {
+    if (!regime) return "BELİRSİZ";
+    const r = String(regime).toUpperCase();
+    if (r.includes("STRONG_BULL")) return "GÜÇLÜ BOĞA (RALLİ)";
+    if (r.includes("STRONG_BEAR")) return "GÜÇLÜ AYI (SERT SATIŞ)";
+    if (r.includes("BULL")) return "BOĞA (YÜKSELİŞ TRENDİ)";
+    if (r.includes("BEAR")) return "AYI (DÜŞÜŞ BASKISI)";
+    if (r.includes("VOLATILITY")) return "YÜKSEK VOLATİLİTE";
+    if (r.includes("NEUTRAL")) return "NÖTR (YATAY / DENGE)";
+    return regime;
+}
+
+function getV8SpeedTr(speed) {
+    if (speed === 'EXPLOSIVE') return { text: '🚀 Patlama (Çok Güçlü)', color: '#10b981' };
+    if (speed === 'STRONG') return { text: '⚡ Güçlü Momentum', color: '#60a5fa' };
+    if (speed === 'WEAK') return { text: '⏳ Zayıf Hacim', color: '#94a3b8' };
+    return { text: '✅ Normal', color: '#38bdf8' };
+}
+
 function loadV8Regime() {
     vrAuthorizedFetch(`${V8_API}/market/regime`)
         .then(res => res.json())
         .then(data => {
             const el = document.getElementById('regime-status');
             if(!el) return;
-            el.textContent = data.regime || "UNKNOWN";
+            const label = data.regime_label || getV8RegimeTr(data.regime);
+            el.textContent = label;
             
             let bg = "var(--bg-lighter)";
             let color = "var(--text-light)";
-            if(data.regime.includes("BULL")) { bg = "rgba(16,185,129,0.2)"; color = "var(--accent-green)"; }
-            if(data.regime.includes("BEAR")) { bg = "rgba(225,29,72,0.2)"; color = "var(--accent-red)"; }
+            const reg = String(data.regime || "").toUpperCase();
+            if(reg.includes("BULL")) { bg = "rgba(16,185,129,0.2)"; color = "var(--accent-green)"; }
+            else if(reg.includes("BEAR")) { bg = "rgba(225,29,72,0.2)"; color = "var(--accent-red)"; }
+            else if(reg.includes("VOLATILITY")) { bg = "rgba(234,179,8,0.2)"; color = "var(--accent-yellow)"; }
+            else { bg = "rgba(14,165,233,0.15)"; color = "#38bdf8"; }
             
             el.style.backgroundColor = bg;
             el.style.color = color;
             el.style.border = `1px solid ${color}`;
             
-            document.getElementById('regime-score').textContent = `Güç: ${data.score || 0}/100`;
+            const scoreEl = document.getElementById('regime-score');
+            if (scoreEl) scoreEl.textContent = `Güç Skoru: ${data.score || 0}/100`;
             
-            const trend = parseFloat(data.xu100_trend || 0).toFixed(2);
-            const trendColor = trend > 0 ? "var(--accent-green)" : "var(--accent-red)";
-            document.getElementById('regime-trend').innerHTML = `BIST100 Trend: <span style="color:${trendColor}; font-weight:bold;">${trend > 0 ? '+' : ''}${trend}%</span>`;
+            const trendEl = document.getElementById('regime-trend');
+            if (trendEl) {
+                const trend = parseFloat(data.xu100_trend || 0).toFixed(2);
+                const trendColor = trend > 0 ? "var(--accent-green)" : (trend < 0 ? "var(--accent-red)" : "var(--text-muted)");
+                const advancers = data.advancers_ratio ? ` | Piyasa Geneli: <span style="color:${data.advancers_ratio >= 50 ? 'var(--accent-green)' : 'var(--accent-red)'}; font-weight:bold;">%${data.advancers_ratio} Artıda</span>` : '';
+                trendEl.innerHTML = `BIST100 Trend: <span style="color:${trendColor}; font-weight:bold;">${trend > 0 ? '+' : ''}${trend}%</span>${advancers}`;
+            }
         }).catch(e => console.error("V8 Regime Error", e));
 }
 
@@ -5778,41 +5841,110 @@ function loadV8Discovery() {
             const data = json.data || [];
 
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1rem; color:var(--text-muted);">Şu an hazırlık aşamasında olan hisse yok.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:var(--text-muted);">Şu an hazırlık aşamasında olan hisse yok.</td></tr>';
                 if (waitBadge) waitBadge.textContent = '0';
                 return;
             }
 
             if (waitBadge) waitBadge.textContent = data.length;
 
-            data.slice(0, 20).forEach(d => {
+            data.slice(0, 30).forEach(d => {
                 const tr = document.createElement('tr');
-                let stateLabel = d.state || '—';
+                let stateLabel = d.state_label || d.state || '—';
                 let stateStyle = 'color:var(--text-muted)';
-                if (d.state === 'READY') { stateLabel = '🟢 HAZIR'; stateStyle = 'color:#10b981; font-weight:bold;'; }
-                else if (d.state === 'PREPARING') { stateLabel = '🔵 Sıkışıyor'; stateStyle = 'color:#60a5fa;'; }
-                else if (d.state === 'PRE_BREAKOUT') { stateLabel = '⚡ Kırılım Yakın'; stateStyle = 'color:#facc15; font-weight:bold;'; }
+                if (d.state === 'READY') { stateLabel = '🟢 HAZIR (KIRILIM YAKIN)'; stateStyle = 'color:#10b981; font-weight:bold;'; }
+                else if (d.state === 'PREPARING') { stateLabel = '🔵 SIKIŞMA (HAZIRLIK)'; stateStyle = 'color:#60a5fa; font-weight:600;'; }
+                else if (d.state === 'PRE_BREAKOUT') { stateLabel = '⚡ KIRILIM EŞİĞİNDE'; stateStyle = 'color:#facc15; font-weight:bold;'; }
+                else if (d.state === 'WATCH') { stateLabel = '🟡 İZLEMEDE'; stateStyle = 'color:#f59e0b;'; }
 
                 const vol = d.metrics ? `${(d.metrics.relative_volume || 0).toFixed(1)}x` : '—';
-                const reasons = (d.reasons || []).slice(0, 1).join('') || '—';
+                const reasonRaw = (d.reasons || []).slice(0, 1).join('') || '—';
+                const reason = translateV8Reason(reasonRaw);
 
                 tr.innerHTML = `
                     <td style="font-weight:bold; color:var(--text-light);">${d.symbol}</td>
                     <td><span style="${stateStyle}">${stateLabel}</span></td>
                     <td style="text-align:center; font-weight:bold; color:#60a5fa;">${d.preparation_score || '—'}</td>
-                    <td style="text-align:center; color:var(--accent-green);">${vol}</td>
-                    <td style="font-size:0.78rem; color:var(--text-muted); max-width:180px; white-space:normal;">${reasons}</td>
+                    <td style="text-align:center; color:var(--accent-green); font-weight:bold;">${vol}</td>
+                    <td style="font-size:0.78rem; color:var(--text-muted); max-width:220px; white-space:normal;">${reason}</td>
                 `;
                 tbody.appendChild(tr);
             });
         }).catch(e => console.error(e));
 }
 
+function renderV8BreakoutCard(d, isCandidate = false) {
+    const fakeRisk = d.fakeout_risk || 0;
+    const fakeColor = fakeRisk > 50 ? '#ef4444' : fakeRisk > 30 ? '#facc15' : '#10b981';
+    const fakeLabel = fakeRisk > 50 ? '⚠️ Yüksek' : fakeRisk > 30 ? '⚡ Orta' : '✅ Düşük';
+    const speedInfo = getV8SpeedTr(d.momentum_speed || 'NORMAL');
+    const reasonRaw = (d.entry_reasons || [])[0] || (d.reasons || [])[0] || '—';
+    const reason = translateV8Reason(reasonRaw);
+    
+    let badgeText = '✅ GİRİŞ ONAYLI (AL)';
+    let badgeBg = '#10b981';
+    let cardBorder = 'rgba(16,185,129,0.35)';
+    let cardBg = 'rgba(16,185,129,0.06)';
+
+    if (isCandidate) {
+        if (d.entry_status === 'WAIT_PULLBACK') {
+            badgeText = '⏳ RETEST BEKLE';
+            badgeBg = '#f59e0b';
+            cardBorder = 'rgba(245,158,11,0.35)';
+            cardBg = 'rgba(245,158,11,0.05)';
+        } else {
+            badgeText = '🔍 TEYİT BEKLENİYOR';
+            badgeBg = '#0ea5e9';
+            cardBorder = 'rgba(14,165,233,0.35)';
+            cardBg = 'rgba(14,165,233,0.05)';
+        }
+    }
+
+    const varrantInfo = d.varrant_info && d.varrant_info.status === 'VARRANT_FOUND'
+        ? `<div style="margin-top:0.5rem; padding:0.4rem 0.6rem; background:rgba(168,85,247,0.12); border:1px solid rgba(168,85,247,0.3); border-radius:6px; font-size:0.75rem; color:#c084fc;">
+             <i class="fa-solid fa-bolt"></i> Varant: <b>${d.varrant_info.varrant_prefix}</b> — Kaldıraç: ~${d.varrant_info.estimated_leverage}x
+           </div>`
+        : '';
+
+    const card = document.createElement('div');
+    card.style.cssText = `background:${cardBg}; border:1px solid ${cardBorder}; border-radius:12px; padding:1rem; position:relative; overflow:hidden;`;
+    card.innerHTML = `
+        <div style="position:absolute; top:0; right:0; background:${badgeBg}; color:#fff; font-size:0.68rem; font-weight:800; padding:3px 10px; border-bottom-left-radius:8px; letter-spacing:0.5px;">${badgeText}</div>
+        <div style="font-size:1.25rem; font-weight:800; color:var(--text-light); margin-bottom:0.6rem;">${d.symbol}</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; padding-bottom:0.5rem; border-bottom:1px solid rgba(255,255,255,0.05);">
+            <div style="font-size:1.35rem; font-weight:700; color:var(--text-main);">₺${(d.price || 0).toFixed(2)}</div>
+            <div style="font-size:0.92rem; font-weight:bold; color:${(d.change_pct || 0) > 0 ? 'var(--accent-green)' : ((d.change_pct || 0) < 0 ? 'var(--accent-red)' : 'var(--text-muted)')};">${(d.change_pct || 0) > 0 ? '+' : ''}${(d.change_pct || 0).toFixed(2)}%</div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; font-size:0.8rem; margin-bottom:0.75rem;">
+            <div style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.4rem 0.6rem;">
+                <div style="color:var(--text-muted); font-size:0.68rem;">Kırılım Gücü</div>
+                <div style="font-weight:700; color:#60a5fa;">${d.breakout_score || '—'} <span style="font-size:0.68rem; color:var(--text-muted);">/100</span></div>
+            </div>
+            <div style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.4rem 0.6rem;">
+                <div style="color:var(--text-muted); font-size:0.68rem;">Tuzak Riski</div>
+                <div style="font-weight:700; color:${fakeColor};">${fakeLabel}</div>
+            </div>
+            <div style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.4rem 0.6rem;">
+                <div style="color:var(--text-muted); font-size:0.68rem;">Momentum Hızı</div>
+                <div style="font-weight:700; color:${speedInfo.color}; font-size:0.75rem;">${speedInfo.text}</div>
+            </div>
+            <div style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.4rem 0.6rem;">
+                <div style="color:var(--text-muted); font-size:0.68rem;">Zaman Uyumu</div>
+                <div style="font-weight:700; color:#facc15;">${d.timeframe_quality || 0}/100</div>
+            </div>
+        </div>
+        <div style="font-size:0.78rem; color:var(--text-muted); padding:0.4rem 0.6rem; background:rgba(0,0,0,0.18); border-radius:6px; margin-bottom:0.5rem; line-height:1.4;">
+            <i class="fa-solid fa-circle-info" style="color:#60a5fa;"></i> ${reason}
+        </div>
+        ${varrantInfo}
+    `;
+    return card;
+}
+
 function loadV8Breakout() {
     vrAuthorizedFetch(`${V8_API}/radar/breakout`)
         .then(res => res.json())
         .then(json => {
-            // Gizli tbody için backward compat
             const tbody = document.getElementById('v8-breakout-tbody');
             if (tbody) tbody.innerHTML = '';
 
@@ -5830,7 +5962,7 @@ function loadV8Breakout() {
 
             data.forEach(d => {
                 if (d.entry_status === 'ENTER') enterList.push(d);
-                else if (d.entry_status === 'WAIT_PULLBACK' || d.entry_status === 'WAIT') waitList.push(d);
+                else if (d.entry_status === 'WAIT_PULLBACK' || d.entry_status === 'WAIT_CONFIRMATION' || d.entry_status === 'WAIT') waitList.push(d);
                 else avoidList.push(d);
             });
 
@@ -5840,65 +5972,35 @@ function loadV8Breakout() {
             if (countTotal) countTotal.textContent = (typeof globalDashboardData !== 'undefined' && globalDashboardData.all_symbols_stats) ? Object.keys(globalDashboardData.all_symbols_stats).length : 550;
 
             if (!cardsContainer) return;
+            cardsContainer.innerHTML = '';
 
-            if (enterList.length === 0) {
+            if (enterList.length === 0 && waitList.length === 0) {
                 cardsContainer.innerHTML = `
                     <div style="grid-column:1/-1; text-align:center; padding:3rem; color:var(--text-muted); border:1px dashed rgba(255,255,255,0.1); border-radius:12px;">
                         <div style="font-size:2rem; margin-bottom:0.5rem;">🔍</div>
-                        <div style="font-size:0.95rem; font-weight:600;">Şu an giriş onaylı hisse yok</div>
-                        <div style="font-size:0.78rem; margin-top:0.4rem;">Sistem ${(typeof globalDashboardData !== 'undefined' && globalDashboardData.all_symbols_stats) ? Object.keys(globalDashboardData.all_symbols_stats).length : 550} hisseyi tarıyor. Hazırlık aşamasındakileri aşağıda görebilirsiniz.</div>
+                        <div style="font-size:0.95rem; font-weight:600; color:var(--text-light);">Şu an anlık giriş onaylı hisse yok</div>
+                        <div style="font-size:0.78rem; margin-top:0.4rem;">Sistem 550 hisseyi tarıyor. Hazırlık ve sıkışma aşamasındaki hisseleri aşağıdaki listede görebilirsiniz.</div>
                     </div>`;
                 return;
             }
 
-            cardsContainer.innerHTML = '';
+            // 1. Kesin Onaylı Girişler
             enterList.forEach(d => {
-                const fakeRisk = d.fakeout_risk || 0;
-                const fakeColor = fakeRisk > 50 ? '#ef4444' : fakeRisk > 30 ? '#facc15' : '#10b981';
-                const fakeLabel = fakeRisk > 50 ? '⚠️ Yüksek' : fakeRisk > 30 ? '⚡ Orta' : '✅ Düşük';
-                const speed = d.momentum_speed || 'NORMAL';
-                const speedColor = speed === 'EXPLOSIVE' ? '#10b981' : speed === 'STRONG' ? '#60a5fa' : '#94a3b8';
-                const reason = (d.entry_reasons || [])[0] || '—';
-                const varrantInfo = d.varrant_info && d.varrant_info.status === 'VARRANT_FOUND'
-                    ? `<div style="margin-top:0.5rem; padding:0.4rem 0.6rem; background:rgba(168,85,247,0.12); border:1px solid rgba(168,85,247,0.3); border-radius:6px; font-size:0.75rem; color:#c084fc;">
-                         <i class="fa-solid fa-bolt"></i> Varant: <b>${d.varrant_info.varrant_prefix}</b> — Kaldıraç: ~${d.varrant_info.estimated_leverage}x
-                       </div>`
-                    : '';
-
-                const card = document.createElement('div');
-                card.style.cssText = 'background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.35); border-radius:12px; padding:1rem; position:relative; overflow:hidden;';
-                card.innerHTML = `
-                    <div style="position:absolute; top:0; right:0; background:#10b981; color:#fff; font-size:0.7rem; font-weight:800; padding:3px 10px; border-bottom-left-radius:8px; letter-spacing:1px;">✅ GİR</div>
-                    <div style="font-size:1.2rem; font-weight:800; color:#10b981; margin-bottom:0.75rem;">${d.symbol}</div>
-                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; padding-bottom:0.5rem; border-bottom:1px solid rgba(255,255,255,0.05);">
-                          <div style="font-size:1.4rem; font-weight:700; color:var(--text-main);">₺${(d.price || 0).toFixed(2)}</div>
-                          <div style="font-size:0.9rem; font-weight:bold; color:${(d.change_pct || 0) > 0 ? 'var(--accent-green)' : ((d.change_pct || 0) < 0 ? 'var(--accent-red)' : 'var(--text-muted)')};">${(d.change_pct || 0) > 0 ? '+' : ''}${(d.change_pct || 0).toFixed(2)}%</div>
-                      </div>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; font-size:0.8rem; margin-bottom:0.75rem;">
-                        <div style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.4rem 0.6rem;">
-                            <div style="color:var(--text-muted); font-size:0.68rem;">Kırılım Gücü</div>
-                            <div style="font-weight:700; color:#60a5fa;">${d.breakout_score || '—'} <span style="font-size:0.68rem; color:var(--text-muted);">/100</span></div>
-                        </div>
-                        <div style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.4rem 0.6rem;">
-                            <div style="color:var(--text-muted); font-size:0.68rem;">Tuzak Riski</div>
-                            <div style="font-weight:700; color:${fakeColor};">${fakeLabel}</div>
-                        </div>
-                        <div style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.4rem 0.6rem;">
-                            <div style="color:var(--text-muted); font-size:0.68rem;">Momentum Hızı</div>
-                            <div style="font-weight:700; color:${speedColor};">${speed}</div>
-                        </div>
-                        <div style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.4rem 0.6rem;">
-                            <div style="color:var(--text-muted); font-size:0.68rem;">Zaman Uyumu</div>
-                            <div style="font-weight:700; color:#facc15;">${d.timeframe_quality || 0}/100</div>
-                        </div>
-                    </div>
-                    <div style="font-size:0.78rem; color:var(--text-muted); padding:0.4rem 0.6rem; background:rgba(0,0,0,0.15); border-radius:6px; margin-bottom:0.5rem;">
-                        <i class="fa-solid fa-circle-info" style="color:#60a5fa;"></i> ${reason}
-                    </div>
-                    ${varrantInfo}
-                `;
-                cardsContainer.appendChild(card);
+                cardsContainer.appendChild(renderV8BreakoutCard(d, false));
             });
+
+            // 2. Retest / Teyit Bekleyen Kaliteli Adaylar (Kullanıcı ekranda fırsatları kaçırmasın)
+            if (waitList.length > 0) {
+                if (enterList.length > 0) {
+                    const divider = document.createElement('div');
+                    divider.style.cssText = 'grid-column:1/-1; margin:1rem 0 0.5rem; padding-top:0.75rem; border-top:1px dashed rgba(255,255,255,0.1); font-size:0.85rem; font-weight:700; color:#facc15; display:flex; align-items:center; gap:0.5rem;';
+                    divider.innerHTML = `<i class="fa-solid fa-hourglass-half"></i> Retest & Teyit Bekleyen Kırılımlar (${waitList.length})`;
+                    cardsContainer.appendChild(divider);
+                }
+                waitList.forEach(d => {
+                    cardsContainer.appendChild(renderV8BreakoutCard(d, true));
+                });
+            }
         }).catch(e => console.error(e));
 }
 
@@ -5911,7 +6013,7 @@ function loadV8Learning() {
             tbody.innerHTML = '';
 
             if (!json.data || json.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:1rem; color:var(--text-muted);">Henüz V8 tarafından alınan bir pozisyon kaydı yok.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:1.5rem; color:var(--text-muted);">Henüz V8 tarafından alınan bir pozisyon kaydı yok.</td></tr>';
                 return;
             }
 
@@ -5920,16 +6022,23 @@ function loadV8Learning() {
                 const timeStr = new Date(d.timestamp).toLocaleString('tr-TR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
                 const mfeColor = d.mfe > 2.0 ? 'color:#10b981; font-weight:bold;' : 'color:rgba(16,185,129,0.7);';
                 const maeColor = d.mae < -2.0 ? 'color:#ef4444; font-weight:bold;' : 'color:rgba(225,29,72,0.7);';
-                const statColor = d.status === 'ACTIVE' ? 'color:#60a5fa; font-weight:bold;' : 'color:var(--text-muted);';
+                
+                let statBadge = `<span style="color:var(--text-muted);">${d.status || '—'}</span>`;
+                if (d.status === 'ACTIVE') statBadge = `<span style="color:#60a5fa; font-weight:bold;">🟢 AKTİF</span>`;
+                else if (d.status === 'COMPLETED') statBadge = `<span style="color:#10b981; font-weight:bold;">✅ BAŞARILI</span>`;
+                else if (d.status === 'STOPPED') statBadge = `<span style="color:#ef4444; font-weight:bold;">🛑 STOP</span>`;
+                else if (d.status === 'EXPIRED') statBadge = `<span style="color:var(--text-muted);">⏱️ SÜRE DOLDU</span>`;
+                else if (d.status === 'PENDING') statBadge = `<span style="color:#facc15;">⏳ İZLENİYOR</span>`;
+
                 tr.innerHTML = `
                     <td style="font-size:0.78rem; color:var(--text-muted);">${timeStr}</td>
-                    <td style="font-weight:bold;">${d.symbol}</td>
+                    <td style="font-weight:bold; color:var(--text-light);">${d.symbol}</td>
                     <td style="text-align:right;">${d.entry_price.toFixed(2)}</td>
                     <td style="text-align:right; font-size:0.82rem;">${formatV8Price(d.entry_price, d.t_15m_price)}</td>
                     <td style="text-align:right; font-size:0.82rem;">${formatV8Price(d.entry_price, d.t_60m_price)}</td>
                     <td style="text-align:right; ${mfeColor}">+${d.mfe.toFixed(2)}%</td>
                     <td style="text-align:right; ${maeColor}">${d.mae.toFixed(2)}%</td>
-                    <td style="text-align:center; font-size:0.78rem; ${statColor}">${d.status}</td>
+                    <td style="text-align:center; font-size:0.78rem;">${statBadge}</td>
                 `;
                 tbody.appendChild(tr);
             });

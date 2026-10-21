@@ -3068,12 +3068,18 @@ def api_v8_radar_breakout():
     for sym, data in all_stats.items():
         bo = data.get("v8_breakout")
         if bo and bo.get("is_breakout"):
+            v8_exec = data.get("v8_execution", {})
             bo["symbol"] = sym
             bo["price"] = data.get("Daily_Close", 0.0)
             bo["change_pct"] = data.get("Change_Pct", 0.0)
             bo["volume"] = data.get("Volume", 0)
-            bo["entry_status"] = data.get("v8_execution", {}).get("entry_status", "UNKNOWN")
-            bo["entry_reasons"] = data.get("v8_execution", {}).get("reasons", [])
+            bo["entry_status"] = v8_exec.get("entry_status", "UNKNOWN")
+            bo["entry_status_label"] = v8_exec.get("entry_status_label", "")
+            bo["entry_reasons"] = v8_exec.get("reasons", [])
+            bo["momentum_speed"] = v8_exec.get("momentum_speed", "NORMAL")
+            bo["momentum_speed_label"] = v8_exec.get("momentum_speed_label", "Normal")
+            bo["timeframe_quality"] = v8_exec.get("timeframe_quality", 0.0)
+            bo["varrant_info"] = data.get("v8_varrant", {})
             breakout_list.append(bo)
             
     # Siralama: Oncelikle kaliteli kirilimlar
@@ -3101,7 +3107,15 @@ def api_v8_radar_discovery():
 
 @app.route('/api/v8/market/regime', methods=['GET'])
 def api_v8_market_regime():
-    regime_data = GLOBAL_DASHBOARD_CACHE.get("v8_market_regime", {"regime": "UNKNOWN", "score": 50.0, "xu100_trend": 0.0})
+    regime_data = GLOBAL_DASHBOARD_CACHE.get("v8_market_regime")
+    if not regime_data or regime_data.get("regime") in ["UNKNOWN", "ERROR", None]:
+        try:
+            from v8_engine.regime import MarketRegimeEngine
+            re_engine = MarketRegimeEngine()
+            regime_data = re_engine.determine_regime()
+            GLOBAL_DASHBOARD_CACHE["v8_market_regime"] = regime_data
+        except Exception:
+            regime_data = {"regime": "NEUTRAL", "regime_label": "NÖTR (YATAY / DENGE)", "score": 50.0, "xu100_trend": 0.0}
     return jsonify(regime_data)
 
 @app.route('/api/logs', methods=['GET'])

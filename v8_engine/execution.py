@@ -4,9 +4,25 @@ class ExecutionEngine:
     """
     V8 Execution & Avoid Engine
     İyi bir hisse bulunsa bile "Şu an girilir mi?" sorusunu yanıtlar.
-    Artık kırılımın zaman çerçevesi (hız/momentum) ve çoklu periyot uyumuna
-    göre karar verir.
+    Kırılımın zaman çerçevesi (hız/momentum) ve çoklu periyot uyumuna göre karar verir.
     """
+    ENTRY_STATUS_TR_MAP = {
+        "ENTER": "GİRİŞ ONAYLI (AL)",
+        "WAIT_PULLBACK": "RETEST BEKLE (GERİ ÇEKİLME)",
+        "WAIT_CONFIRMATION": "TEYİT BEKLE",
+        "CHASE_RISK": "AŞIRI YÜKSEK (KOVAMA)",
+        "NO_ENTRY": "GİRİŞE UYGUN DEĞİL",
+        "NO_SIGNAL": "SİNYAL YOK",
+        "ERROR": "HATA"
+    }
+
+    SPEED_TR_MAP = {
+        "EXPLOSIVE": "Çok Güçlü Patlama",
+        "STRONG": "Güçlü Momentum",
+        "NORMAL": "Normal",
+        "WEAK": "Zayıf"
+    }
+
     def __init__(self):
         pass
         
@@ -15,69 +31,68 @@ class ExecutionEngine:
         Breakout Engine'den gelen verilere göre giriş kararı verir.
         """
         if not breakout_data or not breakout_data.get("is_breakout"):
-            return self._default_result("NO_SIGNAL")
+            return self._default_result("SİNYAL YOK")
 
         symbol = breakout_data.get("symbol")
-        b_score = breakout_data.get("breakout_score", 0)
-        f_risk = breakout_data.get("fakeout_risk", 0)
+        b_score = breakout_data.get("breakout_score", 0.0)
+        f_risk = breakout_data.get("fakeout_risk", 0.0)
         metrics = breakout_data.get("metrics", {})
-        rsi = metrics.get("rsi", 50)
-        rel_vol = metrics.get("relative_volume", 1.0)
+        rsi = float(metrics.get("rsi", 50.0))
+        rel_vol = float(metrics.get("relative_volume", 1.0))
         
         status = "NO_ENTRY"
         reasons = []
-        timeframe_quality = 0
+        timeframe_quality = 0.0
         
-        # 1. Temel Ret Kriterleri (Avoid Engine)
-        if f_risk >= 50:
-            reasons.append("High Fakeout Risk (>50%)")
-            return self._build_result(symbol, "NO_ENTRY", reasons, "HIGH_RISK", timeframe_quality)
-            
-        if market_regime in ["STRONG_BEAR"] and b_score < 70:
-            reasons.append("Market is too bearish for average breakouts")
-            return self._build_result(symbol, "NO_ENTRY", reasons, "MARKET_REGIME", timeframe_quality)
-        
-        # 2. Zaman Çerçevesi / Momentum Hızı Analizi
-        # Hacim ve RSI'ye göre kırılımın "hızını" sınıflandırır
+        # 1. Hız ve Momentum Hızı Analizi
         speed = "NORMAL"
-        if rel_vol > 2.0 and 55 <= rsi <= 70:
+        if rel_vol >= 1.8 and 50 <= rsi <= 78:
             speed = "EXPLOSIVE"
-            timeframe_quality += 30
-        elif rel_vol > 1.5 and 50 <= rsi <= 75:
+            timeframe_quality += 30.0
+        elif rel_vol >= 1.3 and 48 <= rsi <= 80:
             speed = "STRONG"
-            timeframe_quality += 20
+            timeframe_quality += 20.0
         elif rel_vol >= 1.0:
             speed = "NORMAL"
-            timeframe_quality += 10
+            timeframe_quality += 10.0
         else:
             speed = "WEAK"
-            reasons.append("Low volume speed for this breakout")
-        
-        # 3. Aşırı Uzama / Kovalama Riski (Chase Risk)
-        if rsi > 80:
-            status = "CHASE_RISK"
-            reasons.append(f"Price is heavily overbought (RSI: {rsi})")
-            timeframe_quality -= 15
+            reasons.append("Hacim desteği kırılım için zayıf")
+
+        # 2. Temel Ret Kriterleri (Avoid Engine)
+        if f_risk >= 60.0:
+            reasons.append("Yüksek tuzak riski (>%60)")
+            return self._build_result(symbol, "NO_ENTRY", reasons, "HIGH_RISK", timeframe_quality, speed)
             
-        # 4. Pullback Bekleme
-        elif rsi > 70 and b_score < 60:
+        if market_regime in ["STRONG_BEAR"] and b_score < 60.0:
+            reasons.append("Piyasa rejiminde sert satış baskısı var, sadece yüksek puanlı kırılımlar seçilir")
+            return self._build_result(symbol, "NO_ENTRY", reasons, "MARKET_REGIME", timeframe_quality, speed)
+
+        # 3. Aşırı Uzama / Kovalama Riski (Chase Risk)
+        if rsi > 82.0:
+            status = "CHASE_RISK"
+            reasons.append(f"Fiyat aşırı alım bölgesinde (RSI: {rsi:.1f}), kovalamak riskli")
+            timeframe_quality -= 15.0
+            
+        # 4. Pullback (Retest) Bekleme
+        elif rsi > 70.0 and b_score < 65.0:
             status = "WAIT_PULLBACK"
-            reasons.append("Momentum is high but breakout lacks absolute strength. Wait for retest.")
-            timeframe_quality -= 5
+            reasons.append("Momentum yüksek fakat direnç seviyesine geri çekilme (retest) beklenmeli")
+            timeframe_quality -= 5.0
             
         # 5. Temiz Giriş (Enter)
         else:
-            if b_score >= 60 and f_risk <= 30:
+            if b_score >= 48.0 and f_risk <= 45.0:
                 status = "ENTER"
-                reasons.append("Strong Breakout with low fakeout risk.")
-            elif b_score >= 40:
+                reasons.append("Düşük tuzak riskli, güçlü kırılım onayı (AL)")
+            elif b_score >= 38.0:
                 status = "WAIT_CONFIRMATION"
-                reasons.append("Breakout started but needs more volume/time confirmation.")
+                reasons.append("Kırılım hareketi başladı, hacim ve yön teyidi bekleniyor")
             else:
                 status = "NO_ENTRY"
-                reasons.append("Breakout score is too weak.")
+                reasons.append("Kırılım gücü giriş için yetersiz")
         
-        timeframe_quality = max(0, min(100, timeframe_quality + b_score * 0.5 - f_risk * 0.3))
+        timeframe_quality = max(0.0, min(100.0, timeframe_quality + b_score * 0.5 - f_risk * 0.25))
         
         return self._build_result(symbol, status, reasons, "OK", round(timeframe_quality, 1), speed)
         
@@ -85,18 +100,22 @@ class ExecutionEngine:
         return {
             "symbol": symbol,
             "entry_status": status,
+            "entry_status_label": self.ENTRY_STATUS_TR_MAP.get(status, status),
             "reasons": reasons,
             "risk_profile": risk_level,
             "timeframe_quality": timeframe_quality,
-            "momentum_speed": speed
+            "momentum_speed": speed,
+            "momentum_speed_label": self.SPEED_TR_MAP.get(speed, speed)
         }
         
     def _default_result(self, reason):
         return {
             "symbol": "UNKNOWN",
             "entry_status": "NO_ENTRY",
+            "entry_status_label": self.ENTRY_STATUS_TR_MAP.get("NO_ENTRY", "NO_ENTRY"),
             "reasons": [reason],
             "risk_profile": "UNKNOWN",
             "timeframe_quality": 0.0,
-            "momentum_speed": "-"
+            "momentum_speed": "NORMAL",
+            "momentum_speed_label": "Normal"
         }

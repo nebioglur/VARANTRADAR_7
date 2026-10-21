@@ -4,10 +4,17 @@ import numpy as np
 class DiscoveryEngine:
     """
     V8 Discovery Engine - Hareket Öncesi Radar
-    Hisse henüz sert yükselmeden, sıkışma ve hacim hazırlığını yakalar.
-    Artık çoklu zaman penceresinde (5, 20, 50 bar) ve farklı hızlandırılmış
-    periyotlarla (Kısa/Orta/Uzun) konsensus skoru üretir.
+    Hisse henüz sert yükselmeden, taban oluşumu, sıkışma ve hacim hazırlığını yakalar.
+    Çoklu zaman penceresinde (Kısa 5b, Orta 20b, Uzun 50b) konsensus skoru üretir.
     """
+    STATE_TR_MAP = {
+        "READY": "HAZIR (KIRILIM YAKIN)",
+        "PREPARING": "SIKIŞMA (HAZIRLIK)",
+        "WATCH": "İZLEMEDE",
+        "NONE": "NÖTR",
+        "ERROR": "BİLGİ ALINAMADI"
+    }
+
     def __init__(self):
         pass
         
@@ -15,7 +22,7 @@ class DiscoveryEngine:
         """
         Gelen DataFrame üzerinde volatilite, hacim ve momentum sıkışmasını analiz eder.
         """
-        if df is None or len(df) < 30:
+        if df is None or len(df) < 15:
             return self._default_result(symbol, "DATA_INSUFFICIENT")
             
         try:
@@ -24,171 +31,163 @@ class DiscoveryEngine:
             low = df['Low'] if 'Low' in df.columns else df['low']
             vol = df['Volume'] if 'Volume' in df.columns else df['volume']
             
-            if vol.sum() == 0:
+            if vol.sum() == 0 or len(close) < 10:
                 return self._default_result(symbol, "NO_VOLUME")
             
-            # --- ÇOKLU ZAMAN PENCERESİ KONSENSUSU ---
+            # --- 1. TÜM SERİ ÜZERİNDE GÖSTERGELER (NaN oluşumunu engeller) ---
+            rolling_mean = close.rolling(20, min_periods=5).mean()
+            rolling_std = close.rolling(20, min_periods=5).std().fillna(0)
+            upper_band = rolling_mean + (rolling_std * 2)
+            lower_band = rolling_mean - (rolling_std * 2)
+            bb_width = ((upper_band - lower_band) / rolling_mean.replace(0, np.nan)) * 100
+            bb_width = bb_width.fillna(5.0)
+
+            tr1 = high - low
+            tr2 = abs(high - close.shift())
+            tr3 = abs(low - close.shift())
+            tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+            atr = tr.rolling(14, min_periods=5).mean()
+            atr_pct = ((atr / close.replace(0, np.nan)) * 100).fillna(2.0)
+
+            vol_sma = vol.rolling(10, min_periods=3).mean().replace(0, np.nan)
+            rel_vol = vol / vol_sma
+            rel_vol = rel_vol.fillna(1.0)
+
+            ema20 = close.ewm(span=20, min_periods=5).mean()
+            dist_ema20 = ((close - ema20) / ema20.replace(0, np.nan)) * 100
+            dist_ema20 = dist_ema20.fillna(0.0)
+
+            # --- 2. ÇOKLU ZAMAN PENCERESİ SKORLAMASI ---
+            # Kısa (5 bar), Orta (20 bar), Uzun (50 bar)
             tf_scores = {}
             for tf_label, lookback in [("short", 5), ("medium", 20), ("long", 50)]:
-                if len(close) < lookback + 5:
-                    continue
-                sub_close = close.iloc[-lookback:]
-                sub_high = high.iloc[-lookback:]
-                sub_low = low.iloc[-lookback:]
-                sub_vol = vol.iloc[-lookback:]
-                tf_scores[tf_label] = self._score_window(sub_close, sub_high, sub_low, sub_vol)
-            
-            if not tf_scores:
-                return self._default_result(symbol, "DATA_INSUFFICIENT")
-            
-            # Konsensus: kısa %40, orta %35, uzun %25
-            weights = {"short": 0.40, "medium": 0.35, "long": 0.25}
+                eff_lb = min(len(close), lookback)
+                sub_close = close.iloc[-eff_lb:]
+                sub_high = high.iloc[-eff_lb:]
+                sub_low = low.iloc[-eff_lb:]
+                sub_vol = vol.iloc[-eff_lb:]
+                sub_rel_vol = rel_vol.iloc[-eff_lb:]
+                sub_bb = bb_width.iloc[-eff_lb:]
+                sub_atr = atr_pct.iloc[-eff_lb:]
+                sub_dist = dist_ema20.iloc[-eff_lb:]
+
+                # A) Sıkışma Skoru (0-40)
+                comp_score = 0.0
+                cur_bb = float(sub_bb.iloc[-1])
+                avg_bb = float(sub_bb.mean()) if len(sub_bb) > 0 else cur_bb
+                if avg_bb > 0 and cur_bb < avg_bb * 0.85:
+                    comp_score += 20.0
+                if avg_bb > 0 and cur_bb < avg_bb * 0.60:
+                    comp_score += 10.0
+                
+                cur_atr = float(sub_atr.iloc[-1])
+                avg_atr = float(sub_atr.mean()) if len(sub_atr) > 0 else cur_atr
+                if avg_atr > 0 and cur_atr < avg_atr * 0.90:
+                    comp_score += 10.0
+
+                # B) Hacim Birikimi Skoru (0-35)
+                vol_score = 0.0
+                cur_rvol = float(sub_rel_vol.iloc[-1])
+                prev_rvol = float(sub_rel_vol.iloc[-2]) if len(sub_rel_vol) > 1 else cur_rvol
+                if cur_rvol >= 1.5:
+                    vol_score += 20.0
+                elif cur_rvol >= 1.1:
+                    vol_score += 12.0
+                
+                if cur_rvol > prev_rvol and float(sub_close.iloc[-1]) >= float(sub_close.iloc[-2]):
+                    vol_score += 15.0 # Hacimli yükselen gün
+
+                # C) Yapı / Taban Skoru (0-25)
+                struct_score = 0.0
+                h_max = float(sub_high.max())
+                l_min = float(sub_low.min())
+                range_pct = ((h_max - l_min) / l_min) * 100 if l_min > 0 else 100
+                if range_pct < 6.0:
+                    struct_score += 15.0 # Çok dar konsolidasyon bandı
+                elif range_pct < 10.0:
+                    struct_score += 8.0
+
+                cur_dist = float(sub_dist.iloc[-1])
+                if -1.5 <= cur_dist <= 3.0:
+                    struct_score += 10.0 # EMA20 üzerinde sağlıklı tutunma
+
+                total_window = min(100.0, comp_score + vol_score + struct_score)
+                tf_scores[tf_label] = {
+                    "total": round(total_window, 1),
+                    "compression": round(comp_score, 1),
+                    "volume": round(vol_score, 1),
+                    "structure": round(struct_score, 1)
+                }
+
+            # Konsensus: Kısa %45, Orta %35, Uzun %20
+            weights = {"short": 0.45, "medium": 0.35, "long": 0.20}
             total_score = sum(tf_scores[tf]["total"] * weights.get(tf, 0) for tf in tf_scores)
             avg_compression = np.mean([tf_scores[tf]["compression"] for tf in tf_scores])
             avg_volume = np.mean([tf_scores[tf]["volume"] for tf in tf_scores])
             avg_structure = np.mean([tf_scores[tf]["structure"] for tf in tf_scores])
-            
-            # Son periyot özel metrikler (UI için)
-            latest_metrics = self._score_window(close, high, low, vol)
-            
-            # STATE belirleme
+
+            # STATE Belirleme & Türkçe Gerekçeler
             state = "NONE"
             reasons = []
-            
-            # Çoklu timeframe uyuşması
-            aligned_ready = sum(1 for tf in tf_scores if tf_scores[tf]["total"] >= 70)
-            aligned_preparing = sum(1 for tf in tf_scores if tf_scores[tf]["total"] >= 50)
-            
-            if total_score >= 75 and aligned_ready >= 2:
+
+            if total_score >= 62:
                 state = "READY"
-                if avg_compression >= 25: reasons.append("Multi-Timeframe Compression")
-                if avg_volume >= 20: reasons.append("Cross-Timeframe Volume Build")
-                if avg_structure >= 12: reasons.append("Tight Range & EMA Alignment")
-            elif total_score >= 55 and aligned_preparing >= 2:
+                if avg_compression >= 15:
+                    reasons.append("Çoklu periyotta volatilite daralması")
+                if avg_volume >= 15:
+                    reasons.append("Kademeli hacim birikimi ve para girişi")
+                if avg_structure >= 10:
+                    reasons.append("Dar bant konsolidasyonu & EMA desteği")
+                if not reasons:
+                    reasons.append("Tüm zaman pencerelerinde kırılım hazırlığı tamamlandı")
+            elif total_score >= 42:
                 state = "PREPARING"
-                if avg_compression >= 15: reasons.append("Volatility is dropping")
-                if avg_volume >= 15: reasons.append("Relative volume rising")
-            elif total_score >= 35:
+                if avg_compression >= 10:
+                    reasons.append("Volatilite daralıyor, patlama yakın")
+                if avg_volume >= 10:
+                    reasons.append("Göreceli hacim artış trendinde")
+                if not reasons:
+                    reasons.append("Taban oluşumu ve sıkışma devam ediyor")
+            elif total_score >= 20:
                 state = "WATCH"
-            
+                reasons.append("Hissede izleme seviyesinde konsolidasyon mevcut")
+
+            latest_bb = round(float(bb_width.iloc[-1]), 2)
+            latest_atr = round(float(atr_pct.iloc[-1]), 2)
+            latest_rvol = round(float(rel_vol.iloc[-1]), 2)
+            latest_dist = round(float(dist_ema20.iloc[-1]), 2)
+
             return {
                 "symbol": symbol,
                 "preparation_score": round(total_score, 1),
                 "state": state,
+                "state_label": self.STATE_TR_MAP.get(state, state),
                 "reasons": reasons,
-                "timeframe_breakdown": {
-                    tf: {
-                        "score": round(tf_scores[tf]["total"], 1),
-                        "compression": round(tf_scores[tf]["compression"], 1),
-                        "volume": round(tf_scores[tf]["volume"], 1),
-                        "structure": round(tf_scores[tf]["structure"], 1),
-                    } for tf in tf_scores
-                },
+                "timeframe_breakdown": tf_scores,
                 "metrics": {
-                    "bb_width_pct": round(latest_metrics["bb_width"], 2),
-                    "atr_pct": round(latest_metrics["atr_pct"], 2),
-                    "relative_volume": round(latest_metrics["rel_vol"], 2),
-                    "dist_ema20": round(latest_metrics["dist_ema20"], 2),
-                    "timeframe_alignment": aligned_ready
+                    "bb_width_pct": latest_bb,
+                    "atr_pct": latest_atr,
+                    "relative_volume": latest_rvol,
+                    "dist_ema20": latest_dist
                 }
             }
             
         except Exception as e:
             print(f"[V8 Discovery Engine] {symbol} error: {e}")
             return self._default_result(symbol, "ERROR")
-    
-    def _score_window(self, close, high, low, vol) -> dict:
-        """Belirli bir pencere için compression/volume/structure skorları döndürür."""
-        try:
-            # Bollinger Bands
-            rolling_mean = close.rolling(20).mean()
-            rolling_std = close.rolling(20).std()
-            upper_band = rolling_mean + (rolling_std * 2)
-            lower_band = rolling_mean - (rolling_std * 2)
-            bb_width = ((upper_band - lower_band) / rolling_mean) * 100
-            
-            current_bb_width = float(bb_width.iloc[-1])
-            avg_bb_width = float(bb_width.rolling(20).mean().iloc[-1])
-            
-            compression_score = 0
-            if current_bb_width < avg_bb_width * 0.8:
-                compression_score += 20
-            if current_bb_width < avg_bb_width * 0.5:
-                compression_score += 15
-            if np.isnan(compression_score):
-                compression_score = 0
-                
-            # ATR (Volatility)
-            tr1 = high - low
-            tr2 = abs(high - close.shift())
-            tr3 = abs(low - close.shift())
-            tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
-            atr = tr.rolling(14).mean()
-            atr_pct = (atr / close) * 100
-            
-            current_atr_pct = float(atr_pct.iloc[-1])
-            avg_atr_pct = float(atr_pct.rolling(20).mean().iloc[-1])
-            if current_atr_pct < avg_atr_pct * 0.9:
-                compression_score += 15
-                
-            # Hacim
-            vol_sma = vol.rolling(10).mean()
-            current_vol = float(vol.iloc[-1])
-            prev_vol = float(vol.iloc[-2]) if len(vol) > 1 else current_vol
-            avg_vol = float(vol_sma.iloc[-1])
-            prev_avg_vol = float(vol_sma.iloc[-2]) if len(vol_sma) > 1 else avg_vol
-            
-            rel_vol = current_vol / avg_vol if avg_vol > 0 else 1
-            prev_rel_vol = prev_vol / prev_avg_vol if prev_avg_vol > 0 else 1
-            
-            volume_score = 0
-            if rel_vol > 1.2:
-                volume_score += 15
-            if rel_vol > 1.5:
-                volume_score += 10
-            if rel_vol > prev_rel_vol and float(close.iloc[-1]) > float(close.iloc[-2]):
-                volume_score += 15
-                
-            # Yapı
-            recent_max = float(high.rolling(5).max().iloc[-1])
-            recent_min = float(low.rolling(5).min().iloc[-1])
-            range_pct = ((recent_max - recent_min) / recent_min) * 100 if recent_min > 0 else 100
-            
-            structure_score = 0
-            if range_pct < 4.0:
-                structure_score += 10
-                
-            ema20 = close.ewm(span=20).mean()
-            c_ema20 = float(ema20.iloc[-1])
-            dist_ema20 = ((float(close.iloc[-1]) - c_ema20) / c_ema20) * 100 if c_ema20 != 0 else 0
-            if -1.0 <= dist_ema20 <= 2.0:
-                structure_score += 10
-            
-            total = min(100.0, float(compression_score + volume_score + structure_score))
-            
-            return {
-                "total": total,
-                "compression": compression_score,
-                "volume": volume_score,
-                "structure": structure_score,
-                "bb_width": current_bb_width,
-                "atr_pct": current_atr_pct,
-                "rel_vol": rel_vol,
-                "dist_ema20": dist_ema20,
-            }
-        except Exception as e:
-            print(f"[V8 Discovery Engine] _score_window error: {e}")
-            return {
-                "total": 0, "compression": 0, "volume": 0, "structure": 0,
-                "bb_width": 0, "atr_pct": 0, "rel_vol": 1, "dist_ema20": 0,
-            }
-            
+
     def _default_result(self, symbol, state):
         return {
             "symbol": symbol,
             "preparation_score": 0.0,
             "state": state,
-            "reasons": [],
+            "state_label": self.STATE_TR_MAP.get(state, state),
+            "reasons": ["Yetersiz veri veya hesaplama yapılamadı"],
             "timeframe_breakdown": {},
-            "metrics": {}
+            "metrics": {
+                "bb_width_pct": 0.0,
+                "atr_pct": 0.0,
+                "relative_volume": 1.0,
+                "dist_ema20": 0.0
+            }
         }
