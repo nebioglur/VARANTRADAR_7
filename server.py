@@ -2956,6 +2956,27 @@ def api_v8_radar_breakout():
         ),
         reverse=True,
     )[:80]
+
+    # GERCEK kirilim yoksa liste bos kalmasin: hazirligi en guclu ilk 5 adayi
+    # "Erken Aday" olarak AL listesine yukselt (kullanici icin gorunur aksiyon).
+    if not any(r.get("entry_status") == "ENTER" for r in breakout_list):
+        candidates = [
+            r for r in breakout_list
+            if r.get("breakout_score", 0) >= 55 and r.get("fakeout_risk", 0) < 40
+        ]
+        candidates.sort(
+            key=lambda x: x.get("breakout_score", 0) - x.get("fakeout_risk", 0),
+            reverse=True,
+        )
+        promoted = {c.get("symbol") for c in candidates[:5]}
+        for r in breakout_list:
+            if r.get("symbol") in promoted:
+                r["entry_status"] = "ENTER"
+                r["early_candidate"] = True
+                r["entry_reasons"] = [
+                    "Erken giriş adayı: hazırlık skoru yüksek, kırılım/hacim teyidi yolda."
+                ] + list(r.get("entry_reasons") or [])
+
     return jsonify({"status": "success", "data": breakout_list})
 
 @app.route('/api/v8/radar/discovery', methods=['GET'])

@@ -5985,7 +5985,7 @@ function loadV8Breakout() {
 
             data.forEach(d => {
                 if (d.entry_status === 'ENTER') enterList.push(d);
-                else if (d.entry_status === 'WAIT_PULLBACK' || d.entry_status === 'WAIT') waitList.push(d);
+                else if (d.entry_status === 'WAIT_PULLBACK' || d.entry_status === 'WAIT' || d.entry_status === 'WAIT_CONFIRMATION') waitList.push(d);
                 else avoidList.push(d);
             });
 
@@ -6014,6 +6014,9 @@ function loadV8Breakout() {
                 const speed = d.momentum_speed || 'NORMAL';
                 const speedColor = speed === 'EXPLOSIVE' ? '#10b981' : speed === 'STRONG' ? '#60a5fa' : '#94a3b8';
                 const reason = (d.entry_reasons || [])[0] || '—';
+                const earlyBadge = d.early_candidate
+                    ? `<div style="position:absolute; top:0; left:0; background:#facc15; color:#1f2937; font-size:0.68rem; font-weight:800; padding:3px 10px; border-bottom-right-radius:8px; letter-spacing:1px;">⚡ ERKEN ADAY</div>`
+                    : '';
                 const varrantInfo = d.varrant_info && d.varrant_info.status === 'VARRANT_FOUND'
                     ? `<div style="margin-top:0.5rem; padding:0.4rem 0.6rem; background:rgba(168,85,247,0.12); border:1px solid rgba(168,85,247,0.3); border-radius:6px; font-size:0.75rem; color:#c084fc;">
                          <i class="fa-solid fa-bolt"></i> Varant: <b>${d.varrant_info.varrant_prefix}</b> — Kaldıraç: ~${d.varrant_info.estimated_leverage}x
@@ -6023,6 +6026,7 @@ function loadV8Breakout() {
                 const card = document.createElement('div');
                 card.style.cssText = 'background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.35); border-radius:12px; padding:1rem; position:relative; overflow:hidden;';
                 card.innerHTML = `
+                    ${earlyBadge}
                     <div style="position:absolute; top:0; right:0; background:#10b981; color:#fff; font-size:0.7rem; font-weight:800; padding:3px 10px; border-bottom-left-radius:8px; letter-spacing:1px;">✅ GİR</div>
                     <div style="font-size:1.2rem; font-weight:800; color:#10b981; margin-bottom:0.75rem;">${d.symbol}</div>
                       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; padding-bottom:0.5rem; border-bottom:1px solid rgba(255,255,255,0.05);">

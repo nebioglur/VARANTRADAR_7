@@ -67,10 +67,10 @@ class ExecutionEngine:
             
         # 5. Temiz Giriş (Enter)
         else:
-            if b_score >= 60 and f_risk <= 30:
+            if b_score >= 50 and f_risk <= 40:
                 status = "ENTER"
                 reasons.append("Strong Breakout with low fakeout risk.")
-            elif b_score >= 40:
+            elif b_score >= 35:
                 status = "WAIT_CONFIRMATION"
                 reasons.append("Breakout started but needs more volume/time confirmation.")
             else:
