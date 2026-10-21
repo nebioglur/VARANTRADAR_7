@@ -6094,7 +6094,7 @@ function loadV8Learning() {
             tbody.innerHTML = '';
 
             if (!json.data || json.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="14" style="text-align:center; padding:1rem; color:var(--text-muted);">Henüz V8 tarafından alınan bir pozisyon kaydı yok.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="13" style="text-align:center; padding:1rem; color:var(--text-muted);">Henüz V8 tarafından alınan bir pozisyon kaydı yok.</td></tr>';
                 return;
             }
 
@@ -6114,34 +6114,38 @@ function loadV8Learning() {
                 if (d.final_result === 'WIN') return '<span style="color:#10b981; font-weight:bold;">🎯 HEDEF 1 (+%3)</span>';
                 if (d.final_result === 'LOSS') return '<span style="color:#ef4444; font-weight:bold;">⛔ ZARARLA KAPANDI</span>';
                 if (d.final_result === 'NEUTRAL' && d.status === 'CLOSED') return '<span style="color:var(--text-muted); font-weight:bold;">✅ KAPANDI</span>';
-                return '<span style="color:#60a5fa; font-weight:bold;">🟢 İŞLEMDE (AÇIK)</span>';
+                return '<span style="color:#60a5fa; font-weight:bold;">🟢 İŞLEMDE</span>';
+            }
+
+            function v8PencereHucre(price, entry) {
+                if (price === null || price === undefined || isNaN(price) || !entry) {
+                    return `<td style="text-align:right;"><span style="color:var(--text-muted);">—</span></td>`;
+                }
+                const pct = ((price - entry) / entry) * 100;
+                const color = pct > 0.05 ? '#10b981' : (pct < -0.05 ? '#ef4444' : 'var(--text-muted)');
+                const sign = pct > 0 ? '+' : '';
+                return `<td style="text-align:right; line-height:1.25;">
+                            <div style="color:${color}; font-weight:600;">${price.toFixed(2)}</div>
+                            <div style="color:${color}; font-size:0.68rem;">(${sign}${pct.toFixed(2)}%)</div>
+                        </td>`;
             }
 
             json.data.forEach(d => {
                 const tr = document.createElement('tr');
-                const timeStr = new Date(d.timestamp).toLocaleString('tr-TR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
-                const mfeColor = d.mfe > 2.0 ? 'color:#10b981; font-weight:bold;' : 'color:rgba(16,185,129,0.7);';
-                const maeColor = d.mae < -2.0 ? 'color:#ef4444; font-weight:bold;' : 'color:rgba(225,29,72,0.7);';
+                const mfeVal = d.mfe || 0;
+                const maeVal = d.mae || 0;
+                const mfeColor = mfeVal > 2.0 ? 'color:#10b981; font-weight:bold;' : 'color:rgba(16,185,129,0.75);';
+                const maeColor = maeVal < -2.0 ? 'color:#ef4444; font-weight:bold;' : 'color:rgba(225,29,72,0.75);';
 
-                const windowCells = TDK_WINDOWS.map(w => {
-                    const price = d[w.key];
-                    if (price === null || price === undefined || isNaN(price)) {
-                        return `<td style="text-align:right; color:var(--text-muted);">—</td>`;
-                    }
-                    const pct = ((price - d.entry_price) / d.entry_price) * 100;
-                    const color = pct > 0.05 ? 'var(--accent-green)' : (pct < -0.05 ? 'var(--accent-red)' : 'var(--text-muted)');
-                    const sign = pct > 0 ? '+' : '';
-                    return `<td style="text-align:right; font-size:0.78rem;"><span style="color:var(--text-main);">${price.toFixed(2)}</span> <span style="color:${color}; font-size:0.72rem;">(${sign}${pct.toFixed(2)}%)</span></td>`;
-                }).join('');
+                const windowCells = TDK_WINDOWS.map(w => v8PencereHucre(d[w.key], d.entry_price)).join('');
 
                 tr.innerHTML = `
-                    <td style="font-size:0.78rem; color:var(--text-muted);">${timeStr}</td>
-                    <td style="font-weight:bold;">${d.symbol}</td>
-                    <td style="text-align:right;">${d.entry_price.toFixed(2)}</td>
+                    <td style="font-weight:bold; color:var(--text-main);">${d.symbol}</td>
+                    <td style="text-align:right; font-weight:bold; color:var(--text-main);">${(d.entry_price || 0).toFixed(2)}</td>
                     ${windowCells}
-                    <td style="text-align:right; ${mfeColor}">+${(d.mfe || 0).toFixed(2)}%</td>
-                    <td style="text-align:right; ${maeColor}">${(d.mae || 0).toFixed(2)}%</td>
-                    <td style="text-align:center; font-size:0.75rem; white-space:nowrap;">${v8DurumEtiketi(d)}</td>
+                    <td style="text-align:right; ${mfeColor}">+${mfeVal.toFixed(2)}%</td>
+                    <td style="text-align:right; ${maeColor}">${maeVal.toFixed(2)}%</td>
+                    <td style="text-align:center; font-size:0.72rem; white-space:nowrap;">${v8DurumEtiketi(d)}</td>
                 `;
                 tbody.appendChild(tr);
             });

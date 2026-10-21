@@ -2987,7 +2987,8 @@ def api_v8_radar_discovery():
     for sym, data in all_stats.items():
         disc = data.get("v8_discovery")
         if disc and disc.get("state") in ["READY", "PREPARING", "WATCH"]:
-            # Combine some essential pricing data
+            # Combine some essential pricing data (cache'teki sozlugu DEGISTIRME; kopya uzerinde calis)
+            disc = dict(disc)
             disc["symbol"] = sym
             disc["price"] = data.get("Daily_Close", 0.0)
             disc["change_pct"] = data.get("Change_Pct", 0.0)

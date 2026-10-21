@@ -99,6 +99,10 @@ class BreakoutEngine:
             rs = gain / loss
             rsi = 100 - (100 / (1 + rs))
             current_rsi = float(rsi.iloc[-1])
+            # 0/0 veya tum kazancli senaryolarda NaN/inf olabilir -> guvenli banda cek
+            if pd.isna(current_rsi):
+                current_rsi = 50.0
+            current_rsi = max(0.0, min(100.0, current_rsi))
 
             if 60 <= current_rsi <= 75:
                 breakout_score += 25 # Ideal breakout zone

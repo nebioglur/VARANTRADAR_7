@@ -213,8 +213,8 @@ class OutcomeEngine:
 
                             status_update = "ACTIVE"
                             # Sinyal gun sonunda kapanir (seans bitisi ~18:15) ya da 6 saat
-                            now_time = now.time()
-                            market_closed = now_time.hour >= 18 and now_time.minute >= 15
+                            from datetime import time as _dtime
+                            market_closed = now.time() >= _dtime(18, 15)
                             if elapsed_mins > 360 or market_closed:
                                 status_update = "CLOSED"
 

@@ -447,7 +447,7 @@ class UniversalScanner:
 
         # --- V8 OUTCOME REGISTRATION ---
         try:
-            if v8_exec.get('entry_status') in ['ENTER', 'WAIT_PULLBACK']:
+            if v8_exec.get('entry_status') in ['ENTER', 'WAIT_PULLBACK', 'WAIT_CONFIRMATION']:
                 # Borsa kapaliyken sinyal kaydetme (BIST: hafta ici 10:00-18:10)
                 from datetime import datetime as _dt, time as _dtime
                 try:
