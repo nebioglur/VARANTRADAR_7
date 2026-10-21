@@ -6013,13 +6013,13 @@ function loadV8Breakout() {
             if (!cardsContainer) return;
 
             if (enterList.length === 0) {
-                cardsContainer.innerHTML = `
-                    <div style="grid-column:1/-1; text-align:center; padding:3rem; color:var(--text-muted); border:1px dashed rgba(255,255,255,0.1); border-radius:12px;">
-                        <div style="font-size:2rem; margin-bottom:0.5rem;">🔍</div>
-                        <div style="font-size:0.95rem; font-weight:600;">Şu an AL onayı yok</div>
-                        <div style="font-size:0.78rem; margin-top:0.4rem;">${waitList.length} hisse hazırlıkta. Kırılım + hacim teyidi oluştuğunda AL kartı burada görünecek; hazırlık adayları aşağıda listeleniyor.</div>
-                    </div>`;
-                return;
+                // AL sinyali yokken alanı boş bırakma: en güçlü hazırlık adaylarını
+                // açıkça "İZLEMEDE" kartı olarak göster; bunlar giriş onayı değildir.
+                enterList = waitList
+                    .slice()
+                    .sort((a, b) => (b.breakout_score || b.preparation_score || 0) - (a.breakout_score || a.preparation_score || 0))
+                    .slice(0, 6)
+                    .map(d => ({...d, _watch_card: true}));
             }
 
             cardsContainer.innerHTML = '';
@@ -6038,7 +6038,10 @@ function loadV8Breakout() {
                 const speed = V8_SPEED_TR[speedRaw] || speedRaw;
                 const speedColor = speedRaw === 'EXPLOSIVE' ? '#10b981' : speedRaw === 'STRONG' ? '#60a5fa' : '#94a3b8';
                 const reason = (d.entry_reasons || [])[0] || '—';
-                const earlyBadge = d.early_candidate
+                const watchCard = Boolean(d._watch_card);
+                const earlyBadge = watchCard
+                    ? `<div style="position:absolute; top:0; left:0; background:#facc15; color:#1f2937; font-size:0.68rem; font-weight:800; padding:3px 10px; border-bottom-right-radius:8px; letter-spacing:1px;">🟡 İZLEMEDE</div>`
+                    : d.early_candidate
                     ? `<div style="position:absolute; top:0; left:0; background:#facc15; color:#1f2937; font-size:0.68rem; font-weight:800; padding:3px 10px; border-bottom-right-radius:8px; letter-spacing:1px;">⚡ ERKEN ADAY</div>`
                     : (d.intraday_signal
                         ? `<div style="position:absolute; top:0; left:0; background:#60a5fa; color:#fff; font-size:0.68rem; font-weight:800; padding:3px 10px; border-bottom-right-radius:8px; letter-spacing:1px;">⏱ GÜN İÇİ (1 SAATLİK)</div>`
@@ -6050,11 +6053,12 @@ function loadV8Breakout() {
                     : '';
 
                 const card = document.createElement('div');
-                card.style.cssText = 'background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.35); border-radius:12px; padding:1rem; position:relative; overflow:hidden;';
+                const cardColor = watchCard ? '#facc15' : '#10b981';
+                card.style.cssText = `background:${watchCard ? 'rgba(250,204,21,0.06)' : 'rgba(16,185,129,0.06)'}; border:1px solid ${watchCard ? 'rgba(250,204,21,0.35)' : 'rgba(16,185,129,0.35)'}; border-radius:12px; padding:1rem; position:relative; overflow:hidden;`;
                 card.innerHTML = `
                     ${earlyBadge}
-                    <div style="position:absolute; top:0; right:0; background:#10b981; color:#fff; font-size:0.7rem; font-weight:800; padding:3px 10px; border-bottom-left-radius:8px; letter-spacing:1px;">✅ GİR</div>
-                    <div style="font-size:1.2rem; font-weight:800; color:#10b981; margin-bottom:0.75rem;">${d.symbol}</div>
+                    <div style="position:absolute; top:0; right:0; background:${cardColor}; color:#111827; font-size:0.7rem; font-weight:800; padding:3px 10px; border-bottom-left-radius:8px; letter-spacing:1px;">${watchCard ? 'BEKLE' : '✅ GİR'}</div>
+                    <div style="font-size:1.2rem; font-weight:800; color:${cardColor}; margin-bottom:0.75rem;">${d.symbol}</div>
                       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; padding-bottom:0.5rem; border-bottom:1px solid rgba(255,255,255,0.05);">
                           <div style="font-size:1.4rem; font-weight:700; color:var(--text-main);">₺${(d.price || 0).toFixed(2)}</div>
                           <div style="font-size:0.9rem; font-weight:bold; color:${(d.change_pct || 0) > 0 ? 'var(--accent-green)' : ((d.change_pct || 0) < 0 ? 'var(--accent-red)' : 'var(--text-muted)')};">${(d.change_pct || 0) > 0 ? '+' : ''}${(d.change_pct || 0).toFixed(2)}%</div>
@@ -6127,9 +6131,10 @@ function loadV8Learning() {
             ];
 
             function v8DurumEtiketi(d) {
+                if (d.status === 'ACTIVE') return '<span style="color:#60a5fa; font-weight:bold; background:rgba(96,165,250,0.12); border:1px solid rgba(96,165,250,0.35); border-radius:5px; padding:3px 6px;">🟢 AÇIK / İŞLEMDE</span>';
                 if (d.final_result === 'WIN' && d.status === 'CLOSED') return '<span style="color:#10b981; font-weight:bold;">🚀 HEDEF 2 (+%5)</span>';
-                if (d.final_result === 'WIN') return '<span style="color:#10b981; font-weight:bold;">🎯 HEDEF 1 (+%3)</span>';
-                if (d.final_result === 'LOSS') return '<span style="color:#ef4444; font-weight:bold;">⛔ ZARARLA KAPANDI</span>';
+                if (d.final_result === 'WIN') return '<span style="color:#10b981; font-weight:bold;">✅ KAPALI · HEDEF 1 (+%3)</span>';
+                if (d.final_result === 'LOSS') return '<span style="color:#ef4444; font-weight:bold;">⛔ KAPALI · ZARARLA KAPANDI</span>';
                 if (d.final_result === 'NEUTRAL' && d.status === 'CLOSED') return '<span style="color:var(--text-muted); font-weight:bold;">✅ KAPANDI</span>';
                 return '<span style="color:#60a5fa; font-weight:bold;">🟢 İŞLEMDE</span>';
             }
@@ -6149,7 +6154,7 @@ function loadV8Learning() {
 
             json.data.forEach(d => {
                 const tr = document.createElement('tr');
-                const timeStr = new Date(d.timestamp).toLocaleString('tr-TR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+                const timeStr = new Date(d.timestamp).toLocaleString('tr-TR', {timeZone:'Europe/Istanbul', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
                 const mfeVal = d.mfe || 0;
                 const maeVal = d.mae || 0;
                 const mfeColor = mfeVal > 2.0 ? 'color:#10b981; font-weight:bold;' : 'color:rgba(16,185,129,0.75);';
@@ -6559,6 +6564,19 @@ function bindAllStocksSearch() {
     }
 }
 
+function toggleAllStocksDetails() {
+    const cells = document.querySelectorAll('#radar-card-99 .all-stocks-detail-col');
+    const button = document.getElementById('all-stocks-detail-btn');
+    if (!cells.length) return;
+    const hidden = cells[0].style.display === 'none' || cells[0].style.display === '';
+    cells.forEach(cell => { cell.style.display = hidden ? '' : 'none'; });
+    if (button) {
+        button.innerHTML = hidden
+            ? '<i class="fa-solid fa-eye-slash"></i> Sade Görünüm'
+            : '<i class="fa-solid fa-sliders"></i> Ayrıntılar';
+    }
+}
+
 function sortAllStocks(col) {
     if (currentStocksSort.col === col) {
         currentStocksSort.asc = !currentStocksSort.asc;
@@ -6818,7 +6836,7 @@ function renderAllStocksTable() {
     });
     
     if (!allStats.length) {
-        tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; color:var(--text-muted); padding:1.5rem;">
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:1.5rem;">
             <i class="fa-solid fa-magnifying-glass" style="margin-right:0.4rem;"></i>
             “${allStocksSearchTerm}” ile eşleşen hisse bulunamadı.
         </td></tr>`;
@@ -6934,7 +6952,7 @@ function renderAllStocksTable() {
             : '';
 
         // Stop/Hedef hucresi (ATR bazli)
-        let stopCell = '<td style="font-size:0.65rem; line-height:1.3; min-width:120px;">';
+        let stopCell = '<td class="all-stocks-detail-col" style="display:none; font-size:0.65rem; line-height:1.3; min-width:120px;">';
         if (s.stop > 0) {
             const stopP = s.price > 0 ? ((s.stop - s.price) / s.price) * 100 : 0;
             const t1P = s.price > 0 ? ((s.tgt1 - s.price) / s.price) * 100 : 0;
@@ -6950,7 +6968,7 @@ function renderAllStocksTable() {
         // Para girisi hucresi (gercek TL bazli islem tutari)
         const moneyVolM = (s.money_vol / 1e6).toFixed(1) + 'M ₺';
         const mvColor = s.money_vol >= 150e6 ? '#10b981' : (s.money_vol >= 50e6 ? '#60a5fa' : 'var(--text-muted)');
-        const moneyCell = `<td style="color:${mvColor}; font-weight:${s.money_vol >= 150e6 ? 'bold' : 'normal'};" title="TL bazlı işlem tutarı: 150M ₺ üzeri güçlü para girişi">${moneyVolM}</td>`;
+        const moneyCell = `<td class="all-stocks-detail-col" style="display:none; color:${mvColor}; font-weight:${s.money_vol >= 150e6 ? 'bold' : 'normal'};" title="TL bazlı işlem tutarı: 150M ₺ üzeri güçlü para girişi">${moneyVolM}</td>`;
 
         // Guven rozeti: "hangi hisse daha garanti?"
         const isTop = topTrustSet.has(s.symbol);
@@ -6972,17 +6990,17 @@ function renderAllStocksTable() {
             <tr style="${rowStyle}">
                 <td style="font-weight:bold; cursor:pointer; color:${color};" onclick="openGraphicTab('${s.symbol}')">${sym}${trendBadge}</td>
                 <td style="font-weight:600; color:${color};">₺${s.price.toFixed(2)}</td>
-                <td style="color:var(--text-muted);">₺${prevClose.toFixed(2)}</td>
                 <td style="color:${color}; font-weight:bold;">${sign}${s.change.toFixed(2)}%</td>
                 <td style="color:${intraColor}; font-weight:bold;">${intraSign}${s.intra_change.toFixed(2)}%</td>
                 <td style="color:${flowColor}; font-weight:bold;">${flowHtml}</td>
                 <td style="color:var(--text-muted);">${volTLM}</td>
-                <td style="color:var(--text-muted);">${volLotM}</td>
-                <td style="color:${color}; font-weight:bold;">${relVolText}</td>
-                ${stopCell}
-                ${moneyCell}
                 <td>${scoreBadge}</td>
                 <td>${trustBadge}</td>
+                <td class="all-stocks-detail-col" style="display:none; color:var(--text-muted);">₺${prevClose.toFixed(2)}</td>
+                <td class="all-stocks-detail-col" style="display:none; color:var(--text-muted);">${volLotM}</td>
+                <td class="all-stocks-detail-col" style="display:none; color:${color}; font-weight:bold;">${relVolText}</td>
+                ${stopCell}
+                ${moneyCell}
                 <td>${actionBtns}</td>
             </tr>
         `;
