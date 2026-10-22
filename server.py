@@ -3046,6 +3046,11 @@ def _stats_rel_vol(data: dict) -> float:
 
 @app.route('/api/v8/radar/breakout', methods=['GET'])
 def api_v8_radar_breakout():
+    # Otomatik Telegram gonderimi icin gunluk dedup anahtarlari (sim, tarih).
+    _V8_TG_SENT = getattr(api_v8_radar_breakout, "_tg_sent", None)
+    if _V8_TG_SENT is None:
+        _V8_TG_SENT = set()
+        api_v8_radar_breakout._tg_sent = _V8_TG_SENT
     all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
     breakout_list = []
     cache_ts = GLOBAL_DASHBOARD_CACHE.get("cache_timestamp")
@@ -3185,6 +3190,61 @@ def api_v8_radar_breakout():
                 r["entry_reasons"] = [
                     "Erken giriş adayı: hazırlık skoru yüksek, kırılım/hacim teyidi yolda."
                 ] + list(r.get("entry_reasons") or [])
+
+    # ---- OTOMATIK TELEGRAM GONDERIMI ----
+    # GERCEK giris onayli sinyaller (erken aday/promote edilmis hazirliklar hariç)
+    # kanala otomatik dusar; ayni hisse+gun icin tekrar gondermez.
+    try:
+        from datetime import datetime as _dt
+        from services.telegram_bot import send_v8_entry_signal as _send_sig
+        _today = _dt.now().strftime("%Y-%m-%d")
+        if len(_V8_TG_SENT) > 500:
+            _V8_TG_SENT.clear()
+        for r in breakout_list:
+            if r.get("entry_status") != "ENTER" or r.get("early_candidate"):
+                continue
+            key = (_today, r.get("symbol"))
+            if key in _V8_TG_SENT:
+                continue
+            _entry = float(r.get("price") or 0)
+            if _entry <= 0:
+                continue
+            try:
+                _atr_pct = float((r.get("metrics") or {}).get("atr_pct") or 0)
+            except (TypeError, ValueError):
+                _atr_pct = 0.0
+            if _atr_pct > 0:
+                _stop_d = max(2.0, min(8.0, _atr_pct * 1.5))
+                _t1_d = max(2.0, min(10.0, _atr_pct * 1.5))
+                _t2_d = max(3.0, min(15.0, _atr_pct * 2.5))
+            else:
+                _stop_d, _t1_d, _t2_d = 5.0, 3.0, 5.0
+            _regime_raw = (GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or {}).get("regime", "")
+            _V8_REGIME_TR_MAP = {
+                "STRONG_BULL": "GÜÇLÜ BOĞA (RALLİ)", "BULL": "BOĞA (YÜKSELİŞ TRENDİ)",
+                "NEUTRAL": "NÖTR (YATAY / DENGE)", "BEAR": "AYI (DÜŞÜŞ BASKISI)",
+                "STRONG_BEAR": "GÜÇLÜ AYI (SERT SATIŞ)",
+            }
+            try:
+                _scan_time = _dt.fromtimestamp(float(cache_ts)).strftime("%d.%m.%Y %H:%M") if cache_ts else ""
+            except (TypeError, ValueError, OSError):
+                _scan_time = ""
+            _V8_TG_SENT.add(key)
+            _ok = _send_sig({
+                "symbol": r.get("symbol"),
+                "entry_price": _entry,
+                "stop_price": _entry * (1 - _stop_d / 100.0),
+                "target1": _entry * (1 + _t1_d / 100.0),
+                "target2": _entry * (1 + _t2_d / 100.0),
+                "breakout_score": r.get("breakout_score", 0),
+                "fakeout_risk": r.get("fakeout_risk", 0),
+                "reason": (r.get("entry_reasons") or [""])[0],
+                "market_regime": _V8_REGIME_TR_MAP.get(_regime_raw, _regime_raw),
+                "scan_time": _scan_time,
+            })
+            logger.info("[V8-TG] Otomatik sinyal %s -> %s", r.get("symbol"), "gonderildi" if _ok else "gonderilemedi")
+    except Exception as _tg_err:
+        logger.error("[V8-TG] Otomatik telegram hatasi: %s", _tg_err)
 
     return jsonify({"status": "success", "data": breakout_list})
 
