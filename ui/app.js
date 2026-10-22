@@ -6184,9 +6184,6 @@ function loadV8Breakout() {
                         </div>
                     </div>`
                     : '';
-                const tgButton = `<button type="button" onclick="shareV8SignalToTelegram('${d.symbol}', this)" style="width:100%; background:#229ED9; color:white; border:0; border-radius:6px; padding:6px 8px; font-size:0.74rem; font-weight:700; cursor:pointer;">
-                        <i class="fa-brands fa-telegram"></i> Bu Sinyali Telegram'a Gönder
-                    </button>`;
                 // T+3 teyit rozeti: sunucu teyit motorundan gecen kartlarda gorunur.
                 const confirmChip = d.confirm_state === 'CONFIRMED'
                     ? `<span style="background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.4); border-radius:5px; padding:2px 6px; font-size:0.66rem; font-weight:800; white-space:nowrap;">✅ T+3 TEYİTLİ</span>`
@@ -6251,7 +6248,6 @@ function loadV8Breakout() {
                     ${planHtml}
                     ${lotHtml}
                     ${varrantInfo}
-                    ${tgButton}
                 `;
                 cardsContainer.appendChild(card);
             });
