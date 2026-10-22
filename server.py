@@ -286,6 +286,12 @@ def start_live_data_collector():
                         MarketDataManager.fetch_and_store_intraday(d_str, period="5d")
                     except Exception as coll_err:
                         print(f"[LIVE DATA] toplama hatasi: {coll_err}")
+
+                    # V8 giris sinyallerini Telegram'a otomatik dusur (dedup'lu, hizli)
+                    try:
+                        auto_send_v8_signals()
+                    except Exception:
+                        pass
                         
                     # FAST PRICE UPDATE
                     try:
@@ -3044,13 +3050,74 @@ def _stats_rel_vol(data: dict) -> float:
         pass
     return 1.0
 
+_V8_TG_SENT = set()
+
+def auto_send_v8_signals():
+    """GERCEK giris onayli V8 sinyallerini (erken adaylar haric) otomatik olarak
+    Telegram kanalina gonderir. Ayni hisse+gun icin tekrar gondermez; Telegram
+    ayarlari yoksa sessizce atlar. Hem V8 endpoint'i hem canli toplayici cagirir."""
+    try:
+        from datetime import datetime as _dt
+        from services.telegram_bot import send_v8_entry_signal as _send_sig
+        all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
+        cache_ts = GLOBAL_DASHBOARD_CACHE.get("cache_timestamp")
+        _today = _dt.now().strftime("%Y-%m-%d")
+        if len(_V8_TG_SENT) > 500:
+            _V8_TG_SENT.clear()
+        for sym, data in all_stats.items():
+            candidates = []
+            bo = data.get("v8_breakout")
+            if bo and bo.get("is_breakout") and (data.get("v8_execution") or {}).get("entry_status") == "ENTER":
+                candidates.append((bo, (data.get("v8_execution") or {}).get("reasons") or [], False))
+            intra = data.get("v8_breakout_1h") or {}
+            if intra.get("breakout", {}).get("is_breakout") and intra.get("entry_status") == "ENTER":
+                candidates.append((intra.get("breakout") or {}, ["1 saatlik barda kırılım teyidi (gün içi sinyal)"] + list(intra.get("reasons") or []), True))
+            for bo_row, reasons, is_intraday in candidates:
+                key = (_today, sym, is_intraday)
+                if key in _V8_TG_SENT:
+                    continue
+                entry = float(data.get("Daily_Close") or data.get("Price") or 0)
+                if entry <= 0:
+                    continue
+                try:
+                    atr_pct = float((bo_row.get("metrics") or {}).get("atr_pct") or 0)
+                except (TypeError, ValueError):
+                    atr_pct = 0.0
+                if atr_pct > 0:
+                    stop_d = max(2.0, min(8.0, atr_pct * 1.5))
+                    t1_d = max(2.0, min(10.0, atr_pct * 1.5))
+                    t2_d = max(3.0, min(15.0, atr_pct * 2.5))
+                else:
+                    stop_d, t1_d, t2_d = 5.0, 3.0, 5.0
+                regime_raw = (GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or {}).get("regime", "")
+                _V8_REGIME_TR_MAP = {
+                    "STRONG_BULL": "GÜÇLÜ BOĞA (RALLİ)", "BULL": "BOĞA (YÜKSELİŞ TRENDİ)",
+                    "NEUTRAL": "NÖTR (YATAY / DENGE)", "BEAR": "AYI (DÜŞÜŞ BASKISI)",
+                    "STRONG_BEAR": "GÜÇLÜ AYI (SERT SATIŞ)",
+                }
+                try:
+                    scan_time = _dt.fromtimestamp(float(cache_ts)).strftime("%d.%m.%Y %H:%M") if cache_ts else ""
+                except (TypeError, ValueError, OSError):
+                    scan_time = ""
+                _V8_TG_SENT.add(key)
+                ok = _send_sig({
+                    "symbol": sym,
+                    "entry_price": entry,
+                    "stop_price": entry * (1 - stop_d / 100.0),
+                    "target1": entry * (1 + t1_d / 100.0),
+                    "target2": entry * (1 + t2_d / 100.0),
+                    "breakout_score": bo_row.get("breakout_score", 0),
+                    "fakeout_risk": bo_row.get("fakeout_risk", 0),
+                    "reason": (reasons or [""])[0],
+                    "market_regime": _V8_REGIME_TR_MAP.get(regime_raw, regime_raw),
+                    "scan_time": scan_time,
+                })
+                logger.info("[V8-TG] Otomatik sinyal %s -> %s", sym, "gonderildi" if ok else "gonderilemedi")
+    except Exception as tg_err:
+        logger.error("[V8-TG] Otomatik telegram hatasi: %s", tg_err)
+
 @app.route('/api/v8/radar/breakout', methods=['GET'])
 def api_v8_radar_breakout():
-    # Otomatik Telegram gonderimi icin gunluk dedup anahtarlari (sim, tarih).
-    _V8_TG_SENT = getattr(api_v8_radar_breakout, "_tg_sent", None)
-    if _V8_TG_SENT is None:
-        _V8_TG_SENT = set()
-        api_v8_radar_breakout._tg_sent = _V8_TG_SENT
     all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
     breakout_list = []
     cache_ts = GLOBAL_DASHBOARD_CACHE.get("cache_timestamp")
@@ -3191,61 +3258,7 @@ def api_v8_radar_breakout():
                     "Erken giriş adayı: hazırlık skoru yüksek, kırılım/hacim teyidi yolda."
                 ] + list(r.get("entry_reasons") or [])
 
-    # ---- OTOMATIK TELEGRAM GONDERIMI ----
-    # GERCEK giris onayli sinyaller (erken aday/promote edilmis hazirliklar hariç)
-    # kanala otomatik dusar; ayni hisse+gun icin tekrar gondermez.
-    try:
-        from datetime import datetime as _dt
-        from services.telegram_bot import send_v8_entry_signal as _send_sig
-        _today = _dt.now().strftime("%Y-%m-%d")
-        if len(_V8_TG_SENT) > 500:
-            _V8_TG_SENT.clear()
-        for r in breakout_list:
-            if r.get("entry_status") != "ENTER" or r.get("early_candidate"):
-                continue
-            key = (_today, r.get("symbol"))
-            if key in _V8_TG_SENT:
-                continue
-            _entry = float(r.get("price") or 0)
-            if _entry <= 0:
-                continue
-            try:
-                _atr_pct = float((r.get("metrics") or {}).get("atr_pct") or 0)
-            except (TypeError, ValueError):
-                _atr_pct = 0.0
-            if _atr_pct > 0:
-                _stop_d = max(2.0, min(8.0, _atr_pct * 1.5))
-                _t1_d = max(2.0, min(10.0, _atr_pct * 1.5))
-                _t2_d = max(3.0, min(15.0, _atr_pct * 2.5))
-            else:
-                _stop_d, _t1_d, _t2_d = 5.0, 3.0, 5.0
-            _regime_raw = (GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or {}).get("regime", "")
-            _V8_REGIME_TR_MAP = {
-                "STRONG_BULL": "GÜÇLÜ BOĞA (RALLİ)", "BULL": "BOĞA (YÜKSELİŞ TRENDİ)",
-                "NEUTRAL": "NÖTR (YATAY / DENGE)", "BEAR": "AYI (DÜŞÜŞ BASKISI)",
-                "STRONG_BEAR": "GÜÇLÜ AYI (SERT SATIŞ)",
-            }
-            try:
-                _scan_time = _dt.fromtimestamp(float(cache_ts)).strftime("%d.%m.%Y %H:%M") if cache_ts else ""
-            except (TypeError, ValueError, OSError):
-                _scan_time = ""
-            _V8_TG_SENT.add(key)
-            _ok = _send_sig({
-                "symbol": r.get("symbol"),
-                "entry_price": _entry,
-                "stop_price": _entry * (1 - _stop_d / 100.0),
-                "target1": _entry * (1 + _t1_d / 100.0),
-                "target2": _entry * (1 + _t2_d / 100.0),
-                "breakout_score": r.get("breakout_score", 0),
-                "fakeout_risk": r.get("fakeout_risk", 0),
-                "reason": (r.get("entry_reasons") or [""])[0],
-                "market_regime": _V8_REGIME_TR_MAP.get(_regime_raw, _regime_raw),
-                "scan_time": _scan_time,
-            })
-            logger.info("[V8-TG] Otomatik sinyal %s -> %s", r.get("symbol"), "gonderildi" if _ok else "gonderilemedi")
-    except Exception as _tg_err:
-        logger.error("[V8-TG] Otomatik telegram hatasi: %s", _tg_err)
-
+    auto_send_v8_signals()
     return jsonify({"status": "success", "data": breakout_list})
 
 @app.route('/api/v8/radar/discovery', methods=['GET'])
