@@ -6041,6 +6041,10 @@ function loadV8Breakout() {
                 const reason = (d.entry_reasons || [])[0] || '—';
                 const watchCard = Boolean(d._watch_card);
                 const volumeStrength = Number(d.volume_strength ?? d.metrics?.relative_volume ?? 0);
+                // Zaman uyumu yoksa (hazirlik/izleme kartlari) kirilim skorundan dinamik turet; 0/100 kalmasin.
+                const timeframeQuality = Number(d.timeframe_quality) > 0
+                    ? Number(d.timeframe_quality)
+                    : Math.min(100, Math.round((Number(d.breakout_score) || Number(d.preparation_score) || 0) * 0.85));
                 const volumeColor = volumeStrength >= 1.5 ? '#10b981' : volumeStrength >= 0.9 ? '#facc15' : '#ef4444';
                 const scanDate = d.scan_timestamp ? new Date(Number(d.scan_timestamp) * 1000) : null;
                 const scanTime = scanDate && !isNaN(scanDate.getTime())
@@ -6096,7 +6100,7 @@ function loadV8Breakout() {
                         </div>
                         <div style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.4rem 0.6rem;">
                             <div style="color:var(--text-muted); font-size:0.68rem;">Zaman Uyumu</div>
-                            <div style="font-weight:700; color:#facc15;">${d.timeframe_quality || 0}/100</div>
+                            <div style="font-weight:700; color:#facc15;">${timeframeQuality}/100</div>
                         </div>
                     </div>
                     <div style="font-size:0.78rem; color:var(--text-muted); padding:0.4rem 0.6rem; background:rgba(0,0,0,0.15); border-radius:6px; margin-bottom:0.5rem;">
