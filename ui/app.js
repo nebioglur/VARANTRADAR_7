@@ -6720,7 +6720,7 @@ function updateAllStocksSortBtn() {
     if (specialLabel && specialBtn) {
         const active = currentStocksSort.col === 'special';
         const arrow = active ? (currentStocksSort.asc ? '↑' : '↓') : '';
-        specialLabel.textContent = `Özel Sıralama ${arrow}`;
+        specialLabel.textContent = `Güven + Hacim + Gün İçi ${arrow}`;
         specialBtn.style.background = active ? 'rgba(234,179,8,0.4)' : 'rgba(234,179,8,0.2)';
         specialBtn.style.borderColor = active ? '#facc15' : 'rgba(234,179,8,0.3)';
     }
@@ -6891,26 +6891,31 @@ function renderAllStocksTable() {
     allStats.sort((a, b) => {
         if (currentStocksSort.col === 'special') {
             const getSpecialScore = (item) => {
-                // 1) Gün içi güç — EN ÖNEMLİ (açılıştan itibaren gün içi ivme)
-                let intra_score = item.intra_change * 6;
+                // Özel sıralama üç ana sinyali aynı puanda birleştirir:
+                // Güven %40 + Hacim Gücü %35 + Gün İçi Güç %25.
+                // Böylece yalnızca hacmi yüksek olan değil, güveni ve gün içi ivmesi
+                // birlikte güçlü olan hisseler üstte görünür.
+                const trust_score = Math.max(0, Math.min(100, Number(item.trust) || 0));
+                const volume_score = Math.max(0, Math.min(100, (Number(item.rel_vol) || 0) / 3 * 100));
+                const intraday_score = Math.max(0, Math.min(100, (Number(item.intra_change) || 0) / 4 * 100));
 
-                // 2) Hacim gücü (göreceli hacim: 2x = +6, 3x = +9)
-                let vol_score = item.rel_vol * 3;
+                let composite = (trust_score * 0.40) + (volume_score * 0.35) + (intraday_score * 0.25);
 
-                // 3) Fiyatlanmamış filtresi: Hem çok yükselen (+%5+) hem çok düşen (-%2+) ceza
-                //    Hedef: %0 ile +%5 arasında olan, henüz hareket etmemiş hisseler ödüllendirilir
-                let change_penalty = Math.abs(item.change) * 3;
+                // Aşırı yükselmiş hisseleri fırsat gibi öne taşımama.
+                if (item.change > 7) composite -= 10;
+                if (item.change < -3) composite -= 10;
+                if (item.hourly_flow === 'Satılıyor') composite -= 8;
+                if (item.hourly_flow === 'Toplanıyor') composite += 5;
 
-                // 4) Puan (V8 preparation_score) — hafif kalite filtresi
-                let quality_bonus = item.prep_score * 0.3;
-
-                return intra_score + vol_score - change_penalty + quality_bonus;
+                return composite;
             };
             const scoreA = getSpecialScore(a);
             const scoreB = getSpecialScore(b);
             const diff = scoreA - scoreB;
             if (diff !== 0) return currentStocksSort.asc ? diff : -diff;
-            return b.rel_vol - a.rel_vol;
+            if (a.trust !== b.trust) return b.trust - a.trust;
+            if (a.rel_vol !== b.rel_vol) return b.rel_vol - a.rel_vol;
+            return b.intra_change - a.intra_change;
         }
 
         if (currentStocksSort.col === 'opportunity') {
