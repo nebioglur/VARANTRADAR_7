@@ -6069,6 +6069,39 @@ function loadV8Breakout() {
                          <i class="fa-solid fa-bolt"></i> Varant: <b>${d.varrant_info.varrant_prefix}</b> — Kaldıraç: ~${d.varrant_info.estimated_leverage}x
                        </div>`
                     : '';
+                // Islem plani: ATR bazli stop/hedef (learning.py ile ayni formul), karta islenir.
+                const entryPrice = Number(d.price) || 0;
+                const atrPct = Number(d.metrics?.atr_pct) || 0;
+                const stopDist = atrPct > 0 ? Math.max(2, Math.min(8, atrPct * 1.5)) : 5;
+                const tgt1Dist = atrPct > 0 ? Math.max(2, Math.min(10, atrPct * 1.5)) : 3;
+                const tgt2Dist = atrPct > 0 ? Math.max(3, Math.min(15, atrPct * 2.5)) : 5;
+                const plan = entryPrice > 0 ? {
+                    stop: entryPrice * (1 - stopDist / 100),
+                    t1: entryPrice * (1 + tgt1Dist / 100),
+                    t2: entryPrice * (1 + tgt2Dist / 100)
+                } : null;
+                const planHtml = plan
+                    ? `<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:0.4rem; font-size:0.74rem; margin-bottom:0.6rem;">
+                        <div style="background:rgba(239,68,68,0.10); border:1px solid rgba(239,68,68,0.30); border-radius:6px; padding:0.4rem 0.5rem; text-align:center;">
+                            <div style="color:#ef4444; font-size:0.64rem; font-weight:700;">ZARAR KES</div>
+                            <div style="font-weight:700;">₺${plan.stop.toFixed(2)}</div>
+                            <div style="color:var(--text-muted); font-size:0.62rem;">-%${stopDist.toFixed(1)}</div>
+                        </div>
+                        <div style="background:rgba(16,185,129,0.10); border:1px solid rgba(16,185,129,0.30); border-radius:6px; padding:0.4rem 0.5rem; text-align:center;">
+                            <div style="color:#10b981; font-size:0.64rem; font-weight:700;">HEDEF 1</div>
+                            <div style="font-weight:700;">₺${plan.t1.toFixed(2)}</div>
+                            <div style="color:var(--text-muted); font-size:0.62rem;">+%${tgt1Dist.toFixed(1)}</div>
+                        </div>
+                        <div style="background:rgba(16,185,129,0.10); border:1px solid rgba(16,185,129,0.30); border-radius:6px; padding:0.4rem 0.5rem; text-align:center;">
+                            <div style="color:#10b981; font-size:0.64rem; font-weight:700;">HEDEF 2</div>
+                            <div style="font-weight:700;">₺${plan.t2.toFixed(2)}</div>
+                            <div style="color:var(--text-muted); font-size:0.62rem;">+%${tgt2Dist.toFixed(1)}</div>
+                        </div>
+                    </div>`
+                    : '';
+                const tgButton = `<button type="button" onclick="shareV8SignalToTelegram('${d.symbol}', this)" style="width:100%; background:#229ED9; color:white; border:0; border-radius:6px; padding:6px 8px; font-size:0.74rem; font-weight:700; cursor:pointer;">
+                        <i class="fa-brands fa-telegram"></i> Bu Sinyali Telegram'a Gönder
+                    </button>`;
 
                 const card = document.createElement('div');
                 const cardColor = watchCard ? '#facc15' : '#10b981';
@@ -6106,7 +6139,9 @@ function loadV8Breakout() {
                     <div style="font-size:0.78rem; color:var(--text-muted); padding:0.4rem 0.6rem; background:rgba(0,0,0,0.15); border-radius:6px; margin-bottom:0.5rem;">
                         <i class="fa-solid fa-circle-info" style="color:#60a5fa;"></i> ${reason}
                     </div>
+                    ${planHtml}
                     ${varrantInfo}
+                    ${tgButton}
                 `;
                 cardsContainer.appendChild(card);
             });
@@ -6196,6 +6231,38 @@ function loadV8Learning() {
                 tbody.appendChild(tr);
             });
         }).catch(e => console.error(e));
+}
+
+async function shareV8SignalToTelegram(symbol, button) {
+    const oldText = button ? button.innerHTML : '';
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gönderiliyor...';
+    }
+    try {
+        const response = await vrAuthorizedFetch(`${V8_API}/radar/share-signal`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({symbol: symbol})
+        });
+        const result = await response.json();
+        if (!response.ok || result.status !== 'success') {
+            throw new Error(result.message || 'Telegram gönderimi başarısız.');
+        }
+        if (button) button.innerHTML = '<i class="fa-solid fa-check"></i> Gönderildi';
+        setTimeout(() => {
+            if (button && button.isConnected) {
+                button.disabled = false;
+                button.innerHTML = oldText;
+            }
+        }, 2500);
+    } catch (error) {
+        alert(`Sinyal gönderilemedi: ${error.message}`);
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = oldText;
+        }
+    }
 }
 
 async function shareV8ProfitsToTelegram(button) {

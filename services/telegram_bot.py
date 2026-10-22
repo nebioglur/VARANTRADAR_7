@@ -231,6 +231,48 @@ def send_v8_profit_report(profits: list) -> bool:
     return send_telegram_message(text)
 
 
+def send_v8_entry_signal(signal: dict) -> bool:
+    """Tek bir V8 giriş sinyalini (kart) işlem planıyla birlikte Telegram'a gönderir."""
+    if not signal:
+        return False
+
+    symbol = signal.get("symbol", "Bilinmiyor")
+    entry = float(signal.get("entry_price") or 0)
+    if entry <= 0:
+        return False
+
+    stop = float(signal.get("stop_price") or 0)
+    t1 = float(signal.get("target1") or 0)
+    t2 = float(signal.get("target2") or 0)
+    score = signal.get("breakout_score", "—")
+    risk = float(signal.get("fakeout_risk") or 0)
+    reason = signal.get("reason") or ""
+    regime = signal.get("market_regime", "")
+    scan_time = signal.get("scan_time", "")
+
+    risk_label = "Yüksek" if risk > 50 else ("Orta" if risk > 30 else "Düşük")
+
+    text = "🎯 <b>V8 İŞLEM SİNYALİ</b>\n"
+    text += "━━━━━━━━━━━━━━━━\n"
+    text += f"💎 <b>Hisse:</b> #{symbol}\n"
+    if scan_time:
+        text += f"🕒 <b>Tarama:</b> {scan_time}\n"
+    text += f"💵 <b>Giriş:</b> ₺{entry:.2f}\n"
+    if stop > 0:
+        text += f"🛑 <b>Zarar Kes:</b> ₺{stop:.2f}\n"
+    if t1 > 0:
+        text += f"🎯 <b>Hedef 1:</b> ₺{t1:.2f}\n"
+    if t2 > 0:
+        text += f"🚀 <b>Hedef 2:</b> ₺{t2:.2f}\n"
+    text += f"📊 <b>Kırılım Gücü:</b> {score}/100 | <b>Tuzak Riski:</b> {risk_label}\n"
+    if regime:
+        text += f"🌍 <b>Piyasa Rejimi:</b> {regime}\n"
+    if reason:
+        text += f"ℹ️ {reason}\n"
+    text += "\n⚠️ Yatırım tavsiyesi değildir; kendi kararınızla işlem yapın."
+    return send_telegram_message(text)
+
+
 # ========== SESLI AL/SAT UYARILARI ==========
 import os as _os
 

@@ -2914,6 +2914,73 @@ def api_v8_learning_outcomes():
         return jsonify({"status": "error", "message": str(e)})
 
 
+@app.route('/api/v8/radar/share-signal', methods=['POST'])
+def api_v8_radar_share_signal():
+    """Kartta gorunen tek bir V8 giris sinyalini islem planiyle Telegram'a gonderir."""
+    try:
+        payload = request.get_json(silent=True) or {}
+        symbol = str(payload.get("symbol") or "").strip().upper()
+        if not symbol:
+            return jsonify({"status": "error", "message": "Hisse kodu eksik."}), 400
+
+        all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
+        data = all_stats.get(symbol)
+        if not data:
+            return jsonify({"status": "error", "message": f"{symbol} için güncel tarama verisi bulunamadı."}), 404
+
+        bo = data.get("v8_breakout") or {}
+        metrics = bo.get("metrics") or {}
+        entry = float(data.get("Daily_Close") or data.get("Price") or 0)
+        if entry <= 0:
+            return jsonify({"status": "error", "message": f"{symbol} için fiyat verisi yok."}), 404
+
+        try:
+            atr_pct = float(metrics.get("atr_pct") or 0)
+        except (TypeError, ValueError):
+            atr_pct = 0.0
+        if atr_pct > 0:
+            stop_dist = max(2.0, min(8.0, atr_pct * 1.5))
+            tgt1_dist = max(2.0, min(10.0, atr_pct * 1.5))
+            tgt2_dist = max(3.0, min(15.0, atr_pct * 2.5))
+        else:
+            stop_dist, tgt1_dist, tgt2_dist = 5.0, 3.0, 5.0
+
+        regime_raw = GLOBAL_DASHBOARD_CACHE.get("v8_market_regime", {}).get("regime", "")
+        V8_REGIME_TR = {
+            "STRONG_BULL": "GÜÇLÜ BOĞA (RALLİ)", "BULL": "BOĞA (YÜKSELİŞ TRENDİ)",
+            "NEUTRAL": "NÖTR (YATAY / DENGE)", "BEAR": "AYI (DÜŞÜŞ BASKISI)",
+            "STRONG_BEAR": "GÜÇLÜ AYI (SERT SATIŞ)",
+        }
+        cache_ts = GLOBAL_DASHBOARD_CACHE.get("cache_timestamp")
+        try:
+            scan_time = datetime.fromtimestamp(float(cache_ts)).strftime("%d.%m.%Y %H:%M") if cache_ts else ""
+        except (TypeError, ValueError, OSError):
+            scan_time = ""
+
+        signal = {
+            "symbol": symbol,
+            "entry_price": entry,
+            "stop_price": entry * (1 - stop_dist / 100.0),
+            "target1": entry * (1 + tgt1_dist / 100.0),
+            "target2": entry * (1 + tgt2_dist / 100.0),
+            "breakout_score": bo.get("breakout_score") or (data.get("v8_discovery") or {}).get("preparation_score", 0),
+            "fakeout_risk": bo.get("fakeout_risk", 0),
+            "reason": ((data.get("v8_execution") or {}).get("reasons") or [""])[0],
+            "market_regime": V8_REGIME_TR.get(regime_raw, regime_raw),
+            "scan_time": scan_time,
+        }
+
+        from services.telegram_bot import send_v8_entry_signal
+        if not send_v8_entry_signal(signal):
+            return jsonify({
+                "status": "error",
+                "message": "Telegram gönderilemedi. Bot tokeni ve kanal Chat ID ayarlarını kontrol edin."
+            }), 503
+        return jsonify({"status": "success", "message": f"{symbol} işlem sinyali Telegram'a gönderildi."})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @app.route('/api/v8/learning/share-profits', methods=['POST'])
 def api_v8_learning_share_profits():
     """V8'in kapanmış kârlı sonuçlarını yapılandırılmış Telegram kanalına yollar."""
