@@ -6047,6 +6047,23 @@ function loadV8Discovery() {
 }
 
 function loadV8Breakout() {
+    // Kasa/risk girdilerini sakla ve yenile (bir kere baglanir).
+    if (!window._v8SizingBound) {
+        window._v8SizingBound = true;
+        ['v8-capital', 'v8-risk-pct'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const saved = localStorage.getItem(id);
+            if (saved) el.value = saved;
+            el.addEventListener('input', () => {
+                localStorage.setItem(id, el.value);
+                clearTimeout(window._v8SizingDebounce);
+                window._v8SizingDebounce = setTimeout(loadV8Breakout, 400);
+            });
+        });
+        // Onceki backtest sonucunu goster.
+        initV8BacktestPanel();
+    }
     vrAuthorizedFetch(`${V8_API}/radar/breakout`)
         .then(res => res.json())
         .then(json => {
@@ -6170,6 +6187,29 @@ function loadV8Breakout() {
                 const tgButton = `<button type="button" onclick="shareV8SignalToTelegram('${d.symbol}', this)" style="width:100%; background:#229ED9; color:white; border:0; border-radius:6px; padding:6px 8px; font-size:0.74rem; font-weight:700; cursor:pointer;">
                         <i class="fa-brands fa-telegram"></i> Bu Sinyali Telegram'a Gönder
                     </button>`;
+                // T+3 teyit rozeti: sunucu teyit motorundan gecen kartlarda gorunur.
+                const confirmChip = d.confirm_state === 'CONFIRMED'
+                    ? `<span style="background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.4); border-radius:5px; padding:2px 6px; font-size:0.66rem; font-weight:800; white-space:nowrap;">✅ T+3 TEYİTLİ</span>`
+                    : '';
+                // Pozisyon boyutlandirma: (kasa x risk%) / zarar kes mesafesi.
+                const capEl = document.getElementById('v8-capital');
+                const riskEl = document.getElementById('v8-risk-pct');
+                const capital = parseFloat(capEl && capEl.value);
+                const riskPct = parseFloat(riskEl && riskEl.value);
+                let lotHtml = '';
+                if (plan && capital > 0 && riskPct > 0 && stopDist > 0) {
+                    const riskAmount = capital * riskPct / 100;
+                    const perLotRisk = entryPrice * stopDist / 100;
+                    const lot = Math.floor(riskAmount / perLotRisk);
+                    const _tr = (v) => v.toLocaleString('tr-TR', { maximumFractionDigits: 0 });
+                    if (lot > 0) {
+                        const cost = lot * entryPrice;
+                        lotHtml = `<div style="font-size:0.74rem; color:#60a5fa; font-weight:700; margin-bottom:0.5rem; background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.25); border-radius:6px; padding:0.4rem 0.6rem;">
+                            <i class="fa-solid fa-scale-balanced"></i> Önerilen Lot: ${lot.toLocaleString('tr-TR')} (≈₺${_tr(cost)}) · İşlem Riski: ₺${_tr(riskAmount)}</div>`;
+                    } else {
+                        lotHtml = `<div style="font-size:0.72rem; color:var(--text-muted); margin-bottom:0.5rem;"><i class="fa-solid fa-triangle-exclamation"></i> Kasa/risk ayarınız bu işleme yeterli lot çıkarmıyor.</div>`;
+                    }
+                }
 
                 const card = document.createElement('div');
                 const cardColor = watchCard ? '#facc15' : '#10b981';
@@ -6204,16 +6244,93 @@ function loadV8Breakout() {
                             <div style="font-weight:700; color:#facc15;">${timeframeQuality}/100</div>
                         </div>
                     </div>
-                    <div style="font-size:0.78rem; color:var(--text-muted); padding:0.4rem 0.6rem; background:rgba(0,0,0,0.15); border-radius:6px; margin-bottom:0.5rem;">
+                    <div style="font-size:0.78rem; color:var(--text-muted); padding:0.4rem 0.6rem; background:rgba(0,0,0,0.15); border-radius:6px; margin-bottom:0.5rem; display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
                         <i class="fa-solid fa-circle-info" style="color:#60a5fa;"></i> ${reason}
+                        ${confirmChip}
                     </div>
                     ${planHtml}
+                    ${lotHtml}
                     ${varrantInfo}
                     ${tgButton}
                 `;
                 cardsContainer.appendChild(card);
             });
         }).catch(e => console.error(e));
+}
+
+// ==== STRATEJI BACKTEST PANELI ====
+function runV8Backtest(btn) {
+    const statusEl = document.getElementById('v8-backtest-status');
+    if (btn) { btn.disabled = true; btn.textContent = 'Çalışıyor...'; }
+    if (statusEl) statusEl.textContent = 'Backtest başlatılıyor...';
+    vrAuthorizedFetch(`${V8_API}/backtest/run`, { method: 'POST' })
+        .then(r => r.json())
+        .then(() => pollV8Backtest(btn))
+        .catch(e => {
+            if (statusEl) statusEl.textContent = 'Hata: ' + (e.message || e);
+            if (btn) { btn.disabled = false; btn.textContent = 'Çalıştır'; }
+        });
+}
+
+function pollV8Backtest(btn) {
+    const statusEl = document.getElementById('v8-backtest-status');
+    const resEl = document.getElementById('v8-backtest-result');
+    fetch(V8_API + '/backtest/result?t=' + Date.now(), { credentials: 'include' })
+        .then(r => r.json())
+        .then(st => {
+            if (statusEl) statusEl.textContent = `[${st.progress || 0}%] ${st.message || ''}`;
+            if (st.status === 'running') {
+                setTimeout(() => pollV8Backtest(btn), 3000);
+                return;
+            }
+            if (btn) { btn.disabled = false; btn.textContent = 'Tekrar Çalıştır'; }
+            if (st.status === 'done' && st.result && resEl) {
+                if (statusEl) statusEl.textContent = `Backtest tamamlandı.`;
+                renderV8BacktestResult(st.result, resEl);
+            } else if (st.status === 'error' && statusEl) {
+                statusEl.textContent = 'Backtest hatası: ' + (st.message || 'bilinmiyor');
+            }
+        })
+        .catch(() => setTimeout(() => pollV8Backtest(btn), 5000));
+}
+
+function renderV8BacktestResult(result, el) {
+    const order = ['A', 'B', 'C', 'D'];
+    const colors = { A: '#ef4444', B: '#facc15', C: '#60a5fa', D: '#10b981' };
+    let html = `<div style="overflow-x:auto;"><table style="width:100%; font-size:0.74rem; border-collapse:collapse; min-width:420px;">
+        <thead><tr style="color:var(--text-muted); text-align:left;">
+        <th style="padding:4px;">Mod</th><th style="padding:4px; text-align:right;">İşlem</th>
+        <th style="padding:4px; text-align:right;">Kazanma</th><th style="padding:4px; text-align:right;">Ort. Getiri</th>
+        <th style="padding:4px; text-align:right;">Toplam</th><th style="padding:4px; text-align:right;">Kâr Faktörü</th></tr></thead><tbody>`;
+    order.forEach(k => {
+        const m = result.modes && result.modes[k];
+        if (!m) return;
+        html += `<tr style="border-top:1px solid rgba(255,255,255,0.06);">
+            <td style="padding:4px; color:${colors[k]}; font-weight:700;">${m.label}</td>
+            <td style="padding:4px; text-align:right;">${m.count}</td>
+            <td style="padding:4px; text-align:right; font-weight:700;">${m.win_rate === null ? '—' : '%' + m.win_rate}</td>
+            <td style="padding:4px; text-align:right;">${m.avg_return === null ? '—' : (m.avg_return > 0 ? '+' : '') + m.avg_return + '%'}</td>
+            <td style="padding:4px; text-align:right;">${m.total_return === null ? '—' : (m.total_return > 0 ? '+' : '') + m.total_return + '%'}</td>
+            <td style="padding:4px; text-align:right;">${m.profit_factor === null ? '—' : m.profit_factor}</td></tr>`;
+    });
+    html += `</tbody></table></div>
+        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.3rem;">Rapor: ${result.generated_at} · ${result.symbols_tested} hisse, son 2 yılın günlük barları. Geçmiş performans gelecek getiriyi garanti etmez.</div>`;
+    el.innerHTML = html;
+}
+
+function initV8BacktestPanel() {
+    fetch(V8_API + '/backtest/result?t=' + Date.now(), { credentials: 'include' })
+        .then(r => r.json())
+        .then(st => {
+            const resEl = document.getElementById('v8-backtest-result');
+            const statusEl = document.getElementById('v8-backtest-status');
+            if (st.status === 'running') {
+                pollV8Backtest(document.getElementById('v8-backtest-btn'));
+            } else if (st.status === 'done' && st.result && resEl) {
+                if (statusEl) statusEl.textContent = 'Son backtest sonucu:';
+                renderV8BacktestResult(st.result, resEl);
+            }
+        }).catch(() => {});
 }
 
 function loadV8Learning() {

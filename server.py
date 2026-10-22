@@ -3057,6 +3057,94 @@ def _stats_rel_vol(data: dict) -> float:
 
 _V8_TG_SENT = set()
 
+# ==== V8 GIRIS TEYIT MOTORU (T+3 dakika kurali) ====
+# Canli istatistik: sinyal geldikten sonraki ilk 3 dakikada -%0.5 altina
+# dusan girislerin kazanma orani %0 (0/17). Bu yuzden her ENTER sinyali
+# once 3 dakika gozlemlenir; fiyat sinyal fiyatinin uzerinde kalmazsa
+# giris reddedilir ve ayni gun bir daha acilmaz.
+_V8_ENTRY_CONFIRM = {}
+
+def _v8_regime_locked() -> bool:
+    """AYI / GUCCLU AYI rejiminde kirilim girisleri tamamen kilitlidir."""
+    regime_raw = (GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or {}).get("regime", "")
+    return regime_raw in ("BEAR", "STRONG_BEAR")
+
+def _v8_entry_confirmation(sym: str, price):
+    """ENTER sinyali icin T+3 dakika teyit degerlendirmesi.
+    Donus: ("CONFIRMED"|"PENDING"|"REJECTED", mesaj)"""
+    from datetime import datetime as _dt
+    try:
+        price = float(price or 0)
+    except (TypeError, ValueError):
+        return "REJECTED", "Fiyat okunamadı"
+    if price <= 0:
+        return "REJECTED", "Fiyat okunamadı"
+    today = _dt.now().strftime("%Y-%m-%d")
+    now = _dt.now().timestamp()
+    key = (today, sym)
+    rec = _V8_ENTRY_CONFIRM.get(key)
+    if rec and rec.get("date") != today:
+        rec = None
+    if rec is None:
+        _V8_ENTRY_CONFIRM[key] = {"date": today, "ts": now, "price": price,
+                                  "state": "PENDING", "rejected_reason": ""}
+        return "PENDING", "Sinyal alındı; 3 dakikalık teyit süresi başladı"
+    state = rec.get("state")
+    if state == "CONFIRMED":
+        return "CONFIRMED", "3 dakika teyidi geçildi"
+    if state == "REJECTED":
+        return "REJECTED", rec.get("rejected_reason") or "Daha önce reddedildi"
+    entry_price = float(rec.get("price") or 0)
+    elapsed = now - float(rec.get("ts") or now)
+    if price <= entry_price * 0.99:
+        rec["state"] = "REJECTED"
+        rec["rejected_reason"] = f"Sinyal sonrası fiyat hızla düştü (₺{entry_price:.2f} → ₺{price:.2f})"
+        return "REJECTED", rec["rejected_reason"]
+    if elapsed > 1800:
+        rec["state"] = "REJECTED"
+        rec["rejected_reason"] = "Teyit süresi (30 dk) aşıldı"
+        return "REJECTED", rec["rejected_reason"]
+    if elapsed >= 180:
+        if price >= entry_price:
+            rec["state"] = "CONFIRMED"
+            return "CONFIRMED", "3 dakika teyidi geçildi"
+        rec["state"] = "REJECTED"
+        rec["rejected_reason"] = f"İlk 3 dakikada sinyal fiyatının altında kaldı (₺{entry_price:.2f} → ₺{price:.2f})"
+        return "REJECTED", rec["rejected_reason"]
+    return "PENDING", f"Teyit süresi devam ediyor ({int(180 - elapsed)} sn)"
+
+def _v8_gate_enter_row(row: dict, sym: str, data: dict) -> dict:
+    """ENTER satirlarina rejim kilidi + KAP filtresi + T+3 teyit filtresi
+    uygular. Reddedilen ya da bekleyen sinyaller WAIT_CONFIRMATION'a dusurulur."""
+    if (row.get("entry_status") or "").upper() != "ENTER":
+        return row
+    if _v8_regime_locked():
+        row["entry_status"] = "WAIT_CONFIRMATION"
+        row["regime_locked"] = True
+        row["entry_reasons"] = ["Piyasa AYI rejiminde; kırılım girişleri kilitli"] + list(row.get("entry_reasons") or [])
+        return row
+    # KAP HABER FILTRESI: son 24 saatte onemli olay duyurusu varsa girme.
+    try:
+        from services.kap_news import check_symbol as _kap_check
+        kap = _kap_check(sym)
+        row["kap_ok"] = kap.get("kap_ok", False)
+        row["kap_count"] = kap.get("count", 0)
+        if kap.get("blocked"):
+            row["entry_status"] = "WAIT_CONFIRMATION"
+            row["kap_blocked"] = True
+            row["entry_reasons"] = [f"[KAP] {kap.get('reason', 'Önemli olay açıklaması var')}; temkinli beklenmeli"] + list(row.get("entry_reasons") or [])
+            return row
+    except Exception:
+        pass
+    live_price = data.get("Price") or row.get("price") or 0
+    cstate, cmsg = _v8_entry_confirmation(sym, live_price)
+    row["confirm_state"] = cstate
+    row["confirm_message"] = cmsg
+    if cstate != "CONFIRMED":
+        row["entry_status"] = "WAIT_CONFIRMATION"
+        row["entry_reasons"] = [f"[TEYİT] {cmsg}"] + list(row.get("entry_reasons") or [])
+    return row
+
 def auto_send_v8_signals():
     """GERCEK giris onayli V8 sinyallerini (erken adaylar haric) otomatik olarak
     Telegram kanalina gonderir. Ayni hisse+gun icin tekrar gondermez; Telegram
@@ -3081,8 +3169,22 @@ def auto_send_v8_signals():
                 key = (_today, sym, is_intraday)
                 if key in _V8_TG_SENT:
                     continue
+                # REJIM KILIDI: ayi piyasasinda telegrama giris sinyali gitmez.
+                if _v8_regime_locked():
+                    continue
                 entry = float(data.get("Daily_Close") or data.get("Price") or 0)
                 if entry <= 0:
+                    continue
+                # KAP HABER FILTRESI: onemli olay duyurusu varsa sinyal gitmez.
+                try:
+                    from services.kap_news import check_symbol as _kap_check
+                    if _kap_check(sym).get("blocked"):
+                        continue
+                except Exception:
+                    pass
+                # T+3 DAKIKA TEYIDI: teyit gecmeden telegrama sinyal gitmez.
+                cstate, _cmsg = _v8_entry_confirmation(sym, data.get("Price") or entry)
+                if cstate != "CONFIRMED":
                     continue
                 try:
                     atr_pct = float((bo_row.get("metrics") or {}).get("atr_pct") or 0)
@@ -3121,6 +3223,35 @@ def auto_send_v8_signals():
     except Exception as tg_err:
         logger.error("[V8-TG] Otomatik telegram hatasi: %s", tg_err)
 
+@app.route('/api/v8/backtest/run', methods=['POST'])
+def api_v8_backtest_run():
+    """Geçmiş veri üzerinde V8 strateji backtest'ini arka planda başlatır."""
+    try:
+        from v8_engine.backtest import start_backtest
+        res = start_backtest(BIST50_SYMBOLS, days=500)
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/v8/backtest/result', methods=['GET'])
+def api_v8_backtest_result():
+    try:
+        from v8_engine.backtest import get_state
+        return jsonify(get_state())
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/v8/kap/status', methods=['GET'])
+def api_v8_kap_status():
+    """KAP bulten servisinin erisim durumunu doner (filtre aktif mi?)."""
+    try:
+        from services.kap_news import refresh
+        st = refresh()
+        st["filter_active"] = bool(st.get("ok"))
+        return jsonify(st)
+    except Exception as e:
+        return jsonify({"ok": False, "filter_active": False, "error": str(e)})
+
 @app.route('/api/v8/radar/breakout', methods=['GET'])
 def api_v8_radar_breakout():
     all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
@@ -3139,7 +3270,7 @@ def api_v8_radar_breakout():
             row["scan_timestamp"] = cache_ts
             row["entry_status"] = data.get("v8_execution", {}).get("entry_status", "UNKNOWN")
             row["entry_reasons"] = data.get("v8_execution", {}).get("reasons", [])
-            breakout_list.append(row)
+            breakout_list.append(_v8_gate_enter_row(row, sym, data))
             continue
 
         # Gunluk kirilim yoksa 1 saatlik kirilim teyidine bak (daha erken sinyal):
@@ -3160,7 +3291,7 @@ def api_v8_radar_breakout():
                 row["intraday_signal"] = True
                 row["momentum_speed"] = intra.get("momentum_speed", "NORMAL")
                 row["timeframe_quality"] = intra.get("timeframe_quality", 0)
-                breakout_list.append(row)
+                breakout_list.append(_v8_gate_enter_row(row, sym, data))
                 continue
 
         # Kırılım yokken endpoint'in boş dönmesi V8'in 600+ hisseyi

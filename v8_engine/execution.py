@@ -32,10 +32,14 @@ class ExecutionEngine:
         if f_risk >= 50:
             reasons.append("Yüksek tuzak riski (%50 üzeri)")
             return self._build_result(symbol, "NO_ENTRY", reasons, "HIGH_RISK", timeframe_quality)
-            
-        if market_regime in ["STRONG_BEAR"] and b_score < 70:
-            reasons.append("Piyasa ayı rejiminde; ortalama kırılımlar için riskli")
-            return self._build_result(symbol, "NO_ENTRY", reasons, "MARKET_REGIME", timeframe_quality)
+
+        # 1b. REJIM KILIDI: canli islem istatistigi, girislerin %62'sinin AYI
+        # rejiminde acildigini ve bu grupta kazanma oraninin cok dustugunu
+        # gosterdi. Ayi piyasalarinda kirilim sinyalleri tamamen kilitlenir;
+        # istisna yok. (Kullanici guvenligi icin sert kural.)
+        if market_regime in ["BEAR", "STRONG_BEAR"]:
+            reasons.append("Piyasa AYI rejiminde; kırılım girişleri kilitli (istatistik: ayı piyasasında giriş başarısı çok düşük)")
+            return self._build_result(symbol, "NO_ENTRY", reasons, "MARKET_REGIME_LOCK", timeframe_quality)
         
         # 2. Zaman Çerçevesi / Momentum Hızı Analizi
         # Hacim ve RSI'ye göre kırılımın "hızını" sınıflandırır
