@@ -6198,6 +6198,32 @@ function loadV8Learning() {
         }).catch(e => console.error(e));
 }
 
+async function shareV8ProfitsToTelegram(button) {
+    const oldText = button ? button.innerHTML : '';
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gönderiliyor...';
+    }
+    try {
+        const response = await vrAuthorizedFetch(`${V8_API}/learning/share-profits`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        const result = await response.json();
+        if (!response.ok || result.status !== 'success') {
+            throw new Error(result.message || 'Telegram gönderimi başarısız.');
+        }
+        alert(`✅ ${result.count} kârlı V8 işlemi Telegram kanalına gönderildi.`);
+    } catch (error) {
+        alert(`Telegram paylaşımı yapılamadı: ${error.message}`);
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = oldText;
+        }
+    }
+}
+
 function refreshV8Data() {
     const v8wrapper = document.getElementById('v8-wrapper');
     if(v8wrapper && v8wrapper.style.display !== 'none') {

@@ -206,6 +206,31 @@ def send_simulation_report(total_trades: int, total_profit: float, return_pct: f
     return send_telegram_message(text)
 
 
+def send_v8_profit_report(profits: list) -> bool:
+    """V8'de kapanmış kârlı işlemleri Telegram kanalına gönderir."""
+    if not profits:
+        return False
+
+    text = "📈 <b>V8 KÂR RAPORU</b>\n"
+    text += "━━━━━━━━━━━━━━━━\n"
+    text += "Kapanmış ve pozitif sonuçlanan işlemler:\n\n"
+
+    for idx, item in enumerate(profits[:15], 1):
+        symbol = item.get("symbol", "Bilinmiyor")
+        entry = float(item.get("entry_price") or 0)
+        exit_price = float(item.get("exit_price") or 0)
+        profit_pct = float(item.get("profit_pct") or 0)
+        mfe = float(item.get("mfe") or 0)
+        text += (
+            f"{idx}. <b>#{symbol}</b>\n"
+            f"   Giriş: ₺{entry:.2f} → Sonuç: ₺{exit_price:.2f}\n"
+            f"   ✅ Kâr: <b>+%{profit_pct:.2f}</b> | Zirve: +%{mfe:.2f}\n\n"
+        )
+
+    text += "⚠️ Bu paylaşım geçmiş V8 sinyal sonuçlarını gösterir; yatırım tavsiyesi değildir."
+    return send_telegram_message(text)
+
+
 # ========== SESLI AL/SAT UYARILARI ==========
 import os as _os
 

@@ -2913,6 +2913,56 @@ def api_v8_learning_outcomes():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
+
+@app.route('/api/v8/learning/share-profits', methods=['POST'])
+def api_v8_learning_share_profits():
+    """V8'in kapanmış kârlı sonuçlarını yapılandırılmış Telegram kanalına yollar."""
+    try:
+        from v8_engine.database import V8Database
+        conn = V8Database.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT s.symbol, s.entry_price, s.timestamp,
+                   COALESCE(o.t_1d_price, o.t_eod_price, o.t_240m_price,
+                            o.t_120m_price, o.t_60m_price, o.t_30m_price,
+                            o.t_15m_price, o.t_10m_price, o.t_5m_price,
+                            o.t_3m_price) AS exit_price,
+                   o.max_favorable_excursion AS mfe
+            FROM v8_signals s
+            JOIN v8_outcomes o ON s.signal_id = o.signal_id
+            WHERE s.status = 'CLOSED' AND o.final_result = 'WIN'
+            ORDER BY s.timestamp DESC
+            LIMIT 15
+        ''')
+        rows = cursor.fetchall()
+        profits = []
+        for row in rows:
+            entry = float(row["entry_price"] or 0)
+            exit_price = float(row["exit_price"] or 0)
+            if entry <= 0 or exit_price <= 0:
+                continue
+            profits.append({
+                "symbol": row["symbol"],
+                "entry_price": entry,
+                "exit_price": exit_price,
+                "profit_pct": ((exit_price - entry) / entry) * 100,
+                "mfe": float(row["mfe"] or 0),
+            })
+        conn.close()
+
+        if not profits:
+            return jsonify({"status": "error", "message": "Paylaşılacak kapanmış kârlı V8 işlemi yok."}), 404
+
+        from services.telegram_bot import send_v8_profit_report
+        if not send_v8_profit_report(profits):
+            return jsonify({
+                "status": "error",
+                "message": "Telegram gönderilemedi. Bot tokeni ve kanal Chat ID ayarlarını kontrol edin."
+            }), 503
+        return jsonify({"status": "success", "count": len(profits), "message": "V8 kârları Telegram kanalına gönderildi."})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 def _stats_rel_vol(data: dict) -> float:
     """Gunluk istatistikten gercek goreceli hacim uretir (1.0x donmasin)."""
     try:
