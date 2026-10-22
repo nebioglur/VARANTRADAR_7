@@ -3367,12 +3367,15 @@ def api_v8_radar_breakout():
         _regime_now = (GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or {}).get("regime", "NEUTRAL")
     except Exception:
         _regime_now = "NEUTRAL"
-    if _regime_now in ("BEAR", "STRONG_BEAR", "HIGH_VOLATILITY"):
+    if _regime_now in ("BEAR", "STRONG_BEAR"):
+        # REJIM KILIDI: ayi piyasasinda erken aday da yukseltilmez.
+        _promo_count, _promo_min_score = 0, 999
+    elif _regime_now in ("HIGH_VOLATILITY",):
         _promo_count, _promo_min_score = 2, 65
     else:
         _promo_count, _promo_min_score = 5, 55
 
-    if not any(r.get("entry_status") == "ENTER" for r in breakout_list):
+    if _promo_count > 0 and not any(r.get("entry_status") == "ENTER" for r in breakout_list):
         candidates = [
             r for r in breakout_list
             if r.get("breakout_score", 0) >= _promo_min_score and r.get("fakeout_risk", 0) < 40
@@ -3393,6 +3396,12 @@ def api_v8_radar_breakout():
                 r["entry_reasons"] = [
                     "Erken giriş adayı: hazırlık skoru yüksek, kırılım/hacim teyidi yolda."
                 ] + list(r.get("entry_reasons") or [])
+                # Erken adaylar da ayni guvenlik kapasindan gecer:
+                # KAP filtresi + T+3 dakika teyidi. Gecmeyen AL listesine cikmaz.
+                _sym_data = all_stats.get(r.get("symbol"), {})
+                r = _v8_gate_enter_row(r, r.get("symbol"), _sym_data)
+                if r.get("entry_status") != "ENTER":
+                    r.pop("early_candidate", None)
 
     auto_send_v8_signals()
     return jsonify({"status": "success", "data": breakout_list})
