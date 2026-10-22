@@ -297,6 +297,12 @@ class UniversalScanner:
                 except Exception:
                     intra_fallback = {"intraday_change_pct": 0.0, "hourly_flow": "-"}
 
+                # RSI_14 "N/A" stringi gelebilir; sayiya cevir, olmazsa bos birak
+                try:
+                    _rsi_val = float(r.get("Indicators", {}).get("RSI_14"))
+                except (TypeError, ValueError):
+                    _rsi_val = None
+
                 all_symbols_stats[sym] = {
                     "Daily_EMA50": r["Daily_EMA50"],
                     "Daily_EMA200": r["Daily_EMA200"],
@@ -304,8 +310,14 @@ class UniversalScanner:
                     "Price": r.get("Price"),
                     "High": r.get("High"),
                     "Low": r.get("Low"),
+                    "Daily_Open": r.get("Daily_Open"),
                     "Change_Pct": r.get("Change_Pct", 0.0),
                     "Volume": r.get("Volume", 0),
+                    "Money_Volume": r.get("Money_Volume", 0),
+                    "Vol_SMA10": r.get("Vol_SMA10"),
+                    "Vol_Multiplier": r.get("Vol_Multiplier"),
+                    "ATR": r.get("ATR"),
+                    "RSI": _rsi_val,
                     "Time": r.get("Time", "-"),
                     "v8_discovery": r.get("v8_discovery"),
                     "v8_breakout": r.get("v8_breakout"),

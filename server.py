@@ -3046,6 +3046,11 @@ def _stats_rel_vol(data: dict) -> float:
         vs = float(data.get("Vol_SMA10") or 0)
         if v > 0 and vs > 0:
             return round(v / vs, 2)
+        # Eski cache'te Vol_SMA10 yoksa V8 discovery motorunun gercek
+        # goreceli hacmine dus (1.0x donuk deger gosterme).
+        disc_rv = ((data.get("v8_discovery") or {}).get("metrics") or {}).get("relative_volume")
+        if disc_rv:
+            return round(float(disc_rv), 2)
     except Exception:
         pass
     return 1.0

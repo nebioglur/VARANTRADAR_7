@@ -6091,9 +6091,12 @@ function loadV8Breakout() {
 
             cardsContainer.innerHTML = '';
             enterList.forEach(d => {
+                const watchCard = Boolean(d._watch_card);
                 const fakeRisk = d.fakeout_risk || 0;
-                const fakeColor = fakeRisk > 50 ? '#ef4444' : fakeRisk > 30 ? '#facc15' : '#10b981';
-                const fakeLabel = fakeRisk > 50 ? '⚠️ Yüksek' : fakeRisk > 30 ? '⚡ Orta' : '✅ Düşük';
+                // Izleme kartlarinda kirilim yokken "Tuzak Riski %0" yazmak yaniltici;
+                // gercek tuzak degerlendirmesi ancak kirilim sonrasi yapilabilir.
+                const fakeColor = watchCard ? 'var(--text-muted)' : (fakeRisk > 50 ? '#ef4444' : fakeRisk > 30 ? '#facc15' : '#10b981');
+                const fakeLabel = watchCard ? '— (Kırılım Bekleniyor)' : (fakeRisk > 50 ? '⚠️ Yüksek' : fakeRisk > 30 ? '⚡ Orta' : '✅ Düşük');
                 const speedRaw = d.momentum_speed || 'NORMAL';
                 const V8_SPEED_TR = {
                     "EXPLOSIVE": "🚀 Patlama (Çok Güçlü)",
@@ -6105,7 +6108,6 @@ function loadV8Breakout() {
                 const speed = V8_SPEED_TR[speedRaw] || speedRaw;
                 const speedColor = speedRaw === 'EXPLOSIVE' ? '#10b981' : speedRaw === 'STRONG' ? '#60a5fa' : '#94a3b8';
                 const reason = (d.entry_reasons || [])[0] || '—';
-                const watchCard = Boolean(d._watch_card);
                 const volumeStrength = Number(d.volume_strength ?? d.metrics?.relative_volume ?? 0);
                 // Zaman uyumu yoksa (hazirlik/izleme kartlari) kirilim skorundan dinamik turet; 0/100 kalmasin.
                 const timeframeQuality = Number(d.timeframe_quality) > 0
@@ -6255,7 +6257,12 @@ function loadV8Learning() {
 
             function v8DurumEtiketi(d) {
                 if (d.status === 'ACTIVE') return '<span style="color:#60a5fa; font-weight:bold; background:rgba(96,165,250,0.12); border:1px solid rgba(96,165,250,0.35); border-radius:5px; padding:3px 6px;">🟢 AÇIK / İŞLEMDE</span>';
-                if (d.final_result === 'WIN' && d.status === 'CLOSED') return '<span style="color:#10b981; font-weight:bold;">🚀 HEDEF 2 (+%5)</span>';
+                if (d.final_result === 'WIN' && d.status === 'CLOSED') {
+                    // Hedef 2'ye (+%5) dokunan islemi Hedef 1 kazancindan ayristir.
+                    const mfe = Number(d.mfe) || 0;
+                    if (mfe >= 4.9) return '<span style="color:#10b981; font-weight:bold;">🚀 HEDEF 2 (+%5)</span>';
+                    return '<span style="color:#10b981; font-weight:bold;">✅ KAPALI · HEDEF 1 (+%3)</span>';
+                }
                 if (d.final_result === 'WIN') return '<span style="color:#10b981; font-weight:bold;">✅ KAPALI · HEDEF 1 (+%3)</span>';
                 if (d.final_result === 'LOSS') return '<span style="color:#ef4444; font-weight:bold;">⛔ KAPALI · ZARARLA KAPANDI</span>';
                 if (d.final_result === 'NEUTRAL' && d.status === 'CLOSED') return '<span style="color:var(--text-muted); font-weight:bold;">✅ KAPANDI</span>';
