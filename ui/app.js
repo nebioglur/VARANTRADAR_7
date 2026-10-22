@@ -5964,7 +5964,8 @@ function loadV8Discovery() {
                 else if (d.state === 'PRE_BREAKOUT') { stateLabel = '⚡ Kırılım Yakın'; stateStyle = 'color:#facc15; font-weight:bold;'; }
                 else if (d.state === 'WATCH') { stateLabel = '🟡 İZLEMEDE'; stateStyle = 'color:#facc15;'; }
 
-                const vol = d.metrics ? `${(d.metrics.relative_volume || 0).toFixed(1)}x` : '—';
+                const relVol = Number(d.volume_strength ?? d.metrics?.relative_volume ?? 0);
+                const vol = relVol > 0 ? `${relVol.toFixed(2)}x` : '—';
                 const reasons = (d.reasons || []).slice(0, 1).join('') || '—';
 
                 tr.innerHTML = `
@@ -6039,6 +6040,19 @@ function loadV8Breakout() {
                 const speedColor = speedRaw === 'EXPLOSIVE' ? '#10b981' : speedRaw === 'STRONG' ? '#60a5fa' : '#94a3b8';
                 const reason = (d.entry_reasons || [])[0] || '—';
                 const watchCard = Boolean(d._watch_card);
+                const volumeStrength = Number(d.volume_strength ?? d.metrics?.relative_volume ?? 0);
+                const volumeColor = volumeStrength >= 1.5 ? '#10b981' : volumeStrength >= 0.9 ? '#facc15' : '#ef4444';
+                const scanDate = d.scan_timestamp ? new Date(Number(d.scan_timestamp) * 1000) : null;
+                const scanTime = scanDate && !isNaN(scanDate.getTime())
+                    ? scanDate.toLocaleString('tr-TR', {
+                        timeZone: 'Europe/Istanbul',
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })
+                    : 'Zaman bilgisi bekleniyor';
                 const earlyBadge = watchCard
                     ? `<div style="position:absolute; top:0; left:0; background:#facc15; color:#1f2937; font-size:0.68rem; font-weight:800; padding:3px 10px; border-bottom-right-radius:8px; letter-spacing:1px;">🟡 İZLEMEDE</div>`
                     : d.early_candidate
@@ -6063,6 +6077,10 @@ function loadV8Breakout() {
                           <div style="font-size:1.4rem; font-weight:700; color:var(--text-main);">₺${(d.price || 0).toFixed(2)}</div>
                           <div style="font-size:0.9rem; font-weight:bold; color:${(d.change_pct || 0) > 0 ? 'var(--accent-green)' : ((d.change_pct || 0) < 0 ? 'var(--accent-red)' : 'var(--text-muted)')};">${(d.change_pct || 0) > 0 ? '+' : ''}${(d.change_pct || 0).toFixed(2)}%</div>
                       </div>
+                    <div style="display:flex; justify-content:space-between; gap:0.5rem; margin:-0.25rem 0 0.7rem; font-size:0.68rem; color:var(--text-muted);">
+                        <span><i class="fa-regular fa-clock" style="color:#60a5fa;"></i> ${scanTime}</span>
+                        <span style="color:${volumeColor}; font-weight:800;">Hacim Gücü ${volumeStrength > 0 ? volumeStrength.toFixed(2) + 'x' : '—'}</span>
+                    </div>
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; font-size:0.8rem; margin-bottom:0.75rem;">
                         <div style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.4rem 0.6rem;">
                             <div style="color:var(--text-muted); font-size:0.68rem;">Kırılım Gücü</div>
@@ -6640,8 +6658,14 @@ function renderAllStocksTable() {
             state = data.v8_discovery.state || 'NONE';
             prep_score = data.v8_discovery.preparation_score || 0;
             if (data.v8_discovery.metrics) {
-                rVol = data.v8_discovery.metrics.relative_volume || 0;
+                rVol = Number(data.v8_discovery.metrics.relative_volume) || 0;
             }
+        }
+        if (!rVol) {
+            const directVol = Number(data.Vol_Multiplier || data.Volume_Ratio || 0);
+            const volume = Number(data.Volume || 0);
+            const volumeAverage = Number(data.Vol_SMA10 || 0);
+            rVol = directVol > 0 ? directVol : (volume > 0 && volumeAverage > 0 ? volume / volumeAverage : 0);
         }
         
         // Gün içi güç metrikleri

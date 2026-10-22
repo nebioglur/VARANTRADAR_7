@@ -2931,6 +2931,7 @@ def _stats_rel_vol(data: dict) -> float:
 def api_v8_radar_breakout():
     all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
     breakout_list = []
+    cache_ts = GLOBAL_DASHBOARD_CACHE.get("cache_timestamp")
     
     for sym, data in all_stats.items():
         bo = data.get("v8_breakout")
@@ -2940,6 +2941,8 @@ def api_v8_radar_breakout():
             row["price"] = data.get("Daily_Close", 0.0)
             row["change_pct"] = data.get("Change_Pct", 0.0)
             row["volume"] = data.get("Volume", 0)
+            row["volume_strength"] = _stats_rel_vol(data)
+            row["scan_timestamp"] = cache_ts
             row["entry_status"] = data.get("v8_execution", {}).get("entry_status", "UNKNOWN")
             row["entry_reasons"] = data.get("v8_execution", {}).get("reasons", [])
             breakout_list.append(row)
@@ -2956,6 +2959,8 @@ def api_v8_radar_breakout():
                 row["price"] = data.get("Daily_Close", 0.0)
                 row["change_pct"] = data.get("Change_Pct", 0.0)
                 row["volume"] = data.get("Volume", 0)
+                row["volume_strength"] = _stats_rel_vol(data)
+                row["scan_timestamp"] = cache_ts
                 row["entry_status"] = "ENTER"
                 row["entry_reasons"] = ["1 saatlik barda kırılım teyidi (gün içi sinyal)"] + list(intra.get("reasons") or [])
                 row["intraday_signal"] = True
@@ -2972,6 +2977,7 @@ def api_v8_radar_breakout():
         state = disc.get("state")
         if state in ("READY", "PREPARING", "WATCH"):
             metrics = disc.get("metrics") or {}
+            rel_vol = _stats_rel_vol(data)
             breakout_list.append({
                 "symbol": sym,
                 "price": data.get("Daily_Close", 0.0),
@@ -2982,9 +2988,11 @@ def api_v8_radar_breakout():
                 "breakout_score": disc.get("preparation_score", 0.0),
                 "fakeout_risk": 0.0,
                 "metrics": {
-                    "relative_volume": metrics.get("relative_volume", 1.0),
+                    "relative_volume": rel_vol,
                     "rsi": data.get("RSI", 50.0),
                 },
+                "volume_strength": rel_vol,
+                "scan_timestamp": cache_ts,
                 "entry_status": "WAIT",
                 "entry_reasons": disc.get("reasons") or [
                     "Kırılım bekleniyor; hazırlık sinyali mevcut."
@@ -3008,6 +3016,8 @@ def api_v8_radar_breakout():
                 "breakout_score": round(fallback_score, 1),
                 "fakeout_risk": 0.0,
                 "metrics": {"relative_volume": rel_vol, "rsi": data.get("RSI", 50.0)},
+                "volume_strength": rel_vol,
+                "scan_timestamp": cache_ts,
                 "entry_status": "WAIT",
                 "entry_reasons": ["Günlük tarama adayı; V8 kırılım teyidi bekleniyor."],
                 "momentum_speed": "NORMAL",
@@ -3065,16 +3075,21 @@ def api_v8_radar_breakout():
 def api_v8_radar_discovery():
     all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
     discovery_list = []
+    cache_ts = GLOBAL_DASHBOARD_CACHE.get("cache_timestamp")
     
     for sym, data in all_stats.items():
         disc = data.get("v8_discovery")
         if disc and disc.get("state") in ["READY", "PREPARING", "WATCH"]:
             # Combine some essential pricing data (cache'teki sozlugu DEGISTIRME; kopya uzerinde calis)
             disc = dict(disc)
+            disc["metrics"] = dict(disc.get("metrics") or {})
+            disc["metrics"]["relative_volume"] = _stats_rel_vol(data)
             disc["symbol"] = sym
             disc["price"] = data.get("Daily_Close", 0.0)
             disc["change_pct"] = data.get("Change_Pct", 0.0)
             disc["volume"] = data.get("Volume", 0)
+            disc["volume_strength"] = _stats_rel_vol(data)
+            disc["scan_timestamp"] = cache_ts
             discovery_list.append(disc)
         elif data.get("Daily_Close") or data.get("Price"):
             price = float(data.get("Daily_Close") or data.get("Price") or 0)
@@ -3089,6 +3104,8 @@ def api_v8_radar_discovery():
                 "preparation_score": round(max(35.0, min(65.0, 48.0 + change * 2.0 + (rel_vol - 1.0) * 5.0)), 1),
                 "reasons": ["Günlük tarama adayı; V8 hazırlık teyidi bekleniyor."],
                 "metrics": {"relative_volume": rel_vol},
+                "volume_strength": rel_vol,
+                "scan_timestamp": cache_ts,
             })
             
     # Puanlara gore sirala
