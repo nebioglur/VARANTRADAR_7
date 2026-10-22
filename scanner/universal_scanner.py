@@ -173,11 +173,16 @@ class UniversalScanner:
                     
         # Şimdi sonuçları kategorize edelim:
         
+        # BIST gunluk siniri ~%10 (istisna seriler haric); |%|>33 olan
+        # kayitlar veri hatasidir (bolunma/temettu ayarlamasi vb.) ve
+        # yukselen/dusen tablolarini bozmamali.
+        _veri_hatasi = lambda r: abs(r.get("Change_Pct", 0) or 0) > 33
+
         # 1. Yükselenler (En çok % artanlar)
-        gainers = sorted([r for r in all_results if r["Change_Pct"] > 0], key=lambda x: x["Change_Pct"], reverse=True)[:20]
-        
+        gainers = sorted([r for r in all_results if r["Change_Pct"] > 0 and not _veri_hatasi(r)], key=lambda x: x["Change_Pct"], reverse=True)[:20]
+
         # 2. Düşenler (En çok % azalanlar)
-        losers = sorted([r for r in all_results if r["Change_Pct"] < 0], key=lambda x: x["Change_Pct"])[:20]
+        losers = sorted([r for r in all_results if r["Change_Pct"] < 0 and not _veri_hatasi(r)], key=lambda x: x["Change_Pct"])[:20]
         
         # 3. En Hacimliler / Kurumsal (Volume * Price en yüksek)
         high_vol = sorted(all_results, key=lambda x: x["Money_Volume"], reverse=True)[:20]
