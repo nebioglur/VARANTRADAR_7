@@ -60,6 +60,11 @@ class ExecutionEngine:
             reasons.append("Hacim desteği kırılım için zayıf")
 
         # 2. Temel Ret Kriterleri (Avoid Engine)
+        change_pct = float(metrics.get("change_pct", 0.0))
+        if change_pct >= 6.5:
+            reasons.append("Hisse tavan seviyesinde (+%6.5+); alım kapalı / seans içi marj kalmadı.")
+            return self._build_result(symbol, "NO_ENTRY", reasons, "TAVAN_RISK", 0.0, speed)
+
         if f_risk >= 60.0:
             reasons.append("Yüksek tuzak riski (>%60)")
             return self._build_result(symbol, "NO_ENTRY", reasons, "HIGH_RISK", timeframe_quality, speed)

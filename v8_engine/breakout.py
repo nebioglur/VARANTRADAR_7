@@ -68,6 +68,26 @@ class BreakoutEngine:
             is_breakout = False
             reasons = []
 
+            # TAVAN / AŞIRI PRİMLİ HİSSE KORUMASI:
+            # Hisse zaten +%6.5 ve üzeri primlenmişse (tavan bölgesindeyse), alım kapalıdır ve seans içi marj kalmamıştır.
+            if change_pct >= 6.5:
+                return {
+                    "symbol": symbol,
+                    "is_breakout": False,
+                    "status": "TAVAN_TUZAGI",
+                    "status_label": "TAVAN / ALIM KAPANMIŞ",
+                    "breakout_score": 0.0,
+                    "fakeout_risk": 99.0,
+                    "reasons": ["Hisse tavan seviyesindedir (+%6.5+); seans içi alım fırsatı kalmamıştır."],
+                    "metrics": {
+                        "resistance_level": round(local_resistance, 2),
+                        "close_price": round(c, 2),
+                        "change_pct": round(change_pct, 2),
+                        "relative_volume": round(rel_vol, 2),
+                        "rsi": 95.0
+                    }
+                }
+
             # A) Klasik Direnç Kırılımı (10g veya 20g direnci aşıldı)
             if c > res_10d:
                 is_breakout = True

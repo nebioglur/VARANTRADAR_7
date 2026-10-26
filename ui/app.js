@@ -5880,7 +5880,12 @@ function loadV8Discovery() {
 
             if (waitBadge) waitBadge.textContent = data.length;
 
-            data.slice(0, 30).forEach(d => {
+            // Tavan ve düşen hisseleri filtrele
+            const validDisc = data.filter(d => {
+                const ch = Number(d.change_pct || 0);
+                return ch < 5.5 && ch > -2.0;
+            });
+            validDisc.slice(0, 30).forEach(d => {
                 const tr = document.createElement('tr');
                 const rawSt = String(d.state || d.state_label || '').toUpperCase();
                 let stateLabel = '🟡 İZLEMEDE';
@@ -5942,6 +5947,12 @@ function renderV8BreakoutCard(d, isCandidate = false) {
         }
     }
 
+    const price = Number(d.price || 0);
+    const t1 = d.target_1 || (price * 1.022);
+    const t2 = d.target_2 || (price * 1.048);
+    const sl = d.stop_loss || (price * 0.975);
+    const upside = d.remaining_upside_pct || Math.max(0, 10.0 - Number(d.change_pct || 0)).toFixed(1);
+
     const varrantInfo = d.varrant_info && d.varrant_info.status === 'VARRANT_FOUND'
         ? `<div style="margin-top:0.5rem; padding:0.4rem 0.6rem; background:rgba(168,85,247,0.12); border:1px solid rgba(168,85,247,0.3); border-radius:6px; font-size:0.75rem; color:#c084fc;">
              <i class="fa-solid fa-bolt"></i> Varant: <b>${d.varrant_info.varrant_prefix}</b> — Kaldıraç: ~${d.varrant_info.estimated_leverage}x
@@ -5954,8 +5965,8 @@ function renderV8BreakoutCard(d, isCandidate = false) {
         <div style="position:absolute; top:0; right:0; background:${badgeBg}; color:#fff; font-size:0.68rem; font-weight:800; padding:3px 10px; border-bottom-left-radius:8px; letter-spacing:0.5px;">${badgeText}</div>
         <div style="font-size:1.25rem; font-weight:800; color:var(--text-light); margin-bottom:0.6rem;">${d.symbol}</div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; padding-bottom:0.5rem; border-bottom:1px solid rgba(255,255,255,0.05);">
-            <div style="font-size:1.35rem; font-weight:700; color:var(--text-main);">₺${(d.price || 0).toFixed(2)}</div>
-            <div style="font-size:0.92rem; font-weight:bold; color:${(d.change_pct || 0) > 0 ? 'var(--accent-green)' : ((d.change_pct || 0) < 0 ? 'var(--accent-red)' : 'var(--text-muted)')};">${(d.change_pct || 0) > 0 ? '+' : ''}${(d.change_pct || 0).toFixed(2)}%</div>
+            <div style="font-size:1.35rem; font-weight:700; color:var(--text-main);">₺${price.toFixed(2)}</div>
+            <div style="font-size:0.92rem; font-weight:bold; color:var(--accent-green);">+${Number(d.change_pct || 0).toFixed(2)}%</div>
         </div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; font-size:0.8rem; margin-bottom:0.75rem;">
             <div style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.4rem 0.6rem;">
@@ -5977,6 +5988,27 @@ function renderV8BreakoutCard(d, isCandidate = false) {
         </div>
         <div style="font-size:0.78rem; color:var(--text-muted); padding:0.4rem 0.6rem; background:rgba(0,0,0,0.18); border-radius:6px; margin-bottom:0.5rem; line-height:1.4;">
             <i class="fa-solid fa-circle-info" style="color:#60a5fa;"></i> ${reason}
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.4rem; margin-top:0.6rem; text-align:center; font-size:0.75rem;">
+            <div style="background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); border-radius:6px; padding:0.35rem 0.2rem;">
+                <div style="color:#ef4444; font-size:0.65rem; font-weight:700;">ZARAR KES</div>
+                <div style="font-weight:800; color:#fff;">₺${Number(sl).toFixed(2)}</div>
+                <div style="font-size:0.65rem; color:#ef4444;">-%2.5</div>
+            </div>
+            <div style="background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.35); border-radius:6px; padding:0.35rem 0.2rem;">
+                <div style="color:#10b981; font-size:0.65rem; font-weight:700;">🎯 KÂR AL 1</div>
+                <div style="font-weight:800; color:#fff;">₺${Number(t1).toFixed(2)}</div>
+                <div style="font-size:0.65rem; color:#10b981;">+%2.2 (Kârı Kilitle)</div>
+            </div>
+            <div style="background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.35); border-radius:6px; padding:0.35rem 0.2rem;">
+                <div style="color:#60a5fa; font-size:0.65rem; font-weight:700;">🚀 HEDEF 2</div>
+                <div style="font-weight:800; color:#fff;">₺${Number(t2).toFixed(2)}</div>
+                <div style="font-size:0.65rem; color:#60a5fa;">+%4.8 (Kopuş)</div>
+            </div>
+        </div>
+        <div style="margin-top:0.4rem; font-size:0.72rem; color:#34d399; display:flex; justify-content:space-between; align-items:center; background:rgba(16,185,129,0.08); padding:0.3rem 0.5rem; border-radius:6px;">
+            <span>🛡️ <b>Sıfır Risk:</b> +%1.8 kârda stop maliyet üstüne taşınır</span>
+            <span style="color:#facc15; font-weight:700;">Tavana Kalan: +%${upside}</span>
         </div>
         ${varrantInfo}
     `;
@@ -6003,6 +6035,11 @@ function loadV8Breakout() {
             let avoidList = [];
 
             data.forEach(d => {
+                const ch = Number(d.change_pct || 0);
+                // KESİN TAVAN VE AŞIRI PRİMLİ HİSSE FİLTRESİ:
+                // Hisse +6.5% ve üzeri tavan bölgesindeyse veya düşüşteyse (eksi ise) seans içi kâr fırsatı yoktur
+                if (ch >= 6.5 || ch < 0.2) return;
+
                 if (d.entry_status === 'ENTER') enterList.push(d);
                 else if (d.entry_status === 'WAIT_PULLBACK' || d.entry_status === 'WAIT_CONFIRMATION' || d.entry_status === 'WAIT') waitList.push(d);
                 else avoidList.push(d);

@@ -3153,15 +3153,31 @@ def api_v8_radar_breakout():
     for sym, data in all_stats.items():
         bo = data.get("v8_breakout")
         if bo and bo.get("is_breakout"):
+            price = float(data.get("Daily_Close") or data.get("Price") or 0.0)
+            change_pct = float(data.get("Change_Pct") or data.get("intraday_change_pct") or 0.0)
+            vol = float(data.get("Volume", 0))
+            vol_tl = vol * price
+            
+            # KESİN TAVAN VE AŞIRI PRİMLİ HİSSE FİLTRESİ:
+            # Kullanıcı şartı: Tavan olmuş (+%6.5 üzeri) veya düşen hisseleri verme!
+            # Alım kapanmış ya da seans içi kâr marjı kalmamış hisseler kesinlikle elenir.
+            if change_pct >= 6.5 or change_pct < 0.2:
+                continue
+            
+            # Likidite Güvencesi: Derinliği olmayan sığ veya 3.5 TL altı kuruşluk hisseleri ele
+            if price < 3.5 or (vol_tl > 0 and vol_tl < 15_000_000):
+                continue
+
             item = dict(bo)
             v8_exec = data.get("v8_execution", {})
             raw_status = v8_exec.get("entry_status", "UNKNOWN")
             raw_speed = v8_exec.get("momentum_speed", "NORMAL")
             
             item["symbol"] = sym
-            item["price"] = data.get("Daily_Close") or data.get("Price") or 0.0
-            item["change_pct"] = data.get("Change_Pct") or data.get("intraday_change_pct") or 0.0
-            item["volume"] = data.get("Volume", 0)
+            item["price"] = price
+            item["change_pct"] = change_pct
+            item["volume"] = vol
+            item["volume_tl"] = vol_tl
             item["entry_status_code"] = raw_status
             item["entry_status"] = raw_status
             item["entry_status_label"] = status_map.get(raw_status, raw_status)
@@ -3180,10 +3196,30 @@ def api_v8_radar_breakout():
                 clean_reasons = ["Düşük tuzak riskli, güçlü kırılım onayı (AL)"]
             item["entry_reasons"] = clean_reasons
             
+            # KÂR AL & ZARAR KES HEDEFLERİ (Büyük küçük demeden kâr al, zarar stop yemeden çık)
+            r_vol = float(data.get("Volume_Ratio") or data.get("Hacim_Gucu") or 1.0)
+            item["target_1"] = round(price * 1.022, 2)   # Hedef 1: +%2.2 (Hızlı Kâr Al - Kasa Korumalı)
+            item["target_2"] = round(price * 1.048, 2)   # Hedef 2: +%4.8 (Kopuş Ana Kârı)
+            item["stop_loss"] = round(price * 0.975, 2)  # Zarar Kes: -%2.5 (Çelik Stop)
+            item["target_1_pct"] = 2.2
+            item["target_2_pct"] = 4.8
+            item["stop_loss_pct"] = -2.5
+            item["remaining_upside_pct"] = round(max(0.0, 10.0 - change_pct), 1)
+
+            # SEANS İÇİ MAKSİMUM KÂR POTANSİYELİ SKORU:
+            profit_potential = (
+                (10.0 - change_pct) * 4.0
+                + (float(bo.get("breakout_score", 50)) * 0.4)
+                - (float(bo.get("fakeout_risk", 20)) * 0.3)
+                + (min(r_vol, 4.0) * 8.0)
+                + (15.0 if raw_status == "ENTER" else 0.0)
+            )
+            item["profit_potential"] = round(profit_potential, 1)
+
             breakout_list.append(item)
             
-    # Siralama: Oncelikle kaliteli kirilimlar
-    breakout_list = sorted(breakout_list, key=lambda x: x.get("breakout_score", 0) - x.get("fakeout_risk", 0), reverse=True)
+    # Siralama: Seans ici maksimum kar potansiyeline gore en yuksekten dusuge
+    breakout_list = sorted(breakout_list, key=lambda x: x.get("profit_potential", 0), reverse=True)
     return jsonify({"status": "success", "data": breakout_list})
 
 @app.route('/api/v8/radar/discovery', methods=['GET'])
@@ -3204,11 +3240,23 @@ def api_v8_radar_discovery():
         disc = data.get("v8_discovery")
         raw_state = str(disc.get("state") if disc else "").upper()
         if disc and (raw_state in ["READY", "PREPARING", "WATCH"] or any(k in raw_state for k in ["HAZIR", "SIKIŞMA", "İZLEME"])):
+            price = float(data.get("Daily_Close") or data.get("Price") or 0.0)
+            change_pct = float(data.get("Change_Pct") or data.get("intraday_change_pct") or 0.0)
+            vol = float(data.get("Volume", 0))
+            vol_tl = vol * price
+            
+            # Tavan ve aşırı primli hisseleri ele (Kullanıcı isteği: Tavan hisse istemiyoruz!)
+            if change_pct >= 5.5 or change_pct < -2.0:
+                continue
+            if price < 3.5 or (vol_tl > 0 and vol_tl < 15_000_000):
+                continue
+
             item = dict(disc)
             item["symbol"] = sym
-            item["price"] = data.get("Daily_Close") or data.get("Price") or 0.0
-            item["change_pct"] = data.get("Change_Pct") or data.get("intraday_change_pct") or 0.0
-            item["volume"] = data.get("Volume", 0)
+            item["price"] = price
+            item["change_pct"] = change_pct
+            item["volume"] = vol
+            item["volume_tl"] = vol_tl
             
             # Dinamik Hacim Gücü (RVOL / Hacim Katı)
             hacim_gucu = data.get("Volume_Ratio") or data.get("Hacim_Gucu") or (item.get("metrics") or {}).get("relative_volume", 1.0)
