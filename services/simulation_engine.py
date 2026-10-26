@@ -179,7 +179,8 @@ class SimulationEngine:
         if not pd.notna(atr) or atr <= 0:
             atr = entry_price * 0.02
 
-        stop_pct = min(0.045, max(0.015, (atr / entry_price) * 1.6))
+        # Sağlam Stop-Loss Aralığı: BIST gün içi dalgalanma gürültüsünde erkenden elenmemek için en az %2.4, en fazla %4.0
+        stop_pct = min(0.040, max(0.024, (atr / entry_price) * 1.8))
         stop_price = entry_price * (1 - stop_pct)
         return {
             'atr_value': atr,
@@ -270,6 +271,13 @@ class SimulationEngine:
             if float(r_vol) < 1.3:
                 continue
 
+            # LİKİDİTE VE FİYAT GÜVENCESİ (Sığ ve Kuruşluk Hisseleri Ele):
+            # ETYAT, penny hisseler ve derinliği olmayan sığ tahtalar simülasyona giremez!
+            if price < 4.0:
+                continue
+            vol_tl = float(meta.get('Volume_TL') or (float(meta.get('Volume', 0)) * price) or 0)
+            if vol_tl > 0 and vol_tl < 20_000_000:
+                continue
                     
             # EMA Filtresi ZORUNLU
             if not ema50 or not ema200 or not price:
@@ -378,21 +386,22 @@ class SimulationEngine:
                 
                 entry = trade['entry_price']
                 
-                # DİNAMİK İZLEYEN STOP (Trailing Stop)
-                # Kâr > %2 ise stopu maliyete (Sıfıra) çek
-                if high >= entry * 1.02 and trade['stop_price'] < entry * 1.002:
-                    trade['stop_price'] = entry * 1.002
-                    trade['reason_prefix'] = "[İZLEYEN STOP AKTİF] "
-                
-                # Kâr > %3 ise stopu maliyete taşı; kazananı kaybedene dönüştürme
-                if high >= entry * 1.03 and trade['stop_price'] < entry * 1.001:
-                    trade['stop_price'] = entry * 1.001
-                    trade['reason_prefix'] = "[KÂR KORUMA AKTİF] "
-
-                # Kâr > %5 ise en az %2 kârı kilitle
-                if high >= entry * 1.05 and trade['stop_price'] < entry * 1.02:
-                    trade['stop_price'] = entry * 1.02
-                    trade['reason_prefix'] = "[KÂR KİLİTLENDİ] "
+                # DİNAMİK AKILLI KÂR KORUMA & İZLEYEN STOP
+                # 1) TP1 öncesinde: Pozisyonu henüz +%2'deyken boğup çıkarmamak için stop erken maliyete çekilmez.
+                #    Yalnızca kâr > +%3.2 ise stop maliyete çekilir (risk sıfırlanır).
+                if not trade.get('scaled_out', False):
+                    if high >= entry * 1.032 and trade['stop_price'] < entry * 1.004:
+                        trade['stop_price'] = entry * 1.004
+                        trade['reason_prefix'] = "[KÂR KORUMA AKTİF] "
+                else:
+                    # 2) TP1 alındıktan sonra (Yarısı nakde geçti, kâr cepte):
+                    #    Kalan lotlar için stop başabaşın üstüne taşınır ve kâr kademeli kilitlenir.
+                    if high >= entry * 1.045 and trade['stop_price'] < entry * 1.020:
+                        trade['stop_price'] = entry * 1.020
+                        trade['reason_prefix'] = "[%2 KÂR KİLİTLENDİ] "
+                    elif high >= entry * 1.065 and trade['stop_price'] < entry * 1.038:
+                        trade['stop_price'] = entry * 1.038
+                        trade['reason_prefix'] = "[%3.8 KÂR KİLİTLENDİ] "
 
                 stop_price = trade['stop_price']
                 tp1_price = trade['tp1_price']
@@ -487,6 +496,9 @@ class SimulationEngine:
                 
                 if dt_current < dt_ps:
                     continue
+                # Sabah açılış makas ve volatilite tuzağı filtresi (10:15 öncesi işleme girme)
+                if dt_current.time() < time(10, 15):
+                    continue
                 if dt_current.time() >= time(17, 50):
                     to_remove.append(s)
                     continue
@@ -560,11 +572,10 @@ class SimulationEngine:
                 if s in pending_signals:
                     pending_signals.remove(s)
                     
-            # 3. YENİDEN GİRİŞ (Trend Dönerse, Sadece Stop olanlar için)
-            # Re-entry de sabit zincir emirle olur
-            # Not: Re-entry manuel işlemlerde zor olabilir, ama sistemi 'çelik' kılanlardan biri bu
-            # Kestik attık ama trend dönerse alarm çalar!
-            for sym in list(stopped_out_symbols):
+            # 3. YENİDEN GİRİŞ KORUMASI:
+            # Borsa İstanbul dinamiklerinde aynı gün stoplanan hisseye tekrar girmek (re-entry)
+            # sermayeyi eritmektedir. Stoplanan hisseye aynı gün tekrar girilmez, sermaye korunur.
+            for sym in []:
                 if sym not in open_symbols:
                     sig = next((x for x in selected if x['symbol'] == sym), None)
                     stopped_at = stop_times.get(sym)

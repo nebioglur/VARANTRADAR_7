@@ -6653,20 +6653,46 @@ function renderAllStocksTable() {
     allStats.sort((a, b) => {
         if (currentStocksSort.col === 'special') {
             const getSpecialScore = (item) => {
-                // 1) Gün içi güç — EN ÖNEMLİ (açılıştan itibaren gün içi ivme)
-                let intra_score = item.intra_change * 6;
+                const price = Number(item.price || item.close || 0);
+                const volTL = Number(item.volume_tl || (item.volume * price) || 0);
+                
+                // Sığ hisse tuzağı koruması: Çok düşük hacimli veya kuruşluk hisseleri dibe at
+                if (volTL > 0 && volTL < 15000000 && price < 4.0) return -9999;
 
-                // 2) Hacim gücü (göreceli hacim: 2x = +6, 3x = +9)
-                let vol_score = item.rel_vol * 3;
+                const change = Number(item.change || 0);
+                const intra = Math.max(0, Number(item.intra_change || 0));
+                const relVol = Math.max(0, Number(item.rel_vol || 0));
+                const prep = Number(item.prep_score || 0);
 
-                // 3) Fiyatlanmamış filtresi: Hem çok yükselen (+%5+) hem çok düşen (-%2+) ceza
-                //    Hedef: %0 ile +%5 arasında olan, henüz hareket etmemiş hisseler ödüllendirilir
-                let change_penalty = Math.abs(item.change) * 3;
+                // 1) Tatlı Bölge Değişimi: +0.5% ile +3.5% arası en yüksek puan!
+                // Eksi hisselere ağır ceza, aşırı primlenenlere (+5% üstü) FOMO kovalama cezası
+                let changeScore = 0;
+                if (change >= 0.5 && change <= 3.5) {
+                    changeScore = 30 + (change * 3);
+                } else if (change > 3.5 && change <= 5.0) {
+                    changeScore = 30 - ((change - 3.5) * 6);
+                } else if (change > 5.0) {
+                    changeScore = 15 - ((change - 5.0) * 8);
+                } else if (change >= 0 && change < 0.5) {
+                    changeScore = 15 + (change * 10);
+                } else {
+                    // Düşen / eksi hisse: Listede yukarı çıkamaz
+                    changeScore = -25 - (Math.abs(change) * 12);
+                }
 
-                // 4) Puan (V8 preparation_score) — hafif kalite filtresi
-                let quality_bonus = item.prep_score * 0.3;
+                // 2) Hacim Gücü (Göreceli Hacim) — Kurumsal para akışı teyidi
+                let volScore = Math.min(32, relVol * 8);
 
-                return intra_score + vol_score - change_penalty + quality_bonus;
+                // 3) Gün İçi İvme (Dipten toparlanma)
+                let intraScore = Math.min(24, intra * 4);
+
+                // 4) Teknik Kalite (V8 Hazırlık Puanı)
+                let techScore = (prep / 100) * 10;
+
+                // 5) Likidite Güvencesi: 30M+ TL kurumsal tahtalara bonus
+                let liqBonus = volTL >= 100000000 ? 6 : (volTL >= 30000000 ? 2 : -4);
+
+                return changeScore + volScore + intraScore + techScore + liqBonus;
             };
             const scoreA = getSpecialScore(a);
             const scoreB = getSpecialScore(b);

@@ -541,16 +541,16 @@ def get_special_ranking_candidates(all_symbols_stats: dict, top_n: int = 5) -> l
         acc_score = float(intra.get("accumulation_score") or 0.0)
 
         # Temel Filtreler:
-        # 1. Fiyat geçerli olmalı
-        if price <= 0.5:
+        # 1. Fiyat geçerli olmalı (Kuruşluk hisseleri ele)
+        if price < 3.0:
             continue
 
-        # 2. Minimum likidite kontrolü (sığ hisse tuzağını engeller)
-        if vol_tl < 1_000_000 and vol_lot < 20_000:
+        # 2. Minimum likidite kontrolü (Sığ hisse ve tahta yapıcı tuzaklarını engeller)
+        if vol_tl < 15_000_000:
             continue
 
-        # 3. % Değişim az olmalı (Henüz kopmamış / aşırı primlenmemiş: -3.0% ile +6.0% arası)
-        if change < -3.0 or change > 6.0:
+        # 3. % Değişim filtresi (Düşen eksi hisseler ve aşırı primli tavan kovalama elenir)
+        if change < -0.8 or change > 5.5:
             continue
 
         # --- Pivot Destek / Direnç Seviyeleri (Saatlik ve Günlük) ---
@@ -570,23 +570,35 @@ def get_special_ranking_candidates(all_symbols_stats: dict, top_n: int = 5) -> l
         h_s1_pct = abs((hourly_s1 - price) / price * 100) if price > 0 else 0.0
         h_r1_pct = abs((hourly_r1 - price) / price * 100) if price > 0 else 0.0
 
-        # --- Akıllı Özel Sıralama Skoru ---
-        # 1) Gün içi güç ağırlığı (En önemli kriter)
-        intra_score = max(intra_change, 0.0) * 6.0
+        # --- Akıllı Özel Sıralama Skoru (Kopuş Tatlı Bölgesi & Hacim Patlaması) ---
+        # 1) Tatlı Bölge Değişimi: +0.5% ile +3.5% arası en ideal kopuş başlangıcı
+        if 0.5 <= change <= 3.5:
+            change_score = 30.0 + (change * 3.0)
+        elif 3.5 < change <= 5.0:
+            change_score = 30.0 - ((change - 3.5) * 6.0)
+        elif change > 5.0:
+            change_score = 15.0 - ((change - 5.0) * 8.0)
+        elif 0.0 <= change < 0.5:
+            change_score = 15.0 + (change * 10.0)
+        else:
+            change_score = -20.0 - (abs(change) * 12.0)
 
-        # 2) Hacim gücü ağırlığı
-        vol_score = min(rel_vol, 5.0) * 3.5
+        # 2) Hacim gücü (Göreceli Hacim) — Kurumsal giriş teyidi
+        vol_score = min(rel_vol, 4.0) * 8.0
 
-        # 3) Fiyatlanmamış filtresi: Ne kadar az primliyse o kadar avantajlı
-        change_penalty = abs(change) * 2.0
+        # 3) Gün içi güç (Dipten toparlanma)
+        intra_score = min(max(intra_change, 0.0), 6.0) * 4.0
 
         # 4) Saatlik para akışı bonusu
-        flow_bonus = 6.0 if hourly_flow == "Toplanıyor" else (0.0 if hourly_flow == "Denge" else -6.0)
+        flow_bonus = 8.0 if hourly_flow == "Toplanıyor" else (0.0 if hourly_flow == "Denge" else -8.0)
 
-        # 5) Teknik hazırlık (V8 / Breakout) bonusu
-        tech_bonus = 8.0 if state in ("BREAKOUT", "PRE_BREAKOUT") else (prep_score * 0.3)
+        # 5) Teknik hazırlık (V8 Breakout) bonusu
+        tech_bonus = 10.0 if state in ("BREAKOUT", "PRE_BREAKOUT") else (min(prep_score, 100.0) * 0.1)
 
-        raw_score = 45.0 + intra_score + vol_score - change_penalty + flow_bonus + tech_bonus
+        # 6) Likidite Bonusu: BIST kurumsal tahtalarına öncelik
+        liq_bonus = 6.0 if vol_tl >= 100_000_000 else (2.0 if vol_tl >= 30_000_000 else -4.0)
+
+        raw_score = change_score + vol_score + intra_score + flow_bonus + tech_bonus + liq_bonus
         special_score = round(min(max(raw_score, 10.0), 99.0), 1)
 
         scored_list.append({
