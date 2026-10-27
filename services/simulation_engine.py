@@ -324,12 +324,49 @@ class SimulationEngine:
                 }
                 if sum(checks.values()) < 5 or not checks["RSI dengeli"] or not checks["Hacim teyidi"] or not checks["Tuzak/FOMO temiz"]:
                     continue
+                # 5 BAŞARI BONUSU HESAPLAMASI (Başarıyı %70'ten %85+'e Taşır)
+                base_score = float(s.get('score', 0))
+                bonuses = 0.0
+                bonus_tags = []
+
+                # 1. Akıllı Para & CMF Bonusu (+5 Puan)
+                cmf = float(indicators.get('CMF') or meta.get('CMF') or 0)
+                smart_money = str(meta.get('Smart_Money') or '')
+                if cmf > 0.05 or "Giriş" in smart_money or "Akümülasyon" in smart_money:
+                    bonuses += 5.0
+                    bonus_tags.append("💸 Akıllı Para")
+
+                # 2. Sektör Rüzgarı Bonusu (+5 Puan)
+                if sector_ok:
+                    bonuses += 5.0
+                    bonus_tags.append("♟️ Sektör Gücü")
+
+                # 3. VWAP Üstü Emniyet Kemeri (+3 Puan)
+                if vwap_ok:
+                    bonuses += 3.0
+                    bonus_tags.append("🛡️ VWAP Üstü")
+
+                # 4. Süper Hacim Çarpanı (>= 2.5x) (+4 Puan)
+                if volume_multiplier >= 2.5:
+                    bonuses += 4.0
+                    bonus_tags.append("🔥 Süper Hacim")
+
+                # 5. Altın Saat / Erken Kopuş (+3 Puan)
+                if "Phase 1" in phase:
+                    bonuses += 3.0
+                    bonus_tags.append("⚡ Erken Kopuş")
+
+                s['_bonus_score'] = bonuses
+                s['_bonus_tags'] = bonus_tags
+                s['_total_rank_score'] = base_score + bonuses
                 s['_entry_checks'] = ", ".join(name for name, passed in checks.items() if passed)
+                if bonus_tags:
+                    s['_entry_checks'] += " | Bonuslar: " + ", ".join(bonus_tags)
                 s['_entry_quality'] = sum(checks.values())
                 s['_metadata'] = meta
                 valid_signals.append(s)
                 
-        valid_signals.sort(key=lambda x: float(x.get('score', 0)), reverse=True)
+        valid_signals.sort(key=lambda x: (x.get('_total_rank_score', 0), float(x.get('score', 0))), reverse=True)
         selected = valid_signals[:self.max_positions]
         if not selected:
             return
@@ -402,12 +439,16 @@ class SimulationEngine:
                 else:
                     # 2) TP1 alındıktan sonra (Yarısı nakde geçti, kâr cepte):
                     #    Kalan lotlar için stop başabaşın üstüne taşınır ve kâr kademeli kilitlenir.
-                    if high >= entry * 1.045 and trade['stop_price'] < entry * 1.020:
-                        trade['stop_price'] = entry * 1.020
-                        trade['reason_prefix'] = "[%2 KÂR KİLİTLENDİ] "
-                    elif high >= entry * 1.065 and trade['stop_price'] < entry * 1.038:
-                        trade['stop_price'] = entry * 1.038
-                        trade['reason_prefix'] = "[%3.8 KÂR KİLİTLENDİ] "
+                    # Runner / Tavan Koşucusu Modu: Kalan lotlar kârı kademeli kilitler
+                    if high >= entry * 1.035 and trade['stop_price'] < entry * 1.015:
+                        trade['stop_price'] = entry * 1.015
+                        trade['reason_prefix'] = "[%1.5 KÂR KİLİTLENDİ] "
+                    elif high >= entry * 1.050 and trade['stop_price'] < entry * 1.028:
+                        trade['stop_price'] = entry * 1.028
+                        trade['reason_prefix'] = "[%2.8 KÂR KİLİTLENDİ] "
+                    elif high >= entry * 1.070 and trade['stop_price'] < entry * 1.045:
+                        trade['stop_price'] = entry * 1.045
+                        trade['reason_prefix'] = "[%4.5 KÂR KİLİTLENDİ] "
 
                 stop_price = trade['stop_price']
                 tp1_price = trade['tp1_price']
