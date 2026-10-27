@@ -3206,6 +3206,34 @@ def api_v8_radar_breakout():
             item["stop_loss_pct"] = -2.5
             item["remaining_upside_pct"] = round(max(0.0, 10.0 - change_pct), 1)
 
+            # 5 BAŞARI BONUSU (Başarıyı %70'ten %85+'e Taşır)
+            indicators = data.get("Indicators", {}) if isinstance(data.get("Indicators"), dict) else {}
+            cmf = float(indicators.get("CMF") or data.get("CMF") or 0.0)
+            smart_money = str(data.get("Smart_Money") or "")
+            domino_sector = str(data.get("Domino_Sector") or "")
+            vwap = float(data.get("VWAP") or 0.0)
+            
+            bonus_tags = []
+            bonus_score = 0.0
+            if cmf > 0.05 or "Giriş" in smart_money or "Akümülasyon" in smart_money:
+                bonus_tags.append("💸 Akıllı Para")
+                bonus_score += 5.0
+            if domino_sector or "SEKTÖR" in str(data.get("Details", [])):
+                bonus_tags.append("♟️ Sektör Gücü")
+                bonus_score += 5.0
+            if vwap > 0 and price >= vwap:
+                bonus_tags.append("🛡️ VWAP Üstü")
+                bonus_score += 3.0
+            if r_vol >= 2.5:
+                bonus_tags.append("🔥 Süper Hacim")
+                bonus_score += 4.0
+            if 0.5 <= change_pct <= 3.5:
+                bonus_tags.append("⚡ Tatlı Bölge")
+                bonus_score += 4.0
+
+            item["success_bonuses"] = bonus_tags
+            item["bonus_score"] = round(bonus_score, 1)
+
             # SEANS İÇİ MAKSİMUM KÂR POTANSİYELİ SKORU:
             profit_potential = (
                 (10.0 - change_pct) * 4.0
@@ -3213,6 +3241,7 @@ def api_v8_radar_breakout():
                 - (float(bo.get("fakeout_risk", 20)) * 0.3)
                 + (min(r_vol, 4.0) * 8.0)
                 + (15.0 if raw_status == "ENTER" else 0.0)
+                + (bonus_score * 2.5)
             )
             item["profit_potential"] = round(profit_potential, 1)
 

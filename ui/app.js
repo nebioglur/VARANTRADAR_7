@@ -5952,6 +5952,12 @@ function renderV8BreakoutCard(d, isCandidate = false) {
     const t2 = d.target_2 || (price * 1.048);
     const sl = d.stop_loss || (price * 0.975);
     const upside = d.remaining_upside_pct || Math.max(0, 10.0 - Number(d.change_pct || 0)).toFixed(1);
+    const bonuses = d.success_bonuses || [];
+    const bonusHtml = bonuses.length > 0
+        ? `<div style="display:flex; flex-wrap:wrap; gap:0.3rem; margin:0.4rem 0 0.6rem;">
+            ${bonuses.map(b => `<span style="background:rgba(59,130,246,0.18); border:1px solid rgba(59,130,246,0.35); color:#93c5fd; font-size:0.68rem; font-weight:700; padding:2px 7px; border-radius:4px;">${b}</span>`).join('')}
+           </div>`
+        : '';
 
     const varrantInfo = d.varrant_info && d.varrant_info.status === 'VARRANT_FOUND'
         ? `<div style="margin-top:0.5rem; padding:0.4rem 0.6rem; background:rgba(168,85,247,0.12); border:1px solid rgba(168,85,247,0.3); border-radius:6px; font-size:0.75rem; color:#c084fc;">
@@ -5986,9 +5992,10 @@ function renderV8BreakoutCard(d, isCandidate = false) {
                 <div style="font-weight:700; color:#facc15;">${d.timeframe_quality || 0}/100</div>
             </div>
         </div>
-        <div style="font-size:0.78rem; color:var(--text-muted); padding:0.4rem 0.6rem; background:rgba(0,0,0,0.18); border-radius:6px; margin-bottom:0.5rem; line-height:1.4;">
+        <div style="font-size:0.78rem; color:var(--text-muted); padding:0.4rem 0.6rem; background:rgba(0,0,0,0.18); border-radius:6px; margin-bottom:0.4rem; line-height:1.4;">
             <i class="fa-solid fa-circle-info" style="color:#60a5fa;"></i> ${reason}
         </div>
+        ${bonusHtml}
         <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.4rem; margin-top:0.6rem; text-align:center; font-size:0.75rem;">
             <div style="background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); border-radius:6px; padding:0.35rem 0.2rem;">
                 <div style="color:#ef4444; font-size:0.65rem; font-weight:700;">ZARAR KES</div>
