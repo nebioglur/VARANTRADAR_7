@@ -16,7 +16,7 @@ class SimulationEngine:
     - Trade geçmişini ve Equity curve'ü veritabanına yazar.
     """
     
-    def __init__(self, daily_budget=100000.0, max_positions=15, owner=None):
+    def __init__(self, daily_budget=100000.0, max_positions=3, owner=None):
         self.daily_budget = daily_budget
         self.max_positions = max_positions
         self.owner = owner or "local:nebioglur"
@@ -221,8 +221,8 @@ class SimulationEngine:
         if risk_per_share <= 0:
             return 0.0, 0.0
 
-        risk_budget = self.daily_budget * (0.0035 if is_bear else 0.0075)
-        max_notional = self.daily_budget * (0.10 if is_bear else 0.20)
+        risk_budget = self.daily_budget * (0.005 if is_bear else 0.012)
+        max_notional = self.daily_budget * (0.15 if is_bear else 0.33)
         risk_limited_notional = risk_budget * entry_price / risk_per_share
         allocation = min(current_cash, max_notional, risk_limited_notional)
         return allocation, min(risk_budget, allocation * risk_per_share / entry_price)
@@ -239,7 +239,7 @@ class SimulationEngine:
             xu100_change = 0.0
         is_bear = xu100_change < -0.5
         market_regime = "AYI" if is_bear else ("GÜÇLÜ POZİTİF" if xu100_change > 0.5 else "NÖTR")
-        minimum_score = 85 if is_bear else 80
+        minimum_score = 92 if is_bear else 90
 
         valid_signals = []
         import json
@@ -269,6 +269,12 @@ class SimulationEngine:
                 r_vol = float(meta.get('Vol_Multiplier') or meta.get('Volume_Ratio') or indicators.get('Volume_Ratio') or 0)
             
             if float(r_vol) < 1.3:
+                continue
+
+            # TAVAN TUZAĞI VE GAP-UP ENGELİ:
+            # Sabah açılışında zaten +%5.0 ve üzerinde olan hisseler tavan tuzağıdır (marj kalmamıştır).
+            ch_pct = float(meta.get('Change_Pct') or meta.get('Change') or 0)
+            if ch_pct >= 5.0:
                 continue
 
             # LİKİDİTE VE FİYAT GÜVENCESİ (Sığ ve Kuruşluk Hisseleri Ele):
@@ -324,7 +330,7 @@ class SimulationEngine:
                 valid_signals.append(s)
                 
         valid_signals.sort(key=lambda x: float(x.get('score', 0)), reverse=True)
-        selected = valid_signals[:min(5, self.max_positions)]
+        selected = valid_signals[:self.max_positions]
         if not selected:
             return
 
@@ -390,7 +396,7 @@ class SimulationEngine:
                 # 1) TP1 öncesinde: Pozisyonu henüz +%2'deyken boğup çıkarmamak için stop erken maliyete çekilmez.
                 #    Yalnızca kâr > +%3.2 ise stop maliyete çekilir (risk sıfırlanır).
                 if not trade.get('scaled_out', False):
-                    if high >= entry * 1.032 and trade['stop_price'] < entry * 1.004:
+                    if high >= entry * 1.018 and trade['stop_price'] < entry * 1.003:
                         trade['stop_price'] = entry * 1.004
                         trade['reason_prefix'] = "[KÂR KORUMA AKTİF] "
                 else:
@@ -524,7 +530,8 @@ class SimulationEngine:
                 raw_entry = float(df.loc[current_time, 'Close'])
                 ceiling = float(s['ceiling_target'])
                 prev_close = ceiling / 1.10
-                if raw_entry >= prev_close * 1.095:
+                current_ch = ((raw_entry - prev_close) / prev_close) * 100
+                if current_ch >= 5.0 or raw_entry >= ceiling * 0.955:
                     to_remove.append(s)
                     continue
 
