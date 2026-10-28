@@ -271,62 +271,140 @@ def send_telegram_photo(photo_path: str, caption: str = "") -> bool:
 
 
 def generate_daily_report_chart(date_str: str, start_equity: float, end_equity: float, daily_pnl: float, pnl_pct: float, trades: list) -> str:
-    """Gün sonu performans kartını koyu modern temalı görsel (PNG) olarak üretir."""
+    """Gün sonu performans kartını modern, ferah ve açık temalı (Light Fintech) görsel (PNG) olarak üretir."""
     try:
         import matplotlib
         matplotlib.use('Agg')
         import matplotlib.pyplot as plt
+        import matplotlib.patches as patches
         
-        sorted_trades = sorted(trades, key=lambda x: float(x.get('pnl_val', 0)))
+        sorted_trades = sorted(trades, key=lambda x: float(x.get('pnl_val', x.get('pnl', 0))))
         if not sorted_trades:
             return None
             
-        plt.style.use('dark_background')
-        fig, ax = plt.subplots(figsize=(8, 4.5), dpi=160)
-        fig.patch.set_facecolor('#0b0f19')
-        ax.set_facecolor('#111827')
-        
-        symbols = [str(t.get('symbol', '')).replace('.IS', '') for t in sorted_trades]
-        pnls = [float(t.get('pnl_val', 0)) for t in sorted_trades]
-        pcts = [float(t.get('pnl_pct', 0)) for t in sorted_trades]
-        colors = ['#10b981' if p >= 0 else '#ef4444' for p in pnls]
-        
-        bars = ax.barh(symbols, pnls, color=colors, height=0.52, edgecolor='none', zorder=3)
-        ax.grid(axis='x', color='#ffffff', alpha=0.08, linestyle='--', zorder=0)
-        
-        max_abs = max([abs(p) for p in pnls] + [100.0])
-        for bar, pnl, pct in zip(bars, pnls, pcts):
-            sign = "+" if pnl >= 0 else ""
-            offset = max_abs * 0.03
-            x_pos = bar.get_width() + offset if pnl >= 0 else offset
-            ax.text(
-                x_pos,
-                bar.get_y() + bar.get_height() / 2,
-                f"{sign}{pnl:,.2f} TL ({sign}%{pct:.2f})",
-                va='center', ha='left',
-                color='#f8fafc', fontsize=9, fontweight='bold'
-            )
-            
-        ax.set_xlim(min(0, min(pnls) * 1.2), max_abs * 1.45)
-        
         parts = date_str.split('-')
         fmt_date = f"{parts[2]}.{parts[1]}.{parts[0]}" if len(parts) == 3 else date_str
-        pnl_sign = "+" if daily_pnl >= 0 else ""
-        ax.set_title(
-            f"VARANTRADAR PRO — GÜN SONU PERFORMANSI ({fmt_date})\n"
-            f"Başlangıç: {start_equity:,.0f} TL  ➔  Bitiş: {end_equity:,.0f} TL  |  Net Kâr: {pnl_sign}{daily_pnl:,.2f} TL ({pnl_sign}%{pnl_pct:.2f})",
-            fontsize=10.5, fontweight='bold', color='#38bdf8', pad=14
-        )
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.spines['left'].set_color('#374151')
-        ax.spines['bottom'].set_color('#374151')
-        ax.tick_params(colors='#9ca3af', labelsize=10)
         
+        symbols = [str(t.get('symbol', '')).replace('.IS', '') for t in sorted_trades]
+        pnls = [float(t.get('pnl_val', t.get('pnl', 0))) for t in sorted_trades]
+        pcts = [float(t.get('pnl_pct', t.get('pct', 0))) for t in sorted_trades]
+        
+        total_trades = len(pnls)
+        win_trades = sum(1 for p in pnls if p > 0)
+        win_rate = (win_trades / total_trades * 100) if total_trades > 0 else 0.0
+
+        # Açık Tema - Apple Card / TradingView Light stili (Koyu/siyah ton yok, tamamen ferah)
+        fig = plt.figure(figsize=(9, 5.2), dpi=180)
+        fig.patch.set_facecolor('#ffffff')
+
+        # 2 Bölümlü Düzen: Üst bilgi kartları + Alt performans barları
+        gs = fig.add_gridspec(2, 1, height_ratios=[1.2, 3.8], hspace=0.35)
+
+        # 1. ÜST BİLGİ ALANI
+        ax_top = fig.add_subplot(gs[0])
+        ax_top.set_facecolor('#ffffff')
+        ax_top.axis('off')
+
+        # Başlık ve Alt Başlık (Matplotlib uyarı vermemesi için emoji yerine temiz metin)
+        ax_top.text(
+            0.0, 0.85,
+            "VARANTRADAR PRO — GÜN SONU PERFORMANSI",
+            fontsize=13, fontweight='bold', color='#0f172a', va='top'
+        )
+        subtitle_text = f"Tarih: {fmt_date}  •  {win_trades}/{total_trades} Kârlı İşlem (%{win_rate:.0f} Tam İsabet)"
+        ax_top.text(
+            0.0, 0.50,
+            subtitle_text,
+            fontsize=9.5, color='#64748b', va='top'
+        )
+
+        # Kart 1: Başlangıç Kasası
+        rect1 = patches.FancyBboxPatch(
+            (0.48, 0.20), 0.23, 0.65,
+            boxstyle="round,pad=0.03,rounding_size=0.08",
+            facecolor='#f8fafc', edgecolor='#e2e8f0', linewidth=1.2,
+            transform=ax_top.transAxes
+        )
+        ax_top.add_patch(rect1)
+        ax_top.text(0.50, 0.65, "BAŞLANGIÇ", fontsize=7, fontweight='bold', color='#64748b', transform=ax_top.transAxes)
+        ax_top.text(0.50, 0.32, f"₺{start_equity:,.0f}", fontsize=10.5, fontweight='bold', color='#1e293b', transform=ax_top.transAxes)
+
+        # Kart 2: Bitiş Kasası & Net Kâr
+        pnl_sign = "+" if daily_pnl >= 0 else ""
+        box2_bg = '#ecfdf5' if daily_pnl >= 0 else '#fef2f2'
+        box2_border = '#10b981' if daily_pnl >= 0 else '#ef4444'
+        box2_label_color = '#047857' if daily_pnl >= 0 else '#b91c1c'
+        box2_val_color = '#059669' if daily_pnl >= 0 else '#dc2626'
+
+        rect2 = patches.FancyBboxPatch(
+            (0.73, 0.20), 0.27, 0.65,
+            boxstyle="round,pad=0.03,rounding_size=0.08",
+            facecolor=box2_bg, edgecolor=box2_border, linewidth=1.5,
+            transform=ax_top.transAxes
+        )
+        ax_top.add_patch(rect2)
+        ax_top.text(0.75, 0.65, f"KASA: ₺{end_equity:,.0f}", fontsize=7.5, fontweight='bold', color=box2_label_color, transform=ax_top.transAxes)
+        ax_top.text(0.75, 0.32, f"{pnl_sign}₺{daily_pnl:,.2f} ({pnl_sign}%{pnl_pct:.2f})", fontsize=10.5, fontweight='bold', color=box2_val_color, transform=ax_top.transAxes)
+
+        # 2. ALT PERFORMANS GRAFİĞİ
+        ax = fig.add_subplot(gs[1])
+        ax.set_facecolor('#ffffff')
+
+        y_pos = list(range(len(symbols)))
+        max_pos = max([p for p in pnls if p > 0] + [100.0])
+        min_neg = min([p for p in pnls if p < 0] + [0.0])
+
+        if min_neg >= 0:
+            track_width = max_pos * 1.35
+            for y in y_pos:
+                ax.barh(y, track_width, color='#f1f5f9', height=0.46, edgecolor='none', zorder=1)
+
+            colors = ['#10b981' for _ in pnls]
+            ax.barh(y_pos, pnls, color=colors, height=0.46, edgecolor='none', zorder=2)
+
+            for y, pnl, pct in zip(y_pos, pnls, pcts):
+                val_str = f"  +₺{pnl:,.2f}  (+%{pct:.2f})"
+                ax.text(
+                    pnl + (max_pos * 0.02), y,
+                    val_str,
+                    va='center', ha='left',
+                    color='#065f46',
+                    fontsize=9.5, fontweight='bold', zorder=4
+                )
+            ax.set_xlim(0, max_pos * 1.45)
+        else:
+            limit_val = max(abs(min_neg), abs(max_pos)) * 1.35
+            for y in y_pos:
+                ax.barh(y, limit_val * 2, left=-limit_val, color='#f8fafc', height=0.46, edgecolor='none', zorder=1)
+
+            colors = ['#10b981' if p >= 0 else '#ef4444' for p in pnls]
+            ax.barh(y_pos, pnls, color=colors, height=0.46, edgecolor='none', zorder=2)
+            ax.axvline(0, color='#cbd5e1', linewidth=1, linestyle='--', zorder=3)
+
+            for y, pnl, pct in zip(y_pos, pnls, pcts):
+                sign = "+" if pnl >= 0 else ""
+                val_str = f" {sign}₺{pnl:,.2f} ({sign}%{pct:.2f}) "
+                if pnl >= 0:
+                    ax.text(pnl + (limit_val * 0.03), y, val_str, va='center', ha='left', color='#065f46', fontsize=9.5, fontweight='bold', zorder=4)
+                else:
+                    ax.text(pnl - (limit_val * 0.03), y, val_str, va='center', ha='right', color='#991b1b', fontsize=9.5, fontweight='bold', zorder=4)
+            ax.set_xlim(-limit_val * 1.15, limit_val * 1.15)
+
+        ax.set_yticks(y_pos)
+        ax.set_yticklabels(symbols, fontsize=10.5, fontweight='bold', color='#1e293b')
+
+        # Kenarlıkları kaldır (Çerçevesiz şık fintech görünüm)
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+
+        ax.xaxis.set_visible(False)
+        ax.tick_params(left=False, pad=8)
+
+        # Görseli kaydet
         os.makedirs("data/reports", exist_ok=True)
         out_path = f"data/reports/daily_report_{date_str}.png"
-        plt.tight_layout()
-        plt.savefig(out_path, facecolor=fig.get_facecolor(), edgecolor='none', bbox_inches='tight')
+        plt.subplots_adjust(left=0.12, right=0.96, top=0.95, bottom=0.08)
+        plt.savefig(out_path, facecolor='#ffffff', edgecolor='#e2e8f0', bbox_inches='tight')
         plt.close()
         return out_path
     except Exception as e:
