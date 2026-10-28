@@ -421,37 +421,35 @@ def _background_scanner_impl():
             return
         today_str = datetime.now().strftime("%Y-%m-%d")
 
-        # 0. Günün Pusulası (09:50 Seans Öncesi Bülten)
+        from services.telegram_bot import claim_telegram_alert
+
+        # 0. Günün Pusulası (09:50 Seans Öncesi Bülten, Günde 1 Kez DB Korumalı)
         try:
             from zoneinfo import ZoneInfo
             from services.telegram_bot import send_morning_compass_bulletin
             local_now = datetime.now(ZoneInfo("Europe/Istanbul"))
-            if local_now.weekday() < 5 and (local_now.hour == 9 and local_now.minute >= 50) and sent_compass.get("date") != today_str:
-                success = send_morning_compass_bulletin()
-                if success:
-                    sent_compass["date"] = today_str
+            if local_now.weekday() < 5 and (local_now.hour == 9 and local_now.minute >= 50):
+                if claim_telegram_alert(f"COMPASS_{today_str}"):
+                    send_morning_compass_bulletin()
                     print(f"[BACKGROUND] 09:50 Günün Pusulası Telegram bülteni gönderildi.")
         except Exception as e_compass:
             print(f"[BACKGROUND] Günün Pusulası bülten hatası: {e_compass}")
         
-        # 1. Tavan Adayları Bildirimleri (Aynı gün sadece 1 kez gönder, Dağ Kekliği dahil)
+        # 1. Tavan Adayları Bildirimleri (Aynı gün her hisse için sadece 1 kez, DB Korumalı)
         for tavan in results.get("tavan_adaylari", []):
             sym = tavan.get("Symbol")
             clean_sym = sym.replace(".IS", "") if sym else None
-            if clean_sym and sent_tavan.get(clean_sym) != today_str and sent_tavan.get(sym) != today_str:
+            if clean_sym and claim_telegram_alert(f"TAVAN_{today_str}_{clean_sym}"):
                 score = tavan.get("Score", 0)
                 notif.send_tavan_alert(sym, score, tavan.get("Report", ""), tavan.get("Position"), extra=tavan)
-                sent_tavan[clean_sym] = today_str
-                sent_tavan[sym] = today_str
                 time.sleep(0.5) # Telegram API rate limit önlemi
                 
-        # 2. 1 Saatlik Güçlü Fırsatlar Bildirimleri (Score 4 veya 5 olanlar, günde 1 kez)
+        # 2. 1 Saatlik Güçlü Fırsatlar Bildirimleri (Score 4 veya 5 olanlar, günde 1 kez, DB Korumalı)
         for opp in results.get("opportunities_1h", []):
             sym = opp.get("Symbol")
             score_5 = opp.get("Score_5", 0)
-            if sym and score_5 >= 4 and sent_1h.get(sym) != today_str:
+            if sym and score_5 >= 4 and claim_telegram_alert(f"OPP1H_{today_str}_{sym}"):
                 notif.send_1h_opportunity_alert(opp)
-                sent_1h[sym] = today_str
                 time.sleep(0.5)
                 
         # 3. 5m RSI Sinyalleri Bildirimleri (Aynı gün, aynı sinyali sadece 1 kez gönder)
@@ -686,41 +684,13 @@ def _background_scanner_impl():
                                 except Exception as _sim_err:
                                     print(f"[BACKGROUND] Sim hatasi ({_owner}): {_sim_err}")
 
-                            # Gün Sonu Simülasyon Telegram Raporu (18:10 Sonrası)
+                            # Gün Sonu Simülasyon Telegram Raporu (18:10 Sonrası, Atomik DB Kilidiyle Kesinlikle Tek Sefer)
                             now_time = datetime.now()
                             if now_time.hour == 18 and now_time.minute >= 10:
                                 try:
-                                    import json, os
                                     from services.telegram_bot import send_simulation_report
-
-                                    report_cache = "data/sent_sim_report.json"
-                                    sent_today = False
-                                    if os.path.exists(report_cache):
-                                        with open(report_cache, "r") as f:
-                                            cd = json.load(f)
-                                            if cd.get("date") == d_str:
-                                                sent_today = True
-
-                                    if not sent_today:
-                                        from services.trade_database import get_connection
-                                        trades = []
-                                        try:
-                                            with get_connection() as conn:
-                                                c = conn.cursor()
-                                                _report_owner = os.environ.get('ADMIN_OWNER', 'local:nebioglur')
-                                                c.execute("SELECT * FROM trades WHERE date_str=? AND owner=?", (d_str, _report_owner))
-                                                trades = [dict(row) for row in c.fetchall()]
-                                        except Exception as db_err:
-                                            print(f"[SIM DB HATA] {db_err}")
-                                        if trades:
-                                            total_pnl = sum([t.get('pnl_val', 0) for t in trades])
-                                            total_invested = sum([(t.get('shares',0) * t.get('entry_price',0)) for t in trades])
-                                            pct = (total_pnl / total_invested * 100) if total_invested > 0 else 0
-                                            
-                                            success = send_simulation_report(len(trades), total_pnl, pct)
-                                            if success:
-                                                with open(report_cache, "w") as f:
-                                                    json.dump({"date": d_str}, f)
+                                    _report_owner = os.environ.get('ADMIN_OWNER', 'local:nebioglur')
+                                    send_simulation_report(date_str=d_str, owner=_report_owner)
                                 except Exception as err:
                                     print(f"[SIM SİNYAL HATA] {str(err)}")
                             

@@ -204,23 +204,239 @@ def send_batch_vip_signals(vip_list: list) -> bool:
     
     return send_telegram_message(text)
 
-def send_simulation_report(total_trades: int, total_profit: float, return_pct: float) -> bool:
-    """
-    Gun sonu simulasyon raporunu gonderir.
-    """
-    text = f"🧪 <b>Simulasyon Gun Sonu Raporu</b> 🧪\n\n"
+def claim_telegram_alert(event_key: str) -> bool:
+    """Veritabanı üzerinde atomik kilit mekanizması ile mükerrer mesaj gönderimini kesin engeller.
+    İlk çağıran True döner, sonraki tekrarlar (restart, çoklu worker, döngü) False döner."""
+    from services.trade_database import get_connection
+    from datetime import datetime, timezone
     
-    if total_profit > 0:
-        text += f"✅ <b>Gunun Kari:</b> +{total_profit:,.2f} TL\n"
-        text += f"📈 <b>Getiri Orani:</b> +%{return_pct:.2f}\n"
-    else:
-        text += f"❌ <b>Gunun Zarari:</b> {total_profit:,.2f} TL\n"
-        text += f"📉 <b>Getiri Orani:</b> %{return_pct:.2f}\n"
+    now_str = datetime.now(timezone.utc).isoformat()
+    try:
+        conn = get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO simulation_alerts (event_key, status, updated_at, attempts) "
+                "VALUES (?, 'claimed', ?, 1) ON CONFLICT(event_key) DO NOTHING",
+                (event_key, now_str)
+            )
+            claimed = (cursor.rowcount == 1)
+            conn.commit()
+            return claimed
+        finally:
+            conn.close()
+    except Exception as exc:
+        logger.error(f"[TG DEDUP] Hata: {exc}")
+        return False
+
+
+def send_telegram_photo(photo_path: str, caption: str = "") -> bool:
+    """Telegram'a fotoğraf ve başlık metni gönderir."""
+    bot_token, raw_chat_id = get_telegram_credentials()
+    if not bot_token or not raw_chat_id:
+        logger.warning("Telegram credentials eksik, photo gonderilemedi")
+        return False
         
-    text += f"🛒 <b>Toplam Islem:</b> {total_trades} adet al-sat\n\n"
-    text += f"<i>Sistem yarin icin tekrar taranmaya hazir.</i>"
+    chat_ids = [cid.strip() for cid in str(raw_chat_id).split(",") if cid.strip()]
+    if not chat_ids:
+        return False
+        
+    if not os.path.exists(photo_path):
+        logger.warning(f"Fotoğraf dosyası bulunamadı: {photo_path}")
+        return False
+
+    url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
+    any_success = False
     
-    return send_telegram_message(text)
+    for cid in chat_ids:
+        try:
+            with open(photo_path, "rb") as photo_file:
+                files = {"photo": photo_file}
+                data = {
+                    "chat_id": cid,
+                    "caption": caption[:1020], # Telegram caption max 1024 karakter
+                    "parse_mode": "HTML"
+                }
+                resp = requests.post(url, data=data, files=files, timeout=25)
+                res_json = resp.json()
+                if resp.status_code == 200 and res_json.get("ok"):
+                    any_success = True
+                    logger.info(f"Telegram fotoğrafı başarıyla gönderildi ({cid})")
+                else:
+                    logger.error(f"Telegram sendPhoto hatası ({cid}): {resp.text}")
+        except Exception as e:
+            logger.error(f"Telegram sendPhoto exception ({cid}): {e}")
+            
+    return any_success
+
+
+def generate_daily_report_chart(date_str: str, start_equity: float, end_equity: float, daily_pnl: float, pnl_pct: float, trades: list) -> str:
+    """Gün sonu performans kartını koyu modern temalı görsel (PNG) olarak üretir."""
+    try:
+        import matplotlib
+        matplotlib.use('Agg')
+        import matplotlib.pyplot as plt
+        
+        sorted_trades = sorted(trades, key=lambda x: float(x.get('pnl_val', 0)))
+        if not sorted_trades:
+            return None
+            
+        plt.style.use('dark_background')
+        fig, ax = plt.subplots(figsize=(8, 4.5), dpi=160)
+        fig.patch.set_facecolor('#0b0f19')
+        ax.set_facecolor('#111827')
+        
+        symbols = [str(t.get('symbol', '')).replace('.IS', '') for t in sorted_trades]
+        pnls = [float(t.get('pnl_val', 0)) for t in sorted_trades]
+        pcts = [float(t.get('pnl_pct', 0)) for t in sorted_trades]
+        colors = ['#10b981' if p >= 0 else '#ef4444' for p in pnls]
+        
+        bars = ax.barh(symbols, pnls, color=colors, height=0.52, edgecolor='none', zorder=3)
+        ax.grid(axis='x', color='#ffffff', alpha=0.08, linestyle='--', zorder=0)
+        
+        max_abs = max([abs(p) for p in pnls] + [100.0])
+        for bar, pnl, pct in zip(bars, pnls, pcts):
+            sign = "+" if pnl >= 0 else ""
+            offset = max_abs * 0.03
+            x_pos = bar.get_width() + offset if pnl >= 0 else offset
+            ax.text(
+                x_pos,
+                bar.get_y() + bar.get_height() / 2,
+                f"{sign}{pnl:,.2f} TL ({sign}%{pct:.2f})",
+                va='center', ha='left',
+                color='#f8fafc', fontsize=9, fontweight='bold'
+            )
+            
+        ax.set_xlim(min(0, min(pnls) * 1.2), max_abs * 1.45)
+        
+        parts = date_str.split('-')
+        fmt_date = f"{parts[2]}.{parts[1]}.{parts[0]}" if len(parts) == 3 else date_str
+        pnl_sign = "+" if daily_pnl >= 0 else ""
+        ax.set_title(
+            f"VARANTRADAR PRO — GÜN SONU PERFORMANSI ({fmt_date})\n"
+            f"Başlangıç: {start_equity:,.0f} TL  ➔  Bitiş: {end_equity:,.0f} TL  |  Net Kâr: {pnl_sign}{daily_pnl:,.2f} TL ({pnl_sign}%{pnl_pct:.2f})",
+            fontsize=10.5, fontweight='bold', color='#38bdf8', pad=14
+        )
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_color('#374151')
+        ax.spines['bottom'].set_color('#374151')
+        ax.tick_params(colors='#9ca3af', labelsize=10)
+        
+        os.makedirs("data/reports", exist_ok=True)
+        out_path = f"data/reports/daily_report_{date_str}.png"
+        plt.tight_layout()
+        plt.savefig(out_path, facecolor=fig.get_facecolor(), edgecolor='none', bbox_inches='tight')
+        plt.close()
+        return out_path
+    except Exception as e:
+        logger.error(f"[CHART] Görsel oluşturma hatası: {e}")
+        return None
+
+
+def format_simulation_report(date_str: str, start_equity: float, end_equity: float, daily_pnl: float, pnl_pct: float, win_trades: int, total_trades: int, trades: list) -> str:
+    sign = "+" if daily_pnl >= 0 else ""
+    pnl_emoji = "✅" if daily_pnl >= 0 else "🔻"
+    win_rate = (win_trades / total_trades * 100) if total_trades > 0 else 0.0
+    
+    parts = date_str.split('-')
+    fmt_date = f"{parts[2]}.{parts[1]}.{parts[0]}" if len(parts) == 3 else date_str
+    
+    text = f"🧪 <b>SİMÜLASYON GÜN SONU RAPORU</b> 🧪\n"
+    text += f"📅 <i>{fmt_date} | Seans Kapanış Özeti</i>\n\n"
+    
+    text += f"💰 <b>KASA & PORTFÖY DURUMU</b>\n"
+    text += f"━━━━━━━━━━━━━━━━━━━━\n"
+    text += f"💵 <b>Başlangıç Parası:</b> ₺{start_equity:,.2f}\n"
+    text += f"💎 <b>Bitiş Parası (Kasa):</b> ₺{end_equity:,.2f}\n"
+    text += f"{pnl_emoji} <b>Günün Net Kârı:</b> {sign}₺{daily_pnl:,.2f} (<b>{sign}%{pnl_pct:.2f}</b>)\n"
+    text += f"🎯 <b>Başarı Karnesi:</b> {win_trades}/{total_trades} Kârlı İşlem (<b>%{win_rate:.0f} Başarı</b>)\n\n"
+    
+    if trades:
+        text += f"📋 <b>GÜN İÇİ İŞLEM DÖKÜMÜ</b>\n"
+        text += f"━━━━━━━━━━━━━━━━━━━━\n"
+        for idx, t in enumerate(trades[:6], 1):
+            sym = str(t.get('symbol', '')).replace('.IS', '')
+            val = float(t.get('pnl_val', 0))
+            pct = float(t.get('pnl_pct', 0))
+            v_sign = "+" if val >= 0 else ""
+            t_emoji = "🟢" if val >= 0 else "🔴"
+            reason = str(t.get('exit_reason', ''))
+            tag = "⚖️ TP1" if "TP1" in reason else ("🏁 Kapanış" if "SEANS SONU" in reason else "🛡️ Kâr Koruma")
+            text += f"{idx}️⃣ <b>#{sym}</b>: {t_emoji} <b>{v_sign}₺{val:,.2f}</b> ({v_sign}%{pct:.2f}) | <i>{tag}</i>\n"
+        
+        if len(trades) > 6:
+            text += f"   <i>...ve {len(trades) - 6} işlem daha</i>\n"
+        text += f"\n"
+        
+    text += f"🏆 <i>Tüm işlemler kurallara uygun icra edildi. Sistem yarın için taranmaya hazır!</i>"
+    return text
+
+
+def send_simulation_report(total_trades: int = 0, total_profit: float = 0.0, return_pct: float = 0.0, date_str: str = "", owner: str = None) -> bool:
+    """
+    Kapsamlı gün sonu simülasyon raporunu görsel grafik, başlangıç/bitiş parası ve
+    işlem dökümüyle birlikte gönderir. Mükerrer gönderimi veritabanı kilidiyle kesin engeller.
+    """
+    from datetime import datetime
+    if not date_str:
+        date_str = datetime.now().strftime("%Y-%m-%d")
+    owner = owner or os.environ.get('ADMIN_OWNER', 'local:nebioglur')
+    
+    # 1. MÜKERRER MESAJ KİLİDİ (Atomik Veritabanı Engeli)
+    # Server restartı, çoklu thread veya worker tekrarlarında ikinci kez gitmesini KESİN engeller!
+    dedup_key = f"DAILY_REPORT_{date_str}_{owner}"
+    if not claim_telegram_alert(dedup_key):
+        logger.info(f"[TG-REPORT] Gün sonu raporu bugün ({date_str}) zaten gönderilmiş, tekrar engellendi.")
+        return True
+
+    # 2. Veritabanından tam finansal dökümü al
+    start_equity = 100000.0
+    end_equity = 100000.0
+    daily_pnl = total_profit
+    pnl_pct = return_pct
+    win_trades = 0
+    t_count = total_trades
+    trades_list = []
+    
+    try:
+        from services.trade_database import get_connection
+        with get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM equity_log WHERE date_str=? AND owner=?", (date_str, owner))
+            eq = cur.fetchone()
+            if eq:
+                start_equity = float(eq['start_equity']) if eq['start_equity'] else 100000.0
+                end_equity = float(eq['end_equity']) if eq['end_equity'] else (start_equity + daily_pnl)
+                daily_pnl = float(eq['daily_pnl']) if eq['daily_pnl'] is not None else daily_pnl
+                win_trades = int(eq['win_trades']) if eq['win_trades'] is not None else 0
+                t_count = int(eq['total_trades']) if eq['total_trades'] is not None else total_trades
+                pnl_pct = (daily_pnl / start_equity * 100) if start_equity > 0 else 0.0
+
+            cur.execute("SELECT * FROM trades WHERE date_str=? AND owner=? ORDER BY pnl_val DESC", (date_str, owner))
+            trades_list = [dict(r) for r in cur.fetchall()]
+            if not t_count:
+                t_count = len(trades_list)
+            if not win_trades:
+                win_trades = sum(1 for t in trades_list if float(t.get('pnl_val', 0)) > 0)
+    except Exception as db_err:
+        logger.error(f"[TG-REPORT] DB veri çekme hatası: {db_err}")
+
+    # 3. Zengin Metin Raporunu Oluştur
+    caption = format_simulation_report(date_str, start_equity, end_equity, daily_pnl, pnl_pct, win_trades, t_count, trades_list)
+
+    # 4. Performans Grafik Kartını Üret
+    photo_path = generate_daily_report_chart(date_str, start_equity, end_equity, daily_pnl, pnl_pct, trades_list)
+
+    # 5. Gönder (Fotoğraf + Başlık metni, hata olursa sadece metin)
+    sent = False
+    if photo_path and os.path.exists(photo_path):
+        sent = send_telegram_photo(photo_path, caption)
+        
+    if not sent:
+        sent = send_telegram_message(caption)
+        
+    return sent
 
 
 # ========== SESLI AL/SAT UYARILARI ==========
