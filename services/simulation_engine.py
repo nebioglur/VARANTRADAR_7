@@ -541,6 +541,28 @@ class SimulationEngine:
                     
             # 2. YENİ ALIMLARI KONTROL ET
             open_symbols = {t['symbol'] for t in active_trades if t['status'] == 'OPEN'}
+
+            # GÜNLÜK RİSK KİLİDİ (Çelik Kurallar):
+            # - Gün içi zarar bütçenin %2'sine ulaşırsa gün sonuna kadar yeni işlem açılmaz.
+            # - Üst üste 2 STOP zararı sonrası gün sonuna kadar yalnızca izleme modu.
+            # Bu kilit kazanma oranını değil, zarar serisini keserek haftalık
+            # hedefin korunmasını sağlar.
+            _daily_pnl = sum(float(t.get('pnl_val') or 0) for t in completed_trades)
+            _streak = 0
+            for _t in reversed(completed_trades):
+                if float(_t.get('pnl_val') or 0) < 0:
+                    _streak += 1
+                else:
+                    break
+            if _daily_pnl <= -(self.daily_budget * 0.02) or _streak >= 2:
+                _lock_reason = (
+                    f"Günlük zarar kilidi (-%2): {_daily_pnl:.0f} TL"
+                    if _daily_pnl <= -(self.daily_budget * 0.02)
+                    else f"Üst üste {_streak} zarar kilidi"
+                )
+                if pending_signals:
+                    print(f"[SimEngine] {date_str} {current_time} -> {_lock_reason}; yeni alımlar durduruldu")
+                pending_signals = []
             
             to_remove = []
             for s in pending_signals:

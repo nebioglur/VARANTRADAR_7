@@ -3419,6 +3419,23 @@ def api_v8_radar_breakout():
                     r.pop("early_candidate", None)
 
     auto_send_v8_signals()
+
+    # TAVAN RİSKİ KAPISI: gun ici +%5 ve uzerinde olan hisseler "tavan
+    # kovalama" bolgesindedir; izleme listesinde bile aday gibi gorunmez.
+    # Acikca UZAK DUR (NO_ENTRY) olarak isaretlenir; UI izleme kartlarina
+    # almaz, erken aday promosyonu zaten uygulanamaz.
+    for row in breakout_list:
+        try:
+            chg = float(row.get("change_pct") or row.get("intraday_change_pct") or 0)
+        except (TypeError, ValueError):
+            chg = 0.0
+        if chg >= 5.0:
+            row["entry_status"] = "NO_ENTRY"
+            row["ceiling_risk"] = True
+            row["entry_reasons"] = [
+                f"[TAVAN RİSKİ] +{chg:.1f} ile kovalama bölgesinde; tavan sonrası teyit beklenmeli"
+            ] + list(row.get("entry_reasons") or [])
+
     return jsonify({"status": "success", "data": breakout_list})
 
 @app.route('/api/v8/radar/discovery', methods=['GET'])

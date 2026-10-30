@@ -6375,6 +6375,23 @@ function loadV8Learning() {
             setTxt('v8-wr-loss', lossCount);
             setTxt('v8-wr-open', openCount);
 
+            // Gerçek-başarı kalibrasyonu: %90 iddiası ancak yeterli örneklemle
+            // doğrulanabilir. Küçük örneklemde oran "model puanı" olarak okunur.
+            const calib = document.getElementById('v8-wr-calibration');
+            if (calib) {
+                calib.style.display = 'block';
+                if (decided < 30) {
+                    calib.style.color = '#facc15';
+                    calib.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Örneklem küçük (${decided} işlem): kazanma oranı istatistiksel olarak güvenilir değil; model puanı olarak okuyun. %90 hedefi için en az 30 doğrulanmış işlem gerekir.`;
+                } else if (wrRate >= 90) {
+                    calib.style.color = '#10b981';
+                    calib.innerHTML = `<i class="fa-solid fa-circle-check"></i> A SINIFI: gerçek başarı %${wrRate.toFixed(1)} (${decided} işlem) — %90 hedefi doğrulandı.`;
+                } else {
+                    calib.style.color = '#facc15';
+                    calib.innerHTML = `<i class="fa-solid fa-gauge-high"></i> Gerçek başarı %${wrRate.toFixed(1)} (${decided} işlem) — hedefin (%90) altında; yalnızca A sınıfı (T+3 teyitli, rejim uygun) işlemlerle devam edin.`;
+                }
+            }
+
             const TDK_WINDOWS = [
                 { key: 't_3m_price', label: 'T+3dk' },
                 { key: 't_5m_price', label: 'T+5dk' },
