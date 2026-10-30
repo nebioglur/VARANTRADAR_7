@@ -297,9 +297,9 @@
                                 <i class="fa-solid fa-arrows-up-down"></i> <span id="all-stocks-sort-label">Puan ↓</span>
                             </button>
                             <button id="all-stocks-special-sort-btn" type="button" onclick="sortAllStocks('special')"
-                                title="Özel Sıralama: Güven %40 + Hacim Gücü %35 + Gün İçi Güç %25"
+                                title="Öncelik: Kâr alma, sonra +%5 hedefi, sonra tavan adayı; fiyat, likidite, saatlik güç ve hacim filtreleri"
                                 style="font-size:0.75rem; background:rgba(234,179,8,0.2); padding:3px 8px; border-radius:12px; color:#facc15; border:1px solid rgba(234,179,8,0.3); cursor:pointer;">
-                                <i class="fa-solid fa-star"></i> <span id="all-stocks-special-sort-label">Güven + Hacim + Gün İçi</span>
+                                <i class="fa-solid fa-star"></i> <span id="all-stocks-special-sort-label">Kâr Al → +%5 → Tavan</span>
                             </button>
                             <button id="all-stocks-detail-btn" type="button" onclick="toggleAllStocksDetails()"
                                 title="Stop/hedef, önceki kapanış, lot ve para girişini göster/gizle"
@@ -317,6 +317,8 @@
                                     <th data-all-stocks-sort="change" style="cursor:pointer; font-size:0.72rem; white-space:nowrap;" onclick="sortAllStocks('change')">Değişim <span class="all-stocks-sort-arrow" style="font-size:0.65rem;">↕</span></th>
                                     <th data-all-stocks-sort="intra_change" style="cursor:pointer; font-size:0.72rem; white-space:nowrap;" onclick="sortAllStocks('intra_change')">GünİçiGüç% <span class="all-stocks-sort-arrow" style="font-size:0.65rem;">↕</span></th>
                                     <th data-all-stocks-sort="hourly_flow" style="cursor:pointer; font-size:0.72rem; white-space:nowrap;" onclick="sortAllStocks('hourly_flow')">SaatlikAkış <span class="all-stocks-sort-arrow" style="font-size:0.65rem;">↕</span></th>
+                                    <th data-all-stocks-sort="hourly_strength" style="cursor:pointer; font-size:0.72rem; white-space:nowrap;" onclick="sortAllStocks('hourly_strength')" title="Seans içi saatlik güç">SaatlikGüç <span class="all-stocks-sort-arrow" style="font-size:0.65rem;">↕</span></th>
+                                    <th data-all-stocks-sort="hourly_volume" style="cursor:pointer; font-size:0.72rem; white-space:nowrap;" onclick="sortAllStocks('hourly_volume')" title="Saatlik göreceli hacim">SaatlikHacim <span class="all-stocks-sort-arrow" style="font-size:0.65rem;">↕</span></th>
                                     <th data-all-stocks-sort="volume_tl" style="cursor:pointer; font-size:0.72rem; white-space:nowrap;" onclick="sortAllStocks('volume_tl')">Hacim(TL) <span class="all-stocks-sort-arrow" style="font-size:0.65rem;">↕</span></th>
                                     <th data-all-stocks-sort="opportunity" style="cursor:pointer; font-size:0.72rem; white-space:nowrap;" onclick="sortAllStocks('opportunity')">⭐ PUAN <span class="all-stocks-sort-arrow" style="font-size:0.65rem;">↕</span></th>
                                     <th data-all-stocks-sort="trust" style="cursor:pointer; font-size:0.72rem; white-space:nowrap;" onclick="sortAllStocks('trust')" title="Güven Skoru: Trend + Para Girişi + Puan + Volatilite dengesi. Hangi hisse daha güvenilir fırsat?">🛡 GÜVEN <span class="all-stocks-sort-arrow" style="font-size:0.65rem;">↕</span></th>
@@ -1677,6 +1679,7 @@
             </div>
 
             <div id="sim-performance-summary" class="card" style="border:1px solid var(--border-color); background:var(--bg-card); margin-bottom:2rem; padding:1rem; display:none;"></div>
+            <div id="sim-weekly-target" class="card" style="border:1px solid rgba(250,204,21,0.35); background:rgba(250,204,21,0.06); margin-bottom:2rem; padding:1rem; display:none;"></div>
 
             <!-- Chart -->
             <div class="card" style="border:1px solid var(--border-color); margin-bottom: 2rem; background: var(--bg-card); box-shadow: 0 4px 15px rgba(0,0,0,0.2);">

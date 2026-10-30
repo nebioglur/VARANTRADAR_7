@@ -4448,6 +4448,24 @@ async function fetchSimulationData() {
                 el('sim-kpi-total-pct').style.color = isProfit ? 'var(--accent-green)' : 'var(--accent-red)';
             }
             if (el('sim-kpi-trades')) el('sim-kpi-trades').innerText = trades.length;
+            const weekly = data.weekly_target || {};
+            const weeklyBox = el('sim-weekly-target');
+            if (weeklyBox) {
+                const actual = Number(weekly.actual_pct || 0);
+                const target = Number(weekly.target_pct || 6);
+                const color = actual >= target ? 'var(--accent-green)' : (actual >= 0 ? 'var(--accent-yellow)' : 'var(--accent-red)');
+                weeklyBox.style.display = 'block';
+                weeklyBox.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;gap:.75rem;flex-wrap:wrap;align-items:center;">
+                        <div><strong style="color:#facc15;"><i class="fa-solid fa-bullseye"></i> Haftalık hedef takibi</strong>
+                        <div style="font-size:.75rem;color:var(--text-muted);margin-top:.25rem;">Son ${weekly.sessions || 0} seans · hedef garanti değildir; risk kontrol göstergesidir.</div></div>
+                        <div style="font-size:1.35rem;font-weight:800;color:${color};">${actual >= 0 ? '+' : ''}%${actual.toFixed(2)} / %${target.toFixed(2)}</div>
+                    </div>
+                    <div style="height:8px;border-radius:99px;background:rgba(148,163,184,.18);margin-top:.7rem;overflow:hidden;">
+                        <div style="height:100%;width:${Math.min(100, Math.max(0, actual / target * 100))}%;background:${color};border-radius:99px;"></div>
+                    </div>
+                    <div style="font-size:.75rem;color:var(--text-muted);margin-top:.45rem;">${actual >= target ? 'Hedef ulaşıldı; yeni işlem açmak yerine kârı koru.' : `Hedefe kalan: %${Math.max(0, target - actual).toFixed(2)}`}</div>`;
+            }
             
             // Render Equity Curve Chart
             renderEquityCurveChart(equityCurve);
@@ -6906,7 +6924,7 @@ function updateAllStocksSortBtn() {
     if (specialLabel && specialBtn) {
         const active = currentStocksSort.col === 'special';
         const arrow = active ? (currentStocksSort.asc ? '↑' : '↓') : '';
-        specialLabel.textContent = `Güven + Hacim + Gün İçi ${arrow}`;
+        specialLabel.textContent = `Kâr Al → +%5 → Tavan ${arrow}`;
         specialBtn.style.background = active ? 'rgba(234,179,8,0.4)' : 'rgba(234,179,8,0.2)';
         specialBtn.style.borderColor = active ? '#facc15' : 'rgba(234,179,8,0.3)';
     }
@@ -6956,6 +6974,8 @@ function renderAllStocksTable() {
         let intra_change = intra.intraday_change_pct || 0;
         let hourly_flow = intra.hourly_flow || '-';
         let acc_score = intra.accumulation_score || 0;
+        let hourly_strength = Number(intra.hourly_strength || intra.hourly_power || intra.timeframe_quality || 0);
+        let hourly_volume = Number(intra.hourly_volume_strength || intra.hourly_rel_vol || rVol || 0);
 
         // Risk yonetimi: ATR bazli stop/hedef + para girisi + trend
         let atr = 0;
@@ -7057,6 +7077,8 @@ function renderAllStocksTable() {
             state: state,
             intra_change: intra_change,
             hourly_flow: hourly_flow,
+            hourly_strength: hourly_strength,
+            hourly_volume: hourly_volume,
             acc_score: acc_score,
             prep_score: prep_score
         };
@@ -7077,27 +7099,27 @@ function renderAllStocksTable() {
     allStats.sort((a, b) => {
         if (currentStocksSort.col === 'special') {
             const getSpecialScore = (item) => {
-                // Özel sıralama üç ana sinyali aynı puanda birleştirir:
-                // Güven %40 + Hacim Gücü %35 + Gün İçi Güç %25.
-                // Böylece yalnızca hacmi yüksek olan değil, güveni ve gün içi ivmesi
-                // birlikte güçlü olan hisseler üstte görünür.
-                const trust_score = Math.max(0, Math.min(100, Number(item.trust) || 0));
-                const volume_score = Math.max(0, Math.min(100, (Number(item.rel_vol) || 0) / 3 * 100));
-                const intraday_score = Math.max(0, Math.min(100, (Number(item.intra_change) || 0) / 4 * 100));
-
-                let composite = (trust_score * 0.40) + (volume_score * 0.35) + (intraday_score * 0.25);
-
-                // Aşırı yükselmiş hisseleri fırsat gibi öne taşımama.
-                if (item.change > 7) composite -= 10;
-                if (item.change < -3) composite -= 10;
-                if (item.hourly_flow === 'Satılıyor') composite -= 8;
-                if (item.hourly_flow === 'Toplanıyor') composite += 5;
-
-                return composite;
+                // Öncelik: kısa sürede kâr alma, sonra +%5, sonra tavan.
+                const sweet = item.change >= 0.2 && item.change <= 4.8;
+                const eligible = item.price >= 3 && item.volume_tl >= 30e6 && sweet &&
+                    item.intra_change >= 0 && item.hourly_flow !== 'Satılıyor' &&
+                    item.rel_vol >= 1.5 && item.ema50 > 0 && item.ema200 > 0 &&
+                    item.price > item.ema50 && item.price > item.ema200;
+                const profitTake = (sweet ? 25 : 0)
+                    + Math.min(Math.max(Number(item.intra_change) || 0, 0) / 3, 1) * 25
+                    + Math.min(Math.max(Number(item.hourly_strength) || 0, 0) / 100, 1) * 20
+                    + Math.min(Math.max(Number(item.hourly_volume) || 0, 0) / 3, 1) * 15
+                    + (item.hourly_flow === 'Toplanıyor' ? 10 : 0)
+                    + (item.trust >= 90 ? 5 : 0);
+                const plus5 = Math.min((Number(item.rel_vol) || 0) / 3, 1) * 35
+                    + Math.min(Math.max(Number(item.prep_score) || 0, 0), 100) * 0.35;
+                const ceiling = Math.max(0, Math.min(100, Number(item.tavan_score) || 0));
+                return { eligible, score: profitTake * 0.55 + plus5 * 0.30 + ceiling * 0.15 };
             };
             const scoreA = getSpecialScore(a);
             const scoreB = getSpecialScore(b);
-            const diff = scoreA - scoreB;
+            if (scoreA.eligible !== scoreB.eligible) return scoreA.eligible ? -1 : 1;
+            const diff = scoreA.score - scoreB.score;
             if (diff !== 0) return currentStocksSort.asc ? diff : -diff;
             if (a.trust !== b.trust) return b.trust - a.trust;
             if (a.rel_vol !== b.rel_vol) return b.rel_vol - a.rel_vol;
@@ -7305,6 +7327,8 @@ function renderAllStocksTable() {
                 <td style="color:${color}; font-weight:bold;">${sign}${s.change.toFixed(2)}%</td>
                 <td style="color:${intraColor}; font-weight:bold;">${intraSign}${s.intra_change.toFixed(2)}%</td>
                 <td style="color:${flowColor}; font-weight:bold;">${flowHtml}</td>
+                <td style="color:${s.hourly_strength >= 70 ? 'var(--accent-green)' : 'var(--text-muted)'}; font-weight:bold;" title="Saatlik güç / seans içi teyit">${Number(s.hourly_strength || 0).toFixed(0)}/100</td>
+                <td style="color:${s.hourly_volume >= 1.5 ? 'var(--accent-green)' : 'var(--text-muted)'}; font-weight:bold;" title="Saatlik göreceli hacim">${Number(s.hourly_volume || 0).toFixed(2)}x</td>
                 <td style="color:var(--text-muted);">${volTLM}</td>
                 <td>${scoreBadge}</td>
                 <td>${trustBadge}</td>

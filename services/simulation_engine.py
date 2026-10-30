@@ -268,7 +268,9 @@ class SimulationEngine:
                 indicators = meta.get('Indicators', {}) if isinstance(meta, dict) else {}
                 r_vol = float(meta.get('Vol_Multiplier') or meta.get('Volume_Ratio') or indicators.get('Volume_Ratio') or 0)
             
-            if float(r_vol) < 1.3:
+            # %90 hedefli A-sinifi simülasyon: sığ hacim ve zayıf katılım
+            # bulunan işlemleri baştan ele.
+            if float(r_vol) < 1.5:
                 continue
 
             # TAVAN TUZAĞI VE GAP-UP ENGELİ:
@@ -282,14 +284,16 @@ class SimulationEngine:
             if price < 4.0:
                 continue
             vol_tl = float(meta.get('Volume_TL') or (float(meta.get('Volume', 0)) * price) or 0)
-            if vol_tl > 0 and vol_tl < 20_000_000:
+            if vol_tl > 0 and vol_tl < 30_000_000:
                 continue
                     
             # EMA Filtresi ZORUNLU
             if not ema50 or not ema200 or not price:
                 continue # Veri eksikse atla
             try:
-                if float(price) <= float(ema50) and float(price) <= float(ema200):
+                # İki ortalamanın da üzerinde olmayan hisse A-sınıfı
+                # kâr alma simülasyonuna alınmaz.
+                if float(price) <= float(ema50) or float(price) <= float(ema200):
                     continue # Fiyat EMA altında
             except (ValueError, TypeError):
                 continue # Dönüşüm hatası
@@ -322,7 +326,9 @@ class SimulationEngine:
                     "Sektör desteği": sector_ok,
                     "FOMO kontrollü": fomo_ok
                 }
-                if sum(checks.values()) < 5 or not checks["RSI dengeli"] or not checks["Hacim teyidi"] or not checks["Tuzak/FOMO temiz"]:
+                # A-sınıfı işlem: temel güvenlik kontrollerinin en az 7/8'i
+                # geçmeli; RSI, hacim ve tuzak filtresi zorunludur.
+                if sum(checks.values()) < 7 or not checks["RSI dengeli"] or not checks["Hacim teyidi"] or not checks["Tuzak/FOMO temiz"]:
                     continue
                 # 5 BAŞARI BONUSU HESAPLAMASI (Başarıyı %70'ten %85+'e Taşır)
                 base_score = float(s.get('score', 0))
@@ -363,6 +369,7 @@ class SimulationEngine:
                 if bonus_tags:
                     s['_entry_checks'] += " | Bonuslar: " + ", ".join(bonus_tags)
                 s['_entry_quality'] = sum(checks.values())
+                s['_a_class'] = True
                 s['_metadata'] = meta
                 valid_signals.append(s)
                 

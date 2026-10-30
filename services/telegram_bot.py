@@ -1052,7 +1052,7 @@ def get_special_ranking_candidates(all_symbols_stats: dict, top_n: int = 5) -> l
             continue
 
         # 2. Minimum likidite kontrolü (Sığ hisse tuzaklarını engelle)
-        if vol_tl < 15_000_000:
+        if vol_tl < 30_000_000:
             continue
 
         # 3. % Değişim Tatlı Bölge Filtresi (+%0.2 ile +%4.8 arası: Tavan tuzakları ve düşenler KESİNLİKLE ELENİR)
@@ -1068,7 +1068,7 @@ def get_special_ranking_candidates(all_symbols_stats: dict, top_n: int = 5) -> l
             continue
 
         # 6. Güven skoru en az %82 olmalı (yüksek başarı standardı)
-        if conf < 82.0:
+        if conf < 90.0:
             continue
 
         # --- Pivot Destek / Direnç Seviyeleri (Saatlik ve Günlük) ---
@@ -1099,6 +1099,33 @@ def get_special_ranking_candidates(all_symbols_stats: dict, top_n: int = 5) -> l
         raw_score = change_score + vol_score + intra_score + flow_bonus + tech_bonus + liq_bonus
         special_score = round(min(max(raw_score, 10.0), 99.0), 1)
 
+        # Saatlik güç/hacim, kâr alma hedefinin ilk önceliğidir.
+        hourly_strength = float(
+            intra.get("hourly_strength")
+            or intra.get("hourly_power")
+            or intra.get("timeframe_quality")
+            or 0.0
+        )
+        hourly_volume = float(
+            intra.get("hourly_volume_strength")
+            or intra.get("hourly_rel_vol")
+            or rel_vol
+            or 0.0
+        )
+        # Üç amaçlı sıralama:
+        # 1) kısa sürede kâr alma, 2) +%5 devam, 3) tavan adayı.
+        profit_take_score = (
+            (25.0 if 0.2 <= change <= 4.8 else 0.0)
+            + min(max(intra_change, 0.0) / 3.0, 1.0) * 25.0
+            + min(max(hourly_strength, 0.0) / 100.0, 1.0) * 20.0
+            + min(max(hourly_volume, 0.0) / 3.0, 1.0) * 15.0
+            + (10.0 if hourly_flow == "Toplanıyor" else 0.0)
+            + (5.0 if price > 0 and price > float(data.get("Daily_EMA50") or 0) else 0.0)
+        )
+        plus5_score = min(max(rel_vol / 3.0, 0.0), 1.0) * 35.0 + min(max(prep_score, 0.0), 100.0) * 0.35
+        ceiling_score = min(max(float(data.get("tavan_score") or 0), 0.0), 100.0)
+        priority_score = round(profit_take_score * 0.55 + plus5_score * 0.30 + ceiling_score * 0.15, 1)
+
         scored_list.append({
             "symbol": clean_sym,
             "raw_symbol": sym,
@@ -1119,10 +1146,24 @@ def get_special_ranking_candidates(all_symbols_stats: dict, top_n: int = 5) -> l
             "daily_r1": round(daily_r1, 2),
             "h_s1_pct": round(h_s1_pct, 1),
             "h_r1_pct": round(h_r1_pct, 1),
+            "hourly_strength": round(hourly_strength, 1),
+            "hourly_volume": round(hourly_volume, 2),
+            "profit_take_score": round(profit_take_score, 1),
+            "plus5_score": round(plus5_score, 1),
+            "ceiling_score": round(ceiling_score, 1),
+            "priority_score": priority_score,
         })
 
-    # Sıralama: En yüksek güven (%96, %95) ve en yüksek özel skora göre
-    scored_list.sort(key=lambda x: (x["confidence_pct"], x["special_score"], x["rel_vol"]), reverse=True)
+    # Öncelik: kâr alma -> +%5 -> tavan; güven eşiği zaten %90'dır.
+    scored_list.sort(
+        key=lambda x: (
+            x["priority_score"],
+            x["profit_take_score"],
+            x["confidence_pct"],
+            x["rel_vol"],
+        ),
+        reverse=True,
+    )
     return scored_list[:top_n]
 
 

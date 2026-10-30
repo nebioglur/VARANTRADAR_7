@@ -2714,11 +2714,26 @@ def api_simulation_daily_pnl():
             
             from services.statistics_engine import StatisticsEngine
             performance = StatisticsEngine.get_trade_performance(owner)
+            # Haftalık hedef: son 5 işlem seansının bileşik getirisi.
+            # Bu bir garanti değil, risk kontrolü ve hedef takibidir.
+            weekly_rows = equity_curve[-5:]
+            weekly_start = float(weekly_rows[0].get('start_equity') or 0) if weekly_rows else 0.0
+            weekly_end = float(weekly_rows[-1].get('end_equity') or weekly_start) if weekly_rows else weekly_start
+            weekly_pct = ((weekly_end - weekly_start) / weekly_start * 100.0) if weekly_start > 0 else 0.0
+            target_pct = 6.0
             return jsonify({
                 "status": "success",
                 "equity_curve": sanitize_for_json(equity_curve),
                 "trades": sanitize_for_json(trades),
-                "performance": sanitize_for_json(performance)
+                "performance": sanitize_for_json(performance),
+                "weekly_target": {
+                    "target_pct": target_pct,
+                    "actual_pct": round(weekly_pct, 2),
+                    "gap_pct": round(target_pct - weekly_pct, 2),
+                    "reached": weekly_pct >= target_pct,
+                    "sessions": len(weekly_rows),
+                    "label": "Haftalık %6 hedef takibi (garanti değildir)"
+                }
             })
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
