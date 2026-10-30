@@ -70,16 +70,27 @@ class ExecutionEngine:
             timeframe_quality -= 5
             
         # 5. Temiz Giriş (Enter)
+        # Rejime gore dinamik giris barasi: backtest kaniti — NÖTR gunde
+        # kirilim kenari kayboluyor (WR %39.5, PF 1.05), bu yuzden NÖTR'de
+        # sadece en guclu kirilimlar girsin. BOGA'da baraj temel seviyede.
+        if market_regime == "NEUTRAL":
+            b_score_min, f_risk_max = 62, 32
+        elif market_regime == "STRONG_BULL":
+            b_score_min, f_risk_max = 45, 42
         else:
-            if b_score >= 50 and f_risk <= 40:
-                status = "ENTER"
-                reasons.append("Düşük tuzak riskli, güçlü kırılım onayı (AL)")
-            elif b_score >= 35:
-                status = "WAIT_CONFIRMATION"
-                reasons.append("Kırılım başladı; hacim/zaman teyidi bekleniyor")
+            b_score_min, f_risk_max = 50, 40
+        if b_score >= b_score_min and f_risk <= f_risk_max:
+            status = "ENTER"
+            if market_regime == "NEUTRAL":
+                reasons.append("Nötr piyasada yüksek barajı geçen güçlü kırılım (AL)")
             else:
-                status = "NO_ENTRY"
-                reasons.append("Kırılım gücü zayıf, izleniyor")
+                reasons.append("Düşük tuzak riskli, güçlü kırılım onayı (AL)")
+        elif b_score >= 35:
+            status = "WAIT_CONFIRMATION"
+            reasons.append("Kırılım başladı; hacim/zaman teyidi bekleniyor")
+        else:
+            status = "NO_ENTRY"
+            reasons.append("Kırılım gücü zayıf, izleniyor")
         
         timeframe_quality = max(0, min(100, timeframe_quality + b_score * 0.5 - f_risk * 0.3))
         
