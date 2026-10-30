@@ -170,6 +170,7 @@ def run_backtest(symbols: List[str], days: int = 500):
 
         # 1. FAZ: tum sembol verilerini once indir (endeks yoksa evren vekili
         # uretmek icin kisilusturulmus kapanislarina ihtiyac var).
+        total = len(symbols)
         dfs = {}
         for n_i, sym in enumerate(symbols):
             try:
@@ -211,7 +212,6 @@ def run_backtest(symbols: List[str], days: int = 500):
         bo_engine = BreakoutEngine()
         ex_engine = ExecutionEngine()
         signals_by_mode = {"A": [], "B": [], "C": [], "D": []}
-        total = len(symbols)
 
         # 2. FAZ: sinyal taramasi (veriler dfs'ten okunur, tekrar indirilmez)
         scan_i = 0
