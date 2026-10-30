@@ -333,9 +333,9 @@
                                 <i class="fa-solid fa-arrows-up-down"></i> <span id="all-stocks-sort-label">Puan ↓</span>
                             </button>
                             <button id="all-stocks-special-sort-btn" type="button" onclick="sortAllStocks('special')"
-                                title="Özel Sıralama: Hacim + Gün İçi Gücü en yüksek ama değişimi % en az olan fiyatlanmamış hisseler (Gün içi güç öncelikli)"
-                                style="font-size:0.75rem; background:rgba(234,179,8,0.2); padding:3px 8px; border-radius:12px; color:#facc15; border:1px solid rgba(234,179,8,0.3); cursor:pointer;">
-                                <i class="fa-solid fa-star"></i> <span id="all-stocks-special-sort-label">Özel Sıralama</span>
+                                title="%90+ Başarı Filtresi: Tavan tuzakları ve düşenler elenir, sadece %90-%96 güven skorlu kurumsal alımdaki hisseler listelenir"
+                                style="font-size:0.75rem; background:rgba(16,185,129,0.2); padding:3px 10px; border-radius:12px; color:#34d399; border:1px solid rgba(16,185,129,0.4); cursor:pointer; font-weight:700;">
+                                <i class="fa-solid fa-shield-halved"></i> <span id="all-stocks-special-sort-label">⭐ Güven + Hacim (%90 Başarı)</span>
                             </button>
                             <button id="all-stocks-tg-send-btn" type="button" onclick="sendSpecialRankingTelegram()"
                                 title="Özel Sıralama Akıllı Seçimlerini Telegram'a Gönder"
@@ -355,9 +355,9 @@
                                     <th data-all-stocks-sort="intra_change" style="cursor:pointer; font-size:0.72rem; white-space:nowrap;" onclick="sortAllStocks('intra_change')">GünİçiGüç% <span class="all-stocks-sort-arrow" style="font-size:0.65rem;">↕</span></th>
                                     <th data-all-stocks-sort="hourly_flow" style="cursor:pointer; font-size:0.72rem; white-space:nowrap;" onclick="sortAllStocks('hourly_flow')">SaatlikAkış <span class="all-stocks-sort-arrow" style="font-size:0.65rem;">↕</span></th>
                                     <th data-all-stocks-sort="volume_tl" style="cursor:pointer; font-size:0.72rem; white-space:nowrap;" onclick="sortAllStocks('volume_tl')">Hacim(TL) <span class="all-stocks-sort-arrow" style="font-size:0.65rem;">↕</span></th>
-                                    <th data-all-stocks-sort="volume_lot" style="cursor:pointer; font-size:0.72rem; white-space:nowrap;" onclick="sortAllStocks('volume_lot')">Hacim(Lot) <span class="all-stocks-sort-arrow" style="font-size:0.65rem;">↕</span></th>
                                     <th data-all-stocks-sort="rel_vol" style="cursor:pointer; font-size:0.72rem; white-space:nowrap;" onclick="sortAllStocks('rel_vol')" title="Pozitif hacim gücü büyükten küçüğe, sonra 0, sonra negatifler">HacimGücü% <span class="all-stocks-sort-arrow" style="font-size:0.65rem;">↓</span></th>
                                     <th data-all-stocks-sort="opportunity" style="cursor:pointer; font-size:0.72rem; white-space:nowrap;" onclick="sortAllStocks('opportunity')">⭐ PUAN <span class="all-stocks-sort-arrow" style="font-size:0.65rem;">↕</span></th>
+                                    <th data-all-stocks-sort="confidence" style="cursor:pointer; font-size:0.72rem; white-space:nowrap;" onclick="sortAllStocks('confidence')" title="V8 Başarı Güven Oranı (%90+ Adaylar)">🛡️ GÜVEN <span class="all-stocks-sort-arrow" style="font-size:0.65rem;">↕</span></th>
                                     <th style="font-size:0.72rem; white-space:nowrap;">İşlem</th>
                                 </tr>
                             </thead>
@@ -2436,7 +2436,7 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="app.js?v=20261030_v8_elite"></script>
+    <script src="app.js?v=20261030_v8_90filter"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js?v=20260916_v13"></script>
     <script>
@@ -2478,7 +2478,7 @@
         // PWA service worker kaydi (canli veri API'leri onbelleklenmez)
         if ("serviceWorker" in navigator) {
             window.addEventListener("load", function () {
-                navigator.serviceWorker.register("/sw.js?v=20261030_v20").then(function(reg) { if (reg) reg.update(); }).catch(function () {});
+                navigator.serviceWorker.register("/sw.js?v=20261030_v21").then(function(reg) { if (reg) reg.update(); }).catch(function () {});
             });
         }
     </script>

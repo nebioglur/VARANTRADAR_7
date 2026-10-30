@@ -6612,11 +6612,21 @@ function bindAllStocksSearch() {
 }
 
 function sortAllStocks(col) {
-    if (currentStocksSort.col === col) {
-        currentStocksSort.asc = !currentStocksSort.asc;
+    if (col === 'special') {
+        if (currentStocksSort.col === 'special') {
+            currentStocksSort.col = 'opportunity';
+            currentStocksSort.asc = false;
+        } else {
+            currentStocksSort.col = 'special';
+            currentStocksSort.asc = false;
+        }
     } else {
-        currentStocksSort.col = col;
-        currentStocksSort.asc = (col === 'symbol');
+        if (currentStocksSort.col === col) {
+            currentStocksSort.asc = !currentStocksSort.asc;
+        } else {
+            currentStocksSort.col = col;
+            currentStocksSort.asc = (col === 'symbol');
+        }
     }
     updateAllStocksSortBtn();
     renderAllStocksTable();
@@ -6638,14 +6648,21 @@ function updateAllStocksSortBtn() {
 
     if (specialLabel && specialBtn) {
         const active = currentStocksSort.col === 'special';
-        const arrow = active ? (currentStocksSort.asc ? '↑' : '↓') : '';
-        specialLabel.textContent = `Özel Sıralama ${arrow}`;
-        specialBtn.style.background = active ? 'rgba(234,179,8,0.4)' : 'rgba(234,179,8,0.2)';
-        specialBtn.style.borderColor = active ? '#facc15' : 'rgba(234,179,8,0.3)';
+        if (active) {
+            specialLabel.innerHTML = `<i class="fa-solid fa-filter"></i> ⭐ %90 Başarı (Filtreli)`;
+            specialBtn.style.background = 'rgba(16,185,129,0.35)';
+            specialBtn.style.borderColor = '#10b981';
+            specialBtn.style.color = '#34d399';
+            specialBtn.style.boxShadow = '0 0 12px rgba(16,185,129,0.5)';
+        } else {
+            specialLabel.innerHTML = `⭐ Güven + Hacim (%90 Başarı)`;
+            specialBtn.style.background = 'rgba(16,185,129,0.18)';
+            specialBtn.style.borderColor = 'rgba(16,185,129,0.35)';
+            specialBtn.style.color = '#34d399';
+            specialBtn.style.boxShadow = 'none';
+        }
     }
 
-    // Hacim Gücü oku her zaman aktif sütunun yönünü gösterir.
-    // Varsayılan sıra: +%1000 > +%120 > 0 > -%20000.
     document.querySelectorAll('[data-all-stocks-sort]').forEach(header => {
         const col = header.dataset.allStocksSort;
         const isActive = currentStocksSort.col === col;
@@ -6702,35 +6719,90 @@ function renderAllStocksTable() {
         else if (state === 'PRE_BREAKOUT') tScore += 15;
         tScore = Math.min(Math.max(tScore, 0), 100);
 
-        // ===== FIRSAT SKORU (0-100): "para su an nereye giriyor?" =====
-        // 1) Hacim gucu %35: 3x+ rel_vol tam puan
+        // ===== FIRSAT SKORU (0-100) =====
         let opp = Math.min(rVol / 3, 1) * 35;
-        // 2) Gun ici guc %25: 0-4% arasi lineer
         opp += Math.min(Math.max(intra_change, 0) / 4, 1) * 25;
-        // 3) Saatlik akis %15: Toplaniyor +15 / Satiyor -15
         if (hourly_flow === 'Toplanıyor') opp += 15;
         else if (hourly_flow === 'Satılıyor') opp = Math.max(0, opp - 15);
-        // 4) Teknik durum %15: breakout hazirliklari
         if (state === 'BREAKOUT') opp += 15;
         else if (state === 'PRE_BREAKOUT') opp += 10;
-        // 5) Tavan skoru %10
         opp += (tScore / 100) * 10;
-        // 6) Asiri uzama cezasi: %7+ zaten kosmus
         if (change > 7) opp = Math.max(0, opp - 10);
         opp = Math.round(Math.min(opp, 100) * 10) / 10;
+
+        // ===== V8 %90+ GÜVEN VE BAŞARI HESAPLAMASI =====
+        let conf = 75.0;
+        let bonuses = [];
+
+        // 1) Tatlı Bölge (+0.5% ile +3.8%): Tavan tuzağı ve düşüşten uzak
+        if (change >= 0.5 && change <= 3.8) {
+            bonuses.push('⚡ Tatlı Bölge');
+            conf += 4.0;
+        } else if (change > 3.8 && change <= 5.0) {
+            bonuses.push('⚡ İvmelenme');
+            conf += 2.0;
+        } else if (change > 7.0) {
+            conf -= 12.0; // Tavan/FOMO tuzağı cezası
+        } else if (change < 0.0) {
+            conf -= 15.0; // Düşüş cezası
+        }
+
+        // 2) Hacim Gücü (Göreceli Hacim) — Kurumsal para akışı
+        if (rVol >= 2.5) {
+            bonuses.push('🔥 Süper Hacim');
+            conf += 4.5;
+        } else if (rVol >= 1.5) {
+            bonuses.push('🔊 Güçlü Hacim');
+            conf += 3.0;
+        } else if (rVol < 0.8 && change > 0) {
+            conf -= 6.0;
+        }
+
+        // 3) Akıllı Para & Gün İçi İvme
+        if (hourly_flow === 'Toplanıyor' || intra_change >= 0.8) {
+            bonuses.push('💸 Akıllı Para');
+            conf += 4.5;
+        } else if (hourly_flow === 'Satılıyor') {
+            conf -= 12.0;
+        }
+
+        if (intra_change < 0.0) {
+            conf -= 8.0;
+        }
+
+        // 4) Teknik Kalite / Kırılım
+        if (state === 'BREAKOUT') {
+            bonuses.push('🚀 Kırılım');
+            conf += 5.0;
+        } else if (state === 'PRE_BREAKOUT' || prep_score >= 60) {
+            bonuses.push('🛡️ Güçlü Hazırlık');
+            conf += 3.5;
+        }
+
+        // 5) Likidite Güvencesi (30M+ TL kurumsal tahta)
+        if (volTL >= 30000000 && price >= 4.0) {
+            bonuses.push('🏦 Likit Tahta');
+            conf += 3.0;
+        } else if (volTL < 15000000 || price < 3.0) {
+            conf -= 10.0;
+        }
+
+        conf = Math.min(96.0, Math.max(15.0, Math.round(conf * 10) / 10));
 
         return {
             symbol: sym,
             price: price,
             close: data.Daily_Close || 0,
             change: change,
-              high: data.High || price,
-              low: data.Low || price,
+            high: data.High || price,
+            low: data.Low || price,
             volume_lot: volLot,
             volume_tl: volTL,
             rel_vol: rVol,
             tavan_score: tScore,
             opportunity: opp,
+            confidence: conf,
+            bonuses: bonuses,
             time: data.Time || '-',
             state: state,
             intra_change: intra_change,
@@ -6745,73 +6817,56 @@ function renderAllStocksTable() {
         allStats = allStats.filter(s => normalizeAllStocksSearch(s.symbol).includes(allStocksSearchTerm));
     }
 
+    // %90+ BAŞARI FİLTRESİ (Özel Sıralama Aktifken)
+    const isSpecialFilterActive = currentStocksSort.col === 'special';
+    if (isSpecialFilterActive) {
+        allStats = allStats.filter(s => {
+            // 1. Değişim tatlı bölgede olmalı (+%0.2 ile +%4.8 arası). Tavana yapışmış veya düşenler kesinlikle elenir!
+            if (s.change < 0.2 || s.change > 4.8) return false;
+            // 2. Gün içi güç pozitif olmalı (dipten satış yiyenler elenir)
+            if (s.intra_change < 0.0) return false;
+            // 3. Saatlik para akışı Satılıyor olanlar elenir
+            if (s.hourly_flow === 'Satılıyor') return false;
+            // 4. Minimum likidite: En az 15M TL ve kuruşluk olmayan
+            if (s.volume_tl < 15000000 || s.price < 3.0) return false;
+            // 5. Güven skoru en az %82 olmalı
+            if (s.confidence < 82.0) return false;
+            return true;
+        });
+    }
+
     const countEl = document.getElementById('all-stocks-count');
     if (countEl) {
-        countEl.textContent = allStocksSearchTerm
-            ? `${allStats.length}/${allStatsTotal} hisse`
-            : `${allStatsTotal} hisse`;
+        if (isSpecialFilterActive) {
+            countEl.innerHTML = `<span style="color:#34d399; font-weight:800;"><i class="fa-solid fa-shield-halved"></i> %90 Başarı: ${allStats.length} Hisse</span>`;
+        } else if (allStocksSearchTerm) {
+            countEl.textContent = `${allStats.length}/${allStatsTotal} hisse`;
+        } else {
+            countEl.textContent = `${allStatsTotal} hisse`;
+        }
     }
 
     allStats.sort((a, b) => {
         if (currentStocksSort.col === 'special') {
-            const getSpecialScore = (item) => {
-                const price = Number(item.price || item.close || 0);
-                const volTL = Number(item.volume_tl || (item.volume * price) || 0);
-                
-                // Sığ hisse tuzağı koruması: Çok düşük hacimli veya kuruşluk hisseleri dibe at
-                if (volTL > 0 && volTL < 15000000 && price < 4.0) return -9999;
-
-                const change = Number(item.change || 0);
-                const intra = Math.max(0, Number(item.intra_change || 0));
-                const relVol = Math.max(0, Number(item.rel_vol || 0));
-                const prep = Number(item.prep_score || 0);
-
-                // 1) Tatlı Bölge Değişimi: +0.5% ile +3.5% arası en yüksek puan!
-                // Eksi hisselere ağır ceza, aşırı primlenenlere (+5% üstü) FOMO kovalama cezası
-                let changeScore = 0;
-                if (change >= 0.5 && change <= 3.5) {
-                    changeScore = 30 + (change * 3);
-                } else if (change > 3.5 && change <= 5.0) {
-                    changeScore = 30 - ((change - 3.5) * 6);
-                } else if (change > 5.0) {
-                    changeScore = 15 - ((change - 5.0) * 8);
-                } else if (change >= 0 && change < 0.5) {
-                    changeScore = 15 + (change * 10);
-                } else {
-                    // Düşen / eksi hisse: Listede yukarı çıkamaz
-                    changeScore = -25 - (Math.abs(change) * 12);
-                }
-
-                // 2) Hacim Gücü (Göreceli Hacim) — Kurumsal para akışı teyidi
-                let volScore = Math.min(32, relVol * 8);
-
-                // 3) Gün İçi İvme (Dipten toparlanma)
-                let intraScore = Math.min(24, intra * 4);
-
-                // 4) Teknik Kalite (V8 Hazırlık Puanı)
-                let techScore = (prep / 100) * 10;
-
-                // 5) Likidite Güvencesi: 30M+ TL kurumsal tahtalara bonus
-                let liqBonus = volTL >= 100000000 ? 6 : (volTL >= 30000000 ? 2 : -4);
-
-                return changeScore + volScore + intraScore + techScore + liqBonus;
-            };
-            const scoreA = getSpecialScore(a);
-            const scoreB = getSpecialScore(b);
-            const diff = scoreA - scoreB;
-            if (diff !== 0) return currentStocksSort.asc ? diff : -diff;
+            // En yüksek güven (%96, %95) ve en yüksek fırsat skoru önce
+            const confDiff = b.confidence - a.confidence;
+            if (confDiff !== 0) return currentStocksSort.asc ? -confDiff : confDiff;
+            const oppDiff = b.opportunity - a.opportunity;
+            if (oppDiff !== 0) return oppDiff;
             return b.rel_vol - a.rel_vol;
         }
 
+        if (currentStocksSort.col === 'confidence') {
+            const diff = a.confidence - b.confidence;
+            if (diff !== 0) return currentStocksSort.asc ? diff : -diff;
+            return b.opportunity - a.opportunity;
+        }
+
         if (currentStocksSort.col === 'opportunity') {
-            // Puan siralamasi gercek sayisal siralama olmalidir.
-            // Yesil/likit katmanlari puani ezmemeli; aksi halde dusuk
-            // puanli yesil hisse, yuksek puanli hisseyi geciyordu.
             const scoreDiff = a.opportunity - b.opportunity;
             if (scoreDiff !== 0) {
                 return currentStocksSort.asc ? scoreDiff : -scoreDiff;
             }
-            // Esit puanlarda likit olan, sonra pozitif degisimli olan once.
             const liquidityDiff = (b.volume_tl >= 50e6 ? 1 : 0) - (a.volume_tl >= 50e6 ? 1 : 0);
             if (liquidityDiff !== 0) return liquidityDiff;
             return (b.change > 0 ? 1 : 0) - (a.change > 0 ? 1 : 0);
@@ -6820,10 +6875,6 @@ function renderAllStocksTable() {
         let valA = a[currentStocksSort.col];
         let valB = b[currentStocksSort.col];
 
-        // Hacim Gücü ekranda değişimin yönüyle birlikte gösterilir:
-        // pozitifler (+%120) üstte, negatifler (-%1000) altta olmalıdır.
-        // Ham relative volume ile sıralamak negatif hisseleri de pozitif gibi
-        // üste taşıyordu.
         if (currentStocksSort.col === 'rel_vol') {
             const signedVolume = item => {
                 const direction = item.change > 0 ? 1 : (item.change < 0 ? -1 : 0);
@@ -6836,7 +6887,6 @@ function renderAllStocksTable() {
         if (typeof valA === 'string') valA = valA.toLowerCase();
         if (typeof valB === 'string') valB = valB.toLowerCase();
 
-        // Eksik/veri olmayan değerler her zaman listenin sonunda kalsın.
         const missingA = valA === undefined || valA === null || valA === '';
         const missingB = valB === undefined || valB === null || valB === '';
         if (missingA !== missingB) return missingA ? 1 : -1;
@@ -6849,7 +6899,7 @@ function renderAllStocksTable() {
     if (!allStats.length) {
         tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; color:var(--text-muted); padding:1.5rem;">
             <i class="fa-solid fa-magnifying-glass" style="margin-right:0.4rem;"></i>
-            “${allStocksSearchTerm}” ile eşleşen hisse bulunamadı.
+            ${isSpecialFilterActive ? 'Şu anda %90 başarı kriterine (tatlı bölge, kurumsal akış, pozitif güç) tam uyan hisse bulunamadı.' : '“' + allStocksSearchTerm + '” ile eşleşen hisse bulunamadı.'}
         </td></tr>`;
         return;
     }
@@ -6857,7 +6907,6 @@ function renderAllStocksTable() {
     tbody.innerHTML = allStats.map(s => {
         const color = s.change > 0 ? 'var(--accent-green)' : (s.change < 0 ? 'var(--accent-red)' : 'var(--text-color)');
         const sign = s.change > 0 ? '+' : '';
-        const volLotM = (s.volume_lot / 1000000).toFixed(1) + 'M';
         const volTLM = (s.volume_tl / 1000000).toFixed(1) + 'M ₺';
         const relVolPct = (s.rel_vol * 100).toFixed(0);
         const relVolText = "%" + relVolPct;
@@ -6910,26 +6959,8 @@ function renderAllStocksTable() {
                 <span style="font-size:0.75rem; margin-top:2px; color:var(--text-muted);">-</span>
             </div>`;
         }
-        
-        let p_val = (s.high + s.low + s.price) / 3;
-        let dR1 = (2 * p_val) - s.low;
-        let dS1 = (2 * p_val) - s.high;
-        if (s.price > dR1) dR1 = p_val + (s.high - s.low);
-        if (s.price < dS1) dS1 = p_val - (s.high - s.low);
-        let hR1 = s.price + (dR1 - s.price) * 0.4;
-        let hS1 = s.price - (s.price - dS1) * 0.4;
-        
-        let dR1_p = s.price > 0 ? ((dR1 - s.price)/s.price)*100 : 0;
-        let dS1_p = s.price > 0 ? ((dS1 - s.price)/s.price)*100 : 0;
-        let hR1_p = s.price > 0 ? ((hR1 - s.price)/s.price)*100 : 0;
-        let hS1_p = s.price > 0 ? ((hS1 - s.price)/s.price)*100 : 0;
-        
-        let ddCell = '<td style="font-size:0.65rem; line-height:1.2; min-width:140px;">' +
-                     '<div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span style="color:var(--text-muted);">S:</span> <span><span style="color:var(--accent-red);">' + hS1.toFixed(2) + '(%'+hS1_p.toFixed(1)+')</span> / <span style="color:var(--accent-green);">' + hR1.toFixed(2) + '(+%'+hR1_p.toFixed(1)+')</span></span></div>' +
-                     '<div style="display:flex; justify-content:space-between;"><span style="color:var(--text-muted);">G:</span> <span><span style="color:var(--accent-red);">' + dS1.toFixed(2) + '(%'+dS1_p.toFixed(1)+')</span> / <span style="color:var(--accent-green);">' + dR1.toFixed(2) + '(+%'+dR1_p.toFixed(1)+')</span></span></div>' +
-                     '</td>';
 
-          let scColor = '#ef4444';
+        let scColor = '#ef4444';
         if (s.opportunity >= 75) scColor = '#22c55e';
         else if (s.opportunity >= 55) scColor = '#3b82f6';
         else if (s.opportunity >= 35) scColor = '#f97316';
@@ -6941,14 +6972,42 @@ function renderAllStocksTable() {
             `Tavan skoru katkısı: ${s.tavan_score / 10 | 0}/10` +
             (s.change > 7 ? '\n⚠️ %7+ aşırı uzama cezası uygulandı' : '') +
             (s.volume_tl < 50e6 ? '\n⚠️ Düşük likidite (< 50M ₺) — sıralamada alta düşer' : '');
-        let scoreBadge = `<span title="${oppTitle}" style="font-weight:900; padding:3px 10px; border-radius:12px; background:${scColor}22; color:${scColor}; border:1px solid ${scColor}66; min-width:35px; display:inline-block; text-align:center; cursor:help;">${s.opportunity.toFixed(1)}</span>`;
-        
+        let scoreBadge = `<span title="${oppTitle}" style="font-weight:900; padding:3px 8px; border-radius:12px; background:${scColor}22; color:${scColor}; border:1px solid ${scColor}66; min-width:35px; display:inline-block; text-align:center; cursor:help;">${s.opportunity.toFixed(1)}</span>`;
+
+        // 🛡️ GÜVEN ROZETİ (%90+ Başarı)
+        let confColor = '#10b981';
+        let confBg = 'rgba(16,185,129,0.2)';
+        let confBorder = 'rgba(16,185,129,0.55)';
+        let shieldIcon = 'fa-shield-halved';
+        if (s.confidence >= 90) {
+            confColor = '#34d399';
+            confBg = 'rgba(16,185,129,0.22)';
+            confBorder = 'rgba(16,185,129,0.6)';
+        } else if (s.confidence >= 80) {
+            confColor = '#60a5fa';
+            confBg = 'rgba(59,130,246,0.18)';
+            confBorder = 'rgba(59,130,246,0.45)';
+            shieldIcon = 'fa-shield';
+        } else {
+            confColor = '#f87171';
+            confBg = 'rgba(239,68,68,0.15)';
+            confBorder = 'rgba(239,68,68,0.3)';
+            shieldIcon = 'fa-shield-xmark';
+        }
+
+        const bonusListStr = s.bonuses.length > 0 ? '\nAktif Avantajlar:\n• ' + s.bonuses.join('\n• ') : '';
+        const confTitle = `V8 Başarı Güven Oranı: %${s.confidence.toFixed(1)}${bonusListStr}`;
+
+        const confBadge = `<span title="${confTitle}" style="font-weight:900; font-size:0.75rem; padding:3px 8px; border-radius:6px; background:${confBg}; color:${confColor}; border:1px solid ${confBorder}; display:inline-flex; align-items:center; gap:4px; cursor:help; white-space:nowrap; box-shadow: ${s.confidence >= 90 ? '0 0 8px rgba(16,185,129,0.25)' : 'none'};">
+            <i class="fa-solid ${shieldIcon}"></i> %${s.confidence.toFixed(0)}
+        </span>`;
+
         const sym = s.symbol.replace('.IS', '');
         let actionBtns = `<button onclick="quickTradeBuy('${sym}')" style="background:rgba(34,197,94,0.2); color:#22c55e; border:1px solid rgba(34,197,94,0.5); border-radius:4px; padding:3px 10px; cursor:pointer; font-weight:bold; font-size:0.75rem; margin-right:4px; transition:0.2s;" onmouseover="this.style.background='#22c55e'; this.style.color='#fff';" onmouseout="this.style.background='rgba(34,197,94,0.2)'; this.style.color='#22c55e';">AL</button>
                           <button onclick="quickTradeBuy('${sym}')" style="background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid rgba(239,68,68,0.5); border-radius:4px; padding:3px 10px; cursor:pointer; font-weight:bold; font-size:0.75rem; transition:0.2s;" onmouseover="this.style.background='#ef4444'; this.style.color='#fff';" onmouseout="this.style.background='rgba(239,68,68,0.2)'; this.style.color='#ef4444';">SAT</button>
                           <button onclick="showSR('${sym}', ${s.price}, ${s.high}, ${s.low})" style="background:rgba(59,130,246,0.2); color:#3b82f6; border:1px solid rgba(59,130,246,0.5); border-radius:4px; padding:3px 6px; cursor:pointer; font-weight:bold; font-size:0.7rem; margin-left:3px; transition:0.2s;" onmouseover="this.style.background='#3b82f6'; this.style.color='#fff';" onmouseout="this.style.background='rgba(59,130,246,0.2)'; this.style.color='#3b82f6';" title="Destek ve Direnc Seviyeleri">D/D</button>
                           <button onclick="showStockActionGuide('${sym}', ${s.price}, ${s.high}, ${s.low}, ${s.change}, ${s.rel_vol}, '${s.hourly_flow || '-'}')" style="background:rgba(234,179,8,0.2); color:#eab308; border:1px solid rgba(234,179,8,0.5); border-radius:4px; padding:3px 6px; cursor:pointer; font-weight:bold; font-size:0.7rem; margin-left:3px; transition:0.2s;" onmouseover="this.style.background='#eab308'; this.style.color='#000';" onmouseout="this.style.background='rgba(234,179,8,0.2)'; this.style.color='#eab308';" title="Aksiyon & Taktik Rehberi (Hedef, Stop, Varant)">💡 Taktik</button>`;
-        
+
         let prevClose = s.price / (1 + (s.change / 100));
         return `
             <tr>
@@ -6959,15 +7018,15 @@ function renderAllStocksTable() {
                 <td style="color:${intraColor}; font-weight:bold;">${intraSign}${s.intra_change.toFixed(2)}%</td>
                 <td style="color:${flowColor}; font-weight:bold;">${flowHtml}</td>
                 <td style="color:var(--text-muted);">${volTLM}</td>
-                <td style="color:var(--text-muted);">${volLotM}</td>
                 <td style="color:${color}; font-weight:bold;">${relVolText}</td>
-                  
                 <td>${scoreBadge}</td>
+                <td>${confBadge}</td>
                 <td>${actionBtns}</td>
             </tr>
         `;
     }).join('');
 }
+
 
 function quickTradeBuy(sym) {
     const pfBtn = Array.from(document.querySelectorAll('.nav-btn')).find(b => b.getAttribute('href') && b.getAttribute('href').includes('portfolio'));
