@@ -1697,6 +1697,58 @@
                 <p style="color:var(--text-muted); font-size: 0.95rem;">Tavan adaylarına yatırım yapan ve UZAK DUR sinyaliyle çıkış yapan test motoru.</p>
             </div>
 
+            <!-- 🎯 HAFTALIK %6 HEDEF VE %90 BAŞARI GÜVENLİK PANELİ -->
+            <div id="sim-weekly-target-card" class="card" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%); border: 1.5px solid rgba(59, 130, 246, 0.35); border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 8px 30px rgba(0,0,0,0.35);">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:0.9rem;">
+                    <div style="display:flex; align-items:center; gap:0.6rem;">
+                        <span style="background:rgba(59, 130, 246, 0.2); color:#60a5fa; border:1px solid rgba(59,130,246,0.4); border-radius:8px; padding:4px 10px; font-size:0.75rem; font-weight:800; letter-spacing:0.5px;">
+                            <i class="fa-solid fa-bullseye"></i> V8 STRATEJİ HEDEFİ
+                        </span>
+                        <h3 style="margin:0; font-size:1.15rem; font-weight:800; color:#f8fafc; letter-spacing:-0.2px;">
+                            Haftalık Asgari <span style="color:#10b981;">+%6 Kâr</span> & <span style="color:#60a5fa;">%90 Başarı</span> Radarı
+                        </h3>
+                    </div>
+                    <div id="sim-weekly-status-badge" style="font-size:0.8rem; font-weight:800; padding:4px 12px; border-radius:20px; background:rgba(16,185,129,0.15); color:#34d399; border:1px solid rgba(16,185,129,0.35);">
+                        <i class="fa-solid fa-circle-notch fa-spin"></i> Hesaplanıyor...
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div style="background:rgba(15, 23, 42, 0.8); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:0.8rem 1rem; margin-bottom:1rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; font-size:0.85rem;">
+                        <span style="color:#94a3b8; font-weight:600;">
+                            Haftalık Gerçekleşen Getiri: <b id="sim-weekly-pnl-val" style="color:#38bdf8; font-size:0.95rem;">-</b>
+                        </span>
+                        <span style="color:#94a3b8;">
+                            Hedef: <b style="color:#10b981;">+%6,00 (Haftalık)</b> · Win Rate: <b id="sim-weekly-winrate" style="color:#a78bfa;">-%</b>
+                        </span>
+                    </div>
+                    <div style="width:100%; height:10px; background:rgba(255,255,255,0.06); border-radius:6px; overflow:hidden; position:relative;">
+                        <div id="sim-weekly-progress-bar" style="height:100%; width:0%; background:linear-gradient(90deg, #3b82f6 0%, #10b981 100%); transition:width 0.6s ease; border-radius:6px;"></div>
+                    </div>
+                </div>
+
+                <!-- 5 Koruma Kalkanı Rozetleri -->
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:0.6rem; font-size:0.75rem;">
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:6px 10px; border-radius:6px; color:#cbd5e1;">
+                        <i class="fa-solid fa-shield-halved" style="color:#ef4444; margin-right:4px;"></i>
+                        <b>Rejim Kalkanı:</b> Ayı'da (-%2.30) Max 1 Hisse & Koruma
+                    </div>
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:6px 10px; border-radius:6px; color:#cbd5e1;">
+                        <i class="fa-solid fa-ban" style="color:#f59e0b; margin-right:4px;"></i>
+                        <b>Stop Koruması:</b> Stop Yiyen Hisse O Gün Alınmaz
+                    </div>
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:6px 10px; border-radius:6px; color:#cbd5e1;">
+                        <i class="fa-solid fa-bolt" style="color:#10b981; margin-right:4px;"></i>
+                        <b>TP1 Free-Roll:</b> %50 Kâr Alınır, Kalan Sıfır Risk
+                    </div>
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:6px 10px; border-radius:6px; color:#cbd5e1;">
+                        <i class="fa-solid fa-lock" style="color:#8b5cf6; margin-right:4px;"></i>
+                        <b>Kâr Valfi:</b> +%6'da Kasa Koruma Aktif Olur
+                    </div>
+                </div>
+            </div>
+
             <!-- 5 KPI Cards row (Asla Sıfırlanmayan Kümülatif Kasa Dahil) -->
             <div id="sim-kpi-row" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:1.2rem; margin-bottom:2rem;">
                 <!-- 👑 YENİ KÜMÜLATİF KART: GEÇEN AYLAR DAHİL ASLA SIFIRLANMAYAN ANLIK YEKÜN -->

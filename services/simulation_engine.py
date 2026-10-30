@@ -435,9 +435,11 @@ class SimulationEngine:
                 # 1) TP1 öncesinde: Pozisyonu henüz +%2'deyken boğup çıkarmamak için stop erken maliyete çekilmez.
                 #    Yalnızca kâr > +%3.2 ise stop maliyete çekilir (risk sıfırlanır).
                 if not trade.get('scaled_out', False):
-                    if high >= entry * 1.018 and trade['stop_price'] < entry * 1.003:
-                        trade['stop_price'] = entry * 1.004
-                        trade['reason_prefix'] = "[KÂR KORUMA AKTİF] "
+                    # TP1 öncesinde: Pozisyonu erken dalgalanma gürültüsünde boğmamak için stop erken yukarı çekilmez.
+                    # Yalnızca kâr > +%3.0'a ulaşır ve TP1 henüz dolmamışsa başabaş emniyeti (+%0.2) devreye girer.
+                    if high >= entry * 1.030 and trade['stop_price'] < entry * 1.002:
+                        trade['stop_price'] = entry * 1.002
+                        trade['reason_prefix'] = "[ERKEN KÂR KORUMA] "
                 else:
                     # 2) TP1 alındıktan sonra (Yarısı nakde geçti, kâr cepte):
                     #    Kalan lotlar için stop başabaşın üstüne taşınır ve kâr kademeli kilitlenir.
@@ -552,12 +554,30 @@ class SimulationEngine:
                     to_remove.append(s)
                     continue
                 sym = s['symbol']
-                # KATI GÜVENLİK KURALI: Aynı gün içinde stoplanan veya önceden işlem görmüş hisseye ASLA 2. KEZ GİRİLMEZ!
-                if sym in traded_today_symbols or sym in stopped_out_symbols:
+                # KULLANICI ŞARTI: Gün içinde stop yiyen hisseye ASLA tekrar girilmez (Yalnızca stop yiyen engellenir)
+                if sym in stopped_out_symbols:
                     to_remove.append(s)
                     continue
-                if sym in open_symbols or len(open_symbols) >= self.max_positions:
+
+                # PİYASA REJİMİNE GÖRE MAKSİMUM AÇIK POZİSYON KONTROLÜ
+                # Ayı piyasasında aşırı işlem açıp sermayeyi eritmemek için kademeli tavan:
+                if xu100_change < -1.5:
+                    regime_max_positions = 0  # GÜÇLÜ AYI: Nakitte kal, 0 yeni alım
+                elif is_bear:
+                    regime_max_positions = 1  # AYI: En fazla 1 pozisyon (Sadece elit A+ hisse)
+                elif xu100_change > 0.5:
+                    regime_max_positions = self.max_positions  # BOĞA: Tam kapasite (4 pozisyon)
+                else:
+                    regime_max_positions = 2  # NÖTR: 2 pozisyon dengeli risk
+
+                if sym in open_symbols or len(open_symbols) >= regime_max_positions:
                     continue
+
+                # Öğlen tuzak saati filtresi (13:45 - 15:15 ölü bölge):
+                # BIST hacim düşüşü ve sahte kırılımları elemek için yalnızca 94+ skorlu hisselere izin verilir.
+                if time(13, 45) <= dt_current.time() < time(15, 15):
+                    if float(s.get('score', 0)) < 94:
+                        continue
 
                 sym = s['symbol']
                 df = dfs.get(sym)
@@ -588,27 +608,28 @@ class SimulationEngine:
                 if not setup:
                     continue
 
-                # REJİME GÖRE DİNAMİK SENARYO ÇARPANLARI (BOĞA'DA HEDEF GENİŞLETME, AYI'DA SIKI STOP)
+                # REJİME GÖRE DİNAMİK SENARYO ÇARPANLARI (BOĞA'DA HEDEF GENİŞLETME, AYI'DA AKILLI KORUMA)
+                # Not: Stop mesafesi BIST sabah fitil tuzaklarına (wicks) yakalanmamak için 
+                # en az %2.6 - %3.5 aralığına oturtulur; risk TL bazında risk_budget ile kontrol edilir.
                 if is_bear:
-                    tp1_pct = 0.016  # Ayı piyasasında +%1.6 hızlı kâr al
-                    tp2_pct = 0.028  # +%2.8
-                    max_stop_pct = 0.018 # -%1.8 sıkı zarar kes
-                    strat_title = 'V8 Ayı Kalkanı (Dar Stop / Hızlı TP1)'
+                    tp1_pct = 0.020  # Ayı piyasasında +%2.0 hızlı kâr al (Free-Roll kilidi)
+                    tp2_pct = 0.038  # +%3.8 Runner
+                    stop_pct = max(0.026, min(0.034, (setup['atr_value'] / entry_price) * 1.5))
+                    strat_title = 'V8 Ayı Kalkanı (Akıllı Stop / Hızlı TP1)'
                 elif xu100_change > 0.5:
                     tp1_pct = 0.032  # Boğa piyasasında +%3.2 genişletilmiş TP1
-                    tp2_pct = 0.065  # +%6.5 Genişletilmiş TP2 (Runner)
-                    max_stop_pct = 0.022 # -%2.2 Trend Desteği Stopu
+                    tp2_pct = 0.075  # +%7.5 Genişletilmiş TP2 (Runner)
+                    stop_pct = max(0.028, min(0.040, (setup['atr_value'] / entry_price) * 1.8))
                     strat_title = 'V8 Boğa Koşucusu (Genişletilmiş TP1/TP2)'
                 else:
-                    tp1_pct = 0.024  # Nötr / Standart +%2.4 TP1
-                    tp2_pct = 0.045  # +%4.5 TP2
-                    max_stop_pct = 0.025 # -%2.5 Standart Stop
+                    tp1_pct = 0.025  # Nötr / Standart +%2.5 TP1
+                    tp2_pct = 0.050  # +%5.0 TP2
+                    stop_pct = max(0.026, min(0.038, (setup['atr_value'] / entry_price) * 1.6))
                     strat_title = 'V8 Dengeli Kırılım'
 
                 tp1_price = min(ceiling * 0.997, entry_price * (1.0 + tp1_pct))
                 tp2_price = min(ceiling, entry_price * (1.0 + tp2_pct))
-                regime_stop = entry_price * (1.0 - max_stop_pct)
-                final_stop = max(regime_stop, setup['stop_price'])
+                final_stop = entry_price * (1.0 - stop_pct)
 
                 if tp1_price <= entry_price:
                     to_remove.append(s)

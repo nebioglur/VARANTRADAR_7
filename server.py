@@ -2780,6 +2780,35 @@ def api_simulation_daily_pnl():
             cumulative_net_pnl = round(cumulative_equity - base_starting_capital, 2)
             cumulative_return_pct = round((cumulative_net_pnl / base_starting_capital) * 100, 2)
             
+            # HAFTALIK %6 HEDEF VE BAŞARI HESABI (Pazartesi'den Cuma'ya)
+            from datetime import datetime as _dt_cls, timedelta as _td_cls
+            now_dt = _dt_cls.now()
+            monday_str = (now_dt - _td_cls(days=now_dt.weekday())).strftime("%Y-%m-%d")
+            c.execute('''
+                SELECT COUNT(*), COALESCE(SUM(pnl_val), 0.0), SUM(CASE WHEN pnl_val > 0 THEN 1 ELSE 0 END)
+                FROM trades
+                WHERE owner=? AND exit_time IS NOT NULL AND date_str >= ?
+            ''', (owner, monday_str))
+            wk_row = c.fetchone()
+            wk_trades = int(wk_row[0] or 0)
+            wk_closed_pnl = round(float(wk_row[1] or 0.0), 2)
+            wk_wins = int(wk_row[2] or 0)
+            wk_win_rate = round((wk_wins / wk_trades * 100), 1) if wk_trades > 0 else 0.0
+            wk_total_pnl = round(wk_closed_pnl + open_pnl, 2)
+            wk_return_pct = round((wk_total_pnl / base_starting_capital) * 100, 2)
+            weekly_summary = {
+                "monday_date": monday_str,
+                "target_pct": 6.0,
+                "current_return_pct": wk_return_pct,
+                "net_pnl_tl": wk_total_pnl,
+                "trades_count": wk_trades,
+                "wins_count": wk_wins,
+                "win_rate": wk_win_rate,
+                "target_achieved": wk_return_pct >= 6.0,
+                "progress_pct": min(100.0, max(0.0, round((wk_return_pct / 6.0) * 100, 1))) if wk_return_pct > 0 else 0.0,
+                "status": "HEDEF TAMAMLANDI 🎯" if wk_return_pct >= 6.0 else "HEDEF YOLUNDA 🚀"
+            }
+
             from services.statistics_engine import StatisticsEngine
             performance = StatisticsEngine.get_trade_performance(owner)
             return jsonify({
@@ -2787,6 +2816,7 @@ def api_simulation_daily_pnl():
                 "equity_curve": sanitize_for_json(equity_curve),
                 "trades": sanitize_for_json(trades),
                 "performance": sanitize_for_json(performance),
+                "weekly_summary": weekly_summary,
                 "cumulative_summary": {
                     "base_capital": base_starting_capital,
                     "cumulative_equity": cumulative_equity,

@@ -4348,6 +4348,43 @@ async function fetchSimulationData() {
                 el('sim-kpi-total-pct').style.color = isProfit ? 'var(--accent-green)' : 'var(--accent-red)';
             }
             if (el('sim-kpi-trades')) el('sim-kpi-trades').innerText = (cum.all_time_closed_trades || trades.length);
+
+            // 🎯 HAFTALIK %6 HEDEF VE GÜVENLİK PANELİ GÜNCELLEMESİ
+            const wk = data.weekly_summary || {};
+            const wkReturn = wk.current_return_pct !== undefined ? wk.current_return_pct : 0;
+            const wkPnl = wk.net_pnl_tl !== undefined ? wk.net_pnl_tl : 0;
+            const wkWinRate = wk.win_rate !== undefined ? wk.win_rate : 0;
+            const wkTrades = wk.trades_count || 0;
+            const wkAchieved = wk.target_achieved || (wkReturn >= 6.0);
+            const wkProg = wk.progress_pct !== undefined ? wk.progress_pct : Math.min(100, Math.max(0, (wkReturn / 6.0) * 100));
+
+            if (el('sim-weekly-pnl-val')) {
+                const sign = wkPnl >= 0 ? '+' : '';
+                el('sim-weekly-pnl-val').innerHTML = `${sign}₺${wkPnl.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${sign}%${wkReturn.toFixed(2)})`;
+                el('sim-weekly-pnl-val').style.color = wkPnl >= 0 ? '#38bdf8' : '#f87171';
+            }
+            if (el('sim-weekly-winrate')) {
+                el('sim-weekly-winrate').innerText = `%${wkWinRate.toFixed(1)} (${wkTrades} işlem)`;
+                el('sim-weekly-winrate').style.color = wkWinRate >= 60 ? '#10b981' : (wkWinRate >= 45 ? '#fbbf24' : '#f87171');
+            }
+            if (el('sim-weekly-progress-bar')) {
+                el('sim-weekly-progress-bar').style.width = `${Math.min(100, Math.max(0, wkProg))}%`;
+                el('sim-weekly-progress-bar').style.background = wkAchieved ? 'linear-gradient(90deg, #10b981 0%, #34d399 100%)' : 'linear-gradient(90deg, #3b82f6 0%, #10b981 100%)';
+            }
+            if (el('sim-weekly-status-badge')) {
+                if (wkAchieved) {
+                    el('sim-weekly-status-badge').innerHTML = `<i class="fa-solid fa-crown" style="color:#fbbf24;"></i> HEDEF TAMAMLANDI (%${wkReturn.toFixed(1)}) · KÂR KİLİTLENDİ`;
+                    el('sim-weekly-status-badge').style.background = 'rgba(245, 158, 11, 0.2)';
+                    el('sim-weekly-status-badge').style.color = '#fbbf24';
+                    el('sim-weekly-status-badge').style.borderColor = 'rgba(245, 158, 11, 0.4)';
+                } else {
+                    const remain = (6.0 - wkReturn).toFixed(2);
+                    el('sim-weekly-status-badge').innerHTML = `<i class="fa-solid fa-rocket"></i> HEDEF YOLUNDA (+%${wkReturn.toFixed(2)} / %6.0) · Kalan: %${remain}`;
+                    el('sim-weekly-status-badge').style.background = 'rgba(59, 130, 246, 0.15)';
+                    el('sim-weekly-status-badge').style.color = '#60a5fa';
+                    el('sim-weekly-status-badge').style.borderColor = 'rgba(59, 130, 246, 0.35)';
+                }
+            }
             
             // Render Equity Curve Chart
             renderEquityCurveChart(equityCurve);
