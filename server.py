@@ -3175,15 +3175,18 @@ def _v8_scheduled_reports(now=None):
                         from services.trade_database import get_connection as _tg_conn
                         owner = "local:nebioglur"
                         conn = _tg_conn()
-                        row = conn.execute(
+                        cur = conn.cursor()
+                        cur.execute(
                             "SELECT COUNT(*) c, COALESCE(SUM(pnl_val),0) p FROM trades "
                             "WHERE date_str=? AND owner=?",
                             (day_key, owner),
-                        ).fetchone()
-                        eq = conn.execute(
+                        )
+                        row = cur.fetchone()
+                        cur.execute(
                             "SELECT start_equity FROM equity_log WHERE owner=? AND date_str=?",
                             (owner, day_key),
-                        ).fetchone()
+                        )
+                        eq = cur.fetchone()
                         conn.close()
                         t_count = int(row["c"]) if row else 0
                         profit = float(row["p"]) if row else 0.0
@@ -3837,7 +3840,8 @@ def api_v8_weekly():
         owner = "local:nebioglur"
         target_pct = 6.0
 
-        # Pazartesi hafta basi (SQLite 'weekday 0' = Pazar; -6 gun ile Pazartesi).
+        # Pazartesi hafta basi (Python'da hesaplanir: hem SQLite hem PG uyumlu).
+        monday = (now.date() - _tdw(days=now.weekday())).strftime("%Y-%m-%d")
         week_pnl = 0.0
         trades_count = 0
         wins = 0
@@ -3845,33 +3849,36 @@ def api_v8_weekly():
         open_positions = 0
         base_equity = 0.0
         conn = _td_conn()
-        row = conn.execute(
+        cur = conn.cursor()
+        cur.execute(
             "SELECT COALESCE(SUM(pnl_val),0) p, COUNT(*) c, "
             "SUM(CASE WHEN pnl_val > 0 THEN 1 ELSE 0 END) w, "
             "SUM(CASE WHEN pnl_val <= 0 THEN 1 ELSE 0 END) l, "
             "SUM(CASE WHEN exit_price IS NULL THEN 1 ELSE 0 END) o "
-            "FROM trades WHERE owner=? AND date_str >= date('now', 'localtime', 'weekday 0', '-6 days')",
-            (owner,),
-        ).fetchone()
+            "FROM trades WHERE owner=? AND date_str >= ?",
+            (owner, monday),
+        )
+        row = cur.fetchone()
         if row:
             week_pnl = float(row["p"] or 0)
             trades_count = int(row["c"] or 0)
             wins = int(row["w"] or 0)
             losses = int(row["l"] or 0)
             open_positions = int(row["o"] or 0)
-        eq = conn.execute(
-            "SELECT end_equity FROM equity_log WHERE owner=? "
-            "AND date_str < date('now', 'localtime', 'weekday 0', '-6 days') "
+        cur.execute(
+            "SELECT end_equity FROM equity_log WHERE owner=? AND date_str < ? "
             "ORDER BY date_str DESC LIMIT 1",
-            (owner,),
-        ).fetchone()
+            (owner, monday),
+        )
+        eq = cur.fetchone()
         if eq and eq["end_equity"]:
             base_equity = float(eq["end_equity"])
         else:
-            start = conn.execute(
+            cur.execute(
                 "SELECT start_equity FROM equity_log WHERE owner=? ORDER BY date_str ASC LIMIT 1",
                 (owner,),
-            ).fetchone()
+            )
+            start = cur.fetchone()
             base_equity = float(start["start_equity"]) if start and start["start_equity"] else 100000.0
         conn.close()
 

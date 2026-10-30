@@ -282,11 +282,13 @@ class SimulationEngine:
         _weekly_target_reached = False
         try:
             wconn = get_connection()
-            wrow = wconn.execute(
+            wcur = wconn.cursor()
+            wcur.execute(
                 "SELECT start_equity, SUM(daily_pnl) FROM equity_log "
                 "WHERE owner=? AND date_str >= date(?, 'weekday 0', '-6 days')",
                 (self.owner, date_str),
-            ).fetchone()
+            )
+            wrow = wcur.fetchone()
             wconn.close()
             if wrow and wrow[0]:
                 base = float(wrow[0])
