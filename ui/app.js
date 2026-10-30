@@ -6467,8 +6467,16 @@ function loadV8Learning() {
                         <span style="color:var(--text-muted);">kazanma (${c.win}K/${c.loss}Z)</span>
                     </span>`;
                 };
-                const legacy = co['LEGACY'] ? chipFor('LEGACY', 'ESKİ MOTOR', '#94a3b8') : '';
-                cohortEl.innerHTML = chipFor('V8_PRO', '⚡ V8 PRO (YENİ MOTOR)', '#10b981') + legacy +
+                // Bilinen kohortlar once, diger motorlar (baska kurulumlardan
+                // gelen etiketler) sonra listelenir.
+                let chips = chipFor('V8_PRO', '⚡ V8 PRO (YENİ MOTOR)', '#10b981');
+                for (const name of Object.keys(co)) {
+                    if (name !== 'V8_PRO' && name !== 'LEGACY') {
+                        chips += chipFor(name, name + ' (DIŞ MOTOR)', '#60a5fa');
+                    }
+                }
+                chips += chipFor('LEGACY', 'ESKİ MOTOR', '#94a3b8');
+                cohortEl.innerHTML = chips +
                     `<span style="font-size:0.68rem; color:var(--text-muted);">Eski motor kayıtları yeni motorun istatistiğine dahil edilmez.</span>`;
                 cohortEl.style.display = 'block';
             }
@@ -6522,7 +6530,9 @@ function loadV8Learning() {
                 const windowCells = TDK_WINDOWS.map(w => v8PencereHucre(d[w.key], d.entry_price)).join('');
                 const engineBadge = d.engine_version === 'V8_PRO'
                     ? '<span style="font-size:0.62rem; color:#10b981; border:1px solid #10b98155; border-radius:4px; padding:1px 4px; margin-left:4px;">PRO</span>'
-                    : '<span style="font-size:0.62rem; color:#94a3b8; border:1px solid #94a3b844; border-radius:4px; padding:1px 4px; margin-left:4px;">ESKİ</span>';
+                    : (d.engine_version && d.engine_version !== 'LEGACY'
+                        ? '<span style="font-size:0.62rem; color:#60a5fa; border:1px solid #60a5fa55; border-radius:4px; padding:1px 4px; margin-left:4px;">DIŞ</span>'
+                        : '<span style="font-size:0.62rem; color:#94a3b8; border:1px solid #94a3b844; border-radius:4px; padding:1px 4px; margin-left:4px;">ESKİ</span>');
 
                 tr.innerHTML = `
                     <td style="font-size:0.75rem; color:var(--text-muted); white-space:nowrap;">${timeStr}</td>
