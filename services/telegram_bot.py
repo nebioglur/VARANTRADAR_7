@@ -334,6 +334,49 @@ def send_v8_entry_signal(signal: dict) -> bool:
     return send_telegram_message(text)
 
 
+def send_v8_entry_signals_group(signals: list) -> bool:
+    """BIRDEN FAZLA V8 sinyalini TEK gruplu mesaj olarak gonderir. Aynı hisse
+    için ayrı ayrı mesaj yağması yerine tek özet: her hisse 4 satır, tek dipnot."""
+    if not signals:
+        return False
+
+    regime = str(signals[0].get("market_regime") or "")
+    scan_time = str(signals[0].get("scan_time") or "")
+
+    text = f"🎯 <b>V8 GİRİŞ SİNYALLERİ</b> · {len(signals)} hisse\n"
+    if scan_time:
+        text += f"🕒 {scan_time}"
+        if regime:
+            text += f" · 🌍 {regime}"
+    text += "\n━━━━━━━━━━━━━━━━\n"
+
+    for s in signals:
+        entry = float(s.get("entry_price") or 0)
+        if entry <= 0:
+            continue
+        stop = float(s.get("stop_price") or 0)
+        t1 = float(s.get("target1") or 0)
+        t2 = float(s.get("target2") or 0)
+        score = s.get("breakout_score", "—")
+        risk = float(s.get("fakeout_risk") or 0)
+        risk_label = "Yüksek" if risk > 50 else ("Orta" if risk > 30 else "Düşük")
+
+        text += f"\n💎 <b>#{s.get('symbol', '?')}</b>\n"
+        text += f"💵 Giriş: ₺{entry:.2f}"
+        if stop > 0:
+            text += f" · 🛑 ₺{stop:.2f}"
+        text += "\n"
+        if t1 > 0:
+            text += f"🎯 Hedef 1: ₺{t1:.2f}"
+            if t2 > 0:
+                text += f" · 🚀 Hedef 2: ₺{t2:.2f}"
+            text += "\n"
+        text += f"📊 Güç: {score}/100 · Tuzak: {risk_label}\n"
+
+    text += "\n⚠️ Yatırım tavsiyesi değildir; kendi kararınızla işlem yapın."
+    return send_telegram_message(text)
+
+
 # ========== SESLI AL/SAT UYARILARI ==========
 import os as _os
 

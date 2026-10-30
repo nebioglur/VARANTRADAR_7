@@ -3404,83 +3404,125 @@ def _v8_gate_enter_row(row: dict, sym: str, data: dict) -> dict:
 
 def auto_send_v8_signals():
     """GERCEK giris onayli V8 sinyallerini (erken adaylar haric) otomatik olarak
-    Telegram kanalina gonderir. Ayni hisse+gun icin tekrar gondermez; Telegram
-    ayarlari yoksa sessizce atlar. Hem V8 endpoint'i hem canli toplayici cagirir."""
+    Telegram kanalina TEK GRUPLU OZET olarak gonderir.
+    - Hisse basina gunde EN FAZLA 1 sinyal (gunluk oncelikli, saatlik ikame).
+    - Gonderim kaydi veritabaninda kalici: yeniden baslamada tekrar yok.
+    - Ayi piyasasinda sinyal gitmez; Telegram ayarlari yoksa sessiz atlar."""
     try:
         from datetime import datetime as _dt
-        from services.telegram_bot import send_v8_entry_signal as _send_sig
+        from services.telegram_bot import send_v8_entry_signals_group as _send_group
+        from v8_engine.database import V8Database as _V8DB
         all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
         cache_ts = GLOBAL_DASHBOARD_CACHE.get("cache_timestamp")
         _today = _dt.now().strftime("%Y-%m-%d")
         if len(_V8_TG_SENT) > 500:
             _V8_TG_SENT.clear()
+
+        # Kalici tekrar engeli: bugun gonderilenleri DB'den oku (bellek +
+        # DB birlesik set; restart sonrasi tekrar mesaj gitmez).
+        try:
+            conn = _V8DB.get_connection()
+            cur = conn.cursor()
+            cur.execute("SELECT symbol FROM v8_tg_sent WHERE day=?", (_today,))
+            for r in cur.fetchall():
+                _V8_TG_SENT.add((_today, r["symbol"]))
+            conn.close()
+        except Exception:
+            pass
+
+        regime_locked = _v8_regime_locked()
+        regime_raw = (GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or {}).get("regime", "")
+        _V8_REGIME_TR_MAP = {
+            "STRONG_BULL": "GÜÇLÜ BOĞA (RALLİ)", "BULL": "BOĞA (YÜKSELİŞ TRENDİ)",
+            "NEUTRAL": "NÖTR (YATAY / DENGE)", "BEAR": "AYI (DÜŞÜŞ BASKISI)",
+            "STRONG_BEAR": "GÜÇLÜ AYI (SERT SATIŞ)",
+        }
+        try:
+            scan_time = _dt.fromtimestamp(float(cache_ts)).strftime("%d.%m.%Y %H:%M") if cache_ts else ""
+        except (TypeError, ValueError, OSError):
+            scan_time = ""
+
+        pending = []
         for sym, data in all_stats.items():
-            candidates = []
+            # TEK SINYAL KURALI: hisse basina gunde 1. Gunluk kirilim varsa
+            # o kullanilir; yoksa saatlik. Ikisi birden ASLA gonderilmez.
+            key = (_today, sym)
+            if key in _V8_TG_SENT:
+                continue
+            if regime_locked:
+                continue
             bo = data.get("v8_breakout")
-            if bo and bo.get("is_breakout") and (data.get("v8_execution") or {}).get("entry_status") == "ENTER":
-                candidates.append((bo, (data.get("v8_execution") or {}).get("reasons") or [], False))
             intra = data.get("v8_breakout_1h") or {}
-            if intra.get("breakout", {}).get("is_breakout") and intra.get("entry_status") == "ENTER":
-                candidates.append((intra.get("breakout") or {}, ["1 saatlik barda kırılım teyidi (gün içi sinyal)"] + list(intra.get("reasons") or []), True))
-            for bo_row, reasons, is_intraday in candidates:
-                key = (_today, sym, is_intraday)
-                if key in _V8_TG_SENT:
+            daily_ok = bool(bo and bo.get("is_breakout") and (data.get("v8_execution") or {}).get("entry_status") == "ENTER")
+            intra_ok = bool(intra.get("breakout", {}).get("is_breakout") and intra.get("entry_status") == "ENTER")
+            if daily_ok:
+                bo_row, reasons = bo, list((data.get("v8_execution") or {}).get("reasons") or [])
+            elif intra_ok:
+                bo_row, reasons = intra.get("breakout") or {}, ["1 saatlik barda kırılım teyidi (gün içi sinyal)"] + list(intra.get("reasons") or [])
+            else:
+                continue
+            entry = float(data.get("Daily_Close") or data.get("Price") or 0)
+            if entry <= 0:
+                continue
+            # KAP HABER FILTRESI: onemli olay duyurusu varsa sinyal gitmez.
+            try:
+                from services.kap_news import check_symbol as _kap_check
+                if _kap_check(sym).get("blocked"):
                     continue
-                # REJIM KILIDI: ayi piyasasinda telegrama giris sinyali gitmez.
-                if _v8_regime_locked():
-                    continue
-                entry = float(data.get("Daily_Close") or data.get("Price") or 0)
-                if entry <= 0:
-                    continue
-                # KAP HABER FILTRESI: onemli olay duyurusu varsa sinyal gitmez.
-                try:
-                    from services.kap_news import check_symbol as _kap_check
-                    if _kap_check(sym).get("blocked"):
-                        continue
-                except Exception:
-                    pass
-                # A SINIFI KALITE KAPISI: secici giris yoksa kanala sinyal
-                # gitmez (dedup eklenmez; kalite sonradan saglanabilir).
-                if not _v8_a_class_gate({}, sym, data)[0]:
-                    continue
-                # T+3 DAKIKA TEYIDI: teyit gecmeden telegrama sinyal gitmez.
-                cstate, _cmsg = _v8_entry_confirmation(sym, data.get("Price") or entry)
-                if cstate != "CONFIRMED":
-                    continue
-                try:
-                    atr_pct = float((bo_row.get("metrics") or {}).get("atr_pct") or 0)
-                except (TypeError, ValueError):
-                    atr_pct = 0.0
-                if atr_pct > 0:
-                    stop_d = max(2.0, min(8.0, atr_pct * 1.5))
-                    t1_d = max(2.0, min(10.0, atr_pct * 1.5))
-                    t2_d = max(3.0, min(15.0, atr_pct * 2.5))
-                else:
-                    stop_d, t1_d, t2_d = 5.0, 3.0, 5.0
-                regime_raw = (GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or {}).get("regime", "")
-                _V8_REGIME_TR_MAP = {
-                    "STRONG_BULL": "GÜÇLÜ BOĞA (RALLİ)", "BULL": "BOĞA (YÜKSELİŞ TRENDİ)",
-                    "NEUTRAL": "NÖTR (YATAY / DENGE)", "BEAR": "AYI (DÜŞÜŞ BASKISI)",
-                    "STRONG_BEAR": "GÜÇLÜ AYI (SERT SATIŞ)",
-                }
-                try:
-                    scan_time = _dt.fromtimestamp(float(cache_ts)).strftime("%d.%m.%Y %H:%M") if cache_ts else ""
-                except (TypeError, ValueError, OSError):
-                    scan_time = ""
-                _V8_TG_SENT.add(key)
-                ok = _send_sig({
-                    "symbol": sym,
-                    "entry_price": entry,
-                    "stop_price": entry * (1 - stop_d / 100.0),
-                    "target1": entry * (1 + t1_d / 100.0),
-                    "target2": entry * (1 + t2_d / 100.0),
-                    "breakout_score": bo_row.get("breakout_score", 0),
-                    "fakeout_risk": bo_row.get("fakeout_risk", 0),
-                    "reason": (reasons or [""])[0],
-                    "market_regime": _V8_REGIME_TR_MAP.get(regime_raw, regime_raw),
-                    "scan_time": scan_time,
-                })
-                logger.info("[V8-TG] Otomatik sinyal %s -> %s", sym, "gonderildi" if ok else "gonderilemedi")
+            except Exception:
+                pass
+            # A SINIFI KALITE KAPISI: secici giris yoksa kanala sinyal gitmez.
+            if not _v8_a_class_gate({}, sym, data)[0]:
+                continue
+            # T+3 DAKIKA TEYIDI: teyit gecmeden telegrama sinyal gitmez.
+            cstate, _cmsg = _v8_entry_confirmation(sym, data.get("Price") or entry)
+            if cstate != "CONFIRMED":
+                continue
+            try:
+                atr_pct = float((bo_row.get("metrics") or {}).get("atr_pct") or 0)
+            except (TypeError, ValueError):
+                atr_pct = 0.0
+            if atr_pct > 0:
+                stop_d = max(2.0, min(8.0, atr_pct * 1.5))
+                t1_d = max(2.0, min(10.0, atr_pct * 1.5))
+                t2_d = max(3.0, min(15.0, atr_pct * 2.5))
+            else:
+                stop_d, t1_d, t2_d = 5.0, 3.0, 5.0
+            pending.append({
+                "symbol": sym,
+                "entry_price": entry,
+                "stop_price": entry * (1 - stop_d / 100.0),
+                "target1": entry * (1 + t1_d / 100.0),
+                "target2": entry * (1 + t2_d / 100.0),
+                "breakout_score": bo_row.get("breakout_score", 0),
+                "fakeout_risk": bo_row.get("fakeout_risk", 0),
+                "reason": (reasons or [""])[0],
+                "market_regime": _V8_REGIME_TR_MAP.get(regime_raw, regime_raw),
+                "scan_time": scan_time,
+            })
+
+        if not pending:
+            return
+        ok = _send_group(pending)
+        if ok:
+            for s in pending:
+                _V8_TG_SENT.add((_today, s["symbol"]))
+            try:
+                conn = _V8DB.get_connection()
+                cur = conn.cursor()
+                now_iso = _dt.now().isoformat()
+                for s in pending:
+                    cur.execute(
+                        "INSERT OR IGNORE INTO v8_tg_sent (day, symbol, sent_at) VALUES (?, ?, ?)",
+                        (_today, s["symbol"], now_iso),
+                    )
+                conn.commit()
+                conn.close()
+            except Exception:
+                pass
+            logger.info("[V8-TG] Gruplu sinyal ozeti gonderildi: %s hisse", len(pending))
+        else:
+            logger.info("[V8-TG] Gruplu sinyal gonderilemedi (telegram ayarlari?)")
     except Exception as tg_err:
         logger.error("[V8-TG] Otomatik telegram hatasi: %s", tg_err)
 

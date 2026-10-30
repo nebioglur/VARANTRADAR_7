@@ -110,6 +110,19 @@ class V8Database:
             cursor.execute("UPDATE v8_signals SET engine_version='LEGACY' WHERE engine_version IS NULL OR engine_version=''")
         except Exception:
             pass
+        # TELEGRAM TEKRAR ENGELI: gonderilen sinyaller kalici kayda gecer;
+        # sunucu yeniden baslayinca ayni mesaj bir daha gitmez.
+        try:
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS v8_tg_sent (
+                    day TEXT,
+                    symbol TEXT,
+                    sent_at TEXT,
+                    PRIMARY KEY (day, symbol)
+                )
+            ''')
+        except Exception:
+            pass
         conn.commit()
         
     @staticmethod
