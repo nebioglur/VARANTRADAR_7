@@ -3287,6 +3287,27 @@ def api_v8_radar_breakout():
     xu100_data = all_stats.get("XU100.IS") or all_stats.get("XU100") or {}
     xu100_ch = float(xu100_data.get("Change_Pct") or xu100_data.get("intraday_change_pct") or 0.0)
 
+    # ── PİYASA GENİŞLİĞİ (MARKET BREADTH) ENTEGRASYONu ─────────────────────
+    try:
+        from services.market_breadth import MarketBreadthEngine
+        _breadth_data = MarketBreadthEngine.get_market_breadth(
+            all_stats=all_stats, xu100_change=xu100_ch
+        )
+        _breadth_regime_code    = _breadth_data['regime_code']
+        _breadth_pressure       = _breadth_data['pressure_pct']
+        _sector_divergence      = _breadth_data['sector_divergence']
+        _breadth_max_pos        = _breadth_data['max_positions']
+        _is_bear_breadth        = _breadth_regime_code in ('BEAR', 'STRONG_BEAR')
+        _is_strong_bear_breadth = _breadth_regime_code == 'STRONG_BEAR'
+    except Exception:
+        _breadth_data         = {}
+        _breadth_regime_code  = 'BEAR' if xu100_ch < -0.5 else ('BULL' if xu100_ch > 0.5 else 'NEUTRAL')
+        _breadth_pressure     = 60.0 if xu100_ch < -0.5 else 40.0
+        _sector_divergence    = {}
+        _breadth_max_pos      = 4
+        _is_bear_breadth      = xu100_ch < -0.5
+        _is_strong_bear_breadth = xu100_ch < -1.5
+
     if xu100_ch >= 0.5:
         regime_code = "BULL"
         regime_label = "🟢 BOĞA PİYASASI (Momentum & Kopuş Öncelikli)"
@@ -3403,7 +3424,17 @@ def api_v8_radar_breakout():
             if cmf > 0.05 or "Giriş" in smart_money or "Akümülasyon" in smart_money:
                 bonus_tags.append("💸 Akıllı Para")
                 bonus_score += 5.0
-            if is_in_hot_sector or domino_sector or "SEKTÖR" in str(data.get("Details", [])):
+            # AYI MODUNDA SEKTÖREL AYRIMA ZORUNLU KAPIYA DÖNEŞİR (Bonus değil, geçme koşulu)
+            _sym_sec_rank = _SECTOR_LOOKUP.get(sym) or _SECTOR_LOOKUP.get(sym.replace(".IS", ""))
+            _sec_div_data = _sector_divergence.get(_sym_sec_rank, {}) if _sym_sec_rank else {}
+            _sec_rel_str  = float(_sec_div_data.get("relative_strength", 0.0))
+            _sec_divergent_vs_xu100 = _sec_rel_str >= 0.5  # Sektör endeksten en az +%0.5 güçlü
+
+            # Ayı piyasasında sektörü negatif ayrışan hisse ELENIR (filtrenin en kritik kapısı)
+            if _is_bear_breadth and _sym_sec_rank and not _sec_divergent_vs_xu100:
+                continue  # Sektör endeksten geri kalmış, AYI modunda reddedildi
+
+            if is_in_hot_sector or _sec_divergent_vs_xu100 or domino_sector or "SEKTÖR" in str(data.get("Details", [])):
                 bonus_tags.append("♟️ Sektör Gücü")
                 bonus_score += 5.0
             if vwap > 0 and price >= vwap:
@@ -3504,6 +3535,22 @@ def api_v8_radar_breakout():
             "target_1_pct": t1_pct,
             "target_2_pct": t2_pct,
             "stop_loss_pct": sl_pct
+        },
+        "breadth_summary": {
+            "pressure_pct": _breadth_pressure,
+            "regime_code": _breadth_regime_code,
+            "is_heavy_pressure": _is_bear_breadth,
+            "advances": _breadth_data.get("advances", 0),
+            "declines": _breadth_data.get("declines", 0),
+            "total_symbols": _breadth_data.get("total_symbols", 0),
+            "max_positions": _breadth_max_pos,
+            "regime_label": _breadth_data.get("regime_label", ""),
+            "regime_rule": _breadth_data.get("regime_rule", ""),
+            "top_divergent_sectors": [
+                {"sector": k, "rel_str": v["relative_strength"], "avg_change": v["avg_change"]}
+                for k, v in sorted(_sector_divergence.items(), key=lambda x: x[1]["relative_strength"], reverse=True)
+                if v["is_divergent"]
+            ][:5]
         },
         "sector_pulse": sector_pulse,
         "data": breakout_list

@@ -238,9 +238,30 @@ class SimulationEngine:
             xu100_change = float(get_xu100_change())
         except Exception:
             xu100_change = 0.0
-        is_bear = xu100_change < -0.5
-        market_regime = "AYI" if is_bear else ("GÜÇLÜ POZİTİF" if xu100_change > 0.5 else "NÖTR")
-        minimum_score = 92 if is_bear else 90
+
+        # ── GENİŞLİK MOTORU (Market Breadth) ─────────────────────────────────
+        # Piyasa Genişliği: Sadece XU100 değil, kaç hisse düşüyor / yükseliyor?
+        # Bu oran %65+ düşüş baskısı ise rejim ağırlıklı AYI olarak işaretlenir.
+        try:
+            from services.market_breadth import MarketBreadthEngine
+            _breadth = MarketBreadthEngine.get_market_breadth(xu100_change=xu100_change)
+            regime_code    = _breadth['regime_code']      # STRONG_BEAR / BEAR / NEUTRAL / BULL
+            pressure_pct   = _breadth['pressure_pct']     # % düşen hisse
+            sector_divergence = _breadth['sector_divergence']  # sektör bazlı relatif güç
+        except Exception:
+            regime_code   = 'BEAR' if xu100_change < -0.5 else ('BULL' if xu100_change > 0.5 else 'NEUTRAL')
+            pressure_pct  = 60.0 if xu100_change < -0.5 else 40.0
+            sector_divergence = {}
+
+        is_bear   = regime_code in ('BEAR', 'STRONG_BEAR')
+        is_strong_bear = regime_code == 'STRONG_BEAR'
+        market_regime = {
+            'STRONG_BEAR': 'ŞİDDETLİ AYI',
+            'BEAR': 'AYI',
+            'NEUTRAL': 'NÖTR',
+            'BULL': 'GÜÇLÜ POZİTİF'
+        }.get(regime_code, 'NÖTR')
+        minimum_score = 95 if is_strong_bear else (92 if is_bear else 90)
 
         valid_signals = []
         import json
@@ -313,6 +334,26 @@ class SimulationEngine:
                 )
                 sector_ok = bool(meta.get('Domino_Sector')) or "SEKTÖR GÜCÜ" in detail_text
                 volume_ok = volume_multiplier >= 1.0 or "HACİMLİ" in detail_text
+
+                # ── SEKTÖREL AYIRMA FİLTRESİ (AYI MODUNDA ZORUNLU KAPIYA) ──────
+                # Ayı piyasasında: Hissenin sektörü XU100'e karşı pozitif ayrışmıyorsa
+                # (relative_strength < +%1.0 = endeksin üzerinde değil) ELENIR.
+                # Boğa ve Nötr modda sektör güçlü bir bonus puan olarak kalır.
+                if is_bear and sector_divergence:
+                    from config.bist_symbols import DOMINO_CLUSTERS
+                    _sec_lup = {}
+                    for _sn, _mems in DOMINO_CLUSTERS.items():
+                        for _mm in _mems:
+                            _sec_lup[_mm] = _sn
+                            _sec_lup[_mm.replace('.IS', '')] = _sn
+                    _sym_sec = _sec_lup.get(s['symbol']) or _sec_lup.get(s['symbol'].replace('.IS', ''))
+                    if _sym_sec:
+                        _sdiv = sector_divergence.get(_sym_sec, {})
+                        _rel  = float(_sdiv.get('relative_strength', 0.0))
+                        # AYI'da sektörü endeksle birlikte ya da geride mi düşüyor?
+                        # Eğer sektör de düşüyorsa (relative_strength < 0.5) hisseyi reddet.
+                        if _rel < 0.5:
+                            continue  # Sektör endekse karşı pozitif ayrışmıyor, ELENDI
                 checks = {
                     "Ana trend": True,
                     "RSI dengeli": 32 <= rsi <= 82,
@@ -561,11 +602,11 @@ class SimulationEngine:
 
                 # PİYASA REJİMİNE GÖRE MAKSİMUM AÇIK POZİSYON KONTROLÜ
                 # Ayı piyasasında aşırı işlem açıp sermayeyi eritmemek için kademeli tavan:
-                if xu100_change < -1.5:
-                    regime_max_positions = 0  # GÜÇLÜ AYI: Nakitte kal, 0 yeni alım
+                if is_strong_bear:
+                    regime_max_positions = 0  # ŞİDDETLİ AYI: Nakitte kal, 0 yeni alım
                 elif is_bear:
                     regime_max_positions = 1  # AYI: En fazla 1 pozisyon (Sadece elit A+ hisse)
-                elif xu100_change > 0.5:
+                elif regime_code == 'BULL':
                     regime_max_positions = self.max_positions  # BOĞA: Tam kapasite (4 pozisyon)
                 else:
                     regime_max_positions = 2  # NÖTR: 2 pozisyon dengeli risk

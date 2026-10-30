@@ -6153,6 +6153,44 @@ function loadV8Breakout() {
                 }
             }
 
+            // ── Piyasa Genişliği (Advance/Decline) Paneli ────────────────────
+            const breadth = json.breadth_summary || {};
+            const breadthEl = document.getElementById('v8-breadth-panel');
+            if (breadthEl && Object.keys(breadth).length > 0) {
+                const adv      = breadth.advances       || 0;
+                const dec      = breadth.declines       || 0;
+                const tot      = breadth.total_symbols  || 1;
+                const prs      = parseFloat(breadth.pressure_pct || 0);
+                const bLabel   = breadth.regime_label   || breadth.regime_code || '';
+                const bRule    = breadth.regime_rule    || '';
+                const isHeavy  = !!breadth.is_heavy_pressure;
+                const barColor = isHeavy ? '#ef4444' : '#10b981';
+                const pressPct = Math.min(100, prs);
+                const topSecs  = (breadth.top_divergent_sectors || []).slice(0, 5)
+                    .map(s => `<span style="background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.28);padding:2px 9px;border-radius:12px;font-size:0.71rem;color:#34d399;font-weight:700;">${s.sector} <span style="color:#6ee7b7;">(+${typeof s.rel_str === 'number' ? s.rel_str.toFixed(1) : '?'}%)</span></span>`)
+                    .join(' ');
+                breadthEl.style.display = 'block';
+                breadthEl.innerHTML = `
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.55rem;">
+                    <span style="font-weight:800;color:${isHeavy ? '#f87171' : '#34d399'};font-size:0.88rem;">
+                        <i class="fa-solid fa-${isHeavy ? 'triangle-exclamation' : 'wave-square'}"></i>
+                        &nbsp;${bLabel}
+                    </span>
+                    <span style="font-size:0.73rem;color:#94a3b8;">
+                        <b style="color:#4ade80;">${adv}</b> Yükselen &nbsp;|&nbsp; <b style="color:#f87171;">${dec}</b> Düşen &nbsp;|&nbsp; ${tot} Sembol
+                    </span>
+                </div>
+                <div style="width:100%;height:7px;background:rgba(255,255,255,0.06);border-radius:6px;overflow:hidden;margin-bottom:0.45rem;">
+                    <div style="height:100%;width:${pressPct}%;background:linear-gradient(90deg,${barColor},${isHeavy ? '#fca5a5' : '#6ee7b7'});transition:width 0.6s;border-radius:6px;"></div>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.4rem;">
+                    <span style="font-size:0.72rem;color:#64748b;">${bRule}</span>
+                    ${topSecs ? `<div style="display:flex;gap:0.35rem;flex-wrap:wrap;align-items:center;"><span style="font-size:0.69rem;color:#64748b;font-weight:600;"><i class="fa-solid fa-arrow-trend-up"></i> Pozitif Ayrışan:</span>${topSecs}</div>` : ''}
+                </div>`;
+            } else if (breadthEl) {
+                breadthEl.style.display = 'none';
+            }
+
             // Lokomotif Sektörler Güncellemesi
             if (json.sector_pulse && json.sector_pulse.length > 0) {
                 const secEl = document.getElementById('v8-sectors-text');
