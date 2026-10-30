@@ -68,28 +68,40 @@ SCENARIOS: Dict[str, Dict[str, Any]] = {
         "tp2_mult": 1.0,
         "stop_mult": 0.9,
         "note": "Sert oynaklık; küçük hedefle hızlı çık, pozisyon sayısı 1.",
+        "defense_mode": {"enabled": False},
     },
     "BEAR": {
         "label": "AYI (DÜŞÜŞ BASKISI)",
         "icon": "🐻",
-        "posture": "Kilitli: kırılım girişleri kapalı, sadece izleme",
+        "posture": "Savunma: girişler kilitli, TEK istisna SAVUNMA MODU",
         "max_positions": 0,
         "risk_pct": 0.0,
         "tp1_mult": 1.0,
         "tp2_mult": 1.0,
         "stop_mult": 1.0,
-        "note": "Giriş kilidi aktif; nakit korunur, geri dönüş teyidi beklenir.",
+        "note": "Giriş kilidi aktif; nakit korunur. SAVUNMA MODU: endekse karşı yeşil kalan, dalgası yükselen (+25+) sektördeki en fazla 1 hisse.",
+        "defense_mode": {
+            "enabled": True,
+            "max_positions": 1,
+            "risk_pct": 1.0,
+            "tp1_pct": 1.5,
+            "stop_pct": 1.2,
+            "min_sector_strength": 25,
+            "requirement": "Sektör dalga gücü ≥ +25, hisse gün içi +%0.5..+%4.8 arası (endekse karşı yeşil), hacim ≥ 1.5x, fiyat ≥ 3 TL",
+            "ev_per_trade": 0.4,
+        },
     },
     "STRONG_BEAR": {
         "label": "GÜÇLÜ AYI (SERT SATIŞ)",
         "icon": "🧊",
-        "posture": "Tam kilit: hiçbir kırılım girişi açılmaz",
+        "posture": "Tam kilit: hiçbir giriş açılmaz, istisna yok",
         "max_positions": 0,
         "risk_pct": 0.0,
         "tp1_mult": 1.0,
         "tp2_mult": 1.0,
         "stop_mult": 1.0,
-        "note": "Sert satış; sistemin en tehlikeli rejimi, tam nakit.",
+        "note": "Sert satış; sistemin en tehlikeli rejimi, tam nakit. SAVUNMA MODU dahi kapalıdır.",
+        "defense_mode": {"enabled": False},
     },
 }
 
@@ -101,12 +113,17 @@ def get_scenario(regime: str) -> Dict[str, Any]:
     sc = SCENARIOS.get(str(regime or "").upper(), _DEFAULT)
     out = dict(sc)
     out["regime"] = str(regime or "NEUTRAL").upper()
+    out.setdefault("defense_mode", {"enabled": False})
     # Islem basi beklenen deger projeksiyonu (ampirik taban + senaryo carpani)
     if out["max_positions"] > 0:
         avg_win = BASE_AVG_WIN * out["tp1_mult"]
         ev = (BASE_WIN_RATE / 100.0) * avg_win - ((100 - BASE_WIN_RATE) / 100.0) * BASE_AVG_LOSS * out["stop_mult"]
         out["ev_per_trade"] = round(ev, 2)
         out["daily_projection"] = round(ev * min(2, out["max_positions"]), 2)
+    elif out.get("defense_mode", {}).get("enabled"):
+        # AYI gunu: kilit + tek savunma islemi kucuk olumlu beklenti.
+        out["ev_per_trade"] = out["defense_mode"].get("ev_per_trade", 0.4)
+        out["daily_projection"] = out["ev_per_trade"]
     else:
         out["ev_per_trade"] = 0.0
         out["daily_projection"] = 0.0

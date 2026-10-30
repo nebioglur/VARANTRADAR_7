@@ -3084,6 +3084,57 @@ def _v8_regime_locked() -> bool:
     regime_raw = (GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or {}).get("regime", "")
     return regime_raw in ("BEAR", "STRONG_BEAR")
 
+_V8_SECTOR_STRENGTH_CACHE = {"ts": 0.0, "map": {}}
+
+def _v8_sector_strength_map() -> dict:
+    """Sektor -> dalga gucu haritasi (60 sn cache ile)."""
+    import time as _time
+    now = _time.time()
+    if now - _V8_SECTOR_STRENGTH_CACHE["ts"] < 60 and _V8_SECTOR_STRENGTH_CACHE["map"]:
+        return _V8_SECTOR_STRENGTH_CACHE["map"]
+    try:
+        from v8_engine.playbook import sector_pulse
+        pulse = sector_pulse(GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {}), top_n=15)
+        smap = {p["sector"]: p["strength"] for p in pulse}
+    except Exception:
+        smap = {}
+    _V8_SECTOR_STRENGTH_CACHE.update({"ts": now, "map": smap})
+    return smap
+
+def _v8_defense_mode_check(row: dict, sym: str, data: dict) -> bool:
+    """SAVUNMA MODU istisnasi: SADECE AYI (BEAR) rejiminde, endekse karsi
+    yesil kalan ve dalgasi yukselen (+25+) sektordeki A kalite hisse icin
+    tek giris izni. GUCCLU AYI'da istisna yoktur."""
+    regime_raw = (GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or {}).get("regime", "")
+    if regime_raw != "BEAR":
+        return False  # STRONG_BEAR ve digerlerinde istisna yok
+    try:
+        chg = float(row.get("change_pct") or data.get("Change_Pct") or 0)
+    except (TypeError, ValueError):
+        return False
+    if not (0.5 <= chg <= 4.8):
+        return False  # endekse karsi gercek yesil ayrilma olmali
+    try:
+        vol = float(data.get("Vol_Multiplier") or data.get("Volume_Ratio") or 0)
+        if vol < 1.5:
+            vol = float(_stats_rel_vol(data) or 0)
+    except (TypeError, ValueError):
+        vol = 0.0
+    if vol < 1.5:
+        return False  # sig hacim savunma islemine girmez
+    price = float(data.get("Daily_Close") or data.get("Price") or 0)
+    if price < 3:
+        return False
+    try:
+        from services.detective_engine import SECTOR_OF
+        base = str(sym).replace(".IS", "")
+        sector = SECTOR_OF.get(base) or SECTOR_OF.get(str(sym))
+    except Exception:
+        return False
+    if not sector:
+        return False
+    return _v8_sector_strength_map().get(sector, -100.0) >= 25.0
+
 def _v8_entry_confirmation(sym: str, price):
     """ENTER sinyali icin T+3 dakika teyit degerlendirmesi.
     Donus: ("CONFIRMED"|"PENDING"|"REJECTED", mesaj)"""
@@ -3134,10 +3185,15 @@ def _v8_gate_enter_row(row: dict, sym: str, data: dict) -> dict:
     if (row.get("entry_status") or "").upper() != "ENTER":
         return row
     if _v8_regime_locked():
-        row["entry_status"] = "WAIT_CONFIRMATION"
-        row["regime_locked"] = True
-        row["entry_reasons"] = ["Piyasa AYI rejiminde; kırılım girişleri kilitli"] + list(row.get("entry_reasons") or [])
-        return row
+        # SAVUNMA MODU istisnasi: AYI gununde sektor dalgasi yukselen,
+        # endekse karsi yesil kalan tek hisse girebilir (gunde max 1).
+        if _v8_defense_mode_check(row, sym, data):
+            row["defense_mode"] = True
+        else:
+            row["entry_status"] = "WAIT_CONFIRMATION"
+            row["regime_locked"] = True
+            row["entry_reasons"] = ["Piyasa AYI rejiminde; kırılım girişleri kilitli"] + list(row.get("entry_reasons") or [])
+            return row
     # KAP HABER FILTRESI: son 24 saatte onemli olay duyurusu varsa girme.
     try:
         from services.kap_news import check_symbol as _kap_check
@@ -3439,6 +3495,16 @@ def api_v8_radar_breakout():
             }
     except Exception:
         pass
+
+    # SAVUNMA MODU gunluk limiti: AYI gununde en fazla 1 savunma islemi.
+    # En yuksek kirilim skorlu aday kazanir, digerleri tekrar kilitlenir.
+    _def_rows = [r for r in breakout_list if r.get("defense_mode") and (r.get("entry_status") or "").upper() == "ENTER"]
+    if len(_def_rows) > 1:
+        _def_rows.sort(key=lambda r: r.get("breakout_score") or 0, reverse=True)
+        for r in _def_rows[1:]:
+            r["entry_status"] = "WAIT_CONFIRMATION"
+            r["defense_mode"] = False
+            r["entry_reasons"] = ["[SAVUNMA] Ayı gününde en fazla 1 savunma işlemi açılır; bu aday limite takıldı"] + list(r.get("entry_reasons") or [])
 
     # TAVAN RİSKİ KAPISI: gun ici +%5 ve uzerinde olan hisseler "tavan
     # kovalama" bolgesindedir; izleme listesinde bile aday gibi gorunmez.

@@ -6086,7 +6086,9 @@ function loadV8Playbook() {
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
                     <div style="font-weight:800; color:#60a5fa; font-size:0.88rem;">
                         <i class="fa-solid fa-chess-board"></i> SENARYO PLANI: ${sc.icon || ''} ${sc.label}
-                        ${locked ? '<span style="background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.4); border-radius:5px; padding:2px 8px; font-size:0.66rem; font-weight:800; margin-left:0.4rem;">GİRİŞ KİLİTLİ</span>' : ''}
+                        ${locked ? (sc.defense_mode && sc.defense_mode.enabled
+                            ? '<span style="background:rgba(250,204,21,0.15); color:#facc15; border:1px solid rgba(250,204,21,0.45); border-radius:5px; padding:2px 8px; font-size:0.66rem; font-weight:800; margin-left:0.4rem;">🛡️ SAVUNMA MODU AÇIK: TEK İSTİSNA</span>'
+                            : '<span style="background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.4); border-radius:5px; padding:2px 8px; font-size:0.66rem; font-weight:800; margin-left:0.4rem;">GİRİŞ KİLİTLİ</span>') : ''}
                     </div>
                     <div style="font-size:0.72rem; color:var(--text-muted);">${sc.posture || ''}</div>
                 </div>
