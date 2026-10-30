@@ -2723,9 +2723,13 @@ def api_simulation_daily_pnl():
             
             from services.statistics_engine import StatisticsEngine
             performance = StatisticsEngine.get_trade_performance(owner)
-            # Haftalık hedef: son 5 işlem seansının bileşik getirisi.
-            # Bu bir garanti değil, risk kontrolü ve hedef takibidir.
-            weekly_rows = equity_curve[-5:]
+            # Haftalık hedef: takvim haftasının simülasyon bakiyesi.
+            # /api/v8/weekly ile aynı hafta tanımı kullanılır; iki ekran
+            # farklı yüzde göstermesin.
+            from datetime import datetime, timedelta
+            _now_local = datetime.now(ZoneInfo("Europe/Istanbul"))
+            _monday = (_now_local.date() - timedelta(days=_now_local.weekday())).strftime("%Y-%m-%d")
+            weekly_rows = [r for r in equity_curve if str(r.get("date_str", "")) >= _monday]
             weekly_start = float(weekly_rows[0].get('start_equity') or 0) if weekly_rows else 0.0
             weekly_end = float(weekly_rows[-1].get('end_equity') or weekly_start) if weekly_rows else weekly_start
             weekly_pct = ((weekly_end - weekly_start) / weekly_start * 100.0) if weekly_start > 0 else 0.0

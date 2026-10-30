@@ -3614,6 +3614,91 @@ let global_stats_data = null;
 
 let current_stats_mode = 'daily';
 
+function renderSimulationStatsMode() {
+    const data = global_stats_data?.simulation || {};
+    const equity = data.equity_curve || [];
+    const trades = data.trades || [];
+    const closed = trades.filter(t => t.exit_time || t.exit_price != null);
+    const latestDate = equity.length ? equity[equity.length - 1].date_str : null;
+    const selected = current_stats_mode === 'daily' && latestDate
+        ? closed.filter(t => t.date_str === latestDate)
+        : closed;
+    const wins = selected.filter(t => Number(t.pnl_val || 0) > 0);
+    const losses = selected.filter(t => Number(t.pnl_val || 0) < 0);
+    const net = selected.reduce((s, t) => s + Number(t.pnl_val || 0), 0);
+    const grossWin = wins.reduce((s, t) => s + Number(t.pnl_val || 0), 0);
+    const grossLoss = Math.abs(losses.reduce((s, t) => s + Number(t.pnl_val || 0), 0));
+    const pf = grossLoss > 0 ? grossWin / grossLoss : (grossWin > 0 ? Infinity : 0);
+    const avgWin = wins.length ? grossWin / wins.length : 0;
+    const avgLoss = losses.length ? -grossLoss / losses.length : 0;
+    const firstEq = equity.length ? Number(equity[0].start_equity || 0) : 0;
+    const lastEq = equity.length ? Number(equity[equity.length - 1].end_equity || firstEq) : firstEq;
+    const netPct = firstEq > 0 ? (lastEq - firstEq) / firstEq * 100 : 0;
+    const maxDd = Number(data.performance?.max_drawdown_tl || 0);
+    const weekly = data.weekly_target || {};
+    const el = id => document.getElementById(id);
+    const put = (id, value) => { if (el(id)) el(id).innerText = value; };
+    const sign = value => value > 0 ? '+' : '';
+    const scope = current_stats_mode === 'daily' ? 'Son simülasyon seansı' : 'Tüm simülasyon geçmişi';
+
+    if (el('stats-data-status')) {
+        el('stats-data-status').textContent =
+            `${scope} · ${selected.length} kapanmış işlem · Simülasyon verisi`;
+    }
+    put('stats-tab-total-days', current_stats_mode === 'daily' ? (latestDate || '—') : equity.length);
+    put('stats-tab-total-candidates-sub', current_stats_mode === 'daily'
+        ? `${selected.length} simülasyon işlemi`
+        : `${equity.length} kayıtlı seans · ${closed.length} kapanmış işlem`);
+    put('stats-tab-tavan-rate', selected.length ? `%${(wins.length / selected.length * 100).toFixed(1)}` : '—');
+    put('stats-tab-tavan-cnt-sub', `${wins.length} kazanç · ${losses.length} kayıp`);
+    put('stats-tab-plus5-rate', pf === Infinity ? '∞' : pf.toFixed(2));
+    put('stats-tab-plus5-cnt-sub', 'Kâr Faktörü');
+    put('stats-tab-avg-max-gain', `${sign(avgWin)}%${avgWin.toFixed(2)}`);
+    put('stats-tab-avg-close-sub', `Ort. kayıp: %${Math.abs(avgLoss).toFixed(2)}`);
+    put('stats-tab-warrant-avg-gain', maxDd > 0 ? `₺${maxDd.toFixed(0)}` : '₺0');
+    put('stats-tab-pos-count', `${wins.length} Adet`);
+    put('stats-tab-pos-avg', `(Ort. +%${avgWin.toFixed(2)})`);
+    put('stats-tab-neg-count', `${losses.length} Adet`);
+    put('stats-tab-neg-avg', `(Ort. -%${Math.abs(avgLoss).toFixed(2)})`);
+    put('stats-tab-net-pct', `${sign(netPct)}%${netPct.toFixed(2)}`);
+    put('stats-tab-elite-pos-count', `${weekly.actual_pct >= weekly.target_pct ? 'HEDEF TAMAM' : 'HEDEFE KALAN %' + Number(weekly.gap_pct || 0).toFixed(2)}`);
+    put('stats-tab-elite-pos-avg', `(Haftalık hedef: %${Number(weekly.target_pct || 6).toFixed(2)})`);
+    put('stats-tab-elite-neg-count', `${data.performance?.total_trades || closed.length} İşlem`);
+    put('stats-tab-elite-neg-avg', `(Maks. düşüş: ₺${maxDd.toFixed(0)})`);
+    put('stats-tab-elite-net-pct', `${sign(Number(weekly.actual_pct || 0))}%${Number(weekly.actual_pct || 0).toFixed(2)}`);
+
+    const statusColor = netPct > 0 ? 'var(--accent-green)' : (netPct < 0 ? 'var(--accent-red)' : 'var(--text-muted)');
+    if (el('stats-tab-net-pct')) el('stats-tab-net-pct').style.color = statusColor;
+    if (el('stats-tab-net-card')) el('stats-tab-net-card').style.borderColor =
+        netPct > 0 ? 'rgba(16,185,129,0.35)' : (netPct < 0 ? 'rgba(239,68,68,0.35)' : 'rgba(59,130,246,0.2)');
+    if (el('stats-tab-elite-net-pct')) el('stats-tab-elite-net-pct').style.color = statusColor;
+
+    const tbody = el('stats-history-tbody');
+    if (tbody) {
+        tbody.innerHTML = '';
+        [...equity].reverse().forEach(row => {
+            const start = Number(row.start_equity || 0);
+            const end = Number(row.end_equity || start);
+            const pnl = Number(row.daily_pnl ?? row.total_pnl ?? (end - start));
+            const pct = start > 0 ? pnl / start * 100 : 0;
+            const dayTrades = closed.filter(t => t.date_str === row.date_str);
+            const dayWins = dayTrades.filter(t => Number(t.pnl_val || 0) > 0).length;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${row.date_str || '—'}</td>
+                <td>${dayTrades.length}</td>
+                <td style="color:${pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'}; font-weight:700;">${sign(pct)}%${pct.toFixed(2)}</td>
+                <td>${dayWins}/${dayTrades.length}</td>
+                <td>₺${start.toFixed(0)}</td>
+                <td>₺${end.toFixed(0)}</td>`;
+            tbody.appendChild(tr);
+        });
+        if (!equity.length) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;">Henüz simülasyon seansı bulunmuyor.</td></tr>';
+        }
+    }
+}
+
 function switchStatsMode(mode) {
     current_stats_mode = mode;
     const dailyBtn = document.getElementById('stats-mode-daily-btn');
@@ -3635,6 +3720,10 @@ function switchStatsMode(mode) {
 
 function renderStatsMode() {
     if (typeof global_stats_data === 'undefined' || !global_stats_data) return;
+    if (global_stats_data.simulation_mode) {
+        renderSimulationStatsMode();
+        return;
+    }
     const data = global_stats_data;
     const el = (id) => document.getElementById(id);
     
@@ -3800,16 +3889,21 @@ async function fetchStatsTabData() {
     if (statusEl) statusEl.textContent = 'İstatistikler yenileniyor...';
 
     try {
-        const res = await vrAuthorizedFetch(`/api/tavan_history?t=` + Date.now());
+        const res = await vrAuthorizedFetch(`/api/simulation/daily_pnl?t=` + Date.now());
         if (!res.ok) throw new Error(`İstatistik servisi HTTP ${res.status}`);
-        const data = await res.json();
+        const sim = await res.json();
+        const data = {
+            status: sim.status,
+            simulation_mode: true,
+            simulation: sim,
+            summary: {},
+            daily_breakdown: sim.equity_curve || [],
+            history: sim.equity_curve || [],
+        };
         global_stats_data = data;
 
         if (data.status === 'success' || data.summary) {
             renderStatsMode();
-            const history = data.daily_breakdown || data.history || [];
-            populateStatsWeekSelect(history);
-            renderStatsHistoryTable(history);
         } else {
             if (statusEl) statusEl.textContent = `İstatistik verisi alınamadı: ${data.message || 'Bilinmeyen hata'}`;
             if (dailyTbody) dailyTbody.innerHTML = `<tr><td colspan="6" class="text-red text-center" style="padding:2rem;">Veri alınamadı: ${data.message || 'Bilinmeyen hata'}</td></tr>`;
