@@ -216,12 +216,17 @@ class SimulationEngine:
             return None, None
         return float(ema50), float(ema200)
 
-    def _position_allocation(self, current_cash, entry_price, stop_price, is_bear):
+    def _position_allocation(self, current_cash, entry_price, stop_price, is_bear, risk_pct=None):
         risk_per_share = entry_price - stop_price
         if risk_per_share <= 0:
             return 0.0, 0.0
 
-        risk_budget = self.daily_budget * (0.005 if is_bear else 0.012)
+        # DINAMIK RISK: senaryo risk_pct (GÜÇLÜ BOĞA %2.0, BOĞA %1.5, NÖTR
+        # %1.0) verilirse o kullanilir; yoksa eski sabit davranis.
+        if risk_pct and risk_pct > 0:
+            risk_budget = self.daily_budget * risk_pct
+        else:
+            risk_budget = self.daily_budget * (0.005 if is_bear else 0.012)
         max_notional = self.daily_budget * (0.15 if is_bear else 0.33)
         risk_limited_notional = risk_budget * entry_price / risk_per_share
         allocation = min(current_cash, max_notional, risk_limited_notional)
@@ -262,6 +267,14 @@ class SimulationEngine:
             _tp2_mult = max(0.5, min(2.0, float(_sim_scenario.get("tp2_mult", 1.0))))
         except Exception:
             _tp1_mult, _tp2_mult = 1.0, 1.0
+        # DINAMIK RISK: rejime gore islem basi sermaye riski. GÜÇLÜ BOĞA'da
+        # %2.0 (getiri çarpani), NÖTR'de %1.0, kapali rejimde 0 (giris zaten yok).
+        try:
+            _sim_risk_pct = max(0.0, min(3.0, float(_sim_scenario.get("risk_pct", 1.2) or 0))) / 100.0
+        except Exception:
+            _sim_risk_pct = 0.012
+        if _sim_risk_pct <= 0:
+            _sim_risk_pct = 0.005 if is_bear else 0.012
 
         # Haftalik kâr koruma valfi: hafta icinde %6 hedefe ulasildiysa
         # kalan seanslarda sadece en A kalite tek islem acilir. "Hep kâr"
@@ -675,7 +688,7 @@ class SimulationEngine:
                 # rejimde hedefi erken daralt (entry * %10 * carpan).
                 tp2_price = min(ceiling, max(tp1_price * 1.01, entry_price * (1 + 0.10 * _tp2_mult)))
                 allocation, risk_amount = self._position_allocation(
-                    current_cash, entry_price, setup['stop_price'], is_bear
+                    current_cash, entry_price, setup['stop_price'], is_bear, risk_pct=_sim_risk_pct
                 )
                 shares = int(allocation // entry_price)
                 if shares <= 0:
@@ -733,7 +746,7 @@ class SimulationEngine:
                     if not setup:
                         continue
                     allocation, risk_amount = self._position_allocation(
-                        current_cash, entry_price, setup['stop_price'], is_bear
+                        current_cash, entry_price, setup['stop_price'], is_bear, risk_pct=_sim_risk_pct
                     )
                     shares = int(allocation // entry_price)
                     if shares <= 0:

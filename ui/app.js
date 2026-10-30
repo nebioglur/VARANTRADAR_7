@@ -6108,6 +6108,58 @@ function loadV8Playbook() {
         .catch(() => {});
 }
 
+function loadV8Weekly() {
+    const strip = document.getElementById('v8-weekly-strip');
+    if (!strip) return;
+    vrAuthorizedFetch(`${V8_API}/weekly`)
+        .then(r => r.json())
+        .then(json => {
+            if (json.status !== 'success') return;
+            const w = json;
+            const pct = w.week_pct || 0;
+            const prog = Math.max(0, Math.min(100, w.progress_pct || 0));
+            const color = pct >= w.target_pct ? '#10b981' : (pct >= 2 ? '#facc15' : (pct >= 0 ? '#60a5fa' : '#ef4444'));
+            const valveBadge = w.valve_on
+                ? '<span style="background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.45); border-radius:5px; padding:2px 8px; font-size:0.66rem; font-weight:800;">🔒 KÂR KORUMA VALFİ AÇIK (maks 1 pozisyon)</span>'
+                : '';
+            const sc = w.scenario || {};
+            strip.style.display = 'block';
+            strip.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+                    <div style="font-weight:800; color:#10b981; font-size:0.88rem;">
+                        <i class="fa-solid fa-bullseye"></i> HAFTALIK KÂR PANOSU (${w.week_label})
+                        ${valveBadge}
+                    </div>
+                    <div style="font-size:0.74rem; color:var(--text-muted);">${(sc.icon || '')} ${(sc.label || '')} · Dinamik Risk: <b style="color:${color};">%${(sc.risk_pct || 0).toFixed(1)}</b> · Maks Pozisyon: <b>${sc.max_positions ?? 0}</b></div>
+                </div>
+                <div style="margin-top:0.5rem; display:flex; align-items:center; gap:0.7rem; flex-wrap:wrap;">
+                    <div style="flex:1; min-width:220px; background:rgba(0,0,0,0.25); border-radius:8px; height:16px; overflow:hidden; position:relative;">
+                        <div style="width:${prog}%; height:100%; background:linear-gradient(90deg, ${color}88, ${color}); transition:width .6s;"></div>
+                        <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:0.66rem; font-weight:800; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.6);">
+                            ${pct >= 0 ? '+' : ''}%${pct.toFixed(2)} / %${w.target_pct}
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:0.6rem; margin-top:0.55rem; font-size:0.74rem;">
+                    <span style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.3rem 0.55rem;">Kâr/Zarar: <b style="color:${w.week_pnl >= 0 ? '#10b981' : '#ef4444'};">${w.week_pnl >= 0 ? '+' : ''}₺${w.week_pnl.toFixed(0)}</b></span>
+                    <span style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.3rem 0.55rem;">Hedefe Kalan: <b>%${w.remaining_pct.toFixed(2)}</b></span>
+                    <span style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.3rem 0.55rem;">Bu Hafta İşlem: <b>${w.trades_count}</b> (${w.wins}K/${w.losses}Z)</span>
+                    <span style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.3rem 0.55rem;">Açık Pozisyon: <b>${w.open_positions}</b></span>
+                    <span style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.3rem 0.55rem;">Kasa Tabanı: <b>₺${w.base_equity.toFixed(0)}</b></span>
+                </div>
+                <div style="font-size:0.68rem; color:var(--text-muted); margin-top:0.4rem;">Hedef haftalık plan göstergesidir; garanti değildir. Dinamik risk rejime göre otomatik ayarlanır ve kart lot hesabına uygulanır.</div>`;
+
+            // DINAMIK RISK: kullanicinin kartsal lot hesabi icin risk girdisini
+            // rejime gore guncelle (kullanici elle degistirmis mi kontrol et).
+            const riskEl = document.getElementById('v8-risk-pct');
+            if (riskEl && sc.risk_pct > 0 && !localStorage.getItem('v8-risk-pct-manual')) {
+                riskEl.value = sc.risk_pct;
+                localStorage.setItem('v8-risk-pct', sc.risk_pct);
+            }
+        })
+        .catch(() => {});
+}
+
 function loadV8Breakout() {
     // Kasa/risk girdilerini sakla ve yenile (bir kere baglanir).
     if (!window._v8SizingBound) {
@@ -6119,6 +6171,7 @@ function loadV8Breakout() {
             if (saved) el.value = saved;
             el.addEventListener('input', () => {
                 localStorage.setItem(id, el.value);
+                if (id === 'v8-risk-pct') localStorage.setItem('v8-risk-pct-manual', '1');
                 clearTimeout(window._v8SizingDebounce);
                 window._v8SizingDebounce = setTimeout(loadV8Breakout, 400);
             });
@@ -6127,6 +6180,8 @@ function loadV8Breakout() {
         initV8BacktestPanel();
         // Senaryo plani (rejim + sektor dalgasi + kâr projeksiyonu).
         loadV8Playbook();
+        // Haftalik kâr panosu (%6 hedef takibi + dinamik risk).
+        loadV8Weekly();
         // Senaryo agirliklarini ozel siralamaya tasi (global cache).
         vrAuthorizedFetch(`${V8_API}/playbook`).then(r => r.json()).then(json => {
             if (json.status === 'success' && json.scenario) window._v8Scenario = json.scenario;

@@ -3824,6 +3824,91 @@ def api_v8_playbook():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/api/v8/weekly', methods=['GET'])
+def api_v8_weekly():
+    """HAFTALIK KÂR PANOSU: haftalik +X% gerceklesme, %6 hedefe mesafe,
+    kâr koruma valfi durumu ve rejime gore dinamik risk/pozisyon plani.
+    Hem simulasyon hem kullanicinin manuel islemleri ayni panoda toplanir."""
+    try:
+        from v8_engine.playbook import get_scenario
+        from services.trade_database import get_connection as _td_conn
+        from datetime import datetime as _dtw, timezone, timedelta as _tdw
+        now = _dtw.now(ZoneInfo("Europe/Istanbul"))
+        owner = "local:nebioglur"
+        target_pct = 6.0
+
+        # Pazartesi hafta basi (SQLite 'weekday 0' = Pazar; -6 gun ile Pazartesi).
+        week_pnl = 0.0
+        trades_count = 0
+        wins = 0
+        losses = 0
+        open_positions = 0
+        base_equity = 0.0
+        conn = _td_conn()
+        row = conn.execute(
+            "SELECT COALESCE(SUM(pnl_val),0) p, COUNT(*) c, "
+            "SUM(CASE WHEN pnl_val > 0 THEN 1 ELSE 0 END) w, "
+            "SUM(CASE WHEN pnl_val <= 0 THEN 1 ELSE 0 END) l, "
+            "SUM(CASE WHEN exit_price IS NULL THEN 1 ELSE 0 END) o "
+            "FROM trades WHERE owner=? AND date_str >= date('now', 'localtime', 'weekday 0', '-6 days')",
+            (owner,),
+        ).fetchone()
+        if row:
+            week_pnl = float(row["p"] or 0)
+            trades_count = int(row["c"] or 0)
+            wins = int(row["w"] or 0)
+            losses = int(row["l"] or 0)
+            open_positions = int(row["o"] or 0)
+        eq = conn.execute(
+            "SELECT end_equity FROM equity_log WHERE owner=? "
+            "AND date_str < date('now', 'localtime', 'weekday 0', '-6 days') "
+            "ORDER BY date_str DESC LIMIT 1",
+            (owner,),
+        ).fetchone()
+        if eq and eq["end_equity"]:
+            base_equity = float(eq["end_equity"])
+        else:
+            start = conn.execute(
+                "SELECT start_equity FROM equity_log WHERE owner=? ORDER BY date_str ASC LIMIT 1",
+                (owner,),
+            ).fetchone()
+            base_equity = float(start["start_equity"]) if start and start["start_equity"] else 100000.0
+        conn.close()
+
+        week_pct = (week_pnl / base_equity * 100.0) if base_equity > 0 else 0.0
+        valve_on = week_pct >= target_pct
+        regime_data = GLOBAL_DASHBOARD_CACHE.get("v8_market_regime", {}) or {}
+        regime = regime_data.get("regime", "NEUTRAL")
+        scenario = get_scenario(regime)
+        remaining_pct = max(0.0, target_pct - week_pct)
+
+        return jsonify({
+            "status": "success",
+            "week_label": now.strftime("%d.%m") + " - " + (now + _tdw(days=4)).strftime("%d.%m.%Y"),
+            "base_equity": round(base_equity, 2),
+            "week_pnl": round(week_pnl, 2),
+            "week_pct": round(week_pct, 2),
+            "target_pct": target_pct,
+            "remaining_pct": round(remaining_pct, 2),
+            "progress_pct": round(min(150.0, week_pct / target_pct * 100.0), 1) if target_pct > 0 else 0,
+            "valve_on": valve_on,
+            "trades_count": trades_count,
+            "wins": wins,
+            "losses": losses,
+            "open_positions": open_positions,
+            "regime": regime,
+            "scenario": {
+                "label": scenario.get("label"),
+                "icon": scenario.get("icon"),
+                "risk_pct": scenario.get("risk_pct"),
+                "max_positions": scenario.get("max_positions"),
+                "tp1_mult": scenario.get("tp1_mult"),
+                "tp2_mult": scenario.get("tp2_mult"),
+            },
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 @app.route('/api/logs', methods=['GET'])
 def api_logs():
     try:
