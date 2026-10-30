@@ -240,9 +240,53 @@ class SimulationEngine:
         is_bear = xu100_change < -0.5
         market_regime = "AYI" if is_bear else ("GÜÇLÜ POZİTİF" if xu100_change > 0.5 else "NÖTR")
         minimum_score = 92 if is_bear else 90
-        # SENARYO PLANI: ayi gunlerinde eszamanli pozisyon siniri 2'ye iner;
-        # toplam aciga cikis daralir, zarar serisi riski kuculur.
-        effective_max_positions = min(2, self.max_positions) if is_bear else self.max_positions
+
+        # ==== SENARYO DINAMIGI: V8 rejimine gore islem plani ====
+        # Rejim kilidi simülasyona da uygulanir: AYI/GUCCLU AYI gununde
+        # V8 hicbir kirilim girisi acmaz; sim ayni gercegi yansitir.
+        _sim_regime = "NEUTRAL"
+        try:
+            from server import GLOBAL_DASHBOARD_CACHE as _sim_gdc
+            _sim_regime = (_sim_gdc.get("v8_market_regime") or {}).get("regime", "NEUTRAL")
+        except Exception:
+            pass
+        try:
+            from v8_engine.playbook import get_scenario as _get_scenario
+            _sim_scenario = _get_scenario(_sim_regime)
+        except Exception:
+            _sim_scenario = {}
+
+        # Haftalik kâr koruma valfi: hafta icinde %6 hedefe ulasildiysa
+        # kalan seanslarda sadece en A kalite tek islem acilir. "Hep kâr"
+        # hedefinin anahtari: kazanci korumak, zorlamak degil.
+        _weekly_target_reached = False
+        try:
+            wconn = get_connection()
+            wrow = wconn.execute(
+                "SELECT start_equity, SUM(daily_pnl) FROM equity_log "
+                "WHERE owner=? AND date_str >= date(?, 'weekday 0', '-6 days')",
+                (self.owner, date_str),
+            ).fetchone()
+            wconn.close()
+            if wrow and wrow[0]:
+                base = float(wrow[0])
+                week_gain_pct = (float(wrow[1] or 0) / base * 100.0) if base > 0 else 0.0
+                _weekly_target_reached = week_gain_pct >= 6.0
+        except Exception:
+            pass
+
+        if _sim_regime in ("BEAR", "STRONG_BEAR"):
+            effective_max_positions = 0
+            print(f"[SimEngine] {date_str} -> Rejim kilidi ({_sim_regime}): simülasyon girişleri kapalı")
+        elif _weekly_target_reached:
+            effective_max_positions = min(1, self.max_positions)
+            minimum_score += 2
+            print(f"[SimEngine] {date_str} -> Haftalık %6 hedefi doldu: KÂR KORUMA MODU (maks 1 pozisyon, skor +2)")
+        elif _sim_scenario.get("max_positions") is not None:
+            # Bogada genisler, notrde standart, volatilitede daralir.
+            effective_max_positions = min(self.max_positions, max(1, int(_sim_scenario["max_positions"])))
+        else:
+            effective_max_positions = min(2, self.max_positions) if is_bear else self.max_positions
 
         valid_signals = []
         import json

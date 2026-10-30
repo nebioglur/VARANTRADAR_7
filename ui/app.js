@@ -6127,6 +6127,10 @@ function loadV8Breakout() {
         initV8BacktestPanel();
         // Senaryo plani (rejim + sektor dalgasi + kâr projeksiyonu).
         loadV8Playbook();
+        // Senaryo agirliklarini ozel siralamaya tasi (global cache).
+        vrAuthorizedFetch(`${V8_API}/playbook`).then(r => r.json()).then(json => {
+            if (json.status === 'success' && json.scenario) window._v8Scenario = json.scenario;
+        }).catch(() => {});
     }
     vrAuthorizedFetch(`${V8_API}/radar/breakout`)
         .then(res => res.json())
@@ -7171,6 +7175,10 @@ function renderAllStocksTable() {
     allStats.sort((a, b) => {
         if (currentStocksSort.col === 'special') {
             const getSpecialScore = (item) => {
+                // SENARYO DINAMIGI: agirliklar guncel rejimden gelir
+                // (window._v8Scenario -> playbook). Ayi gununde tavan skoru
+                // sifirlanir, kâr alma domine eder; bogada hedefler genisler.
+                const rw = (window._v8Scenario && window._v8Scenario.rank_weights) || { profit_take: 0.55, plus5: 0.30, ceiling: 0.15 };
                 // Öncelik: kısa sürede kâr alma, sonra +%5, sonra tavan.
                 const sweet = item.change >= 0.2 && item.change <= 4.8;
                 const eligible = item.price >= 3 && item.volume_tl >= 30e6 && sweet &&
@@ -7186,7 +7194,7 @@ function renderAllStocksTable() {
                 const plus5 = Math.min((Number(item.rel_vol) || 0) / 3, 1) * 35
                     + Math.min(Math.max(Number(item.prep_score) || 0, 0), 100) * 0.35;
                 const ceiling = Math.max(0, Math.min(100, Number(item.tavan_score) || 0));
-                return { eligible, score: profitTake * 0.55 + plus5 * 0.30 + ceiling * 0.15 };
+                return { eligible, score: profitTake * rw.profit_take + plus5 * rw.plus5 + ceiling * rw.ceiling };
             };
             const scoreA = getSpecialScore(a);
             const scoreB = getSpecialScore(b);

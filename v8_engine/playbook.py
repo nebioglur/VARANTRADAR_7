@@ -107,12 +107,29 @@ SCENARIOS: Dict[str, Dict[str, Any]] = {
 
 _DEFAULT = SCENARIOS["NEUTRAL"]
 
+# OZEL SIRALAMA agirliklari: rejime gore dinamik. Ayi gununde tavan
+# potansiyeli tamamen devre disi kalir; kâr alma agirligi domine eder.
+RANK_WEIGHTS: Dict[str, Dict[str, float]] = {
+    "STRONG_BULL":     {"profit_take": 0.45, "plus5": 0.35, "ceiling": 0.20},
+    "BULL":            {"profit_take": 0.50, "plus5": 0.32, "ceiling": 0.18},
+    "NEUTRAL":         {"profit_take": 0.55, "plus5": 0.30, "ceiling": 0.15},
+    "HIGH_VOLATILITY": {"profit_take": 0.70, "plus5": 0.25, "ceiling": 0.05},
+    "BEAR":            {"profit_take": 0.85, "plus5": 0.15, "ceiling": 0.00},
+    "STRONG_BEAR":     {"profit_take": 1.00, "plus5": 0.00, "ceiling": 0.00},
+}
+
+
+def get_rank_weights(regime: str) -> Dict[str, float]:
+    """Rejime gore ozel siralama agirliklarini dondurur."""
+    return dict(RANK_WEIGHTS.get(str(regime or "").upper(), RANK_WEIGHTS["NEUTRAL"]))
+
 
 def get_scenario(regime: str) -> Dict[str, Any]:
     """Rejime gore senaryo planini dondurur (bilinmeyen rejim -> NOTR)."""
     sc = SCENARIOS.get(str(regime or "").upper(), _DEFAULT)
     out = dict(sc)
     out["regime"] = str(regime or "NEUTRAL").upper()
+    out["rank_weights"] = get_rank_weights(regime)
     out.setdefault("defense_mode", {"enabled": False})
     # Islem basi beklenen deger projeksiyonu (ampirik taban + senaryo carpani)
     if out["max_positions"] > 0:

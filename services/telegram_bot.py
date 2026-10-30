@@ -961,6 +961,19 @@ def get_special_ranking_candidates(all_symbols_stats: dict, top_n: int = 5) -> l
     if not all_symbols_stats or not isinstance(all_symbols_stats, dict):
         return []
 
+    # SENARYO DINAMIGI: siralama agirliklari guncel rejime gore sekillenir.
+    # GUCCLU AYI'da ozel siralama bildirimi tamamen susar (yalniz nakit dogru).
+    try:
+        from v8_engine.playbook import get_scenario
+        from server import GLOBAL_DASHBOARD_CACHE as _GDC
+        _regime = (_GDC.get("v8_market_regime") or {}).get("regime", "NEUTRAL")
+        _scenario = get_scenario(_regime)
+        _rw = _scenario.get("rank_weights") or {"profit_take": 0.55, "plus5": 0.30, "ceiling": 0.15}
+        if _regime == "STRONG_BEAR":
+            return []
+    except Exception:
+        _rw = {"profit_take": 0.55, "plus5": 0.30, "ceiling": 0.15}
+
     scored_list = []
 
     for sym, data in all_symbols_stats.items():
@@ -1124,7 +1137,13 @@ def get_special_ranking_candidates(all_symbols_stats: dict, top_n: int = 5) -> l
         )
         plus5_score = min(max(rel_vol / 3.0, 0.0), 1.0) * 35.0 + min(max(prep_score, 0.0), 100.0) * 0.35
         ceiling_score = min(max(float(data.get("tavan_score") or 0), 0.0), 100.0)
-        priority_score = round(profit_take_score * 0.55 + plus5_score * 0.30 + ceiling_score * 0.15, 1)
+        # Dinamik agirliklar: ayi gununde tavan skoru sifirlanir, kâr alma domine eder.
+        priority_score = round(
+            profit_take_score * _rw.get("profit_take", 0.55)
+            + plus5_score * _rw.get("plus5", 0.30)
+            + ceiling_score * _rw.get("ceiling", 0.15),
+            1,
+        )
 
         scored_list.append({
             "symbol": clean_sym,
