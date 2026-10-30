@@ -255,6 +255,13 @@ class SimulationEngine:
             _sim_scenario = _get_scenario(_sim_regime)
         except Exception:
             _sim_scenario = {}
+        # Senaryo TP carpanlari: bogada hedefler genisler (kar maksimizasyonu),
+        # volatilite/ayi gununde daralir (hizli nakit cikisi).
+        try:
+            _tp1_mult = max(0.5, min(2.0, float(_sim_scenario.get("tp1_mult", 1.0))))
+            _tp2_mult = max(0.5, min(2.0, float(_sim_scenario.get("tp2_mult", 1.0))))
+        except Exception:
+            _tp1_mult, _tp2_mult = 1.0, 1.0
 
         # Haftalik kâr koruma valfi: hafta icinde %6 hedefe ulasildiysa
         # kalan seanslarda sadece en A kalite tek islem acilir. "Hep kâr"
@@ -657,10 +664,16 @@ class SimulationEngine:
                 if not setup:
                     continue
 
-                tp1_price = min(ceiling * 0.997, entry_price + max(setup['atr_value'] * 1.8, entry_price * 0.025))
+                # TP1 mesafesi senaryo carpaniyle olceklenir (bogada genis,
+                # volatilitede sik); tavan ustune asla cikilmaz.
+                _tp1_dist = max(setup['atr_value'] * 1.8, entry_price * 0.025) * _tp1_mult
+                tp1_price = min(ceiling * 0.997, entry_price + _tp1_dist)
                 if tp1_price <= entry_price:
                     to_remove.append(s)
                     continue
+                # TP2: bogada tavani tut (genisletme tavani asamaz), zayif
+                # rejimde hedefi erken daralt (entry * %10 * carpan).
+                tp2_price = min(ceiling, max(tp1_price * 1.01, entry_price * (1 + 0.10 * _tp2_mult)))
                 allocation, risk_amount = self._position_allocation(
                     current_cash, entry_price, setup['stop_price'], is_bear
                 )
@@ -677,7 +690,7 @@ class SimulationEngine:
                     'ceiling_target': ceiling,
                     'stop_price': setup['stop_price'],
                     'tp1_price': tp1_price,
-                    'tp2_price': ceiling,
+                    'tp2_price': tp2_price,
                     'shares': shares,
                     'status': 'OPEN',
                     'scaled_out': False,
@@ -732,8 +745,8 @@ class SimulationEngine:
                         'entry_price': entry_price,
                         'ceiling_target': entry_price * 1.10,
                         'stop_price': setup['stop_price'],
-                        'tp1_price': entry_price + max(setup['atr_value'] * 1.8, entry_price * 0.025),
-                        'tp2_price': entry_price * 1.10,
+                        'tp1_price': min(entry_price * 1.10 * 0.997, entry_price + max(setup['atr_value'] * 1.8, entry_price * 0.025) * _tp1_mult),
+                        'tp2_price': max(min(entry_price * 1.10, entry_price + max(setup['atr_value'] * 1.8, entry_price * 0.025) * _tp1_mult * 1.01), entry_price * (1 + 0.10 * _tp2_mult)),
                         'shares': shares,
                         'status': 'OPEN',
                         'scaled_out': False,

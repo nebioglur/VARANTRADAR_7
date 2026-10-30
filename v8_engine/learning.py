@@ -69,7 +69,11 @@ class OutcomeEngine:
             "target1": float(entry_price * (1 + tgt1_dist_pct / 100.0)),
             "target2": float(entry_price * (1 + tgt2_dist_pct / 100.0)),
             "features_snapshot": features,
-            "status": "ACTIVE"
+            "status": "ACTIVE",
+            # KOHORT ETIKETI: yeni motor (V8 PRO: rejim kilidi + T+3 teyit +
+            # A sinifi filtreler) ile uretilen kayit; istatistikler LEGACY
+            # kayitlarindan ayri raporlanir.
+            "engine_version": "V8_PRO"
         }
         
         V8Database.save_signal(signal_data)

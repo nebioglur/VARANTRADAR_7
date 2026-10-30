@@ -97,6 +97,19 @@ class V8Database:
                     print(f"[V8 DB Migration] Added column {col}")
                 except Exception as e:
                     print(f"[V8 DB Migration] {col} error: {e}")
+
+        # KOHORT AYRIMI: yeni motor (V8 PRO: rejim kilidi + T+3 teyit + A sinifi
+        # filtreler) ile eski motorun (LEGACY) istatistikleri karismasin.
+        # PRAGMA Postgres'te calismaz; ALTER dogrudan denenir, zaten varsa hata sessiz yutulur.
+        try:
+            cursor.execute("ALTER TABLE v8_signals ADD COLUMN engine_version TEXT DEFAULT 'LEGACY'")
+            print("[V8 DB Migration] Added column engine_version to v8_signals")
+        except Exception:
+            pass
+        try:
+            cursor.execute("UPDATE v8_signals SET engine_version='LEGACY' WHERE engine_version IS NULL OR engine_version=''")
+        except Exception:
+            pass
         conn.commit()
         
     @staticmethod
@@ -109,9 +122,9 @@ class V8Database:
             features_str = json.dumps(features) if isinstance(features, dict) else features
             
             cursor.execute('''
-                INSERT OR REPLACE INTO v8_signals 
-                (signal_id, symbol, timestamp, strategy, market_regime, score, entry_price, stop_price, target1, target2, features_snapshot, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT OR REPLACE INTO v8_signals
+                (signal_id, symbol, timestamp, strategy, market_regime, score, entry_price, stop_price, target1, target2, features_snapshot, status, engine_version)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 signal_data.get('signal_id'),
                 signal_data.get('symbol'),
@@ -124,7 +137,8 @@ class V8Database:
                 signal_data.get('target1', 0.0),
                 signal_data.get('target2', 0.0),
                 features_str,
-                signal_data.get('status', 'ACTIVE')
+                signal_data.get('status', 'ACTIVE'),
+                signal_data.get('engine_version', 'V8_PRO')
             ))
             conn.commit()
         except Exception as e:

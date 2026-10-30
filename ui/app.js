@@ -6451,6 +6451,28 @@ function loadV8Learning() {
                 }
             }
 
+            // KOHORT ISTATISTIGI: yeni motor (V8 PRO) ile eski motor (ESKI)
+            // kazama oranlari ayri gosterilir; eski motorun dusuk orani yeni
+            // motorun tablosunu kirletmez.
+            const cohortEl = document.getElementById('v8-cohort-stats');
+            if (cohortEl) {
+                const co = json.cohorts || {};
+                const chipFor = (name, label, color) => {
+                    const c = co[name];
+                    if (!c) return '';
+                    return `<span style="display:inline-block; margin-right:0.6rem; padding:3px 10px; border-radius:12px; border:1px solid ${color}55; background:${color}18; font-size:0.72rem;">
+                        <b style="color:${color};">${label}</b>
+                        <span style="color:var(--text-muted);">· ${c.decided} işlem ·</span>
+                        <b style="color:${c.win_rate >= 60 ? '#10b981' : (c.win_rate >= 45 ? '#facc15' : '#ef4444')};">%${c.win_rate}</b>
+                        <span style="color:var(--text-muted);">kazanma (${c.win}K/${c.loss}Z)</span>
+                    </span>`;
+                };
+                const legacy = co['LEGACY'] ? chipFor('LEGACY', 'ESKİ MOTOR', '#94a3b8') : '';
+                cohortEl.innerHTML = chipFor('V8_PRO', '⚡ V8 PRO (YENİ MOTOR)', '#10b981') + legacy +
+                    `<span style="font-size:0.68rem; color:var(--text-muted);">Eski motor kayıtları yeni motorun istatistiğine dahil edilmez.</span>`;
+                cohortEl.style.display = 'block';
+            }
+
             const TDK_WINDOWS = [
                 { key: 't_3m_price', label: 'T+3dk' },
                 { key: 't_5m_price', label: 'T+5dk' },
@@ -6498,10 +6520,13 @@ function loadV8Learning() {
                 const maeColor = maeVal < -2.0 ? 'color:#ef4444; font-weight:bold;' : 'color:rgba(225,29,72,0.75);';
 
                 const windowCells = TDK_WINDOWS.map(w => v8PencereHucre(d[w.key], d.entry_price)).join('');
+                const engineBadge = d.engine_version === 'V8_PRO'
+                    ? '<span style="font-size:0.62rem; color:#10b981; border:1px solid #10b98155; border-radius:4px; padding:1px 4px; margin-left:4px;">PRO</span>'
+                    : '<span style="font-size:0.62rem; color:#94a3b8; border:1px solid #94a3b844; border-radius:4px; padding:1px 4px; margin-left:4px;">ESKİ</span>';
 
                 tr.innerHTML = `
                     <td style="font-size:0.75rem; color:var(--text-muted); white-space:nowrap;">${timeStr}</td>
-                    <td style="font-weight:bold; color:var(--text-main);">${d.symbol}</td>
+                    <td style="font-weight:bold; color:var(--text-main);">${d.symbol}${engineBadge}</td>
                     <td style="text-align:right; font-weight:bold; color:var(--text-main);">${(d.entry_price || 0).toFixed(2)}</td>
                     ${windowCells}
                     <td style="text-align:right; ${mfeColor}">+${mfeVal.toFixed(2)}%</td>

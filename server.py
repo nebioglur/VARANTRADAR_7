@@ -280,6 +280,15 @@ def start_live_data_collector():
                 weekday = now.weekday() < 5
                 t = now.time()
                 in_session = t >= _dt.strptime("09:50", "%H:%M").time() and t <= _dt.strptime("18:15", "%H:%M").time()
+
+                # Zamanlanmis raporlar (seans disinda da calisir: sabah 09:30
+                # bulteni seans oncesi, aksam 18:20 raporu seans sonrasi).
+                if weekday:
+                    try:
+                        _v8_scheduled_reports(now)
+                    except Exception:
+                        pass
+
                 if weekday and in_session:
                     d_str = now.strftime("%Y-%m-%d")
                     try:
@@ -2892,6 +2901,7 @@ def api_v8_learning_outcomes():
         # Sinyalleri ve sonuclarini JOIN ile getir
         query = '''
             SELECT s.signal_id, s.symbol, s.timestamp, s.entry_price, s.score, s.status, s.market_regime,
+                   COALESCE(s.engine_version, 'LEGACY') as engine_version,
                    o.t_3m_price, o.t_5m_price, o.t_10m_price, o.t_15m_price,
                    o.t_30m_price, o.t_60m_price, o.t_120m_price, o.t_240m_price,
                    o.t_eod_price, o.t_1d_price,
@@ -2905,7 +2915,12 @@ def api_v8_learning_outcomes():
         rows = cursor.fetchall()
         
         outcomes = []
+        # KOHORT ISTATISTIKLERI: yeni motor (V8_PRO) ile eski motor (LEGACY)
+        # kayitlari ayri raporlanir ki eski motorun dusuk kazanma orani yeni
+        # motorun gercek performansini kirletmesin.
+        cohorts = {}
         for r in rows:
+            engine_version = r["engine_version"] or "LEGACY"
             outcomes.append({
                 "signal_id": r["signal_id"],
                 "symbol": r["symbol"],
@@ -2914,6 +2929,7 @@ def api_v8_learning_outcomes():
                 "score": r["score"],
                 "status": r["status"],
                 "market_regime": r["market_regime"],
+                "engine_version": engine_version,
                 "t_3m_price": r["t_3m_price"],
                 "t_5m_price": r["t_5m_price"],
                 "t_10m_price": r["t_10m_price"],
@@ -2928,9 +2944,21 @@ def api_v8_learning_outcomes():
                 "mae": r["mae"],
                 "final_result": r["final_result"]
             })
-            
+            # Kohort sayaci: WIN / LOSS / kapansmamin sayisini tut.
+            c = cohorts.setdefault(engine_version, {"total": 0, "win": 0, "loss": 0, "decided": 0})
+            c["total"] += 1
+            fr = str(r["final_result"] or "")
+            if fr in ("WIN", "LOSS"):
+                c["decided"] += 1
+                if fr == "WIN":
+                    c["win"] += 1
+                else:
+                    c["loss"] += 1
+        for name, c in cohorts.items():
+            c["win_rate"] = round(100.0 * c["win"] / c["decided"], 1) if c["decided"] else 0.0
+
         conn.close()
-        return jsonify({"status": "success", "data": outcomes})
+        return jsonify({"status": "success", "data": outcomes, "cohorts": cohorts})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
@@ -3071,6 +3099,72 @@ def _stats_rel_vol(data: dict) -> float:
     return 1.0
 
 _V8_TG_SENT = set()
+
+# ==== V8 ZAMANLANMIS TELEGRAM RAPORLARI ====
+# Sabah 09:40 pusula bulteni + aksam 18:20 gun sonu kar raporu.
+# Gunde bir kez; claim_telegram_alert ile mukerrer gönderim engellenir.
+_V8_SCHED_SENT = set()
+
+def _v8_scheduled_reports(now=None):
+    try:
+        from datetime import datetime as _dt_sched, timezone, timedelta as _td_sched
+        from services.telegram_bot import (
+            claim_telegram_alert, send_morning_compass_bulletin,
+            send_simulation_report,
+        )
+        if now is None:
+            now = _dt_sched.now(ZoneInfo("Europe/Istanbul"))
+        day_key = now.strftime("%Y-%m-%d")
+
+        # 1) SABAH PUSULA BULTENI (09:30-10:30 penceresi, gunde 1 kez)
+        if now.hour == 9 and 30 <= now.minute <= 59:
+            mk = f"MORNING_BULLETIN_{day_key}"
+            if mk not in _V8_SCHED_SENT:
+                if claim_telegram_alert(mk):
+                    _V8_SCHED_SENT.add(mk)
+                    try:
+                        ok = send_morning_compass_bulletin()
+                        print(f"[V8-SCHED] Sabah bulteni: {'gonderildi' if ok else 'gonderilemedi (config?)'}")
+                    except Exception as mb_e:
+                        print(f"[V8-SCHED] Sabah bulteni hatasi: {mb_e}")
+                else:
+                    _V8_SCHED_SENT.add(mk)
+
+        # 2) AKSAM GUN SONU KAR RAPORU (18:20'den sonra, gunde 1 kez)
+        if (now.hour == 18 and now.minute >= 20) or now.hour >= 19:
+            ek = f"EVENING_REPORT_{day_key}"
+            if ek not in _V8_SCHED_SENT:
+                if claim_telegram_alert(ek):
+                    _V8_SCHED_SENT.add(ek)
+                    try:
+                        from services.trade_database import get_connection as _tg_conn
+                        owner = "local:nebioglur"
+                        conn = _tg_conn()
+                        row = conn.execute(
+                            "SELECT COUNT(*) c, COALESCE(SUM(pnl_val),0) p FROM trades "
+                            "WHERE date_str=? AND owner=?",
+                            (day_key, owner),
+                        ).fetchone()
+                        eq = conn.execute(
+                            "SELECT start_equity FROM equity_log WHERE owner=? AND date_str=?",
+                            (owner, day_key),
+                        ).fetchone()
+                        conn.close()
+                        t_count = int(row["c"]) if row else 0
+                        profit = float(row["p"]) if row else 0.0
+                        base = float(eq["start_equity"]) if eq and eq["start_equity"] else 100000.0
+                        ret_pct = (profit / base * 100.0) if base > 0 else 0.0
+                        ok = send_simulation_report(t_count, profit, ret_pct, day_key, owner)
+                        print(f"[V8-SCHED] Aksam raporu: {'gonderildi' if ok else 'gonderilemedi (config?)'} | {t_count} islem, {profit:+.0f} TL ({ret_pct:+.2f}%)")
+                    except Exception as ev_e:
+                        print(f"[V8-SCHED] Aksam raporu hatasi: {ev_e}")
+                else:
+                    _V8_SCHED_SENT.add(ek)
+        if len(_V8_SCHED_SENT) > 100:
+            _V8_SCHED_SENT.clear()
+    except Exception as e:
+        print(f"[V8-SCHED] zamanlayici hatasi: {e}")
+
 
 # ==== V8 GIRIS TEYIT MOTORU (T+3 dakika kurali) ====
 # Canli istatistik: sinyal geldikten sonraki ilk 3 dakikada -%0.5 altina
