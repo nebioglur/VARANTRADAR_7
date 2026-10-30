@@ -40,6 +40,12 @@ class ExecutionEngine:
         if market_regime in ["BEAR", "STRONG_BEAR"]:
             reasons.append("Piyasa AYI rejiminde; kırılım girişleri kilitli (istatistik: ayı piyasasında giriş başarısı çok düşük)")
             return self._build_result(symbol, "NO_ENTRY", reasons, "MARKET_REGIME_LOCK", timeframe_quality)
+        # NÖTR rejimdeki iki yıllık örneklem başabaşın altında kaldı.
+        # Bu rejimde sermaye korunur; yalnızca piyasa yeniden BOĞA'ya
+        # döndüğünde yeni giriş açılır.
+        if market_regime == "NEUTRAL":
+            reasons.append("Piyasa NÖTR; doğrulanmış trend oluşana kadar nakit korunuyor")
+            return self._build_result(symbol, "NO_ENTRY", reasons, "NEUTRAL_PRESERVE_CASH", timeframe_quality)
         
         # 2. Zaman Çerçevesi / Momentum Hızı Analizi
         # Hacim ve RSI'ye göre kırılımın "hızını" sınıflandırır

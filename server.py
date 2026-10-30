@@ -3336,7 +3336,9 @@ def _v8_a_class_gate(row: dict, sym: str, data: dict):
         acc = float(intra.get("accumulation_score") or 0)
     except (TypeError, ValueError):
         acc = 0.0
-    if flow == "Satılıyor":
+    if not intra or flow not in ("Toplanıyor", "Denge"):
+        reasons.append("Saatlik akış teyidi yok; veri tamamlanmadan giriş yok")
+    elif flow == "Satılıyor":
         reasons.append("Saatlik akış 'Satılıyor'; akıllı para çıkışta")
 
     # Alternatif teyit: sektor dalgasi ya da net birikim.
@@ -3349,7 +3351,7 @@ def _v8_a_class_gate(row: dict, sym: str, data: dict):
             sector_ok = _v8_sector_strength_map().get(sector, -100.0) >= 10.0
     except Exception:
         sector_ok = False
-    if not sector_ok and acc < 45 and intra:
+    if not sector_ok and acc < 45:
         reasons.append(f"Sektör dalgası zayıf ve birikim skoru düşük ({acc:.0f}/45)")
 
     return (len(reasons) == 0, reasons)
