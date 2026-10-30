@@ -6386,8 +6386,31 @@ function renderV8BacktestResult(result, el) {
             <td style="padding:4px; text-align:right;">${m.total_return === null ? '—' : (m.total_return > 0 ? '+' : '') + m.total_return + '%'}</td>
             <td style="padding:4px; text-align:right;">${m.profit_factor === null ? '—' : m.profit_factor}</td></tr>`;
     });
-    html += `</tbody></table></div>
-        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.3rem;">Rapor: ${result.generated_at} · ${result.symbols_tested} hisse, son 2 yılın günlük barları. Geçmiş performans gelecek getiriyi garanti etmez.</div>`;
+    html += `</tbody></table></div>`;
+    // REJIM KIRILIMI: V8 PRO islemlerinin rejimlere gore kazanma orani.
+    const rb = result.regime_breakdown || {};
+    const rbKeys = Object.keys(rb);
+    if (rbKeys.length) {
+        html += `<div style="margin-top:0.6rem; font-size:0.72rem; font-weight:700; color:var(--text-muted);">V8 PRO İŞLEMLERİNİN REJİM KIRILIMI:</div>
+        <div style="overflow-x:auto;"><table style="width:100%; font-size:0.72rem; border-collapse:collapse; min-width:420px;">
+        <thead><tr style="color:var(--text-muted); text-align:left;">
+        <th style="padding:4px;">Rejim</th><th style="padding:4px; text-align:right;">İşlem</th>
+        <th style="padding:4px; text-align:right;">Kazanma</th><th style="padding:4px; text-align:right;">Ort. Getiri</th>
+        <th style="padding:4px; text-align:right;">Kâr Faktörü</th></tr></thead><tbody>`;
+        rbKeys.forEach(name => {
+            const r = rb[name];
+            const wr = r.win_rate;
+            const wrColor = wr === null ? 'var(--text-muted)' : (wr >= 60 ? '#10b981' : (wr >= 45 ? '#facc15' : '#ef4444'));
+            html += `<tr style="border-top:1px solid rgba(255,255,255,0.06);">
+                <td style="padding:4px; font-weight:600;">${name}</td>
+                <td style="padding:4px; text-align:right;">${r.count}</td>
+                <td style="padding:4px; text-align:right; font-weight:700; color:${wrColor};">${wr === null ? '—' : '%' + wr}</td>
+                <td style="padding:4px; text-align:right;">${r.avg_return === null ? '—' : (r.avg_return > 0 ? '+' : '') + r.avg_return + '%'}</td>
+                <td style="padding:4px; text-align:right;">${r.profit_factor === null ? '—' : r.profit_factor}</td></tr>`;
+        });
+        html += `</tbody></table></div>`;
+    }
+    html += `<div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.3rem;">Rapor: ${result.generated_at} · ${result.symbols_tested} hisse, son 2 yılın günlük barları. Geçmiş performans gelecek getiriyi garanti etmez.</div>`;
     el.innerHTML = html;
 }
 

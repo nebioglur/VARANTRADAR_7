@@ -275,11 +275,26 @@ def run_backtest(symbols: List[str], days: int = 500):
             "C": "C) + Teyit Filtresi (açılış teyitli giriş)",
             "D": "D) V8 PRO (rejim kilidi + teyit)",
         }
+        # REJIM BAZLI KIRILIM: rejim kilidinin gercek faydasini olcer. Sinyal
+        # filtreleri modlarda zaten uygulandiktan sonraki D torbasindan
+        # rejim gruplarina ayirir.
+        by_regime = {}
+        for t in signals_by_mode["D"]:
+            rg = t.get("regime") or "NEUTRAL"
+            by_regime.setdefault(rg, []).append(t)
+        regime_labels = {
+            "STRONG_BULL": "GÜÇLÜ BOĞA (RALLİ)", "BULL": "BOĞA (YÜKSELİŞ TRENDİ)",
+            "NEUTRAL": "NÖTR (YATAY / DENGE)", "BEAR": "AYI (DÜŞÜŞ BASKISI)",
+            "STRONG_BEAR": "GÜÇLÜ AYI (SERT SATIŞ)",
+        }
+        regime_stats = {regime_labels.get(k, k): _aggregate(v)
+                        for k, v in by_regime.items()}
         result = {
             "generated_at": datetime.now().strftime("%d.%m.%Y %H:%M"),
             "symbols_tested": total,
             "modes": {k: {"label": labels[k], **_aggregate(v), "trades": v[:50]}
                       for k, v in signals_by_mode.items()},
+            "regime_breakdown": regime_stats,
         }
         _set(status="done", progress=100, message="Backtest tamamlandı",
              finished_at=time.time(), result=result)

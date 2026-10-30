@@ -3273,6 +3273,52 @@ def _v8_entry_confirmation(sym: str, price):
         return "REJECTED", rec["rejected_reason"]
     return "PENDING", f"Teyit süresi devam ediyor ({int(180 - elapsed)} sn)"
 
+def _v8_a_class_gate(row: dict, sym: str, data: dict):
+    """A SINIFI KALITE KAPISI: %90 hedefi icin daha az ama daha secici islem.
+    Zorunlu kurallar: tatli bolge (+0.2..+4.8), rel_vol >= 1.5x, saatlik akis
+    'Satılıyor' degil. En az biri: sektor dalgasi >= +10 VEYA birikim skoru
+    >= 45 (akilli para). Donus: (ok, red_sebepleri)."""
+    reasons = []
+    try:
+        chg = float(row.get("change_pct") or data.get("Change_Pct") or 0)
+    except (TypeError, ValueError):
+        chg = 0.0
+    if not (0.2 <= chg <= 4.8):
+        reasons.append(f"Tatlı bölge dışı ({chg:+.1f}%; +0.2..+4.8 aralığı gerekli)")
+
+    try:
+        vol = float(data.get("Vol_Multiplier") or data.get("Volume_Ratio") or 0)
+        if vol < 1.5:
+            vol = float(_stats_rel_vol(data) or 0)
+    except (TypeError, ValueError):
+        vol = 0.0
+    if vol < 1.5:
+        reasons.append(f"Hacim zayıf ({vol:.1f}x; en az 1.5x gerekli)")
+
+    intra = data.get("intraday_strength") or {}
+    flow = str(intra.get("hourly_flow") or "")
+    try:
+        acc = float(intra.get("accumulation_score") or 0)
+    except (TypeError, ValueError):
+        acc = 0.0
+    if flow == "Satılıyor":
+        reasons.append("Saatlik akış 'Satılıyor'; akıllı para çıkışta")
+
+    # Alternatif teyit: sektor dalgasi ya da net birikim.
+    sector_ok = False
+    try:
+        from services.detective_engine import SECTOR_OF
+        base = str(sym).replace(".IS", "")
+        sector = SECTOR_OF.get(base) or SECTOR_OF.get(str(sym))
+        if sector:
+            sector_ok = _v8_sector_strength_map().get(sector, -100.0) >= 10.0
+    except Exception:
+        sector_ok = False
+    if not sector_ok and acc < 45 and intra:
+        reasons.append(f"Sektör dalgası zayıf ve birikim skoru düşük ({acc:.0f}/45)")
+
+    return (len(reasons) == 0, reasons)
+
 def _v8_gate_enter_row(row: dict, sym: str, data: dict) -> dict:
     """ENTER satirlarina rejim kilidi + KAP filtresi + T+3 teyit filtresi
     uygular. Reddedilen ya da bekleyen sinyaller WAIT_CONFIRMATION'a dusurulur."""
@@ -3301,6 +3347,15 @@ def _v8_gate_enter_row(row: dict, sym: str, data: dict) -> dict:
             return row
     except Exception:
         pass
+    # A SINIFI KALITE KAPISI: secici giris — tatli bolge + hacim + akis +
+    # (sektor dalgasi VEYA birikim). Uymayanlar girişe alinmaz, izlemeye duser.
+    a_ok, a_reasons = _v8_a_class_gate(row, sym, data)
+    row["a_class_ok"] = a_ok
+    if not a_ok:
+        row["entry_status"] = "WAIT_CONFIRMATION"
+        row["a_class_rejected"] = True
+        row["entry_reasons"] = ["[A SINIFI] " + "; ".join(a_reasons)] + list(row.get("entry_reasons") or [])
+        return row
     live_price = data.get("Price") or row.get("price") or 0
     cstate, cmsg = _v8_entry_confirmation(sym, live_price)
     row["confirm_state"] = cstate
@@ -3347,6 +3402,10 @@ def auto_send_v8_signals():
                         continue
                 except Exception:
                     pass
+                # A SINIFI KALITE KAPISI: secici giris yoksa kanala sinyal
+                # gitmez (dedup eklenmez; kalite sonradan saglanabilir).
+                if not _v8_a_class_gate({}, sym, data)[0]:
+                    continue
                 # T+3 DAKIKA TEYIDI: teyit gecmeden telegrama sinyal gitmez.
                 cstate, _cmsg = _v8_entry_confirmation(sym, data.get("Price") or entry)
                 if cstate != "CONFIRMED":
