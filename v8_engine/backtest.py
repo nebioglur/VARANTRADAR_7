@@ -153,27 +153,74 @@ def run_backtest(symbols: List[str], days: int = 500):
         from v8_engine.breakout import BreakoutEngine
         from v8_engine.execution import ExecutionEngine
 
-        idx_raw = yf.download("^XU100", period="2y", interval="1d", progress=False)
-        if idx_raw is None or idx_raw.empty:
-            raise RuntimeError("XU100 verisi indirilemedi")
-        idx_df = idx_raw.dropna(how="all").copy()
-        if isinstance(idx_df.columns, _pd.MultiIndex):
-            idx_df.columns = [c[0] if isinstance(c, tuple) else c for c in idx_df.columns]
-        xu_closes = [float(x) for x in idx_df["Close"].tolist()]
+        # XU100 coklu kaynak: baska sembol/deneme basarili olursa devam.
+        idx_df = None
+        for idx_sym in ("^XU100", "XU100.IS"):
+            try:
+                r = yf.download(idx_sym, period="2y", interval="1d", progress=False, timeout=20)
+                if r is not None and not r.empty:
+                    cand = r.dropna(how="all").copy()
+                    if isinstance(cand.columns, _pd.MultiIndex):
+                        cand.columns = [c[0] if isinstance(c, tuple) else c for c in cand.columns]
+                    if "Close" in cand.columns and len(cand) > 60:
+                        idx_df = cand
+                        break
+            except Exception:
+                continue
+
+        # 1. FAZ: tum sembol verilerini once indir (endeks yoksa evren vekili
+        # uretmek icin kisilusturulmus kapanislarina ihtiyac var).
+        dfs = {}
+        for n_i, sym in enumerate(symbols):
+            try:
+                raw = yf.download(sym, period="2y", interval="1d", progress=False, timeout=20)
+                if raw is None or raw.empty or len(raw) < 120:
+                    continue
+                d = raw.dropna(how="all").copy()
+                if isinstance(d.columns, _pd.MultiIndex):
+                    d.columns = [c[0] if isinstance(c, tuple) else c for c in d.columns]
+                if "Close" in d.columns:
+                    dfs[sym] = d
+            except Exception:
+                continue
+            finally:
+                _set(progress=5 + int(40 * (n_i + 1) / max(1, total)),
+                     message=f"Veri indiriliyor: {sym} ({n_i + 1}/{total})")
+
+        if idx_df is not None:
+            xu_closes = [float(x) for x in idx_df["Close"].tolist()]
+        else:
+            # Endeks indirilemedi: evrenden esit agirlikli piyasa vekili uret
+            # (sondan hizalanmis normalize kapanis ortalamasi). Backtest bunun
+            # yerine calismayi REDDETMEZ; rejim etiketi yaklasik olur.
+            norm = []
+            for d in dfs.values():
+                c = d["Close"].tolist()
+                if len(c) >= 60:
+                    base = c[0] if c[0] else 1.0
+                    norm.append([v / base for v in c])
+            if not norm:
+                raise RuntimeError("Hisse verileri de indirilemedi; backtest yapilamadi")
+            min_len = min(len(x) for x in norm)
+            xu_closes = []
+            for j in range(1, min_len + 1):
+                xu_closes.append(sum(x[-j] for x in norm) / len(norm))
+            xu_closes.reverse()
+            _set(message="XU100 bulunamadi; evren vekili ile rejim yaklasimi kullanilacak")
 
         bo_engine = BreakoutEngine()
         ex_engine = ExecutionEngine()
         signals_by_mode = {"A": [], "B": [], "C": [], "D": []}
         total = len(symbols)
 
+        # 2. FAZ: sinyal taramasi (veriler dfs'ten okunur, tekrar indirilmez)
+        scan_i = 0
         for n_i, sym in enumerate(symbols):
             try:
-                raw = yf.download(sym, period="2y", interval="1d", progress=False)
-                if raw is None or raw.empty or len(raw) < 120:
+                df = dfs.get(sym)
+                if df is None or len(df) < 120:
                     continue
-                df = raw.dropna(how="all").copy()
-                if isinstance(df.columns, _pd.MultiIndex):
-                    df.columns = [c[0] if isinstance(c, tuple) else c for c in df.columns]
+                scan_i += 1
                 closes = df["Close"].tolist()
                 opens = df["Open"].tolist()
                 n = len(df)
@@ -219,7 +266,7 @@ def run_backtest(symbols: List[str], days: int = 500):
             except Exception:
                 continue
             finally:
-                _set(progress=5 + int(90 * (n_i + 1) / max(1, total)),
+                _set(progress=45 + int(50 * scan_i / max(1, total)),
                      message=f"Taranıyor: {sym} ({n_i + 1}/{total})")
 
         labels = {
