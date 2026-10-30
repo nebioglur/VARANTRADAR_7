@@ -2915,13 +2915,37 @@ def api_v8_learning_outcomes():
         rows = cursor.fetchall()
         
         outcomes = []
+        verified_outcomes = []
         # KOHORT ISTATISTIKLERI: yeni motor (V8_PRO) ile eski motor (LEGACY)
         # kayitlari ayri raporlanir ki eski motorun dusuk kazanma orani yeni
         # motorun gercek performansini kirletmesin.
         cohorts = {}
         for r in rows:
             engine_version = r["engine_version"] or "LEGACY"
-            outcomes.append({
+            # MAE koruması: bazı dış/legacy kayıtlarındaki ham MAE değerleri
+            # fiyat pencereleriyle matematiksel olarak uyuşmuyor (ör. -%36).
+            # Ekranda gerçek gözlenen pencerelerden hesaplanan değeri kullan.
+            entry = float(r["entry_price"] or 0)
+            observed = []
+            if entry > 0:
+                for key in (
+                    "t_3m_price", "t_5m_price", "t_10m_price", "t_15m_price",
+                    "t_30m_price", "t_60m_price", "t_120m_price", "t_240m_price",
+                    "t_eod_price", "t_1d_price",
+                ):
+                    price = r[key]
+                    if price is not None:
+                        try:
+                            observed.append((float(price) - entry) / entry * 100.0)
+                        except (TypeError, ValueError):
+                            pass
+            raw_mae = float(r["mae"] or 0)
+            observed_mae = min(observed) if observed else raw_mae
+            # Fiyat penceresi olmayan ham kayıtlarda da imkânsız uç değeri
+            # göstermeyip geçersizliği işaretle.
+            mae_valid = abs(raw_mae - observed_mae) <= 0.25 if observed else abs(raw_mae) <= 15.0
+            display_mae = observed_mae if observed else max(-15.0, min(15.0, raw_mae))
+            item = {
                 "signal_id": r["signal_id"],
                 "symbol": r["symbol"],
                 "timestamp": r["timestamp"],
@@ -2941,9 +2965,14 @@ def api_v8_learning_outcomes():
                 "t_eod_price": r["t_eod_price"],
                 "t_1d_price": r["t_1d_price"],
                 "mfe": r["mfe"],
-                "mae": r["mae"],
+                "mae": round(display_mae, 4),
+                "mae_raw": raw_mae,
+                "mae_valid": mae_valid,
                 "final_result": r["final_result"]
-            })
+            }
+            outcomes.append(item)
+            if engine_version == "V8_PRO":
+                verified_outcomes.append(item)
             # Kohort sayaci: WIN / LOSS / kapansmamin sayisini tut.
             c = cohorts.setdefault(engine_version, {"total": 0, "win": 0, "loss": 0, "decided": 0})
             c["total"] += 1
@@ -2958,7 +2987,13 @@ def api_v8_learning_outcomes():
             c["win_rate"] = round(100.0 * c["win"] / c["decided"], 1) if c["decided"] else 0.0
 
         conn.close()
-        return jsonify({"status": "success", "data": outcomes, "cohorts": cohorts})
+        return jsonify({
+            "status": "success",
+            "data": outcomes,
+            "verified_data": verified_outcomes,
+            "verified_engine": "V8_PRO",
+            "cohorts": cohorts,
+        })
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 

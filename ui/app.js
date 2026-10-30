@@ -6444,14 +6444,17 @@ function loadV8Learning() {
                 return;
             }
 
-            // V8 kazanma orani ozeti
-            const winCount = json.data.filter(x => x.final_result === 'WIN').length;
-            const lossCount = json.data.filter(x => x.final_result === 'LOSS').length;
-            const openCount = json.data.filter(x => x.status === 'ACTIVE').length;
+            // Ana başarı göstergesi yalnızca doğrulanmış V8 PRO kohortunu
+            // kullanır. LEGACY ve DIŞ MOTOR kayıtları denetim tablosunda
+            // kalır, yeni motorun oranını kirletmez.
+            const verified = Array.isArray(json.verified_data) ? json.verified_data : [];
+            const winCount = verified.filter(x => x.final_result === 'WIN').length;
+            const lossCount = verified.filter(x => x.final_result === 'LOSS').length;
+            const openCount = verified.filter(x => x.status === 'ACTIVE').length;
             const decided = winCount + lossCount;
             const wrRate = decided > 0 ? (winCount / decided) * 100 : null;
             const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-            setTxt('v8-wr-total', json.data.length);
+            setTxt('v8-wr-total', verified.length);
             setTxt('v8-wr-rate', wrRate === null ? '—' : `%${wrRate.toFixed(0)}`);
             setTxt('v8-wr-win', winCount);
             setTxt('v8-wr-loss', lossCount);
@@ -6462,7 +6465,10 @@ function loadV8Learning() {
             const calib = document.getElementById('v8-wr-calibration');
             if (calib) {
                 calib.style.display = 'block';
-                if (decided < 30) {
+                if (verified.length === 0) {
+                    calib.style.color = '#facc15';
+                    calib.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Doğrulanmış V8 PRO işlemi henüz yok. Eski ve dış motor kayıtları başarı hesabına dahil edilmedi; yeni motorun gerçek oranı ilk kapanan işlemlerden sonra ölçülecek.`;
+                } else if (decided < 30) {
                     calib.style.color = '#facc15';
                     calib.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Örneklem küçük (${decided} işlem): kazanma oranı istatistiksel olarak güvenilir değil; model puanı olarak okuyun. %90 hedefi için en az 30 doğrulanmış işlem gerekir.`;
                 } else if (wrRate >= 90) {
@@ -6548,7 +6554,7 @@ function loadV8Learning() {
                 const mfeVal = d.mfe || 0;
                 const maeVal = d.mae || 0;
                 const mfeColor = mfeVal > 2.0 ? 'color:#10b981; font-weight:bold;' : 'color:rgba(16,185,129,0.75);';
-                const maeColor = maeVal < -2.0 ? 'color:#ef4444; font-weight:bold;' : 'color:rgba(225,29,72,0.75);';
+                const maeColor = !d.mae_valid ? 'color:#facc15; font-weight:bold;' : (maeVal < -2.0 ? 'color:#ef4444; font-weight:bold;' : 'color:rgba(225,29,72,0.75);');
 
                 const windowCells = TDK_WINDOWS.map(w => v8PencereHucre(d[w.key], d.entry_price)).join('');
                 const engineBadge = d.engine_version === 'V8_PRO'
@@ -6563,7 +6569,7 @@ function loadV8Learning() {
                     <td style="text-align:right; font-weight:bold; color:var(--text-main);">${(d.entry_price || 0).toFixed(2)}</td>
                     ${windowCells}
                     <td style="text-align:right; ${mfeColor}">+${mfeVal.toFixed(2)}%</td>
-                    <td style="text-align:right; ${maeColor}">${maeVal.toFixed(2)}%</td>
+                    <td style="text-align:right; ${maeColor}" title="${d.mae_valid ? 'Gözlenen fiyat pencerelerinden hesaplandı' : 'Ham MAE geçersizdi; gözlenen veriden düzeltildi'}">${maeVal.toFixed(2)}%${d.mae_valid ? '' : ' *'}</td>
                     <td style="text-align:center; font-size:0.72rem; white-space:nowrap;">${v8DurumEtiketi(d)}</td>
                 `;
                 tbody.appendChild(tr);
