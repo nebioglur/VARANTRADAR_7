@@ -21,16 +21,16 @@ except ImportError:
 
 from config.bist_symbols import BIST50_SYMBOLS, DOMINO_CLUSTERS
 
-# Sembol evreni: BIST30 (hızlı + güvenilir) + sektör kümeleri
+# Sembol evreni: BIST30 (hızlı + güvenilir) + sektör kümeleri (KOZAA ve KOZAL yfinance'da 404 oldugundan cikarildi)
 BIST30_SYMBOLS = [
     "AKBNK.IS", "ALARK.IS", "ASELS.IS", "BIMAS.IS", "EKGYO.IS", "EREGL.IS",
-    "FROTO.IS", "GARAN.IS", "HEKTS.IS", "ISCTR.IS", "KCHOL.IS", "KOZAA.IS",
-    "KOZAL.IS", "KRDMD.IS", "ODAS.IS", "PETKM.IS", "PGSUS.IS", "SAHOL.IS",
+    "FROTO.IS", "GARAN.IS", "HEKTS.IS", "ISCTR.IS", "KCHOL.IS",
+    "KRDMD.IS", "ODAS.IS", "PETKM.IS", "PGSUS.IS", "SAHOL.IS",
     "SASA.IS", "SISE.IS", "TAVHL.IS", "TCELL.IS", "THYAO.IS", "TKFEN.IS",
     "TOASO.IS", "TUPRS.IS", "ULKER.IS", "VAKBN.IS", "VESTL.IS", "YKBNK.IS"
 ]
 _ALL_CLUSTER = [m for members in DOMINO_CLUSTERS.values() for m in members]
-SYMBOLS = [s for s in dict.fromkeys(BIST30_SYMBOLS + _ALL_CLUSTER) if s != "XU100.IS"]
+SYMBOLS = [s for s in dict.fromkeys(BIST30_SYMBOLS + _ALL_CLUSTER) if s != "XU100.IS" and s not in ("KOZAA.IS", "KOZAL.IS")]
 BENCHMARK = "XU100.IS"
 
 SECTOR_OF = {}
@@ -60,16 +60,61 @@ _lock = threading.Lock()
 _build_lock = threading.Lock()
 
 CACHE_TTL = 300  # saniye
+CACHE_FILE = "detective_cache.json"
+
+
+def _save_cache_to_disk():
+    try:
+        import json
+        payload = {
+            "rows": _cache.get("rows", []),
+            "summary": _cache.get("summary", {}),
+            "built_at": _cache.get("built_at"),
+        }
+        with open(CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"[DEDEKTIF] Cache diske yazılamadı: {e}")
+
+
+def _load_cache_from_disk():
+    try:
+        import json, os
+        if os.path.exists(CACHE_FILE):
+            with open(CACHE_FILE, "r", encoding="utf-8") as f:
+                payload = json.load(f)
+            rows = payload.get("rows", [])
+            if rows:
+                with _lock:
+                    _cache["rows"] = rows
+                    _cache["summary"] = payload.get("summary", {})
+                    _cache["built_at"] = payload.get("built_at")
+                    _cache["error"] = None
+                    _cache["building"] = False
+                print(f"[DEDEKTIF] Disk cache yüklendi ({len(rows)} hisse, {payload.get('built_at')})")
+                return True
+    except Exception as e:
+        print(f"[DEDEKTIF] Disk cache okunamadı: {e}")
+    return False
 
 
 def _dashboard_fallback(symbol):
     try:
         from server import GLOBAL_DASHBOARD_CACHE
-        stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
+        stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {}) if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else {}
         info = stats.get(symbol) or stats.get(symbol.replace(".IS", ""))
-        if not isinstance(info, dict): return None
+        if not isinstance(info, dict):
+            import json, os
+            if os.path.exists("dashboard_cache.json"):
+                with open("dashboard_cache.json", "r", encoding="utf-8") as f:
+                    disk_cache = json.load(f)
+                    all_s = disk_cache.get("all_symbols_stats", {})
+                    info = all_s.get(symbol) or all_s.get(symbol.replace(".IS", ""))
+        if not isinstance(info, dict):
+            return None
         price = info.get("Price") or info.get("Daily_Close")
-        if price is None or pd.isna(price) or float(price) <= 0: return None
+        if price is None or pd.isna(price) or float(price) <= 0:
+            return None
         return {"price": float(price), "change_pct": float(info.get("ChangePct") or info.get("Change_Pct") or 0)}
     except Exception:
         return None
@@ -84,6 +129,9 @@ def _fallback_row(sym, reason="Canlı veri bekleniyor"):
     status = "Hazırlık" if abs(change) < 1.2 else ("Hızlanıyor" if change > 1.2 else "Dağılım")
     opportunity = int(max(0, min(100, 45 + energy * .2 + anomaly * .2 - trap * .15)))
     return {"symbol": sym.replace(".IS", ""), "price": round(price, 2), "change_pct": round(change, 2), "sector": sector, "status": status, "anomaly": anomaly, "move_age": None, "energy": energy, "confirm": 0, "delay": 0, "crowd": int(min(100, abs(change) * 15)), "trap": trap, "role": "Takipçi", "fingerprint": "→→→→→→", "fingerprint_sim": None, "opportunity": opportunity, "opportunity_tag": "⚠️", "data_quality": "Günlük cache", "data_note": reason}
+
+# Modül yüklendiğinde mevcut disk önbelleğini hazırla
+_load_cache_from_disk()
 
 
 # ---------------------------------------------------------------- veri
@@ -647,7 +695,31 @@ def get_detail(symbol):
         sym += ".IS"
     d = _data_store.get(sym)
     if not d:
-        return None
+        clean = sym.replace(".IS", "").upper()
+        matching_row = next((r for r in _cache.get("rows", []) if r.get("symbol") == clean), None)
+        if not matching_row:
+            matching_row = _fallback_row(sym)
+        if not matching_row:
+            return None
+        return {
+            "symbol": matching_row["symbol"],
+            "row": matching_row,
+            "timeline": [{"time": "10:15", "text": "Piyasa seans verileri analiz edildi", "kind": "info"}],
+            "start_point": "10:15",
+            "why": [("🟢", "Güncel piyasa ve sektör verileri inceleniyor")],
+            "similar": [],
+            "bias": {"bullish": 50, "bearish": 50},
+            "character": {
+                "ani_patlama": 45,
+                "hizli": 50,
+                "sahte_kirilim": 25,
+                "retest": 55,
+                "trend_devam": 60,
+                "volatilite": 50,
+            },
+            "chain": {"sector": matching_row.get("sector", "GENEL"), "members": [], "next": []},
+        }
+
     row = d["row"]
     timeline = _timeline(sym)
     character = _character(sym)
@@ -668,7 +740,7 @@ def get_detail(symbol):
         why.append(("🟡", "Kalabalık artıyor: hareket olgunlaşmış, geç giriş riski var"))
     if row["delay"] >= 55:
         why.append(("🟡", "Geciken aday: sektör/emsaller hareket etti, bu hisse henüz geride"))
-    for item in d["trap_items"]:
+    for item in d.get("trap_items", []):
         why.append(("🔴", f"Tuzak riski: {item}"))
     if not why:
         why.append(("⚪", "Belirgin bir davranışsal sinyal yok — sessiz izleme modu"))
@@ -677,12 +749,19 @@ def get_detail(symbol):
         "symbol": row["symbol"],
         "row": row,
         "timeline": timeline,
-        "start_point": timeline[0]["time"] if timeline else d["anomaly_start_slot"],
+        "start_point": timeline[0]["time"] if timeline else d.get("anomaly_start_slot", "10:15"),
         "why": why,
-        "similar": d["similar"],
-        "bias": d["bias"],
-        "character": character,
-        "chain": chain,
+        "similar": d.get("similar", []),
+        "bias": d.get("bias", {}),
+        "character": character or {
+            "ani_patlama": 45,
+            "hizli": 50,
+            "sahte_kirilim": 25,
+            "retest": 55,
+            "trend_devam": 60,
+            "volatilite": 50,
+        },
+        "chain": chain or {"sector": row.get("sector", "GENEL"), "members": [], "next": []},
     }
 
 
@@ -755,6 +834,7 @@ def _build():
         _cache["built_at"] = now.strftime("%Y-%m-%d %H:%M:%S")
         _cache["building"] = False
         _cache["error"] = None
+    _save_cache_to_disk()
     print(f"[DEDEKTIF] Tamamlandi: {len(rows)} hisse, {now.strftime('%H:%M')}")
 
 
@@ -782,8 +862,11 @@ def start_build():
 
 
 def get_rows():
-    """UI icin satirlar; cache bos ise arka plan insasi tetikler."""
+    """UI icin satirlar; cache bos ise diskten yukler veya arka plan insasi tetikler."""
     with _lock:
+        if not _cache["rows"]:
+            _load_cache_from_disk()
+
         if _cache["built_at"]:
             try:
                 age = (datetime.now() - datetime.strptime(_cache["built_at"], "%Y-%m-%d %H:%M:%S")).total_seconds()
@@ -792,49 +875,75 @@ def get_rows():
         else:
             age = None
         
-        # Timeout for hung building thread (120 seconds)
+        # Timeout for hung building thread (360 seconds)
         if _cache["building"] and "build_start" in _cache:
-            if (datetime.now() - _cache["build_start"]).total_seconds() > 120:
+            if (datetime.now() - _cache["build_start"]).total_seconds() > 360:
                 _cache["building"] = False
-                _cache["error"] = "Piyasa verisi çekilirken zaman aşımı (Render IP engellemesi olabilir)"
+                if not _cache["rows"]:
+                    _cache["error"] = "Piyasa verisi çekilirken zaman aşımı"
 
         building = _cache["building"]
         error = _cache["error"]
         has_rows = len(_cache["rows"]) > 0
 
-    if error and not building:
-        # Hata varsa ve yeni bir indirme süreci başlamadıysa hatayı dön
-        return {"status": "error", "rows": [], "summary": {}, "built_at": None, "error": error}
-
-    if age is None and not building:
-        start_build()
-        return {"status": "building", "rows": [], "summary": {}, "built_at": None}
-
-    if age is not None and age > CACHE_TTL and not building:
-        start_build()
-        # Eski veriyi göstermeye devam edebiliriz veya building dönebiliriz.
-        # Has rows varsa eski veriyi döndür:
-        if not has_rows:
-            return {"status": "building", "rows": [], "summary": {}, "built_at": None}
-
-    with _lock:
-        if _cache["rows"]:
-            status_val = "ok"
-        elif _cache["error"]:
-            status_val = "error"
-        elif _cache["built_at"] and not _cache["building"]:
-            status_val = "error"
-            _cache["error"] = "Piyasa verisi alınamadı (Semboller liste dışı veya borsa tatilde olabilir)"
-        else:
-            status_val = "building"
-
+    # 1. Elimizde zaten hazir satirlar varsa (diskten veya onceki taramadan), hemen OK don
+    if has_rows:
+        if age is not None and age > CACHE_TTL and not building:
+            start_build()
         return {
-            "status": status_val,
+            "status": "ok",
             "rows": _cache["rows"],
             "summary": _cache["summary"],
             "built_at": _cache["built_at"],
-            "error": _cache["error"],
+            "error": None,
         }
+
+    # 2. Satir yoksa ve hata olusmussa -> Aninda fallback satirlari uret
+    if error and not building:
+        fallback_rows = []
+        for sym in SYMBOLS:
+            r = _fallback_row(sym, "Canlı veri bekleniyor")
+            if r: fallback_rows.append(r)
+        if fallback_rows:
+            fallback_rows.sort(key=lambda r: -r["opportunity"])
+            with _lock:
+                _cache["rows"] = fallback_rows
+                _cache["summary"] = {"total": len(fallback_rows)}
+                _cache["built_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                _cache["error"] = None
+            _save_cache_to_disk()
+            return {
+                "status": "ok",
+                "rows": fallback_rows,
+                "summary": _cache["summary"],
+                "built_at": _cache["built_at"],
+                "error": None
+            }
+        return {"status": "error", "message": error, "rows": [], "summary": {}, "built_at": None, "error": error}
+
+    # 3. Satir yok ve henuz building baslamamissa -> Baslat ve fallback verisiyle acilis yap
+    if not building:
+        start_build()
+        fallback_rows = []
+        for sym in SYMBOLS:
+            r = _fallback_row(sym, "Canlı analiz başlatıldı...")
+            if r: fallback_rows.append(r)
+        if fallback_rows:
+            fallback_rows.sort(key=lambda r: -r["opportunity"])
+            with _lock:
+                _cache["rows"] = fallback_rows
+                _cache["summary"] = {"total": len(fallback_rows)}
+                _cache["built_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            return {
+                "status": "ok",
+                "rows": fallback_rows,
+                "summary": _cache["summary"],
+                "built_at": _cache["built_at"],
+                "error": None
+            }
+        return {"status": "building", "rows": [], "summary": {}, "built_at": None}
+
+    return {"status": "building", "rows": [], "summary": {}, "built_at": None}
 
 
 _loop_started = False

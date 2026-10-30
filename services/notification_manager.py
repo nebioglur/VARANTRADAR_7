@@ -15,8 +15,20 @@ class NotificationManager:
         self._load_settings()
 
     def _load_settings(self):
-        """Ayarları veritabanından, ortam değişkenlerinden veya varsayılanlardan yükler."""
+        """Ayarları veritabanından, ortam değişkenlerinden veya telegram_bot modülünden yükler."""
         try:
+            from services.telegram_bot import get_telegram_credentials
+            token, chat_id = get_telegram_credentials(force=True)
+            if token and chat_id:
+                self.telegram_token = str(token).strip()
+                self.telegram_chat_id = str(chat_id).strip()
+                try:
+                    self.db.save_setting('telegram_token', self.telegram_token)
+                    self.db.save_setting('telegram_chat_id', self.telegram_chat_id)
+                except Exception:
+                    pass
+                return
+
             token = self.db.get_setting('telegram_token')
             chat_id = self.db.get_setting('telegram_chat_id')
             
@@ -39,91 +51,27 @@ class NotificationManager:
             self.telegram_chat_id = DEFAULT_CHAT_ID
 
     def send_telegram_message(self, message: str) -> bool:
-        """Belirtilen Chat ID'ye veya virgülle ayrılmış ID'lere Telegram mesajı gönderir."""
-        import time
-        if not self.telegram_token or not self.telegram_chat_id or "BURAYA_" in str(self.telegram_token):
-            self._load_settings()
-            
-        if not self.telegram_token or not self.telegram_chat_id:
-            logger.warning("Telegram ayarları eksik. Bildirim gönderilemedi.")
-            return False
-            
-        url = f"https://api.telegram.org/bot{self.telegram_token}/sendMessage"
-        chat_ids = [cid.strip() for cid in str(self.telegram_chat_id).split(',') if cid.strip()]
-        all_success = True
-        
-        for chat_id in chat_ids:
-            payload = {
-                "chat_id": chat_id,
-                "text": message,
-                "parse_mode": "HTML",
-                "disable_web_page_preview": True
-            }
-            
-            max_retries = 3
-            for attempt in range(max_retries):
-                try:
-                    response = requests.post(url, json=payload, timeout=10)
-                    if response.status_code == 200:
-                        self._log_alert(message, "TELEGRAM", f"SUCCESS_{chat_id}")
-                        logger.info(f"Telegram bildirimi başarıyla iletildi (Chat ID: {chat_id})")
-                        time.sleep(1) # Minimum 1 second delay
-                        break
-                    elif response.status_code == 429:
-                        try:
-                            error_data = response.json()
-                            retry_after = error_data.get("parameters", {}).get("retry_after", 1)
-                        except:
-                            retry_after = 1
-                        logger.warning(f"Telegram API Hatası: Too Many Requests: retry after {retry_after}")
-                        time.sleep(retry_after)
-                        if attempt == max_retries - 1:
-                            self._log_alert(message, "TELEGRAM", f"FAILED_{chat_id}")
-                            all_success = False
-                    else:
-                        logger.error(f"Telegram API Hatası ({chat_id}): {response.text}")
-                        self._log_alert(message, "TELEGRAM", f"FAILED_{chat_id}")
-                        all_success = False
-                        time.sleep(1)
-                        break
-                except Exception as e:
-                    logger.error(f"Telegram gönderim istisnası ({chat_id}): {e}")
-                    self._log_alert(message, "TELEGRAM", f"ERROR_{chat_id}")
-                    all_success = False
-                    time.sleep(1)
-                    break
-                
-        return all_success
+        """Belirtilen Chat ID'ye veya kanala Telegram mesajı gönderir (telegram_bot ile senkron)."""
+        from services.telegram_bot import send_telegram_message as _tb_send
+        return _tb_send(message)
 
     def send_system_startup_alert(self) -> bool:
         """Sunucu başladığında Telegram bağlantısının çalıştığını bildiren ilk mesaj. KULLANICI İSTEĞİ: İptal edildi."""
         return True
-        now_str = datetime.now().strftime("%d.%m.%Y %H:%M:%S")
-        msg = (
-            f"🚀 <b>VARANTRADAR PRO AKTİF!</b> 🚀\n\n"
-            f"🤖 <b>Sistem:</b> Canlı Tarama & Algoritmik Sinyal Motoru Devrede\n"
-            f"📊 <b>Kapsam:</b> BIST Evreni, 1 Saatlik Fırsatlar, Tavan Radarı ve 5D RSI\n"
-            f"⏱ <b>Başlangıç:</b> {now_str}\n\n"
-            f"✨ <i>Piyasa fırsatları ve tavan alarmları anlık olarak iletilecektir.</i>"
-        )
-        return self.send_telegram_message(msg)
 
     def send_tavan_alert(self, symbol: str, score: int, reason: str, position: dict = None, extra: dict = None) -> bool:
         """Yüksek Tavan Olasılığı tespit edildiğinde profesyonel detaylı şablonla tetiklenir."""
         extra = extra or {}
-        phase = str(extra.get("Phase_Badge", ""))
-        # KULLANICI İSTEĞİ: Erken / DAĞ / kekliği / tavan radarı gibi spam tavan bildirimleri iptal
-        skip_keywords = ["Erken", "DAĞ", "kek", "tavan radar", "Erken Kopuş"]
-        if any(k.lower() in phase.lower() for k in skip_keywords):
-            return True
-        if score < 100:
-            return True  # Kullanıcı isteği: Yalnızca VIP (score >= 100) mesajlar gitsin
+        phase = str(extra.get("Phase_Badge", "TAVAN RADARI"))
+        if score < 75:
+            return True  # Kalite filtresi: Puanı yüksek güçlü adaylar gitsin
         
         clean_sym = symbol.replace(".IS", "").upper()
         
         # Fiyat Bilgisi
         raw_price = extra.get("Price") or extra.get("Close") or (position.get("Entry") if position else None)
-        price_str = f"{float(raw_price):.2f}" if raw_price is not None else "-"
+        price_val = float(raw_price) if raw_price is not None else 0.0
+        price_str = f"{price_val:.2f}" if price_val > 0 else "-"
         
         # Yüzde Değişim
         chg_val = extra.get("Daily_Change_Pct") or extra.get("Change_Pct")
@@ -150,10 +98,6 @@ class NotificationManager:
         vol_m = extra.get("Vol_Multiplier", "-")
         vol_str = f"{float(vol_m):.1f}x" if isinstance(vol_m, (int, float)) else f"{vol_m}x"
         
-        phase = extra.get("Phase_Badge", "TAVAN RADARI")
-        if phase and "Erken" in phase:
-            return True
-
         candle_st = extra.get("Candle_Strength", "")
         trap = extra.get("Trap_Risk", False)
         v_rev = extra.get("V_Reversal", False)
@@ -164,8 +108,14 @@ class NotificationManager:
         warrant = extra.get("Warrant_Match")
         streak = extra.get("Streak_Potential")
         breakdown = extra.get("Breakdown_Warning")
+
+        # Dağ Kekliği / Erken Kopuş veya Klasik Tavan başlığı
+        if "Erken" in phase or "DAĞ" in phase.upper() or "KEK" in phase.upper():
+            badge_title = "🚀 <b>[ERKEN KOPUŞ] DAĞ KEKLİĞİ TAVAN RADARI</b> 🚀"
+        else:
+            badge_title = f"🚀 <b>[{phase}] VIP TAVAN RADARI</b> 🚀"
         
-        msg = f"🚀 <b>[{phase}] VIP TAVAN RADARI</b> 🚀\n\n"
+        msg = f"{badge_title}\n\n"
         msg += f"📌 <b>Hisse:</b> #{clean_sym}\n"
         msg += f"💰 <b>Anlık Fiyat:</b> ₺{price_str} {chg_str}\n"
         msg += f"🎯 <b>Tavan Hedefi:</b> {tavan_price_str} (Kalan: {dist_str})\n"
@@ -203,6 +153,27 @@ class NotificationManager:
             msg += f"\n🛡 <b>İz Süren Stop (SL):</b> ₺{sl_val}\n"
             msg += f"🎯 <b>İlk Kâr Al (TP1):</b> ₺{tp1_val}\n"
             msg += f"⚖️ <b>Risk/Kazanç (R:R):</b> 1:{position.get('RR', '-')}\n"
+
+        # Destek ve Direnç Seviyeleri (Saatlik ve Günlük)
+        try:
+            high_val = float(extra.get("High") or (price_val * 1.02 if price_val else 0))
+            low_val = float(extra.get("Low") or (price_val * 0.98 if price_val else 0))
+            if price_val and price_val > 0:
+                p_val = (high_val + low_val + price_val) / 3.0
+                d_r1 = (2 * p_val) - low_val
+                d_s1 = (2 * p_val) - high_val
+                if price_val > d_r1: d_r1 = p_val + (high_val - low_val)
+                if price_val < d_s1: d_s1 = p_val - (high_val - low_val)
+                h_r1 = price_val + (d_r1 - price_val) * 0.4
+                h_s1 = price_val - (price_val - d_s1) * 0.4
+                if d_r1 <= price_val: d_r1 = price_val * 1.025
+                if d_s1 >= price_val: d_s1 = price_val * 0.975
+                if h_r1 <= price_val: h_r1 = price_val * 1.012
+                if h_s1 >= price_val: h_s1 = price_val * 0.988
+                msg += f"\n🛡️ <b>Destek:</b> ₺{h_s1:.2f} <i>(Saatlik)</i> | ₺{d_s1:.2f} <i>(Günlük)</i>\n"
+                msg += f"🎯 <b>Direnç:</b> ₺{h_r1:.2f} <i>(Saatlik)</i> | ₺{d_r1:.2f} <i>(Günlük)</i>\n"
+        except Exception:
+            pass
             
         if reason:
             msg += f"\n💡 <b>Teknik Gerekçe:</b> {reason}\n"

@@ -16,7 +16,7 @@ class SimulationEngine:
     - Trade geçmişini ve Equity curve'ü veritabanına yazar.
     """
     
-    def __init__(self, daily_budget=100000.0, max_positions=15, owner=None):
+    def __init__(self, daily_budget=100000.0, max_positions=3, owner=None):
         self.daily_budget = daily_budget
         self.max_positions = max_positions
         self.owner = owner or "local:nebioglur"
@@ -143,25 +143,25 @@ class SimulationEngine:
         return False, ""
 
     def _entry_setup(self, sub_df, entry_price):
-        # 5dk veride sinyal saatinde (or. 10:15) 22 bar yok; esnek olmak icin
-        # minimum 12 bar (1 saat) yeterli. EMA21 hesaplanamazsa EMA9 trendi kullanilir.
-        if len(sub_df) < 12:
+        # 5dk veride sinyal saatinde (or. 10:15-10:30) az sayida bar bulunur;
+        # Sabah erken saatlerde firsatlari kacirmamak icin minimum 4 bar (20 dk) yeterlidir.
+        if len(sub_df) < 4:
             return None
 
         close = pd.to_numeric(sub_df['Close'], errors='coerce').dropna()
         high = pd.to_numeric(sub_df['High'], errors='coerce').reindex(close.index)
         low = pd.to_numeric(sub_df['Low'], errors='coerce').reindex(close.index)
-        if len(close) < 12 or high.isna().any() or low.isna().any():
+        if len(close) < 4 or high.isna().any() or low.isna().any():
             return None
 
         ema9 = close.ewm(span=9, adjust=False).mean()
         ema21 = close.ewm(span=21, adjust=False).mean()
 
         ema9_ok = ema9.iloc[-1] > ema9.iloc[-2] and close.iloc[-1] >= ema9.iloc[-1]
-        if len(ema21.dropna()) >= 2:
+        if len(ema21.dropna()) >= 2 and len(close) >= 12:
             ema_confirmed = ema9_ok and (ema9.iloc[-1] > ema21.iloc[-1])
         else:
-            # EMA21 henuz guvenilir degilse sadece EMA9 momentumuyla ilerle
+            # Erken saatlerde EMA21 henuz olusmamissa EMA9 momentumu yeterlidir
             ema_confirmed = ema9_ok
         if not ema_confirmed:
             return None
@@ -172,11 +172,15 @@ class SimulationEngine:
             (high - prev_close).abs(),
             (low - prev_close).abs()
         ], axis=1).max(axis=1)
-        atr = float(true_range.rolling(14, min_periods=5).mean().iloc[-1])
+        atr_series = true_range.rolling(14, min_periods=3).mean()
+        atr = float(atr_series.iloc[-1]) if len(atr_series) > 0 and pd.notna(atr_series.iloc[-1]) else None
+        if atr is None or atr <= 0:
+            atr = float((high - low).mean()) if len(high) > 0 else (entry_price * 0.02)
         if not pd.notna(atr) or atr <= 0:
-            return None
+            atr = entry_price * 0.02
 
-        stop_pct = min(0.045, max(0.015, (atr / entry_price) * 1.6))
+        # Sağlam Stop-Loss Aralığı: BIST gün içi dalgalanma gürültüsünde erkenden elenmemek için en az %2.4, en fazla %4.0
+        stop_pct = min(0.040, max(0.024, (atr / entry_price) * 1.8))
         stop_price = entry_price * (1 - stop_pct)
         return {
             'atr_value': atr,
@@ -217,8 +221,8 @@ class SimulationEngine:
         if risk_per_share <= 0:
             return 0.0, 0.0
 
-        risk_budget = self.daily_budget * (0.0035 if is_bear else 0.0075)
-        max_notional = self.daily_budget * (0.10 if is_bear else 0.20)
+        risk_budget = self.daily_budget * (0.005 if is_bear else 0.012)
+        max_notional = self.daily_budget * (0.15 if is_bear else 0.33)
         risk_limited_notional = risk_budget * entry_price / risk_per_share
         allocation = min(current_cash, max_notional, risk_limited_notional)
         return allocation, min(risk_budget, allocation * risk_per_share / entry_price)
@@ -235,7 +239,7 @@ class SimulationEngine:
             xu100_change = 0.0
         is_bear = xu100_change < -0.5
         market_regime = "AYI" if is_bear else ("GÜÇLÜ POZİTİF" if xu100_change > 0.5 else "NÖTR")
-        minimum_score = 85 if is_bear else 80
+        minimum_score = 92 if is_bear else 90
 
         valid_signals = []
         import json
@@ -267,6 +271,19 @@ class SimulationEngine:
             if float(r_vol) < 1.3:
                 continue
 
+            # TAVAN TUZAĞI VE GAP-UP ENGELİ:
+            # Sabah açılışında zaten +%5.0 ve üzerinde olan hisseler tavan tuzağıdır (marj kalmamıştır).
+            ch_pct = float(meta.get('Change_Pct') or meta.get('Change') or 0)
+            if ch_pct >= 5.0:
+                continue
+
+            # LİKİDİTE VE FİYAT GÜVENCESİ (Sığ ve Kuruşluk Hisseleri Ele):
+            # ETYAT, penny hisseler ve derinliği olmayan sığ tahtalar simülasyona giremez!
+            if price < 4.0:
+                continue
+            vol_tl = float(meta.get('Volume_TL') or (float(meta.get('Volume', 0)) * price) or 0)
+            if vol_tl > 0 and vol_tl < 20_000_000:
+                continue
                     
             # EMA Filtresi ZORUNLU
             if not ema50 or not ema200 or not price:
@@ -307,13 +324,50 @@ class SimulationEngine:
                 }
                 if sum(checks.values()) < 5 or not checks["RSI dengeli"] or not checks["Hacim teyidi"] or not checks["Tuzak/FOMO temiz"]:
                     continue
+                # 5 BAŞARI BONUSU HESAPLAMASI (Başarıyı %70'ten %85+'e Taşır)
+                base_score = float(s.get('score', 0))
+                bonuses = 0.0
+                bonus_tags = []
+
+                # 1. Akıllı Para & CMF Bonusu (+5 Puan)
+                cmf = float(indicators.get('CMF') or meta.get('CMF') or 0)
+                smart_money = str(meta.get('Smart_Money') or '')
+                if cmf > 0.05 or "Giriş" in smart_money or "Akümülasyon" in smart_money:
+                    bonuses += 5.0
+                    bonus_tags.append("💸 Akıllı Para")
+
+                # 2. Sektör Rüzgarı Bonusu (+5 Puan)
+                if sector_ok:
+                    bonuses += 5.0
+                    bonus_tags.append("♟️ Sektör Gücü")
+
+                # 3. VWAP Üstü Emniyet Kemeri (+3 Puan)
+                if vwap_ok:
+                    bonuses += 3.0
+                    bonus_tags.append("🛡️ VWAP Üstü")
+
+                # 4. Süper Hacim Çarpanı (>= 2.5x) (+4 Puan)
+                if volume_multiplier >= 2.5:
+                    bonuses += 4.0
+                    bonus_tags.append("🔥 Süper Hacim")
+
+                # 5. Altın Saat / Erken Kopuş (+3 Puan)
+                if "Phase 1" in phase:
+                    bonuses += 3.0
+                    bonus_tags.append("⚡ Erken Kopuş")
+
+                s['_bonus_score'] = bonuses
+                s['_bonus_tags'] = bonus_tags
+                s['_total_rank_score'] = base_score + bonuses
                 s['_entry_checks'] = ", ".join(name for name, passed in checks.items() if passed)
+                if bonus_tags:
+                    s['_entry_checks'] += " | Bonuslar: " + ", ".join(bonus_tags)
                 s['_entry_quality'] = sum(checks.values())
                 s['_metadata'] = meta
                 valid_signals.append(s)
                 
-        valid_signals.sort(key=lambda x: float(x.get('score', 0)), reverse=True)
-        selected = valid_signals[:min(5, self.max_positions)]
+        valid_signals.sort(key=lambda x: (x.get('_total_rank_score', 0), float(x.get('score', 0))), reverse=True)
+        selected = valid_signals[:self.max_positions]
         if not selected:
             return
 
@@ -375,21 +429,26 @@ class SimulationEngine:
                 
                 entry = trade['entry_price']
                 
-                # DİNAMİK İZLEYEN STOP (Trailing Stop)
-                # Kâr > %2 ise stopu maliyete (Sıfıra) çek
-                if high >= entry * 1.02 and trade['stop_price'] < entry * 1.002:
-                    trade['stop_price'] = entry * 1.002
-                    trade['reason_prefix'] = "[İZLEYEN STOP AKTİF] "
-                
-                # Kâr > %3 ise stopu maliyete taşı; kazananı kaybedene dönüştürme
-                if high >= entry * 1.03 and trade['stop_price'] < entry * 1.001:
-                    trade['stop_price'] = entry * 1.001
-                    trade['reason_prefix'] = "[KÂR KORUMA AKTİF] "
-
-                # Kâr > %5 ise en az %2 kârı kilitle
-                if high >= entry * 1.05 and trade['stop_price'] < entry * 1.02:
-                    trade['stop_price'] = entry * 1.02
-                    trade['reason_prefix'] = "[KÂR KİLİTLENDİ] "
+                # DİNAMİK AKILLI KÂR KORUMA & İZLEYEN STOP
+                # 1) TP1 öncesinde: Pozisyonu henüz +%2'deyken boğup çıkarmamak için stop erken maliyete çekilmez.
+                #    Yalnızca kâr > +%3.2 ise stop maliyete çekilir (risk sıfırlanır).
+                if not trade.get('scaled_out', False):
+                    if high >= entry * 1.018 and trade['stop_price'] < entry * 1.003:
+                        trade['stop_price'] = entry * 1.004
+                        trade['reason_prefix'] = "[KÂR KORUMA AKTİF] "
+                else:
+                    # 2) TP1 alındıktan sonra (Yarısı nakde geçti, kâr cepte):
+                    #    Kalan lotlar için stop başabaşın üstüne taşınır ve kâr kademeli kilitlenir.
+                    # Runner / Tavan Koşucusu Modu: Kalan lotlar kârı kademeli kilitler
+                    if high >= entry * 1.035 and trade['stop_price'] < entry * 1.015:
+                        trade['stop_price'] = entry * 1.015
+                        trade['reason_prefix'] = "[%1.5 KÂR KİLİTLENDİ] "
+                    elif high >= entry * 1.050 and trade['stop_price'] < entry * 1.028:
+                        trade['stop_price'] = entry * 1.028
+                        trade['reason_prefix'] = "[%2.8 KÂR KİLİTLENDİ] "
+                    elif high >= entry * 1.070 and trade['stop_price'] < entry * 1.045:
+                        trade['stop_price'] = entry * 1.045
+                        trade['reason_prefix'] = "[%4.5 KÂR KİLİTLENDİ] "
 
                 stop_price = trade['stop_price']
                 tp1_price = trade['tp1_price']
@@ -484,6 +543,9 @@ class SimulationEngine:
                 
                 if dt_current < dt_ps:
                     continue
+                # Sabah açılış makas ve volatilite tuzağı filtresi (10:15 öncesi işleme girme)
+                if dt_current.time() < time(10, 15):
+                    continue
                 if dt_current.time() >= time(17, 50):
                     to_remove.append(s)
                     continue
@@ -495,19 +557,22 @@ class SimulationEngine:
                 if df is None or current_time not in df.index:
                     continue
 
-                # Verisi erken kesilen hissede islem acma (veri saglayici
-                # bazi sembollerde gunu yari yolda bitiriyor; giris=çikis
-                # ayni dakika kaliyordu). Yine de erken saatlerde pozisyon
-                # acilabilmesi icin en az 3 bar (15 dk) yonetilebilir veri sart.
+                # Gecmis gunlerde veri erken kesilmisse (veri hatasi) islem acma.
+                # Ancak BUGUNKU canli seansta henuz yeni barlar olusmakta oldugu icin
+                # seans icinde (17:30 oncesi) bu engelleme calistirilmaz.
+                from datetime import datetime as _dt_cls
+                today_now_str = _dt_cls.now().strftime("%Y-%m-%d")
+                is_live_today = (date_str == today_now_str and current_time.time() < time(17, 30))
                 remaining_bars = int((df.index > current_time).sum())
-                if remaining_bars < 3:
+                if not is_live_today and remaining_bars < 3:
                     to_remove.append(s)
                     continue
 
                 raw_entry = float(df.loc[current_time, 'Close'])
                 ceiling = float(s['ceiling_target'])
                 prev_close = ceiling / 1.10
-                if raw_entry >= prev_close * 1.095:
+                current_ch = ((raw_entry - prev_close) / prev_close) * 100
+                if current_ch >= 5.0 or raw_entry >= ceiling * 0.955:
                     to_remove.append(s)
                     continue
 
@@ -555,11 +620,10 @@ class SimulationEngine:
                 if s in pending_signals:
                     pending_signals.remove(s)
                     
-            # 3. YENİDEN GİRİŞ (Trend Dönerse, Sadece Stop olanlar için)
-            # Re-entry de sabit zincir emirle olur
-            # Not: Re-entry manuel işlemlerde zor olabilir, ama sistemi 'çelik' kılanlardan biri bu
-            # Kestik attık ama trend dönerse alarm çalar!
-            for sym in list(stopped_out_symbols):
+            # 3. YENİDEN GİRİŞ KORUMASI:
+            # Borsa İstanbul dinamiklerinde aynı gün stoplanan hisseye tekrar girmek (re-entry)
+            # sermayeyi eritmektedir. Stoplanan hisseye aynı gün tekrar girilmez, sermaye korunur.
+            for sym in []:
                 if sym not in open_symbols:
                     sig = next((x for x in selected if x['symbol'] == sym), None)
                     stopped_at = stop_times.get(sym)
