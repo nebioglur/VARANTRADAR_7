@@ -2724,16 +2724,13 @@ def api_tavan_tracker():
 def api_simulation_daily_pnl():
     try:
         from services.trade_database import get_connection
-        conn = get_connection()
-        
-        # Get all trades
         import sqlite3
-        from contextlib import closing
         with get_connection() as conn:
             conn.row_factory = sqlite3.Row
             c = conn.cursor()
             owner = get_owner_key()
-            # Fetch daily equity log (hesaba ozel)
+            
+            # Fetch daily equity log (hesaba ozel, tum gecmis aylar dahil)
             c.execute("SELECT * FROM equity_log WHERE owner=? ORDER BY date_str ASC", (owner,))
             equity_rows = c.fetchall()
             equity_curve = [dict(row) for row in equity_rows]
@@ -2741,10 +2738,47 @@ def api_simulation_daily_pnl():
                 from datetime import datetime
                 equity_curve = [{"date_str": datetime.now().strftime("%Y-%m-%d"), "start_equity": 100000.0, "end_equity": 100000.0, "total_pnl": 0.0}]
 
-            # Fetch closed trades (hesaba ozel)
-            c.execute("SELECT * FROM trades WHERE owner=? ORDER BY entry_time DESC LIMIT 100", (owner,))
+            # Fetch closed trades (hesaba ozel, limit 500)
+            c.execute("SELECT * FROM trades WHERE owner=? ORDER BY entry_time DESC LIMIT 500", (owner,))
             trade_rows = c.fetchall()
             trades = [dict(row) for row in trade_rows]
+            
+            # KÜMÜLATİF ASLA SIFIRLANMAYAN YEKÜN HESABI (TÜM AYLAR VE ANLIK AÇIK POZİSYONLAR DAHİL)
+            c.execute("SELECT COUNT(*), COALESCE(SUM(pnl_val), 0.0), SUM(CASE WHEN pnl_val > 0 THEN 1 ELSE 0 END) FROM trades WHERE owner=? AND exit_time IS NOT NULL", (owner,))
+            tot_row = c.fetchone()
+            all_time_closed_trades = int(tot_row[0] or 0)
+            all_time_closed_pnl = round(float(tot_row[1] or 0.0), 2)
+            all_time_wins = int(tot_row[2] or 0)
+            
+            try:
+                c.execute("SELECT COALESCE(SUM(pnl_val), 0.0), COUNT(*) FROM live_positions WHERE owner=? AND pnl_val IS NOT NULL", (owner,))
+                lp_row = c.fetchone()
+                open_pnl = round(float(lp_row[0] or 0.0), 2) if lp_row else 0.0
+                open_count = int(lp_row[1] or 0) if lp_row else 0
+            except Exception:
+                open_pnl = 0.0
+                open_count = 0
+            
+            c.execute('''
+                SELECT SUBSTR(entry_time, 1, 7) as month_key, COUNT(*) as cnt, COALESCE(SUM(pnl_val), 0.0) as pnl
+                FROM trades
+                WHERE owner=? AND exit_time IS NOT NULL
+                GROUP BY month_key
+                ORDER BY month_key ASC
+            ''', (owner,))
+            monthly_breakdown = [
+                {"month": r["month_key"], "trades": r["cnt"], "pnl": round(float(r["pnl"] or 0.0), 2)}
+                for r in c.fetchall()
+            ]
+            
+            base_starting_capital = 100000.0
+            if equity_curve and equity_curve[0].get("start_equity"):
+                base_starting_capital = float(equity_curve[0]["start_equity"])
+                
+            latest_logged_equity = float(equity_curve[-1]["end_equity"]) if equity_curve else base_starting_capital
+            cumulative_equity = round(latest_logged_equity + open_pnl, 2)
+            cumulative_net_pnl = round(cumulative_equity - base_starting_capital, 2)
+            cumulative_return_pct = round((cumulative_net_pnl / base_starting_capital) * 100, 2)
             
             from services.statistics_engine import StatisticsEngine
             performance = StatisticsEngine.get_trade_performance(owner)
@@ -2752,7 +2786,18 @@ def api_simulation_daily_pnl():
                 "status": "success",
                 "equity_curve": sanitize_for_json(equity_curve),
                 "trades": sanitize_for_json(trades),
-                "performance": sanitize_for_json(performance)
+                "performance": sanitize_for_json(performance),
+                "cumulative_summary": {
+                    "base_capital": base_starting_capital,
+                    "cumulative_equity": cumulative_equity,
+                    "cumulative_net_pnl": cumulative_net_pnl,
+                    "cumulative_return_pct": cumulative_return_pct,
+                    "all_time_closed_trades": all_time_closed_trades,
+                    "all_time_wins": all_time_wins,
+                    "open_positions_count": open_count,
+                    "open_positions_pnl": open_pnl,
+                    "monthly_breakdown": monthly_breakdown
+                }
             })
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})

@@ -171,10 +171,18 @@
                     <h2 style="margin:0; font-size:1.5rem; color:var(--text-light);"><i class="fa-solid fa-fire text-yellow"></i> Canlı Piyasa Radarı</h2>
                     <p style="margin:0.5rem 0 0 0; color:var(--text-muted); font-size:0.95rem;">Tüm BIST hisseleri taranarak kategorize edilmektedir.</p>
                 
-                <div style="margin-top:15px; padding:12px; background:var(--bg-secondary); border-radius:8px; border:1px solid rgba(255,255,255,0.05); display:inline-block;">
-                    <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:5px;"><i class="fa-solid fa-compass"></i> PİYASA YÖNÜ & NAKİT KOKPİTİ (BIST100)</div>
-                    <div id="shield-status" style="font-weight:bold; font-size:1.1rem; color:var(--text-main);">
-                        <i class="fa-solid fa-spinner fa-spin"></i> Hesaplanıyor...
+                <div style="margin-top:15px; padding:12px; background:var(--bg-secondary); border-radius:8px; border:1px solid rgba(255,255,255,0.05); display:inline-flex; align-items:center; gap:1.5rem; flex-wrap:wrap;">
+                    <div>
+                        <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:5px;"><i class="fa-solid fa-compass"></i> PİYASA YÖNÜ & NAKİT KOKPİTİ (BIST100)</div>
+                        <div id="shield-status" style="font-weight:bold; font-size:1.1rem; color:var(--text-main);">
+                            <i class="fa-solid fa-spinner fa-spin"></i> Hesaplanıyor...
+                        </div>
+                    </div>
+                    <div style="border-left:1px solid rgba(255,255,255,0.1); padding-left:1.2rem;">
+                        <div style="font-size:0.75rem; color:#fbbf24; margin-bottom:5px; font-weight:700;"><i class="fa-solid fa-crown"></i> KÜMÜLATİF KASA (TÜM AYLAR)</div>
+                        <div id="home-kpi-cumulative-equity" style="font-weight:900; font-size:1.15rem; color:#10b981;">
+                            <i class="fa-solid fa-spinner fa-spin"></i>
+                        </div>
                     </div>
                 </div>
                 </div>
@@ -1689,23 +1697,37 @@
                 <p style="color:var(--text-muted); font-size: 0.95rem;">Tavan adaylarına yatırım yapan ve UZAK DUR sinyaliyle çıkış yapan test motoru.</p>
             </div>
 
-            <!-- 4 KPI Cards row -->
-            <div id="sim-kpi-row" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1.5rem; margin-bottom:2rem;">
-                <div class="card" style="background: linear-gradient(145deg, rgba(30,41,59,0.5) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(255,255,255,0.05); text-align:center; padding: 1.5rem;">
+            <!-- 5 KPI Cards row (Asla Sıfırlanmayan Kümülatif Kasa Dahil) -->
+            <div id="sim-kpi-row" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:1.2rem; margin-bottom:2rem;">
+                <!-- 👑 YENİ KÜMÜLATİF KART: GEÇEN AYLAR DAHİL ASLA SIFIRLANMAYAN ANLIK YEKÜN -->
+                <div class="card" style="background: linear-gradient(145deg, rgba(245, 158, 11, 0.14) 0%, rgba(16, 185, 129, 0.18) 100%); border: 1.5px solid rgba(245, 158, 11, 0.55); text-align:center; padding: 1.4rem 1.1rem; position:relative; overflow:hidden; box-shadow: 0 4px 20px rgba(245, 158, 11, 0.15);">
+                    <div style="position:absolute; top:8px; right:8px; font-size:0.65rem; background:rgba(245, 158, 11, 0.25); color:#fbbf24; padding:2px 7px; border-radius:12px; font-weight:800; border:1px solid rgba(245,158,11,0.4); letter-spacing:0.5px;">
+                        <i class="fa-solid fa-infinity"></i> SIFIRLANMAZ
+                    </div>
+                    <div style="font-size:0.8rem; color:#fbbf24; margin-bottom:0.5rem; text-transform:uppercase; letter-spacing:1px; font-weight:800;">
+                        <i class="fa-solid fa-crown" style="color:#f59e0b; margin-right:4px;"></i> Toplam Kümülatif Kasa
+                    </div>
+                    <div id="sim-kpi-cumulative-equity" style="font-size:1.95rem; font-weight:900; color:#10b981; letter-spacing:-0.5px; line-height:1.2;">-</div>
+                    <div id="sim-kpi-cumulative-sub" style="font-size:0.75rem; color:var(--text-muted); margin-top:0.4rem; line-height:1.4;">
+                        Geçmiş aylar dahil anlık yekün
+                    </div>
+                </div>
+
+                <div class="card" style="background: linear-gradient(145deg, rgba(30,41,59,0.5) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(255,255,255,0.05); text-align:center; padding: 1.4rem 1rem;">
                     <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-wallet"></i> Başlangıç Bakiyesi</div>
-                    <div id="sim-kpi-start" style="font-size:2rem; font-weight:800; color:var(--text-main);">-</div>
+                    <div id="sim-kpi-start" style="font-size:1.85rem; font-weight:800; color:var(--text-main);">-</div>
                 </div>
-                <div class="card" style="background: linear-gradient(145deg, rgba(30,41,59,0.5) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(16,185,129,0.2); text-align:center; padding: 1.5rem;">
+                <div class="card" style="background: linear-gradient(145deg, rgba(30,41,59,0.5) 0%, rgba(16,185,129,0.2); text-align:center; padding: 1.4rem 1rem;">
                     <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-sack-dollar"></i> Son Bakiye</div>
-                    <div id="sim-kpi-end" style="font-size:2rem; font-weight:800; color:var(--accent-green);">-</div>
+                    <div id="sim-kpi-end" style="font-size:1.85rem; font-weight:800; color:var(--accent-green);">-</div>
                 </div>
-                <div class="card" style="background: linear-gradient(145deg, rgba(30,41,59,0.5) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(59,130,246,0.2); text-align:center; padding: 1.5rem;">
+                <div class="card" style="background: linear-gradient(145deg, rgba(30,41,59,0.5) 0%, rgba(59,130,246,0.2); text-align:center; padding: 1.4rem 1rem;">
                     <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-arrow-trend-up"></i> Toplam Getiri (%)</div>
-                    <div id="sim-kpi-total-pct" style="font-size:2rem; font-weight:800; color:var(--accent-blue);">-</div>
+                    <div id="sim-kpi-total-pct" style="font-size:1.85rem; font-weight:800; color:var(--accent-blue);">-</div>
                 </div>
-                <div class="card" style="background: linear-gradient(145deg, rgba(30,41,59,0.5) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(168,85,247,0.2); text-align:center; padding: 1.5rem;">
+                <div class="card" style="background: linear-gradient(145deg, rgba(30,41,59,0.5) 0%, rgba(168,85,247,0.2); text-align:center; padding: 1.4rem 1rem;">
                     <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-list-check"></i> İşlem Sayısı</div>
-                    <div id="sim-kpi-trades" style="font-size:2rem; font-weight:800; color:var(--accent-purple);">-</div>
+                    <div id="sim-kpi-trades" style="font-size:1.85rem; font-weight:800; color:var(--accent-purple);">-</div>
                 </div>
             </div>
 

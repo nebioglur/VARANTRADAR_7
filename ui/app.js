@@ -4292,6 +4292,7 @@ async function fetchSimulationData() {
             // Calculate KPIs
             const equityCurve = data.equity_curve || [];
             const trades = data.trades || [];
+            const cum = data.cumulative_summary || {};
             
             let startBakiye = 0;
             let endBakiye = 0;
@@ -4305,15 +4306,48 @@ async function fetchSimulationData() {
                 }
             }
             
+            // Asla Sıfırlanmayan Kümülatif Toplam Kasa (Geçmiş Tüm Aylar + Anlık Açık Pozisyonlar Dahil)
+            const baseCap = cum.base_capital || startBakiye || 100000.0;
+            const cumEquity = cum.cumulative_equity !== undefined ? cum.cumulative_equity : (endBakiye || baseCap);
+            const cumPnl = cum.cumulative_net_pnl !== undefined ? cum.cumulative_net_pnl : (cumEquity - baseCap);
+            const cumPct = cum.cumulative_return_pct !== undefined ? cum.cumulative_return_pct : ((cumPnl / baseCap) * 100);
+            const isCumProfit = cumPnl >= 0;
+
             const isProfit = totalGetiri >= 0;
             const el = (id) => document.getElementById(id);
+
+            // 👑 YENİ KÜMÜLATİF KART GÜNCELLEMESİ
+            if (el('sim-kpi-cumulative-equity')) {
+                el('sim-kpi-cumulative-equity').innerText = cumEquity.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₺';
+                el('sim-kpi-cumulative-equity').style.color = isCumProfit ? 'var(--accent-green)' : 'var(--accent-red)';
+            }
+            if (el('sim-kpi-cumulative-sub')) {
+                const sign = isCumProfit ? '+' : '';
+                let detailText = `<b style="color:${isCumProfit ? 'var(--accent-green)' : 'var(--accent-red)'}">Net K/Z: ${sign}₺${cumPnl.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${sign}%${cumPct.toFixed(2)})</b>`;
+                if (cum.monthly_breakdown && cum.monthly_breakdown.length > 0) {
+                    const mParts = cum.monthly_breakdown.map(m => {
+                        const mName = m.month === '2026-09' ? 'Eylül' : (m.month === '2026-10' ? 'Ekim' : m.month);
+                        const mSign = m.pnl >= 0 ? '+' : '';
+                        return `${mName}: ${mSign}₺${Math.round(m.pnl).toLocaleString('tr-TR')}`;
+                    });
+                    detailText += `<br><span style="color:#94a3b8; font-size:0.73rem;">${mParts.join(' · ')}</span>`;
+                } else {
+                    detailText += `<br><span style="color:#94a3b8; font-size:0.73rem;">Geçmiş aylar dahil kesintisiz yekün</span>`;
+                }
+                el('sim-kpi-cumulative-sub').innerHTML = detailText;
+            }
+
+            if (el('home-kpi-cumulative-equity')) {
+                el('home-kpi-cumulative-equity').innerText = '👑 Kasa: ' + cumEquity.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₺';
+            }
+
             if (el('sim-kpi-start')) el('sim-kpi-start').innerText = startBakiye.toLocaleString('tr-TR', {minimumFractionDigits:2}) + ' ₺';
             if (el('sim-kpi-end')) el('sim-kpi-end').innerText = endBakiye.toLocaleString('tr-TR', {minimumFractionDigits:2}) + ' ₺';
             if (el('sim-kpi-total-pct')) {
                 el('sim-kpi-total-pct').innerText = (isProfit ? '+' : '') + totalGetiri.toFixed(2) + '%';
                 el('sim-kpi-total-pct').style.color = isProfit ? 'var(--accent-green)' : 'var(--accent-red)';
             }
-            if (el('sim-kpi-trades')) el('sim-kpi-trades').innerText = trades.length;
+            if (el('sim-kpi-trades')) el('sim-kpi-trades').innerText = (cum.all_time_closed_trades || trades.length);
             
             // Render Equity Curve Chart
             renderEquityCurveChart(equityCurve);
