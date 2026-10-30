@@ -2112,6 +2112,18 @@
             </div>
         </div>
 
+        <!-- BIST 100 HAVA DURUMU VE LOKOMOTİF SEKTÖR ÇUBUĞU -->
+        <div id="v8-market-pulse-bar" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; background:rgba(15,23,42,0.7); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:0.65rem 1rem; margin-bottom:1.25rem; font-size:0.8rem;">
+            <div id="v8-regime-pill" style="display:flex; align-items:center; gap:0.5rem; font-weight:700;">
+                <span style="color:var(--text-muted);"><i class="fa-solid fa-cloud-sun"></i> Rejim:</span>
+                <span id="v8-regime-text" style="color:#10b981;">Hesaplanıyor...</span>
+            </div>
+            <div id="v8-sectors-pill" style="display:flex; align-items:center; gap:0.5rem; font-size:0.75rem;">
+                <span style="color:var(--text-muted); font-weight:600;"><i class="fa-solid fa-fire"></i> Lokomotif Sektörler:</span>
+                <span id="v8-sectors-text" style="color:#60a5fa;">Taranıyor...</span>
+            </div>
+        </div>
+
         <!-- AL KARARI VERİLMİŞ HİSSELER — KARTLAR -->
         <div style="margin-bottom:0.75rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem;">
             <h3 style="margin:0; color:#10b981; font-size:1rem;"><i class="fa-solid fa-bolt"></i> V8 Kırılım & Giriş Onaylı Hisseler</h3>
@@ -2424,7 +2436,7 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="app.js?v=20261027_bonuses"></script>
+    <script src="app.js?v=20261030_v8_elite"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js?v=20260916_v13"></script>
     <script>
@@ -2466,7 +2478,7 @@
         // PWA service worker kaydi (canli veri API'leri onbelleklenmez)
         if ("serviceWorker" in navigator) {
             window.addEventListener("load", function () {
-                navigator.serviceWorker.register("/sw.js?v=20261021_v3").then(function(reg) { if (reg) reg.update(); }).catch(function () {});
+                navigator.serviceWorker.register("/sw.js?v=20261030_v20").then(function(reg) { if (reg) reg.update(); }).catch(function () {});
             });
         }
     </script>

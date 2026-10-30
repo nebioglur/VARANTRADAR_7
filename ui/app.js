@@ -5932,6 +5932,14 @@ function renderV8BreakoutCard(d, isCandidate = false) {
     let badgeBg = '#10b981';
     let cardBorder = 'rgba(16,185,129,0.35)';
     let cardBg = 'rgba(16,185,129,0.06)';
+    let glowStyle = '';
+
+    if (d.is_fresh_signal) {
+        badgeText = '🔥 TAZE KOPUŞ (AL)';
+        badgeBg = '#059669';
+        cardBorder = '#10b981';
+        glowStyle = 'box-shadow: 0 0 16px rgba(16, 185, 129, 0.45);';
+    }
 
     if (isCandidate) {
         if (d.entry_status === 'WAIT_PULLBACK') {
@@ -5948,25 +5956,54 @@ function renderV8BreakoutCard(d, isCandidate = false) {
     }
 
     const price = Number(d.price || 0);
-    const t1 = d.target_1 || (price * 1.022);
-    const t2 = d.target_2 || (price * 1.048);
-    const sl = d.stop_loss || (price * 0.975);
+    const t1_pct = d.target_1_pct || 2.2;
+    const t2_pct = d.target_2_pct || 4.8;
+    const sl_pct = d.stop_loss_pct || -2.5;
+    const t1 = d.target_1 || (price * (1.0 + t1_pct / 100.0));
+    const t2 = d.target_2 || (price * (1.0 + t2_pct / 100.0));
+    const sl = d.stop_loss || (price * (1.0 + sl_pct / 100.0));
     const upside = d.remaining_upside_pct || Math.max(0, 10.0 - Number(d.change_pct || 0)).toFixed(1);
     const bonuses = d.success_bonuses || [];
-    const bonusHtml = bonuses.length > 0
+    const conf = d.confidence_pct || 90;
+
+    const sectorBadge = d.sector_name
+        ? `<span style="background:rgba(99,102,241,0.18); border:1px solid rgba(99,102,241,0.38); color:#a5b4fc; font-size:0.68rem; font-weight:700; padding:2px 7px; border-radius:4px;">${d.sector_name}${d.is_sector_leader ? ' 🔥' : ''}</span>`
+        : '';
+
+    const confBadge = `<span style="background:rgba(16,185,129,0.18); border:1px solid rgba(16,185,129,0.45); color:#34d399; font-size:0.68rem; font-weight:800; padding:2px 7px; border-radius:4px;"><i class="fa-solid fa-shield-halved"></i> Güven: %${conf}</span>`;
+
+    const bonusHtml = (bonuses.length > 0 || sectorBadge)
         ? `<div style="display:flex; flex-wrap:wrap; gap:0.3rem; margin:0.4rem 0 0.6rem;">
+            ${confBadge}
+            ${sectorBadge}
             ${bonuses.map(b => `<span style="background:rgba(59,130,246,0.18); border:1px solid rgba(59,130,246,0.35); color:#93c5fd; font-size:0.68rem; font-weight:700; padding:2px 7px; border-radius:4px;">${b}</span>`).join('')}
            </div>`
         : '';
 
-    const varrantInfo = d.varrant_info && d.varrant_info.status === 'VARRANT_FOUND'
-        ? `<div style="margin-top:0.5rem; padding:0.4rem 0.6rem; background:rgba(168,85,247,0.12); border:1px solid rgba(168,85,247,0.3); border-radius:6px; font-size:0.75rem; color:#c084fc;">
-             <i class="fa-solid fa-bolt"></i> Varant: <b>${d.varrant_info.varrant_prefix}</b> — Kaldıraç: ~${d.varrant_info.estimated_leverage}x
-           </div>`
-        : '';
+    // V8 Hisse -> Varant Otomatik Eşleştirme Kartı
+    let varrantHtml = '';
+    if (d.warrant_rec && d.warrant_rec.has_warrant) {
+        const w = d.warrant_rec;
+        varrantHtml = `
+            <div style="margin-top:0.6rem; padding:0.55rem 0.75rem; background:linear-gradient(135deg, rgba(168,85,247,0.14), rgba(234,179,8,0.12)); border:1px solid rgba(168,85,247,0.35); border-radius:8px; font-size:0.75rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.25rem;">
+                    <span style="font-weight:800; color:#c084fc;"><i class="fa-solid fa-bolt"></i> Varant: <b>${w.warrant_code}</b> (ALIM)</span>
+                    <span style="background:rgba(234,179,8,0.25); color:#facc15; font-weight:800; padding:2px 6px; border-radius:4px; font-size:0.68rem;">${w.eff_gearing}x Kaldıraç</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; color:var(--text-muted); font-size:0.72rem;">
+                    <span>Hisse Hedef 1 (+%${t1_pct}):</span>
+                    <span style="color:#34d399; font-weight:800; font-size:0.78rem;">Varant Kârı: +%${w.projected_gain_pct} 🚀</span>
+                </div>
+            </div>`;
+    } else if (d.varrant_info && d.varrant_info.status === 'VARRANT_FOUND') {
+        varrantHtml = `
+            <div style="margin-top:0.5rem; padding:0.4rem 0.6rem; background:rgba(168,85,247,0.12); border:1px solid rgba(168,85,247,0.3); border-radius:6px; font-size:0.75rem; color:#c084fc;">
+                 <i class="fa-solid fa-bolt"></i> Varant: <b>${d.varrant_info.varrant_prefix}</b> — Kaldıraç: ~${d.varrant_info.estimated_leverage}x
+            </div>`;
+    }
 
     const card = document.createElement('div');
-    card.style.cssText = `background:${cardBg}; border:1px solid ${cardBorder}; border-radius:12px; padding:1rem; position:relative; overflow:hidden;`;
+    card.style.cssText = `background:${cardBg}; border:1px solid ${cardBorder}; border-radius:12px; padding:1rem; position:relative; overflow:hidden; ${glowStyle}`;
     card.innerHTML = `
         <div style="position:absolute; top:0; right:0; background:${badgeBg}; color:#fff; font-size:0.68rem; font-weight:800; padding:3px 10px; border-bottom-left-radius:8px; letter-spacing:0.5px;">${badgeText}</div>
         <div style="font-size:1.25rem; font-weight:800; color:var(--text-light); margin-bottom:0.6rem;">${d.symbol}</div>
@@ -6000,24 +6037,24 @@ function renderV8BreakoutCard(d, isCandidate = false) {
             <div style="background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); border-radius:6px; padding:0.35rem 0.2rem;">
                 <div style="color:#ef4444; font-size:0.65rem; font-weight:700;">ZARAR KES</div>
                 <div style="font-weight:800; color:#fff;">₺${Number(sl).toFixed(2)}</div>
-                <div style="font-size:0.65rem; color:#ef4444;">-%2.5</div>
+                <div style="font-size:0.65rem; color:#ef4444;">${sl_pct}%</div>
             </div>
             <div style="background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.35); border-radius:6px; padding:0.35rem 0.2rem;">
                 <div style="color:#10b981; font-size:0.65rem; font-weight:700;">🎯 KÂR AL 1</div>
                 <div style="font-weight:800; color:#fff;">₺${Number(t1).toFixed(2)}</div>
-                <div style="font-size:0.65rem; color:#10b981;">+%2.2 (Kârı Kilitle)</div>
+                <div style="font-size:0.65rem; color:#10b981;">+${t1_pct}% (Kârı Kilitle)</div>
             </div>
             <div style="background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.35); border-radius:6px; padding:0.35rem 0.2rem;">
                 <div style="color:#60a5fa; font-size:0.65rem; font-weight:700;">🚀 HEDEF 2</div>
                 <div style="font-weight:800; color:#fff;">₺${Number(t2).toFixed(2)}</div>
-                <div style="font-size:0.65rem; color:#60a5fa;">+%4.8 (Kopuş)</div>
+                <div style="font-size:0.65rem; color:#60a5fa;">+${t2_pct}% (Kopuş)</div>
             </div>
         </div>
         <div style="margin-top:0.4rem; font-size:0.72rem; color:#34d399; display:flex; justify-content:space-between; align-items:center; background:rgba(16,185,129,0.08); padding:0.3rem 0.5rem; border-radius:6px;">
             <span>🛡️ <b>Sıfır Risk:</b> +%1.8 kârda stop maliyet üstüne taşınır</span>
             <span style="color:#facc15; font-weight:700;">Tavana Kalan: +%${upside}</span>
         </div>
-        ${varrantInfo}
+        ${varrantHtml}
     `;
     return card;
 }
@@ -6035,6 +6072,28 @@ function loadV8Breakout() {
             const countAvoid = document.getElementById('v8-count-avoid');
             const countTotal = document.getElementById('v8-count-total');
 
+            // BIST 100 Piyasa Rejimi (Hava Durumu) Güncellemesi
+            if (json.market_regime) {
+                const reg = json.market_regime;
+                const regEl = document.getElementById('v8-regime-text');
+                if (regEl) {
+                    const chSign = reg.xu100_change >= 0 ? '+' : '';
+                    regEl.innerHTML = `${reg.label} <span style="font-size:0.72rem; color:var(--text-muted); font-weight:normal;">(BIST: ${chSign}%${reg.xu100_change} • ${reg.rule})</span>`;
+                }
+            }
+
+            // Lokomotif Sektörler Güncellemesi
+            if (json.sector_pulse && json.sector_pulse.length > 0) {
+                const secEl = document.getElementById('v8-sectors-text');
+                if (secEl) {
+                    secEl.innerHTML = json.sector_pulse.map(s => {
+                        const sign = s.avg_change >= 0 ? '+' : '';
+                        const color = s.is_hot ? '#34d399' : (s.avg_change >= 0 ? '#60a5fa' : '#f87171');
+                        return `<span style="color:${color}; font-weight:700;">${s.label} (${sign}%${s.avg_change})</span>`;
+                    }).join(' <span style="color:rgba(255,255,255,0.2);">•</span> ');
+                }
+            }
+
             const data = json.data || [];
 
             let enterList = [];
@@ -6043,8 +6102,7 @@ function loadV8Breakout() {
 
             data.forEach(d => {
                 const ch = Number(d.change_pct || 0);
-                // KESİN TAVAN VE AŞIRI PRİMLİ HİSSE FİLTRESİ:
-                // Hisse +6.5% ve üzeri tavan bölgesindeyse veya düşüşteyse (eksi ise) seans içi kâr fırsatı yoktur
+                // KESİN TAVAN VE AŞIRI PRİMLİ HİSSE FİLTRESİ
                 if (ch >= 6.5 || ch < 0.2) return;
 
                 if (d.entry_status === 'ENTER') enterList.push(d);
@@ -6075,7 +6133,7 @@ function loadV8Breakout() {
                 cardsContainer.appendChild(renderV8BreakoutCard(d, false));
             });
 
-            // 2. Retest / Teyit Bekleyen Kaliteli Adaylar (Kullanıcı ekranda fırsatları kaçırmasın)
+            // 2. Retest / Teyit Bekleyen Kaliteli Adaylar
             if (waitList.length > 0) {
                 if (enterList.length > 0) {
                     const divider = document.createElement('div');

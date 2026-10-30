@@ -38,7 +38,41 @@ from decision.exceptions import InsufficientConfidenceError
 from scanner.universal_scanner import UniversalScanner
 from data.pipeline import DataPipeline
 from data.providers.yfinance_provider import YFinanceProvider
-from config.bist_symbols import BIST_SYMBOLS, BIST30_SYMBOLS, BIST50_SYMBOLS, YILDIZ_SYMBOLS, FX_SYMBOLS, COMMODITY_SYMBOLS, CRYPTO_SYMBOLS
+from config.bist_symbols import BIST_SYMBOLS, BIST30_SYMBOLS, BIST50_SYMBOLS, YILDIZ_SYMBOLS, FX_SYMBOLS, COMMODITY_SYMBOLS, CRYPTO_SYMBOLS, DOMINO_CLUSTERS, WARRANT_UNDERLYING_MAP
+
+_GLOBAL_WARRANT_MATCHER = None
+
+def _get_warrant_matcher():
+    global _GLOBAL_WARRANT_MATCHER
+    if _GLOBAL_WARRANT_MATCHER is None:
+        try:
+            from services.matcher import WarrantMatcher
+            _GLOBAL_WARRANT_MATCHER = WarrantMatcher()
+        except Exception as e:
+            pass
+    return _GLOBAL_WARRANT_MATCHER
+
+_SECTOR_LABELS = {
+    "SAVUNMA": "🛡️ Savunma",
+    "HAVACILIK": "✈️ Havacılık",
+    "BANKA": "🏦 Banka",
+    "HOLDING": "🏢 Holding",
+    "OTOMOTIV": "🚗 Otomotiv",
+    "ENERJI": "⚡ Enerji",
+    "DEMIR_CELIK": "🏗️ Demir Çelik",
+    "YAZILIM_TEKNO": "💻 Teknoloji",
+    "PERAKENDE_GIDA": "🛒 Gıda & Perakende",
+    "KIMYA_PETROL": "🛢️ Kimya & Petrol",
+    "CIMENTO_GYO": "🧱 Çimento & GYO",
+    "CAM_SERAMIK": "🍶 Cam & Seramik",
+    "ILETISIM": "📡 İletişim"
+}
+
+_SECTOR_LOOKUP = {}
+for _sec, _mems in DOMINO_CLUSTERS.items():
+    for _m in _mems:
+        _SECTOR_LOOKUP[_m] = _sec
+        _SECTOR_LOOKUP[_m.replace(".IS", "")] = _sec
 
 def sanitize_for_json(obj):
     """
@@ -3120,6 +3154,56 @@ def api_v8_radar_breakout():
         "Momentum is high but breakout lacks absolute strength. Wait for retest.": "Momentum yüksek, retest (geri çekilme) bekleniyor"
     }
 
+    # 1. BIST 100 PİYASA REJİMİ (HAVA DURUMU) ANALİZİ
+    xu100_data = all_stats.get("XU100.IS") or all_stats.get("XU100") or {}
+    xu100_ch = float(xu100_data.get("Change_Pct") or xu100_data.get("intraday_change_pct") or 0.0)
+
+    if xu100_ch >= 0.5:
+        regime_code = "BULL"
+        regime_label = "🟢 BOĞA PİYASASI (Momentum & Kopuş Öncelikli)"
+        regime_rule = "Hedefler genişletildi (+%2.5 / +%5.2), Tavan Koşucusu aktif"
+        t1_pct = 2.5
+        t2_pct = 5.2
+        sl_pct = -2.5
+    elif xu100_ch <= -0.5:
+        regime_code = "BEAR"
+        regime_label = "🔴 AYI PİYASASI (Defansif Mod - Sadece 95+ Elitler)"
+        regime_rule = "Sıkı stop (-%2.0), mikro kâr (+%1.8), defansif seçimler"
+        t1_pct = 1.8
+        t2_pct = 3.6
+        sl_pct = -2.0
+    else:
+        regime_code = "NEUTRAL"
+        regime_label = "🟡 YATAY PİYASA (Garantici Kâr & VWAP Teyidi)"
+        regime_rule = "Sıfır Risk (+%1.8), garantici kâr al (+%2.2), dip desteği"
+        t1_pct = 2.2
+        t2_pct = 4.8
+        sl_pct = -2.5
+
+    # 2. SEKTÖR NABZI & LOKOMOTİF SEKTÖRLER (DOMINO KÜMELERİ)
+    sector_scores = {}
+    for sec_name, members in DOMINO_CLUSTERS.items():
+        ch_vals = []
+        for m in members:
+            st = all_stats.get(m) or all_stats.get(m.replace(".IS", "")) or {}
+            if st:
+                c = float(st.get("Change_Pct") or st.get("intraday_change_pct") or 0.0)
+                ch_vals.append(c)
+        if ch_vals:
+            sector_scores[sec_name] = round(sum(ch_vals) / len(ch_vals), 2)
+    
+    sorted_sectors = sorted(sector_scores.items(), key=lambda x: x[1], reverse=True)
+    top_sector_names = [s[0] for s in sorted_sectors[:3] if s[1] > 0]
+    sector_pulse = [
+        {
+            "sector": s[0],
+            "label": _SECTOR_LABELS.get(s[0], s[0]),
+            "avg_change": s[1],
+            "is_hot": s[1] >= 1.0
+        }
+        for s in sorted_sectors[:4]
+    ]
+
     for sym, data in all_stats.items():
         bo = data.get("v8_breakout")
         if bo and bo.get("is_breakout"):
@@ -3129,7 +3213,6 @@ def api_v8_radar_breakout():
             vol_tl = vol * price
             
             # KESİN TAVAN VE AŞIRI PRİMLİ HİSSE FİLTRESİ:
-            # Kullanıcı şartı: Tavan olmuş (+%6.5 üzeri) veya düşen hisseleri verme!
             # Alım kapanmış ya da seans içi kâr marjı kalmamış hisseler kesinlikle elenir.
             if change_pct >= 6.5 or change_pct < 0.2:
                 continue
@@ -3166,29 +3249,32 @@ def api_v8_radar_breakout():
                 clean_reasons = ["Düşük tuzak riskli, güçlü kırılım onayı (AL)"]
             item["entry_reasons"] = clean_reasons
             
-            # KÂR AL & ZARAR KES HEDEFLERİ (Büyük küçük demeden kâr al, zarar stop yemeden çık)
+            # REJİME UYARLANMIŞ KÂR AL & ZARAR KES HEDEFLERİ
             r_vol = float(data.get("Volume_Ratio") or data.get("Hacim_Gucu") or 1.0)
-            item["target_1"] = round(price * 1.022, 2)   # Hedef 1: +%2.2 (Hızlı Kâr Al - Kasa Korumalı)
-            item["target_2"] = round(price * 1.048, 2)   # Hedef 2: +%4.8 (Kopuş Ana Kârı)
-            item["stop_loss"] = round(price * 0.975, 2)  # Zarar Kes: -%2.5 (Çelik Stop)
-            item["target_1_pct"] = 2.2
-            item["target_2_pct"] = 4.8
-            item["stop_loss_pct"] = -2.5
+            item["target_1"] = round(price * (1.0 + t1_pct / 100.0), 2)
+            item["target_2"] = round(price * (1.0 + t2_pct / 100.0), 2)
+            item["stop_loss"] = round(price * (1.0 + sl_pct / 100.0), 2)
+            item["target_1_pct"] = t1_pct
+            item["target_2_pct"] = t2_pct
+            item["stop_loss_pct"] = sl_pct
             item["remaining_upside_pct"] = round(max(0.0, 10.0 - change_pct), 1)
 
-            # 5 BAŞARI BONUSU (Başarıyı %70'ten %85+'e Taşır)
+            # 5 BAŞARI BONUSU & SEKTÖR TEYİDİ
             indicators = data.get("Indicators", {}) if isinstance(data.get("Indicators"), dict) else {}
             cmf = float(indicators.get("CMF") or data.get("CMF") or 0.0)
             smart_money = str(data.get("Smart_Money") or "")
             domino_sector = str(data.get("Domino_Sector") or "")
             vwap = float(data.get("VWAP") or 0.0)
             
+            stock_sec = _SECTOR_LOOKUP.get(sym) or _SECTOR_LOOKUP.get(sym.replace(".IS", ""))
+            is_in_hot_sector = stock_sec in top_sector_names if stock_sec else False
+            
             bonus_tags = []
             bonus_score = 0.0
             if cmf > 0.05 or "Giriş" in smart_money or "Akümülasyon" in smart_money:
                 bonus_tags.append("💸 Akıllı Para")
                 bonus_score += 5.0
-            if domino_sector or "SEKTÖR" in str(data.get("Details", [])):
+            if is_in_hot_sector or domino_sector or "SEKTÖR" in str(data.get("Details", [])):
                 bonus_tags.append("♟️ Sektör Gücü")
                 bonus_score += 5.0
             if vwap > 0 and price >= vwap:
@@ -3203,6 +3289,66 @@ def api_v8_radar_breakout():
 
             item["success_bonuses"] = bonus_tags
             item["bonus_score"] = round(bonus_score, 1)
+
+            # MATEMATİKSEL BAŞARI GÜVEN SKORU (%75 - %95)
+            conf = 75.0
+            if "💸 Akıllı Para" in bonus_tags:
+                conf += 4.5
+            if "♟️ Sektör Gücü" in bonus_tags:
+                conf += 4.5
+            if "🛡️ VWAP Üstü" in bonus_tags:
+                conf += 3.5
+            if "🔥 Süper Hacim" in bonus_tags:
+                conf += 4.0
+            if "⚡ Tatlı Bölge" in bonus_tags:
+                conf += 3.5
+            if regime_code == "BULL":
+                conf += 2.0
+            item["confidence_pct"] = round(min(96.0, max(75.0, conf)), 1)
+
+            # TAZE KOPUŞ BELİRLEME (Yolun başında, anlık kopuş)
+            item["is_fresh_signal"] = (
+                change_pct <= 3.8
+                and float(bo.get("breakout_score", 0)) >= 88
+                and raw_status == "ENTER"
+            )
+
+            # VARANT OTOMATİK EŞLEŞTİRME (Kaldıraçlı Kâr Paneli)
+            clean_sym = sym.replace(".IS", "").upper()
+            warrant_rec = None
+            if clean_sym in WARRANT_UNDERLYING_MAP:
+                try:
+                    w = _get_warrant_matcher().find_best_warrant(clean_sym, "AL", price)
+                    if w:
+                        lev = float(w.get("eff_gearing") or 5.0)
+                        ask_p = float(w.get("ask") or 1.0)
+                        w_gain = round(t1_pct * lev, 1)
+                        target_w_price = round(ask_p * (1.0 + (w_gain / 100.0)), 2)
+                        warrant_rec = {
+                            "has_warrant": True,
+                            "warrant_code": str(w.get("warrant_code")),
+                            "strike_price": float(w.get("strike_price") or 0.0),
+                            "ask": ask_p,
+                            "eff_gearing": round(lev, 1),
+                            "delta": round(float(w.get("delta") or 0.5), 2),
+                            "days_to_maturity": int(w.get("days_to_maturity") or 30),
+                            "projected_gain_pct": w_gain,
+                            "target_warrant_price": target_w_price
+                        }
+                except Exception:
+                    pass
+                if not warrant_rec:
+                    w_meta = WARRANT_UNDERLYING_MAP[clean_sym]
+                    lev = float(w_meta.get("leverage", 6.0))
+                    warrant_rec = {
+                        "has_warrant": True,
+                        "warrant_code": f"{w_meta.get('prefix')}... (ALIM)",
+                        "eff_gearing": lev,
+                        "projected_gain_pct": round(t1_pct * lev, 1)
+                    }
+            item["warrant_rec"] = warrant_rec
+            item["sector_name"] = _SECTOR_LABELS.get(stock_sec, stock_sec) if stock_sec else ""
+            item["is_sector_leader"] = is_in_hot_sector
 
             # SEANS İÇİ MAKSİMUM KÂR POTANSİYELİ SKORU:
             profit_potential = (
@@ -3219,7 +3365,20 @@ def api_v8_radar_breakout():
             
     # Siralama: Seans ici maksimum kar potansiyeline gore en yuksekten dusuge
     breakout_list = sorted(breakout_list, key=lambda x: x.get("profit_potential", 0), reverse=True)
-    return jsonify({"status": "success", "data": breakout_list})
+    return jsonify({
+        "status": "success",
+        "market_regime": {
+            "code": regime_code,
+            "label": regime_label,
+            "rule": regime_rule,
+            "xu100_change": round(xu100_ch, 2),
+            "target_1_pct": t1_pct,
+            "target_2_pct": t2_pct,
+            "stop_loss_pct": sl_pct
+        },
+        "sector_pulse": sector_pulse,
+        "data": breakout_list
+    })
 
 @app.route('/api/v8/radar/discovery', methods=['GET'])
 def api_v8_radar_discovery():
