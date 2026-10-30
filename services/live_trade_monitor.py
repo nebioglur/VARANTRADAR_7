@@ -407,12 +407,17 @@ def monitor_once():
         elif tp_price and price >= tp_price:
             reason = "🎯 AKILLI KAR AL"
         else:
+            # FREE-ROLL / SIFIR RİSK KURALI (Tüm açık pozisyonlar ve eski işlemler için):
+            # Kazanç +%1.8'i geçtiğinde stop kesinlikle maliyet seviyesine çekilir (risk sıfırlanır).
+            if gain_pct >= 1.8 and stop_price < entry:
+                stop_price = round(entry * 1.001, 2)
+
             # Trailing stop yonetimi
             if trail_pct > 0 and not trailing_active and gain_pct >= TRAIL_ACTIVATION:
                 trailing_active = True
                 try:
                     from services.telegram_bot import notify_tp1_reached
-                    notify_tp1_reached(sym, price, gain_pct)
+                    notify_tp1_reached(symbol, price, gain_pct)
                 except Exception as _tperr:
                     print(f"[LIVE MONITOR] TP1 notify error: {_tperr}")
             if trailing_active:

@@ -108,10 +108,11 @@ class V8Database:
             features = signal_data.get('features_snapshot', {})
             features_str = json.dumps(features) if isinstance(features, dict) else features
             
+            engine_ver = signal_data.get('engine_version', 'V8_ELITE')
             cursor.execute('''
                 INSERT OR REPLACE INTO v8_signals 
-                (signal_id, symbol, timestamp, strategy, market_regime, score, entry_price, stop_price, target1, target2, features_snapshot, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (signal_id, symbol, timestamp, strategy, market_regime, score, entry_price, stop_price, target1, target2, features_snapshot, status, engine_version)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 signal_data.get('signal_id'),
                 signal_data.get('symbol'),
@@ -124,7 +125,8 @@ class V8Database:
                 signal_data.get('target1', 0.0),
                 signal_data.get('target2', 0.0),
                 features_str,
-                signal_data.get('status', 'ACTIVE')
+                signal_data.get('status', 'ACTIVE'),
+                engine_ver
             ))
             conn.commit()
         except Exception as e:

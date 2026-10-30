@@ -6148,8 +6148,47 @@ function loadV8Breakout() {
         }).catch(e => console.error(e));
 }
 
+window.currentV8Cohort = 'elite';
+
+window.setV8Cohort = function(cohort) {
+    window.currentV8Cohort = cohort;
+    const btnElite = document.getElementById('v8-cohort-elite-btn');
+    const btnAll = document.getElementById('v8-cohort-all-btn');
+    const btnLegacy = document.getElementById('v8-cohort-legacy-btn');
+    const badgeInfo = document.getElementById('v8-cohort-badge-info');
+
+    if (btnElite) {
+        btnElite.style.background = cohort === 'elite' ? '#10b981' : 'transparent';
+        btnElite.style.color = cohort === 'elite' ? '#fff' : 'var(--text-muted)';
+        btnElite.style.fontWeight = cohort === 'elite' ? '700' : '600';
+    }
+    if (btnAll) {
+        btnAll.style.background = cohort === 'all' ? '#3b82f6' : 'transparent';
+        btnAll.style.color = cohort === 'all' ? '#fff' : 'var(--text-muted)';
+        btnAll.style.fontWeight = cohort === 'all' ? '700' : '600';
+    }
+    if (btnLegacy) {
+        btnLegacy.style.background = cohort === 'legacy' ? '#6b7280' : 'transparent';
+        btnLegacy.style.color = cohort === 'legacy' ? '#fff' : 'var(--text-muted)';
+        btnLegacy.style.fontWeight = cohort === 'legacy' ? '700' : '600';
+    }
+
+    if (badgeInfo) {
+        if (cohort === 'elite') {
+            badgeInfo.innerHTML = '<span style="color:#34d399;">⚡ V8 Elite: Rejim Korumalı & %90 Başarı Hedefli</span>';
+        } else if (cohort === 'legacy') {
+            badgeInfo.innerHTML = '<span style="color:#9ca3af;">🏷️ Eski Motor: Filtresiz & Ayı Dönemi (Geçmiş)</span>';
+        } else {
+            badgeInfo.innerHTML = '<span style="color:#60a5fa;">📊 Tüm Zamanlar (Eski + Yeni Birleşik)</span>';
+        }
+    }
+
+    loadV8Learning();
+};
+
 function loadV8Learning() {
-    vrAuthorizedFetch(`${V8_API}/learning/outcomes`)
+    const cohort = window.currentV8Cohort || 'elite';
+    vrAuthorizedFetch(`${V8_API}/learning/outcomes?cohort=${cohort}`)
         .then(res => res.json())
         .then(json => {
             const tbody = document.getElementById('v8-learning-tbody');
@@ -6164,13 +6203,17 @@ function loadV8Learning() {
                 const elMfe = document.getElementById('v8-metric-avgmfe');
                 const elMae = document.getElementById('v8-metric-avgmae');
                 if (elTot) elTot.textContent = s.total_signals ?? 0;
-                if (elWin) elWin.textContent = `%${s.win_rate ?? 0}`;
+                if (elWin) {
+                    const wrVal = s.win_rate ?? 0;
+                    elWin.textContent = `%${wrVal}`;
+                    elWin.style.color = wrVal >= 70 ? '#10b981' : (wrVal >= 50 ? '#facc15' : '#ef4444');
+                }
                 if (elMfe) elMfe.textContent = `+${s.avg_mfe ?? 0}%`;
                 if (elMae) elMae.textContent = `${s.avg_mae ?? 0}%`;
             }
 
             if (!json.data || json.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="14" style="text-align:center; padding:1.5rem; color:var(--text-muted);">Henüz V8 tarafından alınan bir pozisyon kaydı yok.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="15" style="text-align:center; padding:1.5rem; color:var(--text-muted);">Bu motor kohortunda henüz kayıt bulunamadı.</td></tr>';
                 return;
             }
 
@@ -6202,9 +6245,14 @@ function loadV8Learning() {
                     statBadge = `<span style="display:inline-block; padding:0.25rem 0.6rem; border-radius:6px; font-size:0.75rem; font-weight:700; background:rgba(56,189,248,0.15); color:#38bdf8;">🟢 İŞLEMDE (AÇIK)</span>`;
                 }
 
+                const engineBadge = d.is_elite 
+                    ? `<span style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.4); padding:2px 6px; border-radius:4px; font-size:0.72rem; font-weight:800;">⚡ ELİTE</span>`
+                    : `<span style="background:rgba(255,255,255,0.05); color:#94a3b8; border:1px solid rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px; font-size:0.72rem;">ESKİ</span>`;
+
                 tr.innerHTML = `
                     <td style="font-size:0.78rem; color:var(--text-muted);">${timeStr}</td>
                     <td style="font-weight:bold; color:var(--text-light);"><span style="background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:4px;">${d.symbol}</span></td>
+                    <td style="text-align:center;">${engineBadge}</td>
                     <td style="text-align:right; font-weight:600;">${d.entry_price ? d.entry_price.toFixed(2) : '-'}</td>
                     <td style="text-align:right; font-size:0.8rem;">${formatV8Price(d.entry_price, d.t_3m_price)}</td>
                     <td style="text-align:right; font-size:0.8rem;">${formatV8Price(d.entry_price, d.t_5m_price)}</td>

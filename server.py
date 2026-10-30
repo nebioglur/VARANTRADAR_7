@@ -718,15 +718,16 @@ def _background_scanner_impl():
                                 except Exception as _sim_err:
                                     print(f"[BACKGROUND] Sim hatasi ({_owner}): {_sim_err}")
 
-                            # Gün Sonu Simülasyon Telegram Raporu (18:10 Sonrası, Atomik DB Kilidiyle Kesinlikle Tek Sefer)
-                            now_time = datetime.now()
-                            if now_time.hour == 18 and now_time.minute >= 10:
-                                try:
+                            # Gün Sonu Simülasyon Telegram Raporu (18:10 Sonrası, TSİ Zaman Dilimi ve Atomik DB Kilidiyle Kesinlikle Tek Sefer)
+                            try:
+                                from zoneinfo import ZoneInfo
+                                local_now_eod = datetime.now(ZoneInfo("Europe/Istanbul"))
+                                if local_now_eod.weekday() < 5 and (local_now_eod.hour == 18 and local_now_eod.minute >= 10):
                                     from services.telegram_bot import send_simulation_report
                                     _report_owner = os.environ.get('ADMIN_OWNER', 'local:nebioglur')
                                     send_simulation_report(date_str=d_str, owner=_report_owner)
-                                except Exception as err:
-                                    print(f"[SIM SİNYAL HATA] {str(err)}")
+                            except Exception as err:
+                                print(f"[SIM SİNYAL HATA] {str(err)}")
                             
                         except Exception as e_audit:
                             print(f"[BACKGROUND] Yeni Motor Hatası: {e_audit}")
@@ -3019,9 +3020,12 @@ def api_v8_learning_outcomes():
         conn = V8Database.get_connection()
         cursor = conn.cursor()
         
-        # Sinyalleri ve sonuclarini JOIN ile getir
+        cohort_filter = request.args.get('cohort', 'all').lower()
+        
+        # Sinyalleri, kohort (engine_version) bilgisi ve sonuclariyla JOIN ile getir
         query = '''
             SELECT s.signal_id, s.symbol, s.timestamp, s.entry_price, s.score, s.status, s.market_regime,
+                   COALESCE(s.engine_version, 'LEGACY') as engine_version,
                    o.t_3m_price, o.t_5m_price, o.t_10m_price, o.t_15m_price,
                    o.t_30m_price, o.t_60m_price, o.t_120m_price, o.t_240m_price,
                    o.t_eod_price, o.t_1d_price,
@@ -3029,13 +3033,17 @@ def api_v8_learning_outcomes():
             FROM v8_signals s
             LEFT JOIN v8_outcomes o ON s.signal_id = o.signal_id
             ORDER BY s.timestamp DESC
-            LIMIT 80
+            LIMIT 120
         '''
         cursor.execute(query)
         rows = cursor.fetchall()
         
         seen_keys = set()
-        outcomes = []
+        all_outcomes = []
+        
+        # Kohort Bazlı İstatistik Sayıcıları
+        elite_stats = {"total": 0, "win": 0, "closed": 0, "mfe": 0.0, "mae": 0.0, "active": 0}
+        legacy_stats = {"total": 0, "win": 0, "closed": 0, "mfe": 0.0, "mae": 0.0, "active": 0}
         total_mfe = 0.0
         total_mae = 0.0
         win_count = 0
@@ -3043,11 +3051,14 @@ def api_v8_learning_outcomes():
 
         for r in rows:
             sym = r["symbol"]
-            ts = str(r["timestamp"])[:13] # Gün ve saat bazlı tekilleştirme (aynı saatte çift kayıtları engeller)
+            ts = str(r["timestamp"])[:13] # Gün ve saat bazlı tekilleştirme
             dedup_key = (sym, ts)
             if dedup_key in seen_keys:
                 continue
             seen_keys.add(dedup_key)
+            
+            eng_ver = str(r["engine_version"] or "LEGACY").upper()
+            is_elite = (eng_ver == "V8_ELITE")
             
             mfe_val = round(float(r["mfe"] or 0.0), 2)
             mae_val = round(float(r["mae"] or 0.0), 2)
@@ -3084,8 +3095,20 @@ def api_v8_learning_outcomes():
                 win_count += 1
             if res_status in ["WIN", "LOSS"]:
                 closed_count += 1
+                
+            # Kohort toplamları
+            target_bucket = elite_stats if is_elite else legacy_stats
+            target_bucket["total"] += 1
+            target_bucket["mfe"] += mfe_val
+            target_bucket["mae"] += mae_val
+            if res_status == "WIN":
+                target_bucket["win"] += 1
+            if res_status in ["WIN", "LOSS"]:
+                target_bucket["closed"] += 1
+            if res_status == "ACTIVE":
+                target_bucket["active"] += 1
 
-            outcomes.append({
+            all_outcomes.append({
                 "signal_id": r["signal_id"],
                 "symbol": sym,
                 "timestamp": r["timestamp"],
@@ -3093,6 +3116,9 @@ def api_v8_learning_outcomes():
                 "score": r["score"],
                 "status": r["status"],
                 "market_regime": r["market_regime"],
+                "engine_version": eng_ver,
+                "is_elite": is_elite,
+                "cohort_label": "⚡ V8 Elite (%90+)" if is_elite else "🏷️ Eski Motor",
                 "t_3m_price": r["t_3m_price"],
                 "t_5m_price": r["t_5m_price"],
                 "t_10m_price": r["t_10m_price"],
@@ -3110,21 +3136,49 @@ def api_v8_learning_outcomes():
             
         conn.close()
         
-        # Özet skor kartı metrikleri
-        total_signals = len(outcomes)
-        win_rate = round((win_count / closed_count * 100), 1) if closed_count > 0 else (75.0 if total_signals > 0 else 0.0)
-        avg_mfe = round(total_mfe / total_signals, 2) if total_signals > 0 else 0.0
-        avg_mae = round(total_mae / total_signals, 2) if total_signals > 0 else 0.0
+        # Kohort kazanma oranları
+        e_wr = round((elite_stats["win"] / elite_stats["closed"] * 100), 1) if elite_stats["closed"] > 0 else (100.0 if elite_stats["win"] > 0 else 0.0)
+        l_wr = round((legacy_stats["win"] / legacy_stats["closed"] * 100), 1) if legacy_stats["closed"] > 0 else 0.0
+        tot_wr = round((win_count / closed_count * 100), 1) if closed_count > 0 else 0.0
         
+        # Filtreleme
+        filtered_outcomes = all_outcomes
+        if cohort_filter == 'elite':
+            filtered_outcomes = [o for o in all_outcomes if o["is_elite"]]
+        elif cohort_filter == 'legacy':
+            filtered_outcomes = [o for o in all_outcomes if not o["is_elite"]]
+            
         summary = {
-            "total_signals": total_signals,
-            "win_rate": win_rate,
-            "avg_mfe": avg_mfe,
-            "avg_mae": avg_mae,
-            "active_count": sum(1 for o in outcomes if o["result_status"] == "ACTIVE")
+            "total_signals": len(filtered_outcomes),
+            "win_rate": e_wr if (cohort_filter == 'elite' or (cohort_filter == 'all' and elite_stats['closed'] > 0)) else tot_wr,
+            "overall_win_rate": tot_wr,
+            "elite_win_rate": e_wr,
+            "legacy_win_rate": l_wr,
+            "active_cohort": cohort_filter,
+            "avg_mfe": round(total_mfe / len(all_outcomes), 2) if all_outcomes else 0.0,
+            "avg_mae": round(total_mae / len(all_outcomes), 2) if all_outcomes else 0.0,
+            "active_count": sum(1 for o in filtered_outcomes if o["result_status"] == "ACTIVE"),
+            "cohorts": {
+                "elite": {
+                    "total": elite_stats["total"],
+                    "closed": elite_stats["closed"],
+                    "win": elite_stats["win"],
+                    "win_rate": e_wr,
+                    "active": elite_stats["active"],
+                    "label": "⚡ V8 Elite (30 Ekim+ Rejim & %90 Korumalı)"
+                },
+                "legacy": {
+                    "total": legacy_stats["total"],
+                    "closed": legacy_stats["closed"],
+                    "win": legacy_stats["win"],
+                    "win_rate": l_wr,
+                    "active": legacy_stats["active"],
+                    "label": "🏷️ Eski Motor (Filtresiz & Ayı Dönemi)"
+                }
+            }
         }
 
-        return jsonify({"status": "success", "data": outcomes, "summary": summary})
+        return jsonify({"status": "success", "data": filtered_outcomes, "summary": summary})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
@@ -3609,3 +3663,60 @@ if __name__ == "__main__":
 
 
 
+
+
+@app.route('/api/telegram/test_suite', methods=['POST'])
+def api_telegram_test_suite():
+    """Telegram uçtan uca bildirim test paketi (AL, TP1, Seans Sonu, Finans Raporu, %90 Sıralama)."""
+    try:
+        from services.telegram_bot import (
+            notify_sim_trade,
+            get_special_ranking_candidates,
+            send_special_ranking_alert,
+            send_simulation_report,
+            send_morning_compass_bulletin,
+            send_telegram_message
+        )
+        data = request.get_json(force=True, silent=True) or {}
+        test_type = data.get('type', 'all')
+        results = {}
+        now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        today_s = datetime.now().strftime('%Y-%m-%d')
+
+        dummy_trade = {
+            'symbol': 'THYAO.IS',
+            'entry_time': now_str,
+            'entry_price': 304.50,
+            'shares': 65,
+            'entry_score': 94.0,
+            'entry_checks': 'Ana trend, RSI dengeli, Hacim teyidi, VWAP üstü | Bonuslar: 💸 Akıllı Para, 🔥 Süper Hacim',
+            'strategy_name': 'V8 Boğa Koşucusu (%90+ Elit)',
+            'exit_time': now_str,
+            'pnl_val': 435.50,
+            'pnl_pct': 2.20
+        }
+
+        if test_type in ('all', 'buy'):
+            ok = notify_sim_trade('THYAO.IS', 'AL', 304.50, 0.0, 'Hacim Patlaması & EMA Kırılımı', today_s, dummy_trade)
+            results['sim_buy'] = ok
+
+        if test_type in ('all', 'tp1'):
+            ok = notify_sim_trade('THYAO.IS', 'SAT (TP1)', 311.20, 2.20, '1. Kâr Alındı, Stop Maliyete Çekildi (Sıfır Risk)', today_s, dummy_trade)
+            results['sim_tp1'] = ok
+
+        if test_type in ('all', 'eod'):
+            ok = notify_sim_trade('THYAO.IS', 'SAT (GUN SONU)', 314.80, 3.38, '17:50 Seans Sonu Nakde Geçiş', today_s, dummy_trade)
+            results['sim_eod'] = ok
+
+        if test_type in ('all', 'ranking'):
+            all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
+            candidates = get_special_ranking_candidates(all_stats, top_n=3)
+            if candidates:
+                ok = send_special_ranking_alert(candidates)
+                results['special_ranking'] = ok
+            else:
+                results['special_ranking'] = 'Filtrelere uyan aday bulunamadı'
+
+        return jsonify({'status': 'success', 'results': results})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500

@@ -57,9 +57,9 @@ class SimulationEngine:
                     INSERT INTO trades (
                         owner, date_str, symbol, entry_time, entry_price, exit_time,
                         exit_price, shares, pnl_val, pnl_pct, exit_reason, strategy_name,
-                        entry_score, entry_checks, atr_value, risk_amount, market_regime
+                        entry_score, entry_checks, atr_value, risk_amount, market_regime, engine_version
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(owner, date_str, symbol, entry_time) DO UPDATE SET
                         exit_time=excluded.exit_time,
                         exit_price=excluded.exit_price,
@@ -71,13 +71,14 @@ class SimulationEngine:
                         entry_checks=excluded.entry_checks,
                         atr_value=excluded.atr_value,
                         risk_amount=excluded.risk_amount,
-                        market_regime=excluded.market_regime
+                        market_regime=excluded.market_regime,
+                        engine_version=excluded.engine_version
                 """, (
                     self.owner, date_str, t['symbol'], t['entry_time'], t['entry_price'],
                     t.get('exit_time'), t.get('exit_price'), t.get('shares'),
                     t.get('pnl_val'), t.get('pnl_pct'), t.get('exit_reason'),
                     t.get('strategy_name'), t.get('entry_score'), t.get('entry_checks'),
-                    t.get('atr_value'), t.get('risk_amount'), t.get('market_regime')
+                    t.get('atr_value'), t.get('risk_amount'), t.get('market_regime'), t.get('engine_version', 'V8_ELITE')
                 ))
             except Exception as e:
                 print(f"[SimEngine] Trade save err {t['symbol']}: {e}")
@@ -581,12 +582,33 @@ class SimulationEngine:
                 if not setup:
                     continue
 
-                tp1_price = min(ceiling * 0.997, entry_price + max(setup['atr_value'] * 1.8, entry_price * 0.025))
+                # REJİME GÖRE DİNAMİK SENARYO ÇARPANLARI (BOĞA'DA HEDEF GENİŞLETME, AYI'DA SIKI STOP)
+                if is_bear:
+                    tp1_pct = 0.016  # Ayı piyasasında +%1.6 hızlı kâr al
+                    tp2_pct = 0.028  # +%2.8
+                    max_stop_pct = 0.018 # -%1.8 sıkı zarar kes
+                    strat_title = 'V8 Ayı Kalkanı (Dar Stop / Hızlı TP1)'
+                elif xu100_change > 0.5:
+                    tp1_pct = 0.032  # Boğa piyasasında +%3.2 genişletilmiş TP1
+                    tp2_pct = 0.065  # +%6.5 Genişletilmiş TP2 (Runner)
+                    max_stop_pct = 0.022 # -%2.2 Trend Desteği Stopu
+                    strat_title = 'V8 Boğa Koşucusu (Genişletilmiş TP1/TP2)'
+                else:
+                    tp1_pct = 0.024  # Nötr / Standart +%2.4 TP1
+                    tp2_pct = 0.045  # +%4.5 TP2
+                    max_stop_pct = 0.025 # -%2.5 Standart Stop
+                    strat_title = 'V8 Dengeli Kırılım'
+
+                tp1_price = min(ceiling * 0.997, entry_price * (1.0 + tp1_pct))
+                tp2_price = min(ceiling, entry_price * (1.0 + tp2_pct))
+                regime_stop = entry_price * (1.0 - max_stop_pct)
+                final_stop = max(regime_stop, setup['stop_price'])
+
                 if tp1_price <= entry_price:
                     to_remove.append(s)
                     continue
                 allocation, risk_amount = self._position_allocation(
-                    current_cash, entry_price, setup['stop_price'], is_bear
+                    current_cash, entry_price, final_stop, is_bear
                 )
                 shares = int(allocation // entry_price)
                 if shares <= 0:
@@ -599,19 +621,20 @@ class SimulationEngine:
                     'entry_time': str(current_time),
                     'entry_price': entry_price,
                     'ceiling_target': ceiling,
-                    'stop_price': setup['stop_price'],
+                    'stop_price': final_stop,
                     'tp1_price': tp1_price,
-                    'tp2_price': ceiling,
+                    'tp2_price': tp2_price,
                     'shares': shares,
                     'status': 'OPEN',
                     'scaled_out': False,
                     'is_reentry': False,
-                    'strategy_name': 'EMA 9/21 + Kalite Kapısı',
+                    'strategy_name': strat_title,
                     'entry_score': float(s.get('score', 0)),
                     'entry_checks': s.get('_entry_checks', ''),
                     'atr_value': setup['atr_value'],
                     'risk_amount': risk_amount,
-                    'market_regime': market_regime
+                    'market_regime': market_regime,
+                    'engine_version': 'V8_ELITE'
                 })
                 from services.telegram_bot import notify_sim_trade
                 notify_sim_trade(sym, "AL", entry_price, 0.0, "Sistem AL verdi", str(current_time)[:10], active_trades[-1])

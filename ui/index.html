@@ -2165,6 +2165,27 @@
                 <i class="fa-solid fa-chevron-down" style="margin-left:auto; font-size:0.68rem; color:var(--text-muted);"></i>
             </summary>
 
+            <!-- KOHORT (MOTOR SÜRÜMÜ) SEÇİCİ (KULLANICI İSTEĞİ: ESKİ/YENİ MOTOR AYRIMI) -->
+            <div style="display:flex; align-items:center; justify-content:space-between; margin:0.8rem 0 0.4rem; flex-wrap:wrap; gap:0.5rem;">
+                <div style="display:flex; align-items:center; gap:0.4rem;">
+                    <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">Motor Sürümü:</span>
+                    <div style="display:inline-flex; background:rgba(255,255,255,0.06); padding:2px; border-radius:6px; border:1px solid rgba(255,255,255,0.1);">
+                        <button type="button" id="v8-cohort-elite-btn" onclick="setV8Cohort('elite')" style="padding:3px 10px; font-size:0.75rem; font-weight:700; border:none; border-radius:4px; cursor:pointer; background:#10b981; color:#fff; transition:all 0.2s;">
+                            ⚡ V8 Elite (%90+ Hedefli)
+                        </button>
+                        <button type="button" id="v8-cohort-all-btn" onclick="setV8Cohort('all')" style="padding:3px 10px; font-size:0.75rem; font-weight:600; border:none; border-radius:4px; cursor:pointer; background:transparent; color:var(--text-muted); transition:all 0.2s;">
+                            Tüm Kayıtlar
+                        </button>
+                        <button type="button" id="v8-cohort-legacy-btn" onclick="setV8Cohort('legacy')" style="padding:3px 10px; font-size:0.75rem; font-weight:600; border:none; border-radius:4px; cursor:pointer; background:transparent; color:var(--text-muted); transition:all 0.2s;">
+                            🏷️ Eski Motor
+                        </button>
+                    </div>
+                </div>
+                <div id="v8-cohort-badge-info" style="font-size:0.75rem; color:#34d399; font-weight:700;">
+                    🛡️ Rejim Korumalı & %90 Başarı Filtreli Yeni Nesil
+                </div>
+            </div>
+
             <!-- ÖZET BAŞARI KARNESİ -->
             <div id="v8-outcomes-scorecard" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:0.6rem; margin:0.8rem 0 0.5rem;">
                 <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:0.6rem; text-align:center;">
@@ -2191,6 +2212,7 @@
                         <tr>
                             <th>Tarih</th>
                             <th>Hisse</th>
+                            <th>Motor</th>
                             <th style="text-align:right;">Giriş</th>
                             <th style="text-align:right;">T+3dk</th>
                             <th style="text-align:right;">T+5dk</th>
