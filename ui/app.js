@@ -3623,56 +3623,64 @@ function renderSimulationStatsMode() {
     const selected = current_stats_mode === 'daily' && latestDate
         ? closed.filter(t => t.date_str === latestDate)
         : closed;
-    const wins = selected.filter(t => Number(t.pnl_val || 0) > 0);
-    const losses = selected.filter(t => Number(t.pnl_val || 0) < 0);
-    const net = selected.reduce((s, t) => s + Number(t.pnl_val || 0), 0);
-    const grossWin = wins.reduce((s, t) => s + Number(t.pnl_val || 0), 0);
-    const grossLoss = Math.abs(losses.reduce((s, t) => s + Number(t.pnl_val || 0), 0));
+    const pnlOf = t => Number(t.pnl_val || 0);
+    const pctOf = t => Number(t.pnl_pct || 0);
+    const wins = selected.filter(t => pnlOf(t) > 0);
+    const losses = selected.filter(t => pnlOf(t) <= 0);
+    const decided = wins.length + losses.length;
+    const winRate = decided ? (wins.length / decided) * 100 : null;
+    const net = selected.reduce((s, t) => s + pnlOf(t), 0);
+    const grossWin = wins.reduce((s, t) => s + pnlOf(t), 0);
+    const grossLoss = Math.abs(losses.reduce((s, t) => s + pnlOf(t), 0));
     const pf = grossLoss > 0 ? grossWin / grossLoss : (grossWin > 0 ? Infinity : 0);
     const avgWin = wins.length ? grossWin / wins.length : 0;
     const avgLoss = losses.length ? -grossLoss / losses.length : 0;
-    const firstEq = equity.length ? Number(equity[0].start_equity || 0) : 0;
-    const lastEq = equity.length ? Number(equity[equity.length - 1].end_equity || firstEq) : firstEq;
-    const netPct = firstEq > 0 ? (lastEq - firstEq) / firstEq * 100 : 0;
+    // ÜÇ AMAÇ HIYERARSISI: kâr al -> +%5 -> tavan.
+    const plus5 = selected.filter(t => pctOf(t) >= 5.0);
+    const bestPct = selected.length ? Math.max(...selected.map(pctOf)) : 0;
+    const tavan = selected.filter(t => String(t.exit_reason || '').includes('TAVAN') || pctOf(t) >= 9.0);
+    const tp1 = selected.filter(t => String(t.exit_reason || '').includes('TP1'));
     const maxDd = Number(data.performance?.max_drawdown_tl || 0);
     const weekly = data.weekly_target || {};
     const el = id => document.getElementById(id);
     const put = (id, value) => { if (el(id)) el(id).innerText = value; };
     const sign = value => value > 0 ? '+' : '';
-    const scope = current_stats_mode === 'daily' ? 'Son simülasyon seansı' : 'Tüm simülasyon geçmişi';
+    const scope = current_stats_mode === 'daily'
+        ? `Son simülasyon seansı (${latestDate || '—'})`
+        : `Son ${closed.length} kapanmış simülasyon işlemi`;
 
     if (el('stats-data-status')) {
-        el('stats-data-status').textContent =
-            `${scope} · ${selected.length} kapanmış işlem · Simülasyon verisi`;
+        el('stats-data-status').textContent = `${scope} · Simülasyon verisi · Garanti değil, performans takibidir`;
     }
-    put('stats-tab-total-days', current_stats_mode === 'daily' ? (latestDate || '—') : equity.length);
-    put('stats-tab-total-candidates-sub', current_stats_mode === 'daily'
-        ? `${selected.length} simülasyon işlemi`
-        : `${equity.length} kayıtlı seans · ${closed.length} kapanmış işlem`);
-    put('stats-tab-tavan-rate', selected.length ? `%${(wins.length / selected.length * 100).toFixed(1)}` : '—');
-    put('stats-tab-tavan-cnt-sub', `${wins.length} kazanç · ${losses.length} kayıp`);
-    put('stats-tab-plus5-rate', pf === Infinity ? '∞' : pf.toFixed(2));
-    put('stats-tab-plus5-cnt-sub', 'Kâr Faktörü');
-    put('stats-tab-avg-max-gain', `${sign(avgWin)}%${avgWin.toFixed(2)}`);
-    put('stats-tab-avg-close-sub', `Ort. kayıp: %${Math.abs(avgLoss).toFixed(2)}`);
-    put('stats-tab-warrant-avg-gain', maxDd > 0 ? `₺${maxDd.toFixed(0)}` : '₺0');
-    put('stats-tab-pos-count', `${wins.length} Adet`);
-    put('stats-tab-pos-avg', `(Ort. +%${avgWin.toFixed(2)})`);
-    put('stats-tab-neg-count', `${losses.length} Adet`);
-    put('stats-tab-neg-avg', `(Ort. -%${Math.abs(avgLoss).toFixed(2)})`);
-    put('stats-tab-net-pct', `${sign(netPct)}%${netPct.toFixed(2)}`);
-    put('stats-tab-elite-pos-count', `${weekly.actual_pct >= weekly.target_pct ? 'HEDEF TAMAM' : 'HEDEFE KALAN %' + Number(weekly.gap_pct || 0).toFixed(2)}`);
-    put('stats-tab-elite-pos-avg', `(Haftalık hedef: %${Number(weekly.target_pct || 6).toFixed(2)})`);
-    put('stats-tab-elite-neg-count', `${data.performance?.total_trades || closed.length} İşlem`);
-    put('stats-tab-elite-neg-avg', `(Maks. düşüş: ₺${maxDd.toFixed(0)})`);
-    put('stats-tab-elite-net-pct', `${sign(Number(weekly.actual_pct || 0))}%${Number(weekly.actual_pct || 0).toFixed(2)}`);
 
-    const statusColor = netPct > 0 ? 'var(--accent-green)' : (netPct < 0 ? 'var(--accent-red)' : 'var(--text-muted)');
-    if (el('stats-tab-net-pct')) el('stats-tab-net-pct').style.color = statusColor;
-    if (el('stats-tab-net-card')) el('stats-tab-net-card').style.borderColor =
-        netPct > 0 ? 'rgba(16,185,129,0.35)' : (netPct < 0 ? 'rgba(239,68,68,0.35)' : 'rgba(59,130,246,0.2)');
-    if (el('stats-tab-elite-net-pct')) el('stats-tab-elite-net-pct').style.color = statusColor;
+    // AMAÇ 1: KÂR ALMAK
+    put('sim-goal1-rate', winRate === null ? '—' : `%${winRate.toFixed(1)}`);
+    put('sim-goal1-sub', decided ? `${wins.length} kazanç · ${losses.length} kayıp · ${decided} işlem` : 'kapanmış işlem yok');
+    put('sim-goal1-net', `Net: ${sign(net)}₺${net.toFixed(0)}`);
+    if (el('sim-goal1-net')) el('sim-goal1-net').style.color = net > 0 ? 'var(--accent-green)' : (net < 0 ? 'var(--accent-red)' : 'var(--text-muted)');
 
+    // AMAÇ 2: +%5 ÜZERİ KÂR
+    put('sim-goal2-count', String(plus5.length));
+    put('sim-goal2-sub', decided ? `işlemin %${(plus5.length / decided * 100).toFixed(1)}'i hedefi vurdu` : 'işlem hedefi vurdu');
+    put('sim-goal2-best', `En iyi: ${sign(bestPct)}%${bestPct.toFixed(2)}`);
+
+    // AMAÇ 3: TAVAN
+    put('sim-goal3-count', String(tavan.length));
+    put('sim-goal3-sub', decided ? `işlemin %${(tavan.length / decided * 100).toFixed(1)}'i tavana ulaştı` : 'işlem tavana ulaştı');
+    put('sim-goal3-tp1', `TP1'e ulaşan: ${tp1.length} işlem`);
+
+    // MOTOR SAĞLIĞI
+    put('sim-health-pf', pf === Infinity ? '∞' : pf.toFixed(2));
+    put('sim-health-avg', `${sign(avgWin)}₺${avgWin.toFixed(0)} / ${avgLoss < 0 ? '' : '-'}₺${Math.abs(avgLoss).toFixed(0)}`);
+    put('sim-health-dd', `₺${maxDd.toFixed(0)}`);
+    const wActual = Number(weekly.actual_pct || 0);
+    put('sim-health-weekly', `${sign(wActual)}%${wActual.toFixed(2)}`);
+    if (el('sim-health-weekly')) {
+        el('sim-health-weekly').style.color = weekly.reached ? 'var(--accent-green)'
+            : (wActual >= 2 ? 'var(--accent-yellow)' : (wActual >= 0 ? 'var(--accent-blue)' : 'var(--accent-red)'));
+    }
+
+    // SEANS KARNESI
     const tbody = el('stats-history-tbody');
     if (tbody) {
         tbody.innerHTML = '';
@@ -3682,7 +3690,7 @@ function renderSimulationStatsMode() {
             const pnl = Number(row.daily_pnl ?? row.total_pnl ?? (end - start));
             const pct = start > 0 ? pnl / start * 100 : 0;
             const dayTrades = closed.filter(t => t.date_str === row.date_str);
-            const dayWins = dayTrades.filter(t => Number(t.pnl_val || 0) > 0).length;
+            const dayWins = dayTrades.filter(t => pnlOf(t) > 0).length;
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${row.date_str || '—'}</td>
