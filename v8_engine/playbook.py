@@ -51,12 +51,15 @@ SCENARIOS: Dict[str, Dict[str, Any]] = {
         "label": "NÖTR (YATAY / DENGE)",
         "icon": "⚖️",
         "posture": "Seçici: sadece A sınıfı, standart hedef, hızlı kâr alma",
-        "max_positions": 2,
+        # Backtest kaniti (2y): NÖTR gunlerde kirilim kenari basabas
+        # (PF ~1.02). Pozisyon 2'den 1'e dusuruldu; sermaye BOGA gunlerine
+        # saklanir (BOGA PF ~1.68).
+        "max_positions": 1,
         "risk_pct": 1.5,
         "tp1_mult": 1.0,
         "tp2_mult": 1.0,
         "stop_mult": 1.0,
-        "note": "Yatay piyasa; toplam açığa çıkışı düşür, kaliteyi yükselt.",
+        "note": "Yatay piyasa; TEK A sınıfı işlem. Sermaye boğa günlerine saklanır.",
     },
     "HIGH_VOLATILITY": {
         "label": "YÜKSEK VOLATİLİTE",
