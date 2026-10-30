@@ -377,6 +377,7 @@ class SimulationEngine:
         active_trades = []
         completed_trades = []
         stopped_out_symbols = set()
+        traded_today_symbols = set()
         stop_times = {}
         
         pending_signals = []
@@ -550,7 +551,12 @@ class SimulationEngine:
                 if dt_current.time() >= time(17, 50):
                     to_remove.append(s)
                     continue
-                if s['symbol'] in open_symbols or len(open_symbols) >= self.max_positions:
+                sym = s['symbol']
+                # KATI GÜVENLİK KURALI: Aynı gün içinde stoplanan veya önceden işlem görmüş hisseye ASLA 2. KEZ GİRİLMEZ!
+                if sym in traded_today_symbols or sym in stopped_out_symbols:
+                    to_remove.append(s)
+                    continue
+                if sym in open_symbols or len(open_symbols) >= self.max_positions:
                     continue
 
                 sym = s['symbol']
@@ -616,6 +622,7 @@ class SimulationEngine:
                     continue
 
                 current_cash -= (shares * entry_price) * 1.0004
+                traded_today_symbols.add(sym)
                 active_trades.append({
                     'symbol': sym,
                     'entry_time': str(current_time),
@@ -643,59 +650,6 @@ class SimulationEngine:
                 if s in pending_signals:
                     pending_signals.remove(s)
                     
-            # 3. YENİDEN GİRİŞ KORUMASI:
-            # Borsa İstanbul dinamiklerinde aynı gün stoplanan hisseye tekrar girmek (re-entry)
-            # sermayeyi eritmektedir. Stoplanan hisseye aynı gün tekrar girilmez, sermaye korunur.
-            for sym in []:
-                if sym not in open_symbols:
-                    sig = next((x for x in selected if x['symbol'] == sym), None)
-                    stopped_at = stop_times.get(sym)
-                    if not sig or not stopped_at or dt_current - stopped_at < timedelta(minutes=60):
-                        continue
-                    if dt_current.time() >= time(17, 0):
-                        continue
-                    df = dfs.get(sym)
-                    if df is None or current_time not in df.index:
-                        continue
-                    # Erken kesilen veride yeniden giris de yapma
-                    if int((df.index > current_time).sum()) < 3:
-                        continue
-                    sub_df = df.loc[:current_time]
-                    raw_entry = float(sub_df['Close'].iloc[-1])
-                    entry_price = raw_entry * 1.0015
-                    setup = self._entry_setup(sub_df, entry_price)
-                    if not setup:
-                        continue
-                    allocation, risk_amount = self._position_allocation(
-                        current_cash, entry_price, setup['stop_price'], is_bear
-                    )
-                    shares = int(allocation // entry_price)
-                    if shares <= 0:
-                        continue
-                    current_cash -= (shares * entry_price) * 1.0004
-                    active_trades.append({
-                        'symbol': sym,
-                        'entry_time': str(current_time),
-                        'entry_price': entry_price,
-                        'ceiling_target': entry_price * 1.10,
-                        'stop_price': setup['stop_price'],
-                        'tp1_price': entry_price + max(setup['atr_value'] * 1.8, entry_price * 0.025),
-                        'tp2_price': entry_price * 1.10,
-                        'shares': shares,
-                        'status': 'OPEN',
-                        'scaled_out': False,
-                        'is_reentry': True,
-                        'strategy_name': 'EMA 9/21 Yeniden Giriş',
-                        'entry_score': float(sig.get('score', 0)),
-                        'entry_checks': sig.get('_entry_checks', ''),
-                        'atr_value': setup['atr_value'],
-                        'risk_amount': risk_amount,
-                        'market_regime': market_regime
-                    })
-                    from services.telegram_bot import notify_sim_trade
-                    notify_sim_trade(sym, "AL (Yeniden)", entry_price, 0.0, "Yeniden Giris", str(current_time)[:10], active_trades[-1])
-                    stopped_out_symbols.remove(sym)
-
         # Seans sonu: acik pozisyonlari kapat.
         # BUGUN icin seans henuz 17:50'den onceyse canli modda acik birak;
         # frontend "Islemde" olarak gostersin. GECMIS tarihler icin son bar
