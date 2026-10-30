@@ -3420,6 +3420,26 @@ def api_v8_radar_breakout():
 
     auto_send_v8_signals()
 
+    # SENARYO PLANI: guncel rejime gore islem parametreleri kartlara islenir.
+    # Bogada hedefler genisler, notrde standart, volatilitede daralir,
+    # ayida kilit zaten uygulanir.
+    try:
+        from v8_engine.playbook import get_scenario
+        _regime_now_pb = (GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or {}).get("regime", "NEUTRAL")
+        _scenario = get_scenario(_regime_now_pb)
+        for row in breakout_list:
+            row["scenario"] = {
+                "label": _scenario["label"],
+                "icon": _scenario["icon"],
+                "risk_pct": _scenario["risk_pct"],
+                "tp1_mult": _scenario["tp1_mult"],
+                "tp2_mult": _scenario["tp2_mult"],
+                "stop_mult": _scenario["stop_mult"],
+                "posture": _scenario["posture"],
+            }
+    except Exception:
+        pass
+
     # TAVAN RİSKİ KAPISI: gun ici +%5 ve uzerinde olan hisseler "tavan
     # kovalama" bolgesindedir; izleme listesinde bile aday gibi gorunmez.
     # Acikca UZAK DUR (NO_ENTRY) olarak isaretlenir; UI izleme kartlarina
@@ -3483,6 +3503,28 @@ def api_v8_radar_discovery():
 def api_v8_market_regime():
     regime_data = GLOBAL_DASHBOARD_CACHE.get("v8_market_regime", {"regime": "UNKNOWN", "score": 50.0, "xu100_trend": 0.0})
     return jsonify(regime_data)
+
+@app.route('/api/v8/playbook', methods=['GET'])
+def api_v8_playbook():
+    """Senaryo plani: guncel rejim + pozisyon/risk/hedef parametreleri +
+    sektorsel dalga nabzi + islem basi kâr projeksiyonu."""
+    try:
+        from v8_engine.playbook import get_scenario, sector_pulse
+        regime_data = GLOBAL_DASHBOARD_CACHE.get("v8_market_regime", {}) or {}
+        regime = regime_data.get("regime", "NEUTRAL")
+        scenario = get_scenario(regime)
+        return jsonify({
+            "status": "success",
+            "scenario": scenario,
+            "regime_detail": {
+                "score": regime_data.get("score"),
+                "xu100_trend": regime_data.get("xu100_trend"),
+                "volatility_state": regime_data.get("volatility_state"),
+            },
+            "sector_pulse": sector_pulse(GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})),
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/logs', methods=['GET'])
 def api_logs():

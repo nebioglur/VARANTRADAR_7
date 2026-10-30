@@ -6064,6 +6064,48 @@ function loadV8Discovery() {
         }).catch(e => console.error(e));
 }
 
+// ==== SENARYO PLANI (PLAYBOOK) ====
+function loadV8Playbook() {
+    const strip = document.getElementById('v8-playbook-strip');
+    if (!strip) return;
+    vrAuthorizedFetch(`${V8_API}/playbook`)
+        .then(r => r.json())
+        .then(json => {
+            const sc = json.scenario || {};
+            if (json.status !== 'success' || !sc.label) return;
+            const sectors = json.sector_pulse || [];
+            const locked = (sc.max_positions || 0) === 0;
+            const sectorHtml = sectors.length
+                ? sectors.map((s, i) => `<div style="display:flex; align-items:center; gap:0.35rem; background:rgba(0,0,0,0.2); border-radius:6px; padding:0.3rem 0.55rem; ${i === 0 ? 'border:1px solid rgba(16,185,129,0.4);' : ''}">
+                        <span style="font-weight:800; color:${s.strength >= 25 ? '#10b981' : s.strength >= 5 ? '#60a5fa' : 'var(--text-muted)'}; font-size:0.72rem;">${s.sector}</span>
+                        <span style="font-size:0.66rem; color:var(--text-muted);">${s.state} · %${s.avg_change >= 0 ? '+' : ''}${s.avg_change} · ${s.avg_rel_vol.toFixed(2)}x</span>
+                    </div>`).join('')
+                : '<span style="font-size:0.72rem; color:var(--text-muted);">Sektör verisi bekleniyor…</span>';
+            strip.style.display = 'block';
+            strip.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+                    <div style="font-weight:800; color:#60a5fa; font-size:0.88rem;">
+                        <i class="fa-solid fa-chess-board"></i> SENARYO PLANI: ${sc.icon || ''} ${sc.label}
+                        ${locked ? '<span style="background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.4); border-radius:5px; padding:2px 8px; font-size:0.66rem; font-weight:800; margin-left:0.4rem;">GİRİŞ KİLİTLİ</span>' : ''}
+                    </div>
+                    <div style="font-size:0.72rem; color:var(--text-muted);">${sc.posture || ''}</div>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:0.6rem; margin-top:0.55rem; font-size:0.74rem;">
+                    <span style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.3rem 0.55rem;">Maks. Pozisyon: <b>${locked ? 0 : sc.max_positions}</b></span>
+                    <span style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.3rem 0.55rem;">İşlem Riski: <b>%${(sc.risk_pct || 0).toFixed(1)}</b></span>
+                    <span style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.3rem 0.55rem;">Hedef Carpanı: <b>TP1 ×${(sc.tp1_mult || 1).toFixed(2)} · TP2 ×${(sc.tp2_mult || 1).toFixed(2)}</b></span>
+                    <span style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.3rem 0.55rem;">İşlem Başı Projeksiyon: <b style="color:${(sc.ev_per_trade || 0) > 0 ? '#10b981' : 'var(--text-muted)'};">${(sc.ev_per_trade || 0) > 0 ? '+' : ''}%${sc.ev_per_trade || 0}</b></span>
+                    <span style="background:rgba(0,0,0,0.2); border-radius:6px; padding:0.3rem 0.55rem;">Gün Projeksiyonu: <b>${(sc.daily_projection || 0) > 0 ? '+' : ''}%${sc.daily_projection || 0}</b></span>
+                </div>
+                <div style="margin-top:0.55rem;">
+                    <div style="font-size:0.68rem; color:var(--text-muted); margin-bottom:0.3rem;"><i class="fa-solid fa-water"></i> SEKTÖRSEL DALGA NABZI (en güçlü 5):</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:0.4rem;">${sectorHtml}</div>
+                </div>
+                <div style="font-size:0.68rem; color:var(--text-muted); margin-top:0.45rem;">${sc.note || ''} Projeksiyonlar ampirik istatistikten türetilen plandır; garanti değildir.</div>`;
+        })
+        .catch(() => {});
+}
+
 function loadV8Breakout() {
     // Kasa/risk girdilerini sakla ve yenile (bir kere baglanir).
     if (!window._v8SizingBound) {
@@ -6081,6 +6123,8 @@ function loadV8Breakout() {
         });
         // Onceki backtest sonucunu goster.
         initV8BacktestPanel();
+        // Senaryo plani (rejim + sektor dalgasi + kâr projeksiyonu).
+        loadV8Playbook();
     }
     vrAuthorizedFetch(`${V8_API}/radar/breakout`)
         .then(res => res.json())
@@ -6172,12 +6216,17 @@ function loadV8Breakout() {
                          <i class="fa-solid fa-bolt"></i> Varant: <b>${d.varrant_info.varrant_prefix}</b> — Kaldıraç: ~${d.varrant_info.estimated_leverage}x
                        </div>`
                     : '';
-                // Islem plani: ATR bazli stop/hedef (learning.py ile ayni formul), karta islenir.
+                // Islem plani: ATR bazli stop/hedef (learning.py ile ayni formul) +
+                // senaryo carpanlari (bogada hedef genisler, volatilitede daralir).
                 const entryPrice = Number(d.price) || 0;
                 const atrPct = Number(d.metrics?.atr_pct) || 0;
-                const stopDist = atrPct > 0 ? Math.max(2, Math.min(8, atrPct * 1.5)) : 5;
-                const tgt1Dist = atrPct > 0 ? Math.max(2, Math.min(10, atrPct * 1.5)) : 3;
-                const tgt2Dist = atrPct > 0 ? Math.max(3, Math.min(15, atrPct * 2.5)) : 5;
+                const sc = d.scenario || {};
+                const tp1M = Number(sc.tp1_mult) > 0 ? Number(sc.tp1_mult) : 1;
+                const tp2M = Number(sc.tp2_mult) > 0 ? Number(sc.tp2_mult) : 1;
+                const stopM = Number(sc.stop_mult) > 0 ? Number(sc.stop_mult) : 1;
+                const stopDist = atrPct > 0 ? Math.max(1.5, Math.min(8, atrPct * 1.5 * stopM)) : 5;
+                const tgt1Dist = atrPct > 0 ? Math.max(2, Math.min(12, atrPct * 1.5 * tp1M)) : 3;
+                const tgt2Dist = atrPct > 0 ? Math.max(3, Math.min(18, atrPct * 2.5 * tp2M)) : 5;
                 const plan = entryPrice > 0 ? {
                     stop: entryPrice * (1 - stopDist / 100),
                     t1: entryPrice * (1 + tgt1Dist / 100),
@@ -6205,6 +6254,9 @@ function loadV8Breakout() {
                 // T+3 teyit rozeti: sunucu teyit motorundan gecen kartlarda gorunur.
                 const confirmChip = d.confirm_state === 'CONFIRMED'
                     ? `<span style="background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.4); border-radius:5px; padding:2px 6px; font-size:0.66rem; font-weight:800; white-space:nowrap;">✅ T+3 TEYİTLİ</span>`
+                    : '';
+                const scenChip = sc.label
+                    ? `<span style="background:rgba(96,165,250,0.12); color:#60a5fa; border:1px solid rgba(96,165,250,0.35); border-radius:5px; padding:2px 6px; font-size:0.66rem; font-weight:800; white-space:nowrap;">${sc.icon || ''} ${sc.label}</span>`
                     : '';
                 // Pozisyon boyutlandirma: (kasa x risk%) / zarar kes mesafesi.
                 const capEl = document.getElementById('v8-capital');
@@ -6262,6 +6314,7 @@ function loadV8Breakout() {
                     <div style="font-size:0.78rem; color:var(--text-muted); padding:0.4rem 0.6rem; background:rgba(0,0,0,0.15); border-radius:6px; margin-bottom:0.5rem; display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
                         <i class="fa-solid fa-circle-info" style="color:#60a5fa;"></i> ${reason}
                         ${confirmChip}
+                        ${scenChip}
                     </div>
                     ${planHtml}
                     ${lotHtml}

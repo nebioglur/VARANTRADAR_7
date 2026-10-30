@@ -240,6 +240,9 @@ class SimulationEngine:
         is_bear = xu100_change < -0.5
         market_regime = "AYI" if is_bear else ("GÜÇLÜ POZİTİF" if xu100_change > 0.5 else "NÖTR")
         minimum_score = 92 if is_bear else 90
+        # SENARYO PLANI: ayi gunlerinde eszamanli pozisyon siniri 2'ye iner;
+        # toplam aciga cikis daralir, zarar serisi riski kuculur.
+        effective_max_positions = min(2, self.max_positions) if is_bear else self.max_positions
 
         valid_signals = []
         import json
@@ -374,7 +377,7 @@ class SimulationEngine:
                 valid_signals.append(s)
                 
         valid_signals.sort(key=lambda x: (x.get('_total_rank_score', 0), float(x.get('score', 0))), reverse=True)
-        selected = valid_signals[:self.max_positions]
+        selected = valid_signals[:effective_max_positions]
         if not selected:
             return
 
@@ -578,7 +581,7 @@ class SimulationEngine:
                 if dt_current.time() >= time(17, 50):
                     to_remove.append(s)
                     continue
-                if s['symbol'] in open_symbols or len(open_symbols) >= self.max_positions:
+                if s['symbol'] in open_symbols or len(open_symbols) >= effective_max_positions:
                     continue
 
                 sym = s['symbol']
