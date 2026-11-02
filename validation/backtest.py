@@ -18,7 +18,7 @@ class BacktestValidator:
             return {
                 "Symbol": symbol,
                 "Total_Historical_Cases": 0,
-                "Hit_Rate_Pct": 50.0,
+                "Hit_Rate_Pct": None,
                 "Average_Days_to_Target": 0,
                 "Status": "REJECTED",
                 "Verdict": "Yetersiz Veri"
@@ -33,43 +33,57 @@ class BacktestValidator:
         
         wins = 0
         losses = 0
-        total_days = len(df)
+        ambiguous = 0
+        resolved_days = []
+        total_cases = max(0, len(df) - 20)
         
         # DataFrame i listeye çevirip hızlı tarama yapalım
         closes = df['close'].tolist()
         highs = df['high'].tolist()
         lows = df['low'].tolist()
         
-        for i in range(len(closes) - 5): # Son 5 günü test edemeyiz
+        for i in range(max(0, len(closes) - 20)): # Keep only origins with a full 20-bar outcome window
             start_price = closes[i]
             target_p = start_price * (1 + tp_percent)
             stop_p = start_price * (1 - sl_percent)
             
             for j in range(i+1, min(i+20, len(closes))): # Max 20 gün bekle
-                if highs[j] >= target_p:
-                    wins += 1
-                    break
-                elif lows[j] <= stop_p:
+                hit_target = highs[j] >= target_p
+                hit_stop = lows[j] <= stop_p
+                if hit_target and hit_stop:
+                    # OHLC bars cannot reveal event order. Resolve conservatively as a stop.
+                    ambiguous += 1
                     losses += 1
+                    resolved_days.append(j - i)
+                    break
+                if hit_stop:
+                    losses += 1
+                    resolved_days.append(j - i)
+                    break
+                if hit_target:
+                    wins += 1
+                    resolved_days.append(j - i)
                     break
                     
         total_trades = wins + losses
         if total_trades == 0:
-            hit_rate = 50.0
-            avg_days = 0.0
+            hit_rate = None
+            avg_days = None
         else:
             hit_rate = (wins / total_trades) * 100.0
-            avg_days = 5.0 # Yaklaşık bir değer veya hesaplanabilir
+            avg_days = sum(resolved_days) / len(resolved_days)
             
         status = "REJECTED"
-        if hit_rate > 55.0:
+        if hit_rate is not None and hit_rate > 55.0:
             status = "APPROVED"
             
         return {
             "Symbol": symbol,
-            "Total_Historical_Cases": total_days,
-            "Hit_Rate_Pct": round(hit_rate, 1),
-            "Average_Days_to_Target": avg_days,
+            "Total_Historical_Cases": total_cases,
+            "Resolved_Trades": total_trades,
+            "Ambiguous_Bars_Resolved_As_Stop": ambiguous,
+            "Hit_Rate_Pct": round(hit_rate, 1) if hit_rate is not None else None,
+            "Average_Days_to_Target": round(avg_days, 2) if avg_days is not None else None,
             "Status": status,
-            "Verdict": "İstatistiksel ispat geçerli." if status == "APPROVED" else "Riskli ihtimal. İşlem zayıf."
+            "Verdict": "Historical OHLC test only; costs, slippage, survivorship and event order may limit validity." if total_trades else "No resolved historical trades; probability unavailable."
         }

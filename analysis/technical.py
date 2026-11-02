@@ -752,7 +752,10 @@ class TechnicalEngine(BaseEngine):
             neg_flow = pd.Series(np.where(dir_mf == -1, raw_money_flow, 0), index=df.index)
             pos_mf = pos_flow.rolling(14).sum()
             neg_mf = neg_flow.rolling(14).sum()
-            mfi = 100 - (100 / (1 + (pos_mf / neg_mf.replace(0, np.nan))))
+            money_ratio = pos_mf / neg_mf.replace(0, np.nan)
+            mfi = 100 - (100 / (1 + money_ratio))
+            mfi = mfi.mask((neg_mf == 0) & (pos_mf > 0), 100.0)
+            mfi = mfi.mask((neg_mf == 0) & (pos_mf == 0), 50.0)
             current_mfi = float(mfi.iloc[-1])
             if current_mfi > 60:
                 score += 5

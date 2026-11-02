@@ -27,7 +27,7 @@ class MarketRegimeEngine:
     }
 
     def __init__(self):
-        self.index_symbol = "XU100.IS"
+        self.index_symbol = "XU100.IS"  # BIST 100 benchmark; never substitute a foreign index
         
     def determine_regime(self) -> Dict[str, Any]:
         try:

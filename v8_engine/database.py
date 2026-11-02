@@ -39,7 +39,8 @@ class V8Database:
                 target1 REAL,
                 target2 REAL,
                 features_snapshot TEXT,
-                status TEXT
+                status TEXT,
+                engine_version TEXT
             )
         ''')
         
@@ -76,6 +77,7 @@ class V8Database:
         
         conn.commit()
         V8Database._migrate_outcomes(cursor, conn)
+        V8Database._ensure_columns(cursor, conn, 'v8_signals', {'engine_version': 'TEXT'})
         conn.close()
         
     @staticmethod
@@ -84,20 +86,23 @@ class V8Database:
         cursor.execute("PRAGMA table_info(v8_outcomes)")
         existing = {row['name'] for row in cursor.fetchall()}
         needed = {
-            't_3m_price': 'REAL',
-            't_10m_price': 'REAL',
-            't_120m_price': 'REAL',
-            't_240m_price': 'REAL',
-            't_1d_price': 'REAL',
+            't_3m_price': 'REAL', 't_5m_price': 'REAL', 't_10m_price': 'REAL',
+            't_15m_price': 'REAL', 't_30m_price': 'REAL', 't_60m_price': 'REAL',
+            't_120m_price': 'REAL', 't_240m_price': 'REAL', 't_eod_price': 'REAL',
+            't_1d_price': 'REAL', 'max_favorable_excursion': 'REAL',
+            'max_adverse_excursion': 'REAL', 'final_result': 'TEXT'
         }
+        V8Database._ensure_columns(cursor, conn, 'v8_outcomes', needed)
+
+    @staticmethod
+    def _ensure_columns(cursor, conn, table, needed):
+        cursor.execute(f"PRAGMA table_info({table})")
+        existing = {row['name'] for row in cursor.fetchall()}
         for col, ctype in needed.items():
             if col not in existing:
-                try:
-                    cursor.execute(f"ALTER TABLE v8_outcomes ADD COLUMN {col} {ctype}")
-                    print(f"[V8 DB Migration] Added column {col}")
-                except Exception as e:
-                    print(f"[V8 DB Migration] {col} error: {e}")
+                cursor.execute(f"ALTER TABLE {table} ADD COLUMN {col} {ctype}")
         conn.commit()
+
         
     @staticmethod
     def save_signal(signal_data: dict):

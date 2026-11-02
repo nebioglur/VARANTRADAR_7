@@ -89,7 +89,8 @@ class AIDecisionEngine:
             "Stop_ETA": stop_eta_days,
             "Risk_Reward": trade_plan.get('Risk_Reward', rr_ratio_str),
             "Trade_Quality": trade_quality,
-            "Success_Probability": trade_plan.get('Probability', success_prob),
+            "Success_Probability": None,
+            "Success_Probability_Status": "NO_VERIFIED_OUTCOME_COHORT",
             "Reasons": xai_data['Reasons'],
             "Missing_Conditions": xai_data['Counter_Opinions'],
             "Trade_Type": trade_type,
@@ -280,14 +281,8 @@ class AIDecisionEngine:
 
     @staticmethod
     def _calculate_success_probability(scores: Dict[str, float], readiness: str) -> str:
-        base_prob = scores['Total']
-        # Hacim destekliyse başarı olasılığı artar
-        if readiness == "Hazır":
-            base_prob = min(95, base_prob + 5)
-        elif readiness == "Pas Geç":
-            base_prob = max(10, base_prob - 20)
-            
-        return f"%{int(base_prob)}"
+        # A technical score is not a calibrated outcome probability.
+        return "Başarı olasılığı hesaplanmadı: doğrulanmış sonuç kohortu yok."
 
     @staticmethod
     def _generate_reasons(df: pd.DataFrame, scores: Dict[str, float]) -> tuple:

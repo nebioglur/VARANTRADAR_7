@@ -39,14 +39,13 @@ class MarketDataEngine:
         required_cols = ['open', 'high', 'low', 'close', 'volume']
         missing = [col for col in required_cols if col not in df.columns]
         if missing:
-            for m in missing:
-                df[m] = 0.0 if m != 'volume' else 0
+            logger.warning(f"[MarketDataEngine] Rejecting OHLCV data with missing columns: {missing}")
+            return pd.DataFrame(columns=required_cols)
 
-        df['close'] = df['close'].ffill()
-        df['open'] = df['open'].fillna(df['close'])
-        df['high'] = df['high'].fillna(df['close'])
-        df['low'] = df['low'].fillna(df['close'])
-        df['volume'] = df['volume'].fillna(0)
+        df = df[required_cols].apply(pd.to_numeric, errors='coerce')
+        df = df.replace([float('inf'), float('-inf')], pd.NA).dropna(subset=required_cols)
+        df = df[(df[['open', 'high', 'low', 'close']] > 0).all(axis=1) & (df['volume'] >= 0)]
+        df = df[(df['high'] >= df['low']) & (df['close'] <= df['high']) & (df['close'] >= df['low'])]
         return df
 
     def _resample_to_4h(self, df: pd.DataFrame) -> pd.DataFrame:

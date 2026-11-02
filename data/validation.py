@@ -22,13 +22,13 @@ class DataValidator:
     """
     
     # Eşikler
-    MAX_MISSING_RATIO = 0.15        # %15'ten fazla NaN varsa veri güvenilmez
+    MAX_MISSING_RATIO = 0.0        # Missing required OHLCV rows are rejected
     MAX_PRICE_JUMP_PCT = 25.0       # Tek günde %25+ sıçrama = outlier
     MAX_VOLUME_SPIKE_MULT = 20.0    # Ortalamadan 20x hacim = anormal
     MIN_DATA_ROWS = 10              # En az 10 satır veri olmalı
     
     @staticmethod
-    def validate(df: pd.DataFrame, symbol: str = "") -> Dict:
+    def validate(df: pd.DataFrame, symbol: str = "", interval: str = "1d") -> Dict:
         """
         DataFrame'i 10 kontrolden geçirir.
         Returns: {
@@ -39,6 +39,9 @@ class DataValidator:
             "errors": [str]
         }
         """
+        allowed_intervals = {"1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h", "1d", "5d", "1wk", "1mo", "3mo"}
+        if interval not in allowed_intervals:
+            return {"is_valid": False, "quality_score": 0, "checks": {}, "warnings": [], "errors": [f"Desteklenmeyen veri aralığı: {interval}"], "symbol": symbol}
         if df is None or df.empty:
             return {
                 "is_valid": False,
@@ -65,7 +68,25 @@ class DataValidator:
             score -= 30
             errors.append(f"Yetersiz veri: {row_count} satır (min {DataValidator.MIN_DATA_ROWS})")
         
-        # 2. DUPLICATE CHECK
+        # 2. Timestamp ordering and freshness (market holidays/weekends get a wider daily allowance).
+        freshness_passed = True
+        freshness_detail = "timestamp yok"
+        if isinstance(df_check.index, pd.DatetimeIndex) and len(df_check.index):
+            freshness_passed = bool(df_check.index.is_monotonic_increasing and not df_check.index.has_duplicates)
+            try:
+                age_hours = max(0.0, (pd.Timestamp.now(tz="UTC").timestamp() - pd.Timestamp(df_check.index[-1]).timestamp()) / 3600)
+                max_age_hours = 96 if interval in {"1d", "5d", "1wk", "1mo", "3mo"} else 36
+                freshness_passed = freshness_passed and age_hours <= max_age_hours
+                freshness_detail = f"son bar {age_hours:.1f} saat önce (eşik {max_age_hours} saat)"
+            except Exception:
+                freshness_passed = False
+                freshness_detail = "timestamp doğrulanamadı"
+            checks["freshness"] = {"passed": freshness_passed, "detail": freshness_detail}
+            if not freshness_passed:
+                score -= 30
+                errors.append("Veri zaman sırası hatalı veya piyasa aralığı için bayat.")
+
+        # 3. DUPLICATE CHECK
         dup_count = df_check.duplicated().sum()
         passed = dup_count == 0
         checks["duplicates"] = {"passed": passed, "detail": f"{dup_count} tekrar"}
@@ -73,19 +94,19 @@ class DataValidator:
             score -= 10
             warnings.append(f"{dup_count} adet tekrarlanan satır tespit edildi.")
         
-        # 3. MISSING / NULL CHECK
-        if 'close' in cols:
-            missing_ratio = df_check['close'].isna().sum() / len(df_check)
-            passed = missing_ratio <= DataValidator.MAX_MISSING_RATIO
-            checks["missing_data"] = {"passed": passed, "detail": f"%{round(missing_ratio*100, 1)} eksik"}
-            if not passed:
-                score -= 20
-                errors.append(f"Eksik veri oranı çok yüksek: %{round(missing_ratio*100, 1)}")
+        # 4. MISSING / NULL CHECK across all required OHLCV fields.
+        required = ['open', 'high', 'low', 'close', 'volume']
+        missing_ratio = df_check[required].isna().any(axis=1).sum() / len(df_check) if all(c in cols for c in required) else 1.0
+        passed = missing_ratio == 0
+        checks["missing_data"] = {"passed": passed, "detail": f"%{round(missing_ratio*100, 1)} eksik OHLCV satırı"}
+        if not passed:
+            score -= 20
+            errors.append(f"Eksik OHLCV satırı: %{round(missing_ratio*100, 1)}")
         
         # 4. NEGATIVE VALUE CHECK
         neg_found = False
         for col in ['open', 'high', 'low', 'close']:
-            if col in cols and (df_check[col] < 0).any():
+            if col in cols and ((df_check[col] <= 0).any() or not np.isfinite(pd.to_numeric(df_check[col], errors='coerce')).all()):
                 neg_found = True
                 break
         checks["negative_values"] = {"passed": not neg_found, "detail": "Negatif fiyat" if neg_found else "OK"}

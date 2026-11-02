@@ -13,21 +13,15 @@ class ProfessionalTools:
     @staticmethod
     def generate_dummy_correlation_matrix(symbols: list) -> go.Figure:
         """Modül 10: Korelasyon Matrisi (Simüle edilmiş)"""
-        # Gerçekte yfinance'den tüm hisselerin kapanışları indirilip pd.DataFrame.corr() hesaplanır
-        # Performans için rastgele mantıklı bir matris oluşturuyoruz.
         n = len(symbols)
-        # Create a symmetric positive semi-definite matrix
-        rand_mat = np.random.rand(n, n)
-        corr_mat = (rand_mat + rand_mat.T) / 2
-        np.fill_diagonal(corr_mat, 1.0)
-        
-        df_corr = pd.DataFrame(corr_mat, index=symbols, columns=symbols)
-        
+        # No observed return history was provided; do not invent correlations.
+        df_corr = pd.DataFrame(np.full((n, n), np.nan), index=symbols, columns=symbols)
+
         fig = px.imshow(df_corr, 
                         text_auto=".2f", 
                         aspect="auto",
                         color_continuous_scale="RdBu_r",
-                        title="BIST Korelasyon Matrisi (Simülasyon)")
+                        title="BIST Korelasyon Matrisi (Geçmiş fiyat verisi gerekli)")
         fig.update_layout(margin=dict(l=0, r=0, t=30, b=0))
         return fig
 
@@ -35,19 +29,13 @@ class ProfessionalTools:
     def generate_market_heatmap(symbols: list, radar_results: pd.DataFrame = None) -> go.Figure:
         """Modül 10: BIST Isı Haritası (Treemap)"""
         if radar_results is None or radar_results.empty:
-            # Generate dummy data
-            data = {
-                'Symbol': symbols,
-                'MarketCap': np.random.randint(100, 1000, size=len(symbols)),
-                'DailyReturn': np.random.uniform(-5, 5, size=len(symbols))
-            }
-            df = pd.DataFrame(data)
+            return go.Figure().update_layout(title="Isı haritası için doğrulanmış piyasa verisi gerekli")
         else:
             # Use radar results if available
             df = radar_results.copy()
             df['Symbol'] = df['Hisse']
-            df['MarketCap'] = df['Hacim'] if 'Hacim' in df.columns else np.random.randint(100, 1000, size=len(df))
-            df['DailyReturn'] = df['RSI'] - 50 # Sadece renklendirme için örnek (Gerçekte % değişim olmalı)
+            df['MarketCap'] = df['Hacim'] if 'Hacim' in df.columns else df.get('Volume', 0)
+            df['DailyReturn'] = df['Change_Pct'] if 'Change_Pct' in df.columns else df.get('Daily_Change_Pct', 0)
             
         df['Sector'] = 'BIST30' # Basitleştirme
         

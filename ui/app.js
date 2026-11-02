@@ -5810,7 +5810,6 @@ function formatV8Price(entry, current) {
     const color = chg > 0 ? "color:#10b981; font-weight:600;" : (chg < 0 ? "color:#ef4444; font-weight:600;" : "color:var(--text-muted);");
     const sign = chg > 0 ? "+" : "";
     return `<span style="${color}">${current.toFixed(2)} (${sign}${chg.toFixed(2)}%)</span>`;
-}">${current.toFixed(2)} (${sign}${chg.toFixed(2)}%)</span>`;
 }
 
 function translateV8Reason(r) {

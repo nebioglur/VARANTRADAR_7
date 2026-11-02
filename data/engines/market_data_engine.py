@@ -29,7 +29,12 @@ class MarketDataEngine:
         res = self.get_historical_prices(symbol, period="3mo", interval="1d")
         if res.is_valid and not res.df.empty and len(res.df) >= period:
             df = res.df
-            high_low = df['high'] - df['low']
-            atr = high_low.rolling(period).mean().iloc[-1]
-            return float(atr)
+            previous_close = df['close'].shift(1)
+            true_range = pd.concat([
+                df['high'] - df['low'],
+                (df['high'] - previous_close).abs(),
+                (df['low'] - previous_close).abs(),
+            ], axis=1).max(axis=1)
+            atr = true_range.ewm(alpha=1 / period, adjust=False, min_periods=period).mean().iloc[-1]
+            return float(atr) if pd.notna(atr) else None
         return None

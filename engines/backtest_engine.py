@@ -24,6 +24,8 @@ class BacktestEngine:
         bt_df = pd.DataFrame(index=df.index)
         bt_df['close'] = df['close']
         bt_df['position'] = positions
+        bt_df['signal'] = pd.Series(signals, index=df.index).fillna(0).clip(-1, 1)
+        bt_df['signal'] = pd.Series(signals, index=df.index).fillna(0).clip(-1, 1)
         
         # Getiriler (Returns)
         bt_df['asset_returns'] = bt_df['close'].pct_change(fill_method=None)
@@ -33,7 +35,7 @@ class BacktestEngine:
         bt_df['strategy_returns'] = bt_df['asset_returns'] * bt_df['position'].shift(1)
         
         # Komisyon Hesaplanması (Pozisyon değişimlerinde)
-        bt_df['trades'] = bt_df['position'].diff().abs()
+        bt_df['trades'] = bt_df['position'].diff().abs().fillna(bt_df['position'].abs()).fillna(bt_df['position'].abs())
         bt_df['commission_cost'] = bt_df['trades'] * self.commission
         bt_df['strategy_returns'] = bt_df['strategy_returns'] - bt_df['commission_cost'].fillna(0)
         

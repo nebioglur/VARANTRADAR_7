@@ -24,7 +24,7 @@ class ValidatedDataResult:
     
     @property
     def is_valid(self) -> bool:
-        return self.quality_score >= 50 and not self.df.empty
+        return self.quality_score >= 50 and not self.df.empty and self.validation_report.get("is_valid", True)
 
 class DataSourceManager:
     """
@@ -111,7 +111,7 @@ class DataSourceManager:
         if cached_df is not None and not cached_df.empty:
             self._log_event(f"{symbol}: RAM Cache HIT")
             Auditor.log_event("DATA_FETCH_SUCCESS", symbol, {"source": "RAM Cache"})
-            validation = self.validator.validate(cached_df, symbol)
+            validation = self.validator.validate(cached_df, symbol, interval)
             
             tagged_df = DataGovernance.tag_data(cached_df, "RAM Cache", validation["quality_score"], 0.0)
             
@@ -133,7 +133,7 @@ class DataSourceManager:
                 
                 if df is not None and not df.empty:
                     # Doğrulama
-                    validation = self.validator.validate(df, symbol)
+                    validation = self.validator.validate(df, symbol, interval)
                     
                     if validation["is_valid"]:
                         # Başarılı! Cache'e yaz
@@ -141,7 +141,7 @@ class DataSourceManager:
                         self._log_event(f"{symbol}: {provider_name} BAŞARILI (Q={validation['quality_score']})")
                         Auditor.log_event("DATA_FETCH_SUCCESS", symbol, {"source": provider_name, "quality": validation['quality_score']})
                         
-                        tagged_df = DataGovernance.tag_data(df, provider_name, validation["quality_score"], 100.0) # latency simüle edildi
+                        tagged_df = DataGovernance.tag_data(df, provider_name, validation["quality_score"], float(provider.get_latency()))
                         
                         return ValidatedDataResult(
                             df=tagged_df,
@@ -169,7 +169,7 @@ class DataSourceManager:
         disk_df = self.cache.get_disk(symbol, period, interval)
         if disk_df is not None and not disk_df.empty:
             self._log_event(f"{symbol}: Disk Cache FALLBACK")
-            validation = self.validator.validate(disk_df, symbol)
+            validation = self.validator.validate(disk_df, symbol, interval)
             return ValidatedDataResult(
                 df=disk_df,
                 quality_score=max(validation["quality_score"] - 10, 0),  # Cache penalty

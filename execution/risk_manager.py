@@ -12,34 +12,22 @@ class RiskManager:
         total_capital: float, 
         entry_price: float, 
         stop_loss: float, 
-        win_rate_pct: float = 55.0,
-        risk_reward_ratio: float = 2.0
+        win_rate_pct: float = 50.0,
+        risk_reward_ratio: float = 2.0,
+        max_risk_pct: float = 1.0
     ) -> Dict[str, Any]:
         """
         Dinamik Kelly Kriteri'ne (Half-Kelly) göre işlem riskini hesaplar.
         İflas riski kontrolü (Max %10 Drawdown per trade) uygulanır.
         """
-        if entry_price <= stop_loss:
-            return {"Error": "Stop-Loss, giriş fiyatından büyük/eşit olamaz (Long işlem için)."}
-            
+        if total_capital <= 0 or entry_price <= 0 or stop_loss <= 0 or entry_price <= stop_loss:
+            return {"Error": "Sermaye, giriş ve stop seviyeleri pozitif olmalı; long stop girişin altında olmalı."}
+        if not 0 < max_risk_pct <= 2:
+            return {"Error": "İşlem başına risk üst sınırı 0-2% aralığında olmalı."}
+
         risk_per_share = entry_price - stop_loss
-        
-        # Kelly Formülü: K = W - [(1 - W) / R]
-        # W: Win Probability (0 to 1)
-        # R: Risk/Reward Ratio
-        w = win_rate_pct / 100.0
-        r = risk_reward_ratio
-        
-        kelly_pct = w - ((1 - w) / r) if r > 0 else 0
-        
-        # Half-Kelly (Daha muhafazakar bir yaklaşım)
-        recommended_risk_pct = (kelly_pct / 2.0) * 100
-        
-        # Sınırlandırmalar (Min %1, Max %10 kuralı)
-        if recommended_risk_pct <= 0:
-            recommended_risk_pct = 1.0 # İstatistiksel eksi çıksa bile 1 lotluk minimum test denemesi
-        elif recommended_risk_pct > 10.0:
-            recommended_risk_pct = 10.0 # Sermaye Koruması: Hiçbir işleme %10'dan fazla risk alma!
+        # Fixed fractional sizing avoids presenting fabricated win rates as Kelly inputs.
+        recommended_risk_pct = float(max_risk_pct)
             
         max_loss_allowed = total_capital * (recommended_risk_pct / 100.0)
         
@@ -63,5 +51,5 @@ class RiskManager:
             "Total_Investment": round(total_investment, 2),
             "Actual_Risk_Amount": round(position_size_units * risk_per_share, 2),
             "Actual_Risk_Pct": round(actual_risk_pct, 2),
-            "Warning": "Kelly Kriteri (Half-Kelly) ile optimize edilmiştir."
+            "Warning": "Sabit risk bütçesine göre plan; broker emri değildir ve başarı olasılığı tahmini içermez."
         }
