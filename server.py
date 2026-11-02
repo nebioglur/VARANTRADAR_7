@@ -22,6 +22,7 @@ import traceback
 
 os.makedirs("data", exist_ok=True)
 file_handler = logging.FileHandler("data/system_logs.txt", encoding="utf-8")
+os.chmod("data/system_logs.txt", 0o600)
 file_handler.setFormatter(logging.Formatter('[%(asctime)s] [%(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S"))
 logging.getLogger().addHandler(file_handler)
 logging.getLogger().setLevel(logging.INFO)
@@ -182,20 +183,8 @@ def load_dashboard_cache():
     return {}
 
 def sync_to_github():
-    try:
-        import subprocess
-        # Sadece data dizinini ve dashboard_cache'i gonder
-        git_cmd = r"C:\Users\nebioglur\mingit\cmd\git.exe"
-        if not os.path.exists(git_cmd):
-            git_cmd = "git" # sistem path'inde varsa
-        
-        subprocess.run([git_cmd, "add", "dashboard_cache.json", "data/tavan_daily_audit.json", "data/trades_db.sqlite"], check=False)
-        res = subprocess.run([git_cmd, "commit", "-m", "chore: auto-sync live data [skip ci]"], capture_output=True, text=True)
-        if "nothing to commit" not in res.stdout:
-            subprocess.run([git_cmd, "push", "origin", "main"], check=False)
-            print("[GITHUB] Veriler canli sunucu icin basariyla push edildi.")
-    except Exception as e:
-        print(f"[GITHUB ERROR] {e}")
+    """Runtime market data must never be committed or pushed to GitHub."""
+    logging.getLogger(__name__).warning("GitHub runtime-data sync is disabled; use a private database/object store.")
 
 def save_dashboard_cache(data):
     import time, json
@@ -734,9 +723,6 @@ def _background_scanner_impl():
                             import traceback
                             traceback.print_exc()
                         
-                        # Github Cloud Data Sync (Statik sayfalar ve dış VPS'ler için)
-                        sync_to_github()
-                            
                         print("[BACKGROUND] 1h ve Tavan taraması tamamlandı, saatlik tavan denetçisine kaydedildi.")
                 except Exception as e_1h:
                     print(f"[BACKGROUND] 1h Tarama hatası: {e_1h}")
@@ -862,19 +848,7 @@ def simulation_loop():
 # Varant Sembolleri (Örnek Liste - IS Warrant yapısı)
 # ⚠️ DİKKAT: Bu varant sembolleri eski vadeli (Temmuz 2024). Güncel vadeli sembollerle değiştirilmelidir.
 import warnings
-warnings.warn("WARRANT_SYMBOLS listesi eski vadeli semboller içeriyor (240726). Lütfen güncelleyin.", stacklevel=2)
-WARRANT_SYMBOLS = [
-    "GARAN-240726-C-130.IS", "GARAN-240726-P-120.IS",
-    "THYAO-240726-C-350.IS", "THYAO-240726-P-300.IS",
-    "ASELS-240726-C-80.IS", "ASELS-240726-P-60.IS",
-    "TUPRS-240726-C-200.IS", "TUPRS-240726-P-150.IS",
-    "AKBNK-240726-C-60.IS", "AKBNK-240726-P-50.IS",
-    "EREGL-240726-C-60.IS", "EREGL-240726-P-45.IS",
-    "SAHOL-240726-C-90.IS", "SAHOL-240726-P-75.IS",
-    "BIMAS-240726-C-600.IS", "BIMAS-240726-P-500.IS",
-    "KCHOL-240726-C-250.IS", "KCHOL-240726-P-200.IS",
-    "SISE-240726-C-100.IS", "SISE-240726-P-80.IS",
-]
+WARRANT_SYMBOLS = []  # Live instruments require a verified issuer/BIST instrument master.
 
 # Tüm sembol listesi (autocomplete için)
 ALL_SYMBOLS = [s.replace('.IS','') for s in BIST_SYMBOLS] + [w.replace('.IS','') for w in WARRANT_SYMBOLS] + FX_SYMBOLS + COMMODITY_SYMBOLS + CRYPTO_SYMBOLS
@@ -888,13 +862,18 @@ from flask import request
 
 
 
-CORS(app)
+_cors_origins = [origin.strip() for origin in os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",") if origin.strip()]
+CORS(app, origins=_cors_origins, supports_credentials=True)
 
 # ============ SESSION AUTH (GÜVENLİK) ============
 import os
+import secrets
 from flask import request, Response, session, redirect, jsonify, render_template_string
 
-app.secret_key = os.environ.get('SECRET_KEY', 'varant_pro_ultra_secret_2026_xyz')
+app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
+app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_SECURE=os.environ.get("COOKIE_SECURE", "true").lower() == "true")
+if not os.environ.get('SECRET_KEY'):
+    warnings.warn("SECRET_KEY is unset; sessions will not survive restart. Configure a strong deployment secret.", stacklevel=2)
 
 # --- Verdent-Managed Supabase Auth (public browser config) ---
 # AUTH KAYNAGI (Verdent-managed Supabase Auth) — bilinçli olarak env override KULLANMAZ:
@@ -2353,6 +2332,8 @@ def api_simulation_live_orders():
         return jsonify({
             "status": "success",
             "date": date_str,
+            "execution_mode": "SIMULATION_ONLY",
+            "broker_connected": False,
             "orders": sanitize_for_json(sorted(orders, key=lambda x: x["score"], reverse=True))
         })
     except Exception as e:
@@ -3641,7 +3622,7 @@ def api_v8_market_regime():
             regime_data = {"regime": "NÖTR (YATAY / DENGE)", "score": 50.0, "xu100_trend": 0.0}
 
     # KESİN TÜRKÇELEŞTİRME:
-    reg_code = str(regime_data.get("regime", "")).upper()
+    reg_code = str(regime_data.get("regime_code") or regime_data.get("regime", "")).upper()
     tr_map = {
         "STRONG_BULL": "GÜÇLÜ BOĞA (RALLİ)",
         "BULL": "BOĞA (YÜKSELİŞ TRENDİ)",
@@ -3661,7 +3642,7 @@ def api_v8_market_regime():
 @app.route('/api/logs', methods=['GET'])
 def api_logs():
     try:
-        if not session.get('logged_in'):
+        if not session.get('logged_in') or not is_admin_owner():
             return jsonify({"status": "error", "message": "Unauthorized"}), 401
         
         log_file = "data/system_logs.txt"

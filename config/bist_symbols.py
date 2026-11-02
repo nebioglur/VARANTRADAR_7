@@ -136,23 +136,5 @@ DOMINO_CLUSTERS = {
 # ==========================================
 # 🎯 Varant Dayanak Eşleştirme Sözlüğü
 # ==========================================
-WARRANT_UNDERLYING_MAP = {
-    "THYAO": {"prefix": "TH", "leverage": 6.8, "name": "THYAO Alım Varantı"},
-    "AKBNK": {"prefix": "AK", "leverage": 6.2, "name": "AKBNK Alım Varantı"},
-    "GARAN": {"prefix": "GA", "leverage": 5.9, "name": "GARAN Alım Varantı"},
-    "ISCTR": {"prefix": "IS", "leverage": 6.5, "name": "ISCTR Alım Varantı"},
-    "YKBNK": {"prefix": "YK", "leverage": 6.4, "name": "YKBNK Alım Varantı"},
-    "EREGL": {"prefix": "ER", "leverage": 5.5, "name": "EREGL Alım Varantı"},
-    "TUPRS": {"prefix": "TP", "leverage": 7.0, "name": "TUPRS Alım Varantı"},
-    "KCHOL": {"prefix": "KC", "leverage": 6.0, "name": "KCHOL Alım Varantı"},
-    "SAHOL": {"prefix": "SA", "leverage": 5.8, "name": "SAHOL Alım Varantı"},
-    "SISE": {"prefix": "SI", "leverage": 5.4, "name": "SISE Alım Varantı"},
-    "PETKM": {"prefix": "PE", "leverage": 6.1, "name": "PETKM Alım Varantı"},
-    "BIMAS": {"prefix": "BI", "leverage": 5.7, "name": "BIMAS Alım Varantı"},
-    "ASELS": {"prefix": "AS", "leverage": 6.3, "name": "ASELS Alım Varantı"},
-    "EKGYO": {"prefix": "EK", "leverage": 6.9, "name": "EKGYO Alım Varantı"},
-    "FROTO": {"prefix": "FR", "leverage": 5.8, "name": "FROTO Alım Varantı"},
-    "TOASO": {"prefix": "TO", "leverage": 5.6, "name": "TOASO Alım Varantı"},
-    "TCELL": {"prefix": "TC", "leverage": 6.0, "name": "TCELL Alım Varantı"},
-    "PGSUS": {"prefix": "PG", "leverage": 7.2, "name": "PGSUS Alım Varantı"}
-}
+# Instrument identifiers, expiry, strike and leverage require a verified live issuer feed.
+WARRANT_UNDERLYING_MAP = {}

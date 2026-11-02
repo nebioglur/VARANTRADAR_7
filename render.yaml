@@ -9,6 +9,16 @@ services:
         value: https://supabase-api-prod.verdent.ai/p/pf565ccea3c6a9b19d28e
       - key: SUPABASE_PUBLISHABLE_KEY
         sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: API_AUTH_TOKEN
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: API_VAULT_MASTER_KEY
+        sync: false
+      - key: API_VAULT_SALT
+        sync: false
       - key: DATABASE_URL
         sync: false
       - key: TELEGRAM_BOT_TOKEN

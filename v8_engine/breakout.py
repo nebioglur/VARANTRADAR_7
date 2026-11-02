@@ -27,6 +27,8 @@ class BreakoutEngine:
             return self._default_result(symbol, "DATA_INSUFFICIENT")
 
         try:
+            if not all(any(name in df.columns for name in names) for names in [('Close', 'close'), ('High', 'high'), ('Low', 'low'), ('Open', 'open'), ('Volume', 'volume')]):
+                return self._default_result(symbol, "DATA_INSUFFICIENT")
             close = df['Close'] if 'Close' in df.columns else df['close']
             high = df['High'] if 'High' in df.columns else df['high']
             low = df['Low'] if 'Low' in df.columns else df['low']
@@ -60,9 +62,9 @@ class BreakoutEngine:
             c_bb_upper = float(bb_upper.iloc[-1]) if len(bb_upper) > 0 else c
 
             # Hacim Teyidi
-            vol_sma_10 = vol.rolling(10, min_periods=3).mean().replace(0, np.nan)
-            avg_vol = float(vol_sma_10.iloc[-1]) if len(vol_sma_10) > 0 else v
-            rel_vol = v / avg_vol if avg_vol > 0 else 1.0
+            vol_sma_10 = vol.shift(1).rolling(10, min_periods=5).mean().replace(0, np.nan)
+            avg_vol = float(vol_sma_10.iloc[-1]) if len(vol_sma_10) > 0 and pd.notna(vol_sma_10.iloc[-1]) else float('nan')
+            rel_vol = v / avg_vol if pd.notna(avg_vol) and avg_vol > 0 and pd.notna(v) and v >= 0 else 0.0
 
             # 2. KIRILIM TESPİTİ (3 Farklı Kırılım Türü)
             is_breakout = False
@@ -89,15 +91,15 @@ class BreakoutEngine:
                 }
 
             # A) Klasik Direnç Kırılımı (10g veya 20g direnci aşıldı)
-            if c > res_10d:
+            if c > res_10d and rel_vol >= 1.0:
                 is_breakout = True
                 reasons.append(f"10 günlük direnç (₺{res_10d:.2f}) yukarı kırıldı")
-            elif c > res_20d:
+            elif c > res_20d and rel_vol >= 1.0:
                 is_breakout = True
                 reasons.append(f"20 günlük direnç (₺{res_20d:.2f}) yukarı kırıldı")
 
             # B) Volatilite / Bollinger Üst Bandı Kırılımı
-            if c >= c_bb_upper * 0.998 and rel_vol >= 1.1:
+            if c >= c_bb_upper * 0.998 and rel_vol >= 1.2:
                 is_breakout = True
                 if not any("direnç" in r for r in reasons):
                     reasons.append("Bollinger üst bandı hacimli aşıldı")
@@ -105,7 +107,7 @@ class BreakoutEngine:
             # C) Güçlü Momentum / Erken Kopuş Kırılımı (Pozitif +%2.5 ve 5 günlük zirve)
             lb_5 = min(len(high) - 1, 5)
             high_5d = float(high.iloc[-lb_5-1:-1].max()) if lb_5 > 1 else h
-            if change_pct >= 2.5 and c >= high_5d and rel_vol >= 1.2:
+            if change_pct >= 2.5 and c >= high_5d and rel_vol >= 1.5:
                 is_breakout = True
                 if not reasons:
                     reasons.append("Erken momentum ve hacim patlamasıyla kopuş başladı")
@@ -126,6 +128,9 @@ class BreakoutEngine:
             elif rel_vol >= 1.0:
                 breakout_score += 10.0
                 reasons.append("Hacim ortalamayı aştı")
+            else:
+                # A candidate without volume confirmation cannot be called a breakout.
+                return self._default_result(symbol, "NO_BREAKOUT")
 
             # Mum Gövdesi & Kapanış Gücü (0 - 25 Puan)
             candle_range = h - l

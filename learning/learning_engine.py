@@ -22,13 +22,8 @@ class AILearningEngine:
     }
 
     # Başlangıç Başarı Oranları (Backtest bazlı varsayılan)
-    DEFAULT_STATS = {
-        "Technical_AI": {"win_rate": 68.5, "total_trades": 120, "history": [65.0, 66.2, 67.8, 68.5]},
-        "Fundamental_AI": {"win_rate": 72.1, "total_trades": 85, "history": [70.0, 71.5, 71.8, 72.1]},
-        "Macro_AI": {"win_rate": 64.3, "total_trades": 150, "history": [60.0, 62.5, 63.8, 64.3]},
-        "SmartMoney_AI": {"win_rate": 75.8, "total_trades": 92, "history": [72.0, 74.5, 75.2, 75.8]},
-        "Sentiment_AI": {"win_rate": 58.2, "total_trades": 60, "history": [55.0, 56.5, 57.8, 58.2]}
-    }
+    # No seed win rates: report only signal outcomes measured by the tracker.
+    DEFAULT_STATS = {}
     
     @classmethod
     def load_weights(cls) -> Dict[str, Dict[str, float]]:
@@ -54,9 +49,14 @@ class AILearningEngine:
     def get_regime_weights(cls, regime: str) -> Dict[str, float]:
         """Piyasa rejimine uygun güncel korelasyon ağırlıklarını döndürür."""
         weights = cls.load_weights()
-        if regime in weights:
-            return weights[regime]
-        return weights["YATAY"]
+        code = str(regime or "").upper()
+        if "BOĞA" in code or "BOGA" in code or "BULL" in code:
+            key = "BOGA"
+        elif "AYI" in code or "BEAR" in code:
+            key = "AYI"
+        else:
+            key = "YATAY"
+        return weights.get(key, cls.DEFAULT_WEIGHTS["YATAY"])
         
     @classmethod
     def train_model(cls, regime: str, trade_result: str, dominant_engine: str):
@@ -99,7 +99,9 @@ class AILearningEngine:
             
         with open(STATS_FILE, "r", encoding="utf-8") as f:
             try:
-                return json.load(f)
+                raw = json.load(f)
+                return {name: row for name, row in raw.items()
+                        if isinstance(row, dict) and row.get("data_status") == "verified"}
             except json.JSONDecodeError:
                 return cls.DEFAULT_STATS
 
@@ -112,38 +114,5 @@ class AILearningEngine:
             
     @classmethod
     def simulate_daily_learning(cls):
-        """
-        Gece 00:00'da çalışan otonom öğrenme simülasyonu.
-        Günlük başarılı olan ajanların win_rate'ini hafifçe artırır, başarısız olanları düşürür.
-        Tarihçeye (history) son durumu ekler.
-        """
-        import random
-        stats = cls.get_agent_stats()
-        
-        for agent, data in stats.items():
-            current_rate = data["win_rate"]
-            trades = data["total_trades"]
-            
-            # Rastgele 1-3 yeni işlem yapmış gibi simüle et
-            new_trades = random.randint(1, 3)
-            # %60-%80 arası bir ajan yeni işlemleri de benzer oranda tutturur
-            successes = sum([1 for _ in range(new_trades) if random.random() < (current_rate / 100.0)])
-            
-            total_success = (current_rate / 100.0 * trades) + successes
-            new_total_trades = trades + new_trades
-            
-            new_win_rate = (total_success / new_total_trades) * 100.0
-            new_win_rate = round(new_win_rate, 1)
-            
-            data["win_rate"] = new_win_rate
-            data["total_trades"] = new_total_trades
-            
-            # History listesine ekle (sadece son 10 günü tut)
-            if "history" not in data:
-                data["history"] = [current_rate]
-            data["history"].append(new_win_rate)
-            if len(data["history"]) > 10:
-                data["history"] = data["history"][-10:]
-                
-        cls.save_agent_stats(stats)
-        return stats
+        """Deprecated: synthetic trades are never added to performance records."""
+        return cls.get_agent_stats()
