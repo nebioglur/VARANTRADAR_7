@@ -2751,6 +2751,46 @@ def api_simulation_daily_pnl():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
+@app.route('/api/legal/status', methods=['GET'])
+def api_legal_status():
+    """Yasal sorumluluk onayi durumu (hesap bazli, kalici)."""
+    try:
+        owner = get_owner_key()
+        from services.trade_database import get_connection, IS_PG
+        ph = "%s" if IS_PG else "?"
+        val = None
+        with get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(f"SELECT value FROM live_settings WHERE key = {ph}", (f"legal_accepted:{owner}",))
+            row = cur.fetchone()
+            if row and row["value"]:
+                val = row["value"]
+        return jsonify({"status": "success", "accepted": bool(val), "accepted_at": val})
+    except Exception as e:
+        return jsonify({"status": "error", "accepted": False, "message": str(e)})
+
+@app.route('/api/legal/accept', methods=['POST'])
+def api_legal_accept():
+    """Kullanicinin tek seferlik yasal onayini kalici olarak kaydeder."""
+    try:
+        owner = get_owner_key()
+        from services.trade_database import get_connection, IS_PG
+        ph = "%s" if IS_PG else "?"
+        ts = datetime.now(ZoneInfo("Europe/Istanbul")).strftime("%Y-%m-%d %H:%M:%S")
+        key = f"legal_accepted:{owner}"
+        with get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(f"SELECT key FROM live_settings WHERE key = {ph}", (key,))
+            exists = cur.fetchone()
+            if exists:
+                cur.execute(f"UPDATE live_settings SET value = {ph} WHERE key = {ph}", (ts, key))
+            else:
+                cur.execute(f"INSERT INTO live_settings (key, value) VALUES ({ph}, {ph})", (key, ts))
+            conn.commit()
+        return jsonify({"status": "success", "accepted": True, "accepted_at": ts})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
 @app.route('/api/telegram/settings', methods=['GET', 'POST'])
 def api_telegram_settings():
     """Telegram bot ayarlari: durum sorgulama (GET) ve kalici kayit (POST).
