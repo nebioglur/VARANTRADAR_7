@@ -51,7 +51,7 @@ class WarrantEngine:
                 c_greeks = WarrantMath.calculate_greeks(current_price, strike, T, self.risk_free_rate, self.volatility, 'CALL')
                 
                 warrants.append({
-                    'warrant_code': f"{base_code}I{'SIM'}",
+                    'warrant_code': f"{base_code}I-SIM-{days}-{int(strike * 100)}",
                     'underlying': symbol,
                     'instrument_source': 'SYNTHETIC_SIMULATION',
                     'type': 'CALL',
@@ -78,7 +78,7 @@ class WarrantEngine:
                 p_greeks = WarrantMath.calculate_greeks(current_price, strike, T, self.risk_free_rate, self.volatility, 'PUT')
                 
                 warrants.append({
-                    'warrant_code': f"{base_code}P{'SIM'}",
+                    'warrant_code': f"{base_code}P-SIM-{days}-{int(strike * 100)}",
                     'underlying': symbol,
                     'instrument_source': 'SYNTHETIC_SIMULATION',
                     'type': 'PUT',
