@@ -10,6 +10,7 @@ from v8_engine.varrant import VarrantEngine
 from v8_engine.breakout import BreakoutEngine
 from v8_engine.database import V8Database
 from v8_engine.regime import MarketRegimeEngine
+from v8_engine.entry_approval import evaluate_entry_approval
 from services.market_breadth import MarketBreadthEngine
 from services.warrant_math import WarrantMath
 from services.simulation_engine import SimulationEngine
@@ -158,3 +159,44 @@ def test_v8_outcome_migration_adds_eod_confirmation_without_dropping_rows():
     assert row["signal_id"] == "legacy"
     assert row["t_eod_price"] == 101.5
     assert row["t_eod_confirmed"] == 0
+
+
+def test_v8_entry_approval_requires_all_core_gates():
+    regime = {"regime_code": "BULL", "score": 70, "data_status": "OK", "stale": False}
+    breakout = {
+        "is_breakout": True,
+        "status": "CONFIRMED_BREAKOUT",
+        "breakout_score": 75,
+        "fakeout_risk": 20,
+        "metrics": {
+            "rsi": 60, "mfi_14": 65, "atr_14": 2.0,
+            "atr_pct": 2.0, "relative_volume": 1.5
+        },
+    }
+    result = evaluate_entry_approval(regime=regime, breakout=breakout)
+    assert result["approved"] is True
+    assert result["decision"] == "GİRİŞ ONAYI: EVET"
+
+
+def test_v8_entry_approval_blocks_stale_market_data():
+    regime = {"regime_code": "BULL", "score": 70, "data_status": "STALE_LAST_KNOWN", "stale": True}
+    breakout = {
+        "is_breakout": True, "status": "CONFIRMED_BREAKOUT",
+        "breakout_score": 90, "fakeout_risk": 10,
+        "metrics": {"rsi": 60, "mfi_14": 65, "atr_14": 2, "atr_pct": 2, "relative_volume": 2}
+    }
+    result = evaluate_entry_approval(regime=regime, breakout=breakout)
+    assert result["approved"] is False
+    assert "güncel" in " ".join(result["reasons"])
+
+
+def test_v8_entry_approval_blocks_synthetic_warrant():
+    regime = {"regime_code": "BULL", "score": 70, "data_status": "OK", "stale": False}
+    breakout = {
+        "is_breakout": True, "status": "CONFIRMED_BREAKOUT",
+        "breakout_score": 90, "fakeout_risk": 10,
+        "metrics": {"rsi": 60, "mfi_14": 65, "atr_14": 2, "atr_pct": 2, "relative_volume": 2}
+    }
+    warrant = {"instrument_source": "SYNTHETIC_SIMULATION", "warrant_code": "SIM-CALL"}
+    result = evaluate_entry_approval(regime=regime, breakout=breakout, warrant=warrant)
+    assert result["approved"] is False
