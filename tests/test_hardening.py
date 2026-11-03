@@ -10,6 +10,7 @@ from v8_engine.breakout import BreakoutEngine
 from v8_engine.regime import MarketRegimeEngine
 from services.market_breadth import MarketBreadthEngine
 from services.warrant_math import WarrantMath
+from services.simulation_engine import SimulationEngine
 
 
 def test_backtest_executes_signal_on_next_bar_not_signal_bar():
@@ -126,3 +127,20 @@ def test_black_scholes_zero_volatility_and_expiry_are_finite():
 def test_black_scholes_rejects_invalid_market_inputs():
     with pytest.raises(ValueError):
         WarrantMath.black_scholes_call(-100, 100, 1, 0.1, 0.2)
+
+def test_intraday_simulation_risk_budget_is_capped_at_one_percent():
+    engine = SimulationEngine(daily_budget=100000)
+    allocation, risk_amount = engine._position_allocation(100000, 100, 95, is_bear=False)
+    assert risk_amount <= 1000.0
+    assert allocation <= 33000.0
+
+
+def test_intraday_setup_does_not_fabricate_atr_when_bars_are_invalid():
+    engine = SimulationEngine()
+    bad = pd.DataFrame({
+        "Open": [100.0, 101.0, 102.0, 103.0],
+        "High": [99.0, 100.0, 101.0, 102.0],
+        "Low": [100.0, 101.0, 102.0, 103.0],
+        "Close": [100.5, 101.5, 102.5, 103.5],
+    })
+    assert engine._entry_setup(bad, 104.0) is None
