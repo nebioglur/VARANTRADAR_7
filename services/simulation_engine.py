@@ -153,7 +153,17 @@ class SimulationEngine:
         close = pd.to_numeric(sub_df['Close'], errors='coerce').dropna()
         high = pd.to_numeric(sub_df['High'], errors='coerce').reindex(close.index)
         low = pd.to_numeric(sub_df['Low'], errors='coerce').reindex(close.index)
-        if len(close) < 4 or high.isna().any() or low.isna().any():
+        open_prices = pd.to_numeric(sub_df['Open'], errors='coerce').reindex(close.index)
+        if len(close) < 4 or high.isna().any() or low.isna().any() or open_prices.isna().any():
+            return None
+        ohlc = pd.concat([open_prices, high, low, close], axis=1)
+        if not np.isfinite(ohlc.to_numpy(dtype=float)).all():
+            return None
+        if (ohlc <= 0).any().any() or (high < low).any():
+            return None
+        if (high < pd.concat([open_prices, close], axis=1).max(axis=1)).any():
+            return None
+        if (low > pd.concat([open_prices, close], axis=1).min(axis=1)).any():
             return None
 
         ema9 = close.ewm(span=9, adjust=False).mean()
