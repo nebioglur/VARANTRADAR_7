@@ -20,6 +20,8 @@
 - Restricted Supabase token verification to operator-configured HTTPS issuer URLs. Unverified JWT claims no longer create arbitrary outbound request URLs (SSRF protection).
 - Disabled runtime GitHub commit/push behavior. The application must not push runtime cache or user database files to `main`.
 - Added ignore rules for local environment files, secrets, runtime data and logs.
+- Replaced the Render development-server start command with a single-worker Gunicorn configuration. Background services are initialized after worker startup; all Flask routes are registered before the server starts.
+- Render now declares the production secret, environment, CORS allow-list and optional trusted Supabase issuer list as deployment settings.
 
 ### Data quality and market data
 - Intraday backtests no longer silently fall back from missing 5-minute OHLCV to a daily candle.
@@ -31,7 +33,8 @@
 - Dip volume-contraction scoring now tests for actual volume contraction; the prior condition rewarded rising volume under a “volume drying up” label.
 - Selling-pressure reduction requires enough recent and prior down-volume observations instead of passing by default when samples are absent.
 - Dip OHLCV validation, upper-wick calculation and prior-60-bar resistance reference were corrected.
-- V8 XU100 regime analysis requires sufficient valid OHLC data, does not invent a 50% market-breadth value when breadth is missing, exposes breadth availability and labels the timeframe as daily.
+- V8 XU100 regime analysis requires sufficient valid OHLC data, rejects stale daily bars, does not invent a 50% market-breadth value when breadth is missing, exposes breadth availability and labels the timeframe as daily.
+- Market breadth now reports missing/partial inputs instead of converting absent changes to 0% and inventing a 50/50 market.
 - V8 ATR uses Wilder smoothing; breakout analysis now exposes Wilder ATR, MFI(14), ATR percentage and 20-bar realized volatility, and rejects missing/invalid volume instead of assuming neutral values.
 
 ### Varants and learning
@@ -56,18 +59,22 @@
 - Added interval/source columns to market data storage.
 
 ### Tests and CI
-- Added `tests/test_hardening.py` regression tests for next-bar backtests, transaction costs, missing data, risk caps, synthetic/real warrant separation, random learning removal, MFI and ATR.
-- Added `.github/workflows/tests.yml` to run pytest on Codex/fix branches and pull requests to main.
-- The first CI attempts exposed legacy root-level manual test scripts (notably a Prophet smoke script that exits at import time). The workflow now targets the dedicated `tests/` regression suite; the latest run must complete successfully before merge.
+- Added `tests/test_hardening.py` regression tests for next-bar backtests, transaction costs, missing data, risk caps, synthetic/real warrant separation, random learning removal, MFI, ATR, market breadth and Black-Scholes edge cases.
+- Added `.github/workflows/tests.yml` to install the full production requirements on Python 3.13, run `pip check`, compile the hardened modules and run the dedicated regression suite.
+- The first CI attempts exposed legacy root-level manual test scripts (notably a Prophet smoke script that exits at import time). The workflow now targets `tests/` rather than auto-collecting those legacy scripts.
+- A full-dependency Python 3.13 run passed `pip check`, `py_compile` and **15 regression tests**. The final security-only edits are being rechecked by the latest run.
 
 ## Changed files
 
 - `.gitignore`
 - `.github/workflows/tests.yml`
+- `render.yaml`
+- `gunicorn.conf.py`
 - `server.py`
 - `services/pg_store.py`
 - `services/trade_database.py`
 - `services/market_data.py`
+- `services/market_breadth.py`
 - `services/dip_breakout_engine.py`
 - `services/warrant_engine.py`
 - `services/warrant_math.py`
@@ -88,7 +95,8 @@
 2. The repository currently tracks runtime database/log artifacts (including files under `data/` and `logs/`). New ignore rules do not untrack existing files. Before removing them, export and verify backups; then remove them from repository tracking and clean history.
 3. Set `SECRET_KEY`, `DATABASE_URL` (or `SUPABASE_DB_URL`), `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, and a narrow `CORS_ORIGINS` list in the deployment environment. Do not commit these values.
 4. Existing legacy `equity_log` tables may retain a date-only primary key. The additive migration preserves rows, but that legacy primary-key shape can still prevent multiple owners from storing the same date. A separate verified backup-and-rebuild migration is still required for that legacy schema.
-5. Run GitHub Actions and resolve all failures before merge. This environment cannot execute the repository's Python runtime or access the deployment's private database.
+5. The repository's `requirements.txt` remains unpinned and there is no lockfile. CI currently verifies one resolved Python 3.13 dependency set, but reproducible version locking is still required.
+6. The full UI workflow, every API route, live Supabase migrations, and production startup have not been exercised against the real deployment. The Python suite is focused regression coverage, not full end-to-end certification.
 
 ## Required external providers / integrations
 
