@@ -226,16 +226,27 @@ def _analyze(sym, df, bench, sector_ret5, bench_ret5_now, bench_ret5_prev):
     if any(col not in d.columns for col in required):
         return None
     d = d[required].apply(pd.to_numeric, errors="coerce").dropna()
+    # yfinance's current daily candle is partial during the BIST session.
+    # Do not compare its incomplete volume/range with completed daily bars.
+    try:
+        from zoneinfo import ZoneInfo
+        now_tr = datetime.now(ZoneInfo("Europe/Istanbul"))
+        last_bar_date = pd.Timestamp(d.index[-1]).date()
+        if last_bar_date == now_tr.date() and dtime(10, 0) <= now_tr.time() <= dtime(18, 15):
+            d = d.iloc[:-1]
+    except Exception:
+        pass
     if len(d) < 40:
         return None
+    open_prices = d["Open"].to_numpy(dtype=float)
     close = d["Close"].to_numpy(dtype=float)
     high = d["High"].to_numpy(dtype=float)
     low = d["Low"].to_numpy(dtype=float)
     vol = d["Volume"].to_numpy(dtype=float)
     n = len(close)
-    if not all(np.isfinite(x).all() for x in (close, high, low, vol)):
+    if not all(np.isfinite(x).all() for x in (open_prices, close, high, low, vol)):
         return None
-    if (close <= 0).any() or (low <= 0).any() or (vol < 0).any() or (high < low).any():
+    if (open_prices <= 0).any() or (close <= 0).any() or (low <= 0).any() or (vol < 0).any() or (high < low).any():
         return None
     price = float(close[-1])
 
@@ -363,12 +374,12 @@ def _analyze(sym, df, bench, sector_ret5, bench_ret5_now, bench_ret5_prev):
     trap = 0
     if vol_today < avg_vol20 * 1.2:
         trap += 20  # hacim zayif
-    upper_wick = (high[-1] - max(close[-1], prev_close)) / range_today
+    upper_wick = (high[-1] - max(close[-1], open_prices[-1])) / range_today
     if upper_wick > 0.40:
         trap += 20  # ust fitil yuksek
     if obv_slope_now < 0:
         trap += 20  # para akisi negatif
-    high60 = float(np.max(high[max(0, n - 60):]))
+    high60 = float(np.max(high[max(0, n - 61):n - 1]))
     if (high60 - price) / price * 100 <= 3.0:
         trap += 20  # ust zaman dilimi direnci cok yakin
     if price > resistance * 1.04:
