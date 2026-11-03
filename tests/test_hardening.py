@@ -14,7 +14,10 @@ def test_backtest_executes_signal_on_next_bar_not_signal_bar():
     signals = pd.Series([1, 1, 0], index=df.index)
     result = BacktestEngine(initial_capital=1000, commission=0.0).run_backtest(df, signals)
     assert result["position"].tolist() == [0.0, 1.0, 1.0]
+    assert result["return_exposure"].tolist() == [0.0, 0.0, 1.0]
     assert result["strategy_returns"].iloc[0] == 0.0
+    assert result["strategy_returns"].iloc[1] == 0.0
+    assert result["strategy_returns"].iloc[2] == pytest.approx(0.10)
 
 
 def test_backtest_charges_entry_and_exit_costs():
