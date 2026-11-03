@@ -27,15 +27,22 @@ class MarketBreadthEngine:
                     all_stats = cached.get('all_symbols_stats', {})
                 if xu100_change is None:
                     cached_regime = cached.get('v8_market_regime', {})
-                    xu100_change = float(cached_regime.get('xu100_trend') or 0.0)
+                    cached_change = cached_regime.get('xu100_trend')
+                    if cached_change is not None:
+                        xu100_change = float(cached_change)
             except Exception:
                 all_stats = all_stats or {}
-                xu100_change = xu100_change or 0.0
+                # Missing index data remains missing; do not manufacture a 0% move.
 
         if all_stats is None:
             all_stats = {}
-        if xu100_change is None:
-            xu100_change = 0.0
+        if xu100_change is not None:
+            try:
+                xu100_change = float(xu100_change)
+                if not math.isfinite(xu100_change):
+                    xu100_change = None
+            except (TypeError, ValueError):
+                xu100_change = None
 
         advances = 0
         declines = 0
@@ -56,7 +63,14 @@ class MarketBreadthEngine:
             if not isinstance(data, dict):
                 continue
             try:
-                ch = float(data.get("Change_Pct") or data.get("intraday_change_pct") or 0.0)
+                raw_change = data.get("Change_Pct")
+                if raw_change is None:
+                    raw_change = data.get("intraday_change_pct")
+                if raw_change is None:
+                    continue
+                ch = float(raw_change)
+                if not math.isfinite(ch):
+                    continue
                 total += 1
                 if ch > 0.25:
                     advances += 1
@@ -81,27 +95,51 @@ class MarketBreadthEngine:
             advance_pct = round((advances / active) * 100.0, 1)
             breadth_ratio = round(advances / declines, 2) if declines > 0 else 99.0
         else:
-            pressure_pct = 50.0
-            advance_pct = 50.0
-            breadth_ratio = 1.0
+            pressure_pct = None
+            advance_pct = None
+            breadth_ratio = None
 
         # Sektörel Ayrışma (Sector Relative Strength vs XU100)
         sector_divergence = {}
         for sec, ch_list in sector_stats.items():
             if ch_list:
                 sec_avg = round(sum(ch_list) / len(ch_list), 2)
-                rel_str = round(sec_avg - xu100_change, 2)
+                rel_str = round(sec_avg - xu100_change, 2) if xu100_change is not None else None
                 sector_divergence[sec] = {
                     "avg_change": sec_avg,
                     "relative_strength": rel_str,
-                    "is_divergent": rel_str >= 1.0,  # Endeksten en az +%1.0 pozitif ayrışan
+                    "is_divergent": rel_str is not None and rel_str >= 1.0,  # Endeksten en az +%1.0 pozitif ayrışan
                     "member_count": len(ch_list)
                 }
 
         # KOMBİNE BASKI & REJİM HESAPLAMASI
         # XU100 eksi olsa dahi düşen hisse oranı %70'in üzerindeyse piyasa ağır satış baskısındadır.
-        is_heavy_pressure = (pressure_pct >= 65.0) or (xu100_change < -0.8)
-        is_extreme_crash = (pressure_pct >= 75.0) or (xu100_change < -1.5)
+        if total == 0 and xu100_change is None:
+            result = {
+                "data_status": "DATA_INSUFFICIENT",
+                "xu100_change": None,
+                "total_symbols": 0,
+                "advances": 0,
+                "declines": 0,
+                "neutral": 0,
+                "pressure_pct": None,
+                "advance_pct": None,
+                "breadth_ratio": None,
+                "is_heavy_pressure": None,
+                "is_extreme_crash": None,
+                "regime_code": "DATA_INSUFFICIENT",
+                "regime_label": "VERİ BEKLENİYOR",
+                "regime_rule": "Endeks ve piyasa genişliği verisi bulunamadı; rejim üretilmedi.",
+                "max_positions": 0,
+                "sector_divergence": {},
+                "breadth_available": False,
+            }
+            cls._CACHE["timestamp"] = now
+            cls._CACHE["data"] = result
+            return result
+
+        is_heavy_pressure = (pressure_pct is not None and pressure_pct >= 65.0) or (xu100_change is not None and xu100_change < -0.8)
+        is_extreme_crash = (pressure_pct is not None and pressure_pct >= 75.0) or (xu100_change is not None and xu100_change < -1.5)
 
         if is_extreme_crash:
             regime_code = "STRONG_BEAR"
@@ -113,7 +151,7 @@ class MarketBreadthEngine:
             regime_label = "AYI BASKISI"
             regime_rule = f"Satış baskısı %{pressure_pct}. Yalnızca endekse meydan okuyan pozitif ayrışan sektörler serbest (Max 1)."
             max_positions = 1
-        elif xu100_change > 0.5 and pressure_pct < 40.0:
+        elif xu100_change is not None and xu100_change > 0.5 and (pressure_pct is None or pressure_pct < 40.0):
             regime_code = "BULL"
             regime_label = "GÜÇLÜ BOĞA RÜZGARI"
             regime_rule = f"Alıcı baskısı %{advance_pct}. Trend pozitif, 4 hisse tam kapasite hücum."
@@ -125,7 +163,8 @@ class MarketBreadthEngine:
             max_positions = 2
 
         result = {
-            "xu100_change": round(xu100_change, 2),
+            "data_status": "OK" if total > 0 and xu100_change is not None else "PARTIAL",
+            "xu100_change": round(xu100_change, 2) if xu100_change is not None else None,
             "total_symbols": total,
             "advances": advances,
             "declines": declines,
@@ -139,7 +178,8 @@ class MarketBreadthEngine:
             "regime_label": regime_label,
             "regime_rule": regime_rule,
             "max_positions": max_positions,
-            "sector_divergence": sector_divergence
+            "sector_divergence": sector_divergence,
+            "breadth_available": total > 0,
         }
 
         cls._CACHE["timestamp"] = now

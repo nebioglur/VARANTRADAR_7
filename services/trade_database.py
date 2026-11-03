@@ -54,9 +54,18 @@ def init_db():
             low REAL,
             close REAL,
             volume REAL,
+            interval TEXT NOT NULL DEFAULT '5m',
+            source TEXT NOT NULL DEFAULT 'yfinance',
             UNIQUE(timestamp, symbol)
         )
     """)
+
+    # Additive, data-preserving migrations. Never DROP legacy user tables.
+    market_columns = _table_columns(cursor, 'market_data')
+    if 'interval' not in market_columns:
+        cursor.execute("ALTER TABLE market_data ADD COLUMN interval TEXT NOT NULL DEFAULT '5m'")
+    if 'source' not in market_columns:
+        cursor.execute("ALTER TABLE market_data ADD COLUMN source TEXT NOT NULL DEFAULT 'yfinance'")
 
     # 3. Trades Table (Simülasyon sonuçları - hesap bazlı)
     # Yeni sart: UNIQUE(owner, date_str, symbol, entry_time).
@@ -84,31 +93,12 @@ def init_db():
             UNIQUE(owner, date_str, symbol, entry_time)
         )
     """)
-    if 'owner' not in _table_columns(cursor, 'trades'):
-        cursor.execute("DROP TABLE trades")
-        cursor.execute("""
-            CREATE TABLE trades (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                owner TEXT NOT NULL,
-                date_str TEXT NOT NULL,
-                symbol TEXT NOT NULL,
-                entry_time TEXT NOT NULL,
-                entry_price REAL NOT NULL,
-                exit_time TEXT,
-                exit_price REAL,
-                shares INTEGER,
-                pnl_val REAL,
-                pnl_pct REAL,
-                exit_reason TEXT,
-                strategy_name TEXT,
-                entry_score REAL,
-                entry_checks TEXT,
-                atr_value REAL,
-                risk_amount REAL,
-                market_regime TEXT,
-                UNIQUE(owner, date_str, symbol, entry_time)
-            )
-        """)
+    trade_columns = _table_columns(cursor, 'trades')
+    if 'owner' not in trade_columns:
+        cursor.execute("ALTER TABLE trades ADD COLUMN owner TEXT")
+        trade_columns.append('owner')
+    cursor.execute("UPDATE trades SET owner='local:legacy' WHERE owner IS NULL OR owner=''")
+    cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_trades_owner_entry ON trades(owner, date_str, symbol, entry_time)")
     for column, definition in [
         ('strategy_name', 'TEXT'),
         ('entry_score', 'REAL'),
@@ -116,6 +106,7 @@ def init_db():
         ('atr_value', 'REAL'),
         ('risk_amount', 'REAL'),
         ('market_regime', 'TEXT'),
+        ('engine_version', "TEXT DEFAULT 'LEGACY'"),
     ]:
         if column not in _table_columns(cursor, 'trades'):
             cursor.execute(f"ALTER TABLE trades ADD COLUMN {column} {definition}")
@@ -134,20 +125,11 @@ def init_db():
             PRIMARY KEY (owner, date_str)
         )
     """)
-    if 'owner' not in _table_columns(cursor, 'equity_log'):
-        cursor.execute("DROP TABLE equity_log")
-        cursor.execute("""
-            CREATE TABLE equity_log (
-                owner TEXT NOT NULL,
-                date_str TEXT NOT NULL,
-                start_equity REAL,
-                end_equity REAL,
-                daily_pnl REAL,
-                total_trades INTEGER,
-                win_trades INTEGER,
-                PRIMARY KEY (owner, date_str)
-            )
-        """)
+    equity_columns = _table_columns(cursor, 'equity_log')
+    if 'owner' not in equity_columns:
+        cursor.execute("ALTER TABLE equity_log ADD COLUMN owner TEXT")
+    cursor.execute("UPDATE equity_log SET owner='local:legacy' WHERE owner IS NULL OR owner=''")
+    cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_equity_owner_date ON equity_log(owner, date_str)")
 
     # 5. Live Positions (Anlık işlem terminali - manuel + akıllı TP/SL motoru, hesap bazlı)
     cursor.execute("""
@@ -177,6 +159,7 @@ def init_db():
     """)
     if 'owner' not in _table_columns(cursor, 'live_positions'):
         cursor.execute("ALTER TABLE live_positions ADD COLUMN owner TEXT")
+    cursor.execute("UPDATE live_positions SET owner='local:legacy' WHERE owner IS NULL OR owner=''")
 
     # 6. Live Settings (Hesap bazlı bakiye: live_cash:<owner>)
     cursor.execute("""

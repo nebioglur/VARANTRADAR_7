@@ -53,12 +53,34 @@ class OutcomeEngine:
         except Exception:
             _now = datetime.now()
 
-        # DNA Snapshot (Makine Öğrenmesi için kullanılacak Feature'lar)
+        metrics = breakout_data.get("metrics", {}) or {}
+        try:
+            atr_value = float(metrics.get("atr_14"))
+            if not pd.notna(atr_value) or atr_value <= 0 or not pd.notna(entry_price) or float(entry_price) <= 0:
+                raise ValueError("valid ATR and entry price required")
+            entry_price = float(entry_price)
+        except (TypeError, ValueError):
+            # Do not invent percentage stops/targets when ATR data is unavailable.
+            return None
+
+        breakout_score = float(breakout_data.get("breakout_score", 0) or 0)
+        fakeout_risk = float(breakout_data.get("fakeout_risk", 0) or 0)
+        regime_code = str(regime or "UNKNOWN").upper()
+        confidence_score = max(0.0, min(100.0, 0.60 * breakout_score + 0.40 * (100.0 - fakeout_risk)))
+        if regime_code in {"BEAR", "STRONG_BEAR"}:
+            confidence_score = max(0.0, confidence_score - (15.0 if regime_code == "BEAR" else 30.0))
+
+        # Explicitly a rule-based quality index, never a statistical probability.
         features = {
-            "breakout_score": breakout_data.get("breakout_score", 0),
-            "fakeout_risk": breakout_data.get("fakeout_risk", 0),
-            "rsi": breakout_data.get("metrics", {}).get("rsi", 50),
-            "relative_volume": breakout_data.get("metrics", {}).get("relative_volume", 1),
+            "breakout_score": breakout_score,
+            "fakeout_risk": fakeout_risk,
+            "signal_confidence_score": round(confidence_score, 1),
+            "confidence_method": "RULE_BASED_QUALITY_INDEX_NOT_PROBABILITY",
+            "rsi": metrics.get("rsi"),
+            "mfi_14": metrics.get("mfi_14"),
+            "atr_14": atr_value,
+            "atr_pct": metrics.get("atr_pct"),
+            "relative_volume": metrics.get("relative_volume"),
             "entry_status": execution_data.get("entry_status", "UNKNOWN"),
         }
 
@@ -67,14 +89,15 @@ class OutcomeEngine:
             "symbol": symbol,
             "timestamp": _now.isoformat(),
             "strategy": "V8_BREAKOUT",
-            "market_regime": regime,
-            "score": breakout_data.get("breakout_score", 0),
-            "entry_price": float(entry_price),
-            "stop_price": float(entry_price * 0.95), # Default %5 risk
-            "target1": float(entry_price * 1.03),    # Default %3 hedef
-            "target2": float(entry_price * 1.05),    # Default %5 hedef
+            "market_regime": regime_code,
+            "score": breakout_score,
+            "entry_price": entry_price,
+            "stop_price": max(0.01, entry_price - 1.5 * atr_value),
+            "target1": entry_price + 2.0 * atr_value,
+            "target2": entry_price + 3.0 * atr_value,
             "features_snapshot": features,
-            "status": "ACTIVE"
+            "status": "ACTIVE",
+            "engine_version": "V8_ELITE"
         }
         
         V8Database.save_signal(signal_data)
@@ -114,7 +137,7 @@ class OutcomeEngine:
                         now = datetime.now(ZoneInfo("Europe/Istanbul")).replace(tzinfo=None)
                     except Exception:
                         now = datetime.now()
-                    cutoff = (now - pd.Timedelta(days=2)).isoformat()
+                    cutoff = (now - pd.Timedelta(days=7)).isoformat()
                     cursor.execute("SELECT * FROM v8_signals WHERE status='ACTIVE' AND timestamp >= ?", (cutoff,))
                     active_signals = cursor.fetchall()
                     
@@ -198,21 +221,32 @@ class OutcomeEngine:
                             t120 = _get_existing('t_120m_price') or (_price_at(120) if elapsed_mins >= 120 else None)
                             t240 = _get_existing('t_240m_price') or (_price_at(240) if elapsed_mins >= 240 else None)
 
-                            # EOD: ayni gun son kapanis fiyati (seans bitince dolar)
+                            # EOD is immutable only after the signal day's session has closed.
+                            signal_day_closed = (
+                                now.date() > sig_time.date()
+                                or (now.date() == sig_time.date() and (now.hour > 18 or (now.hour == 18 and now.minute >= 15)))
+                            )
                             t_eod = _get_existing('t_eod_price')
-                            if t_eod is None:
-                                # Ayni gune ait tum barlarin son close'u (simdilik mevcut son)
+                            t_eod_confirmed = bool(_get_existing('t_eod_confirmed') or 0)
+                            if signal_day_closed and not t_eod_confirmed:
                                 same_day = df[df.index.date == sig_time.date()]
                                 if not same_day.empty:
+                                    # Replace any legacy partial-day EOD value with the completed session close.
                                     t_eod = float(same_day['Close'].iloc[-1])
 
-                            # T+1 gunku kapanis: ertesi gun son bar (varsa)
+                            # T+1 means the next available trading session, not the next calendar day.
                             t_1d = _get_existing('t_1d_price')
-                            if t_1d is None:
-                                next_day = sig_time.date() + pd.Timedelta(days=1)
-                                next_bars = df[df.index.date == next_day]
-                                if not next_bars.empty:
-                                    t_1d = float(next_bars['Close'].iloc[-1])
+                            next_trading_days = sorted({day for day in df.index.date if day > sig_time.date()})
+                            if t_1d is None and next_trading_days:
+                                next_day = next_trading_days[0]
+                                next_day_closed = (
+                                    now.date() > next_day
+                                    or (now.date() == next_day and (now.hour > 18 or (now.hour == 18 and now.minute >= 15)))
+                                )
+                                if next_day_closed:
+                                    next_bars = df[df.index.date == next_day]
+                                    if not next_bars.empty:
+                                        t_1d = float(next_bars['Close'].iloc[-1])
 
                             mfe = _get_existing('max_favorable_excursion') or 0.0
                             mae = _get_existing('max_adverse_excursion') or 0.0
@@ -236,10 +270,9 @@ class OutcomeEngine:
                                 if pct_change < mae: mae = min(0.0, pct_change)
 
                             status_update = "ACTIVE"
-                            # Sinyal gun sonunda kapanir (seans bitisi ~18:15) ya da 6 saat
-                            now_time = now.time()
-                            market_closed = now_time.hour >= 18 and now_time.minute >= 15
-                            if elapsed_mins > 360 or market_closed:
+                            # Keep tracking through the next trading session so T+1 is a completed close.
+                            tracking_expired = elapsed_mins > 7 * 24 * 60
+                            if t_1d is not None or tracking_expired:
                                 status_update = "CLOSED"
 
                             # Outcome kaydet/guncelle
@@ -261,17 +294,26 @@ class OutcomeEngine:
                                 t_60m_price=COALESCE(v8_outcomes.t_60m_price, excluded.t_60m_price),
                                 t_120m_price=COALESCE(v8_outcomes.t_120m_price, excluded.t_120m_price),
                                 t_240m_price=COALESCE(v8_outcomes.t_240m_price, excluded.t_240m_price),
-                                t_eod_price=COALESCE(v8_outcomes.t_eod_price, excluded.t_eod_price),
                                 t_1d_price=COALESCE(v8_outcomes.t_1d_price, excluded.t_1d_price),
                                 max_favorable_excursion=excluded.max_favorable_excursion,
                                 max_adverse_excursion=excluded.max_adverse_excursion,
                                 final_result=excluded.final_result
                             ''', (sig_id, t3, t5, t10, t15, t30, t60, t120, t240, t_eod, t_1d, mfe, mae, status_update))
 
+                            if t_eod is not None and signal_day_closed and not t_eod_confirmed:
+                                cursor.execute(
+                                    "UPDATE v8_outcomes SET t_eod_price=?, t_eod_confirmed=1 WHERE signal_id=? AND COALESCE(t_eod_confirmed,0)=0",
+                                    (float(t_eod), sig_id)
+                                )
+
                             if status_update == "CLOSED":
-                                # Kapanista net degisime gore kesin sonuc etiketle
-                                net_pct = ((current_price - entry_price) / entry_price) * 100
-                                final = "WIN" if net_pct > 0.5 else ("LOSS" if net_pct < -0.5 else "NEUTRAL")
+                                # Final outcome uses the completed T+1 close, then EOD.
+                                final_price = t_1d if t_1d is not None else t_eod
+                                if final_price is None:
+                                    final = "INSUFFICIENT_DATA"
+                                else:
+                                    net_pct = ((float(final_price) - entry_price) / entry_price) * 100
+                                    final = "WIN" if net_pct > 0.5 else ("LOSS" if net_pct < -0.5 else "NEUTRAL")
                                 cursor.execute("UPDATE v8_signals SET status='CLOSED' WHERE signal_id=?", (sig_id,))
                                 cursor.execute("UPDATE v8_outcomes SET final_result=? WHERE signal_id=?", (final, sig_id))
 

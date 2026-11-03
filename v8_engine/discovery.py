@@ -31,7 +31,7 @@ class DiscoveryEngine:
             low = df['Low'] if 'Low' in df.columns else df['low']
             vol = df['Volume'] if 'Volume' in df.columns else df['volume']
             
-            if vol.sum() == 0 or len(close) < 10:
+            if len(close) < 20 or vol.isna().any() or close.isna().any() or high.isna().any() or low.isna().any() or float(vol.sum()) <= 0:
                 return self._default_result(symbol, "NO_VOLUME")
             
             # --- 1. TÜM SERİ ÜZERİNDE GÖSTERGELER (NaN oluşumunu engeller) ---
@@ -40,22 +40,22 @@ class DiscoveryEngine:
             upper_band = rolling_mean + (rolling_std * 2)
             lower_band = rolling_mean - (rolling_std * 2)
             bb_width = ((upper_band - lower_band) / rolling_mean.replace(0, np.nan)) * 100
-            bb_width = bb_width.fillna(5.0)
+            bb_width = bb_width.where(bb_width.notna())
 
             tr1 = high - low
             tr2 = abs(high - close.shift())
             tr3 = abs(low - close.shift())
             tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
             atr = tr.rolling(14, min_periods=5).mean()
-            atr_pct = ((atr / close.replace(0, np.nan)) * 100).fillna(2.0)
+            atr_pct = ((atr / close.replace(0, np.nan)) * 100).where(atr.notna())
 
             vol_sma = vol.rolling(10, min_periods=3).mean().replace(0, np.nan)
             rel_vol = vol / vol_sma
-            rel_vol = rel_vol.fillna(1.0)
+            rel_vol = rel_vol.where(rel_vol.notna())
 
             ema20 = close.ewm(span=20, min_periods=5).mean()
             dist_ema20 = ((close - ema20) / ema20.replace(0, np.nan)) * 100
-            dist_ema20 = dist_ema20.fillna(0.0)
+            dist_ema20 = dist_ema20.where(dist_ema20.notna())
 
             # --- 2. ÇOKLU ZAMAN PENCERESİ SKORLAMASI ---
             # Kısa (5 bar), Orta (20 bar), Uzun (50 bar)
@@ -73,7 +73,7 @@ class DiscoveryEngine:
 
                 # A) Sıkışma Skoru (0-40)
                 comp_score = 0.0
-                cur_bb = float(sub_bb.iloc[-1])
+                if any(pd.isna(x) for x in (sub_bb.iloc[-1], sub_atr.iloc[-1], sub_rel_vol.iloc[-1], sub_dist.iloc[-1])):\n                    return self._default_result(symbol, "DATA_INSUFFICIENT")\n                cur_bb = float(sub_bb.iloc[-1])
                 avg_bb = float(sub_bb.mean()) if len(sub_bb) > 0 else cur_bb
                 if avg_bb > 0 and cur_bb < avg_bb * 0.85:
                     comp_score += 20.0
