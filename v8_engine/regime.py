@@ -114,10 +114,11 @@ class MarketRegimeEngine:
             tr2 = abs(df[high_col] - close.shift())
             tr3 = abs(df[low_col] - close.shift())
             tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
-            atr_14 = tr.rolling(14, min_periods=5).mean()
+            # Wilder ATR(14), not a simple rolling average.
+            atr_14 = tr.ewm(alpha=1.0 / 14.0, adjust=False, min_periods=14).mean()
             if len(atr_14) > 0 and not pd.isna(atr_14.iloc[-1]):
                 current_atr = float(atr_14.iloc[-1])
-                avg_atr = float(atr_14.mean())
+                avg_atr = float(atr_14.tail(20).mean())
                 volatility_state = "HIGH" if current_atr > avg_atr * 1.6 else "NORMAL"
             else:
                 volatility_state = "NORMAL"
