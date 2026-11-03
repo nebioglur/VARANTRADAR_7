@@ -163,8 +163,8 @@ class MarketDataManager:
     @staticmethod
     def get_market_data(date_str: str, symbol: str):
         """
-        Backtester için veritabanından Pandas DataFrame döndürür.
-        Eğer veritabanında yoksa yfinance üzerinden anlık çeker.
+        Backtester için yalnızca doğrulanmış 5 dakikalık veritabanı barlarını döndürür.
+        Veri yoksa boş DataFrame döner; günlük veriyle ikame yapılmaz.
         """
         import pandas as pd
         conn = get_connection()
