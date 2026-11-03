@@ -9,6 +9,7 @@ from v8_engine.varrant import VarrantEngine
 from v8_engine.breakout import BreakoutEngine
 from v8_engine.regime import MarketRegimeEngine
 from services.market_breadth import MarketBreadthEngine
+from services.warrant_math import WarrantMath
 
 
 def test_backtest_executes_signal_on_next_bar_not_signal_bar():
@@ -115,3 +116,13 @@ def test_missing_market_breadth_does_not_become_fifty_fifty():
     assert result["regime_code"] == "DATA_INSUFFICIENT"
     assert result["pressure_pct"] is None
     assert result["advance_pct"] is None
+
+def test_black_scholes_zero_volatility_and_expiry_are_finite():
+    assert WarrantMath.black_scholes_call(100, 90, 0.5, 0.1, 0.0) >= 0
+    assert WarrantMath.black_scholes_put(100, 110, 0.5, 0.1, 0.0) >= 0
+    assert WarrantMath.calculate_greeks(100, 100, 0, 0.1, 0.2)["gamma"] == 0
+
+
+def test_black_scholes_rejects_invalid_market_inputs():
+    with pytest.raises(ValueError):
+        WarrantMath.black_scholes_call(-100, 100, 1, 0.1, 0.2)
