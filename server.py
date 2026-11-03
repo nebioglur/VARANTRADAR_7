@@ -2723,7 +2723,7 @@ def api_tavan_history():
         )
         return jsonify(sanitize_for_json(res))
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"})
 
 @app.route('/api/winrate_stats', methods=['GET'])
 def api_winrate_stats():
@@ -3876,7 +3876,7 @@ def api_telegram_test_suite():
 
         return jsonify({'status': 'success', 'results': results})
     except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return jsonify({'status': 'error', 'message': 'İşlem sırasında hata oluştu'}), 500
 
 
 if __name__ == "__main__":
