@@ -222,14 +222,22 @@ def _analyze(sym, df, bench, sector_ret5, bench_ret5_now, bench_ret5_prev):
     d = df.copy()
     if isinstance(d.columns[0], tuple):
         return None
-    close = d["Close"].astype(float).values
-    high = d["High"].astype(float).values
-    low = d["Low"].astype(float).values
-    vol = d["Volume"].astype(float).values
-    n = len(close)
-    price = float(close[-1])
-    if price <= 0:
+    required = ["Open", "High", "Low", "Close", "Volume"]
+    if any(col not in d.columns for col in required):
         return None
+    d = d[required].apply(pd.to_numeric, errors="coerce").dropna()
+    if len(d) < 40:
+        return None
+    close = d["Close"].to_numpy(dtype=float)
+    high = d["High"].to_numpy(dtype=float)
+    low = d["Low"].to_numpy(dtype=float)
+    vol = d["Volume"].to_numpy(dtype=float)
+    n = len(close)
+    if not all(np.isfinite(x).all() for x in (close, high, low, vol)):
+        return None
+    if (close <= 0).any() or (low <= 0).any() or (vol < 0).any() or (high < low).any():
+        return None
+    price = float(close[-1])
 
     prev_close = float(close[-2]) if n >= 2 else price
     change_pct = (price - prev_close) / max(prev_close, .01) * 100
@@ -256,16 +264,19 @@ def _analyze(sym, df, bench, sector_ret5, bench_ret5_now, bench_ret5_prev):
     prior10 = idx[-15:-5]
     dv_recent = [abs(ret[i]) * vol[i + 1] for i in recent5 if down_mask[i]]
     dv_prior = [abs(ret[i]) * vol[i + 1] for i in prior10 if down_mask[i]]
-    checks["satis_azaldi"] = (len(dv_recent) < 3 and (not dv_prior or (np.mean(dv_recent) if dv_recent else 0) < np.mean(dv_prior) * 1.1)) or len(dv_recent) <= 1
+    checks["satis_azaldi"] = (
+        len(dv_recent) >= 1 and len(dv_prior) >= 2
+        and float(np.mean(dv_recent)) < float(np.mean(dv_prior)) * 0.90
+    )
 
     # 2) Yeni dipler daha dusuk mu: son 10 gunde dip kirmadi
     low_10 = float(np.min(low[-10:]))
     low_prev = float(np.min(low[max(0, n - 30):max(0, n - 10)])) if n > 15 else low_10
     checks["dip_tutundu"] = low_10 >= low_prev * 0.995
 
-    # 3) Hacim kuruyor
+    # 3) Dip oluşumunda satış ilgisinin azalması: kısa dönem hacmi uzun dönemden düşük.
     vol5 = float(np.mean(vol[-5:]))
-    checks["hacim_kuruyor"] = vol5 > avg_vol20 * 1.05
+    checks["hacim_kuruyor"] = avg_vol20 > 0 and vol5 < avg_vol20 * 0.85
 
     # 4) Para cikisi durdu: OBV egimi dususunden duzluge/yukselise gecti
     obv = _obv(close, vol)
