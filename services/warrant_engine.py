@@ -14,10 +14,11 @@ class WarrantEngine:
         self.volatility = 0.40 # Ortalama tarihsel volatilite (%40)
     
     def generate_warrants_for_stock(self, symbol: str, current_price: float) -> pd.DataFrame:
-        """
-        Gerçek API olmadığı için, hissenin güncel fiyatı üzerinden
-        gerçekçi (ITM, ATM, OTM) Alım ve Satım varantları üretir. (Modül 1 & 2)
-        """
+        """Return only verified BIST instruments. No live provider is configured."""
+        return pd.DataFrame()
+
+    def generate_synthetic_warrants_for_stock(self, symbol: str, current_price: float) -> pd.DataFrame:
+        """Explicit simulation-only Black-Scholes examples; never used by live matching."""
         warrants = []
         base_code = symbol.replace(".IS", "")[:2] # ISCTR -> IS
         
@@ -50,8 +51,9 @@ class WarrantEngine:
                 c_greeks = WarrantMath.calculate_greeks(current_price, strike, T, self.risk_free_rate, self.volatility, 'CALL')
                 
                 warrants.append({
-                    'warrant_code': f"{base_code}I{np.random.choice(['A','B','C','D','E'])}",
+                    'warrant_code': f"{base_code}I{'SIM'}",
                     'underlying': symbol,
+                    'instrument_source': 'SYNTHETIC_SIMULATION',
                     'type': 'CALL',
                     'strike': strike,
                     'maturity_date': maturity_date.strftime("%Y-%m-%d"),
@@ -76,8 +78,9 @@ class WarrantEngine:
                 p_greeks = WarrantMath.calculate_greeks(current_price, strike, T, self.risk_free_rate, self.volatility, 'PUT')
                 
                 warrants.append({
-                    'warrant_code': f"{base_code}P{np.random.choice(['A','B','C','D','E'])}",
+                    'warrant_code': f"{base_code}P{'SIM'}",
                     'underlying': symbol,
+                    'instrument_source': 'SYNTHETIC_SIMULATION',
                     'type': 'PUT',
                     'strike': strike,
                     'maturity_date': maturity_date.strftime("%Y-%m-%d"),
