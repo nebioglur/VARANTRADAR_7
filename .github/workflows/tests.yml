@@ -16,4 +16,4 @@ jobs:
           python-version: "3.11"
       - run: python -m pip install --upgrade pip
       - run: python -m pip install pandas numpy pytest
-      - run: python -m pytest -q
+      - run: python -m pytest -q tests/
