@@ -77,7 +77,8 @@ class BreakoutEngine:
             c_bb_upper = float(bb_upper.iloc[-1]) if len(bb_upper) > 0 else c
 
             # Hacim Teyidi
-            vol_sma_10 = vol.rolling(10, min_periods=10).mean().replace(0, np.nan)
+            # Compare the current bar with the ten completed bars before it.
+            vol_sma_10 = vol.shift(1).rolling(10, min_periods=10).mean().replace(0, np.nan)
             avg_vol = float(vol_sma_10.iloc[-1]) if len(vol_sma_10) > 0 and pd.notna(vol_sma_10.iloc[-1]) else float("nan")
             if not np.isfinite(avg_vol) or avg_vol <= 0:
                 return self._default_result(symbol, "DATA_INSUFFICIENT")
