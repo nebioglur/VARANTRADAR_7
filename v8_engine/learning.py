@@ -137,7 +137,7 @@ class OutcomeEngine:
                         now = datetime.now(ZoneInfo("Europe/Istanbul")).replace(tzinfo=None)
                     except Exception:
                         now = datetime.now()
-                    cutoff = (now - pd.Timedelta(days=2)).isoformat()
+                    cutoff = (now - pd.Timedelta(days=7)).isoformat()
                     cursor.execute("SELECT * FROM v8_signals WHERE status='ACTIVE' AND timestamp >= ?", (cutoff,))
                     active_signals = cursor.fetchall()
                     
@@ -221,21 +221,30 @@ class OutcomeEngine:
                             t120 = _get_existing('t_120m_price') or (_price_at(120) if elapsed_mins >= 120 else None)
                             t240 = _get_existing('t_240m_price') or (_price_at(240) if elapsed_mins >= 240 else None)
 
-                            # EOD: ayni gun son kapanis fiyati (seans bitince dolar)
+                            # EOD is immutable only after the signal day's session has closed.
+                            signal_day_closed = (
+                                now.date() > sig_time.date()
+                                or (now.date() == sig_time.date() and (now.hour > 18 or (now.hour == 18 and now.minute >= 15)))
+                            )
                             t_eod = _get_existing('t_eod_price')
-                            if t_eod is None:
-                                # Ayni gune ait tum barlarin son close'u (simdilik mevcut son)
+                            if t_eod is None and signal_day_closed:
                                 same_day = df[df.index.date == sig_time.date()]
                                 if not same_day.empty:
                                     t_eod = float(same_day['Close'].iloc[-1])
 
-                            # T+1 gunku kapanis: ertesi gun son bar (varsa)
+                            # T+1 means the next available trading session, not the next calendar day.
                             t_1d = _get_existing('t_1d_price')
-                            if t_1d is None:
-                                next_day = sig_time.date() + pd.Timedelta(days=1)
-                                next_bars = df[df.index.date == next_day]
-                                if not next_bars.empty:
-                                    t_1d = float(next_bars['Close'].iloc[-1])
+                            next_trading_days = sorted({day for day in df.index.date if day > sig_time.date()})
+                            if t_1d is None and next_trading_days:
+                                next_day = next_trading_days[0]
+                                next_day_closed = (
+                                    now.date() > next_day
+                                    or (now.date() == next_day and (now.hour > 18 or (now.hour == 18 and now.minute >= 15)))
+                                )
+                                if next_day_closed:
+                                    next_bars = df[df.index.date == next_day]
+                                    if not next_bars.empty:
+                                        t_1d = float(next_bars['Close'].iloc[-1])
 
                             mfe = _get_existing('max_favorable_excursion') or 0.0
                             mae = _get_existing('max_adverse_excursion') or 0.0
@@ -259,10 +268,9 @@ class OutcomeEngine:
                                 if pct_change < mae: mae = min(0.0, pct_change)
 
                             status_update = "ACTIVE"
-                            # Sinyal gun sonunda kapanir (seans bitisi ~18:15) ya da 6 saat
-                            now_time = now.time()
-                            market_closed = now_time.hour >= 18 and now_time.minute >= 15
-                            if elapsed_mins > 360 or market_closed:
+                            # Keep tracking through the next trading session so T+1 is a completed close.
+                            tracking_expired = elapsed_mins > 7 * 24 * 60
+                            if t_1d is not None or tracking_expired:
                                 status_update = "CLOSED"
 
                             # Outcome kaydet/guncelle
@@ -292,9 +300,13 @@ class OutcomeEngine:
                             ''', (sig_id, t3, t5, t10, t15, t30, t60, t120, t240, t_eod, t_1d, mfe, mae, status_update))
 
                             if status_update == "CLOSED":
-                                # Kapanista net degisime gore kesin sonuc etiketle
-                                net_pct = ((current_price - entry_price) / entry_price) * 100
-                                final = "WIN" if net_pct > 0.5 else ("LOSS" if net_pct < -0.5 else "NEUTRAL")
+                                # Final outcome uses the completed T+1 close, then EOD.
+                                final_price = t_1d if t_1d is not None else t_eod
+                                if final_price is None:
+                                    final = "INSUFFICIENT_DATA"
+                                else:
+                                    net_pct = ((float(final_price) - entry_price) / entry_price) * 100
+                                    final = "WIN" if net_pct > 0.5 else ("LOSS" if net_pct < -0.5 else "NEUTRAL")
                                 cursor.execute("UPDATE v8_signals SET status='CLOSED' WHERE signal_id=?", (sig_id,))
                                 cursor.execute("UPDATE v8_outcomes SET final_result=? WHERE signal_id=?", (final, sig_id))
 
