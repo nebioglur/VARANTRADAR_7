@@ -44,18 +44,21 @@ class BacktestEngine:
         if not aligned.isin([-1, 0, 1]).all():
             raise ValueError("Signals must be -1, 0, or 1")
 
-        # A signal observed at bar t may only affect the next bar's return.
+        # Signal at close[t] executes at close[t+1]. It cannot earn the
+        # close[t] -> close[t+1] move; exposure for that return is the position
+        # already held at close[t], i.e. executed.shift(1).
         desired = aligned.gt(0).astype(float)
         executed = desired.shift(1).fillna(0.0)
+        return_exposure = executed.shift(1).fillna(0.0)
         asset_returns = close.pct_change(fill_method=None).fillna(0.0)
 
-        # Charge both entry and exit turnover on the bar the position becomes active.
+        # Charge entry and exit turnover on the actual execution bar.
         turnover = executed.diff().abs()
         turnover.iloc[0] = executed.iloc[0]
         transaction_cost = turnover.fillna(0.0) * (
             self.commission + self.slippage_bps / 10000.0
         )
-        strategy_returns = executed * asset_returns - transaction_cost
+        strategy_returns = return_exposure * asset_returns - transaction_cost
 
         # Guard against impossible losses from excessive modeled costs.
         strategy_returns = strategy_returns.clip(lower=-1.0)
@@ -63,13 +66,14 @@ class BacktestEngine:
         result["close"] = close
         result["signal"] = aligned
         result["position"] = executed
+        result["return_exposure"] = return_exposure
         result["asset_returns"] = asset_returns
         result["turnover"] = turnover.fillna(0.0)
         result["transaction_cost"] = transaction_cost
         result["strategy_returns"] = strategy_returns
         result["strategy_equity"] = self.initial_capital * (1.0 + strategy_returns).cumprod()
         result["asset_equity"] = self.initial_capital * (1.0 + asset_returns).cumprod()
-        result.attrs["execution_model"] = "signal_at_close_fill_next_bar_close_return"
+        result.attrs["execution_model"] = "signal_at_close_fill_next_bar_close_no_pre_fill_return"
         result.attrs["commission_rate"] = self.commission
         result.attrs["slippage_bps"] = self.slippage_bps
         result.attrs["intrabar_stops_supported"] = False
