@@ -73,8 +73,8 @@ class MarketDataManager:
             # dusuk veri dondurdugu icin 10'lu parcalar halinde indiriliyor
             # (parcalar taze; tek istek ~2-3sn).
             insert_sql = """
-                INSERT INTO market_data (date_str, timestamp, symbol, open, high, low, close, volume)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO market_data (date_str, timestamp, symbol, open, high, low, close, volume, interval, source)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, '5m', 'yfinance')
                 ON CONFLICT(timestamp, symbol) DO NOTHING
             """
             all_rows = []
@@ -107,9 +107,13 @@ class MarketDataManager:
                         continue
 
                     for idx_time, row in df.iterrows():
-                        # idx_time timezone aware datetime
-                        idx_date = idx_time.strftime("%Y-%m-%d")
-                        # Sadece ilgili günün verisini kaydet
+                        # Store and filter using the exchange's local timezone.
+                        ts = pd.Timestamp(idx_time)
+                        if ts.tzinfo is None:
+                            ts = ts.tz_localize("Europe/Istanbul")
+                        else:
+                            ts = ts.tz_convert("Europe/Istanbul")
+                        idx_date = ts.strftime("%Y-%m-%d")
                         if idx_date != date_str:
                             continue
 
@@ -118,10 +122,17 @@ class MarketDataManager:
                         _low = row['Low']
                         _close = row['Close']
                         _vol = row['Volume']
-                        if not (pd.notna(_open) and pd.notna(_close)):
+                        values = [_open, _high, _low, _close, _vol]
+                        if not all(pd.notna(v) and pd.api.types.is_number(v) for v in values):
                             continue
-
-                        all_rows.append((date_str, str(idx_time), sym, float(_open), float(_high), float(_low), float(_close), float(_vol)))
+                        _open, _high, _low, _close, _vol = map(float, values)
+                        if not all(map(lambda v: pd.notna(v) and abs(v) != float("inf"), values)):
+                            continue
+                        if min(_open, _high, _low, _close) <= 0 or _vol < 0:
+                            continue
+                        if _high < max(_open, _close, _low) or _low > min(_open, _close, _high):
+                            continue
+                        all_rows.append((date_str, ts.isoformat(), sym, _open, _high, _low, _close, _vol))
 
             # TEK executemany ile yaz (satir-satır INSERT uzak DB'de dakikalar aliyordu)
             if all_rows:
@@ -161,7 +172,7 @@ class MarketDataManager:
         cur.execute("""
             SELECT timestamp, open, high, low, close, volume
             FROM market_data
-            WHERE date_str = ? AND symbol = ?
+            WHERE date_str = ? AND symbol = ? AND interval = '5m'
             ORDER BY timestamp ASC
         """, (date_str, symbol))
         rows = cur.fetchall()
@@ -174,20 +185,12 @@ class MarketDataManager:
                 columns=['Open', 'High', 'Low', 'Close', 'Volume'],
             )
             df.index.name = 'Datetime'
+            df.attrs.update({"source": "yfinance", "interval": "5m", "date": date_str})
             return df
 
-        # Fallback to yfinance if missing in DB
-        try:
-            import yfinance as yf
-            from datetime import datetime, timedelta
-            dt = datetime.strptime(date_str, '%Y-%m-%d')
-            next_dt = dt + timedelta(days=1)
-            dl_df = yf.download(symbol, start=date_str, end=next_dt.strftime('%Y-%m-%d'), interval='1d', progress=False)
-            if not dl_df.empty:
-                dl_df.columns = [c[0] if isinstance(c, tuple) else c for c in dl_df.columns]
-                return dl_df
-        except Exception as e:
-            pass
-
-        return pd.DataFrame()
+        # Missing intraday data must remain missing. Never substitute a daily candle
+        # into an intraday backtest: that would fabricate execution precision.
+        empty = pd.DataFrame(columns=["Open", "High", "Low", "Close", "Volume"])
+        empty.attrs.update({"source": None, "interval": None, "data_status": "MISSING_INTRADAY"})
+        return empty
 
