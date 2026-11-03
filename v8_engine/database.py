@@ -57,6 +57,7 @@ class V8Database:
                 t_120m_price REAL,
                 t_240m_price REAL,
                 t_eod_price REAL,
+                t_eod_confirmed INTEGER NOT NULL DEFAULT 0,
                 t_1d_price REAL,
                 max_favorable_excursion REAL,
                 max_adverse_excursion REAL,
@@ -100,6 +101,7 @@ class V8Database:
             't_120m_price': 'REAL',
             't_240m_price': 'REAL',
             't_1d_price': 'REAL',
+            't_eod_confirmed': 'INTEGER NOT NULL DEFAULT 0',
         }
         for col, ctype in needed.items():
             if col not in existing:
