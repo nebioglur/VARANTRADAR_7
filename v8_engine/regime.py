@@ -199,6 +199,7 @@ class MarketRegimeEngine:
                     score -= 5.0  # Günün en düşüğüne yakın kapanış (Güçlü Ayılar)
 
             # Sınırlandırma (0 - 100)
+            if change_pct >= 0.0: score = max(48.0, score)
             score = max(5.0, min(95.0, score))
             
             # 6. Rejim Kararı
@@ -207,9 +208,9 @@ class MarketRegimeEngine:
                 regime = "STRONG_BULL"
             elif score >= 56:
                 regime = "BULL"
-            elif score <= 28:
+            elif score <= 24 and change_pct <= -1.5:
                 regime = "STRONG_BEAR"
-            elif score <= 42:
+            elif score <= 40 and change_pct < 0.0:
                 regime = "BEAR"
             else:
                 regime = "NEUTRAL"

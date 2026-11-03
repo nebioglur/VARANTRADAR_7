@@ -146,7 +146,7 @@ class MarketBreadthEngine:
             regime_label = "ŞİDDETLİ ÇÖKÜŞ / AĞIR BASKI"
             regime_rule = f"Piyasanın %{pressure_pct}'i düşüşte! Yalnızca pozitif ayrışan süper A+ hisse (Max 1) veya %100 Nakit."
             max_positions = 0
-        elif is_heavy_pressure or xu100_change < -0.4:
+        elif (is_heavy_pressure and xu100_change < 0.0) or (xu100_change is not None and xu100_change < -0.6):
             regime_code = "BEAR"
             regime_label = "AYI BASKISI"
             regime_rule = f"Satış baskısı %{pressure_pct}. Yalnızca endekse meydan okuyan pozitif ayrışan sektörler serbest (Max 1)."

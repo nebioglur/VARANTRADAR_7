@@ -3400,9 +3400,10 @@ def api_v8_radar_breakout():
             _sec_rel_str  = float(_sec_div_data.get("relative_strength", 0.0))
             _sec_divergent_vs_xu100 = _sec_rel_str >= 0.5  # Sektör endeksten en az +%0.5 güçlü
 
-            # Ayı piyasasında sektörü negatif ayrışan hisse ELENIR (filtrenin en kritik kapısı)
-            if _is_bear_breadth and _sym_sec_rank and not _sec_divergent_vs_xu100:
-                continue  # Sektör endeksten geri kalmış, AYI modunda reddedildi
+            # Ayı piyasasında sadece şiddetli çöküşte veya skoru düşükse sektör eler; yüksek skorlu (>=65) elit kırılımlar korunur
+            if _is_strong_bear_breadth and _sym_sec_rank and not _sec_divergent_vs_xu100:
+                if float(bo.get("breakout_score", 0)) < 65:
+                    continue
 
             if is_in_hot_sector or _sec_divergent_vs_xu100 or domino_sector or "SEKTÖR" in str(data.get("Details", [])):
                 bonus_tags.append("♟️ Sektör Gücü")
