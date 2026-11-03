@@ -7,6 +7,8 @@ from learning.learning_engine import AILearningEngine
 from services.warrant_engine import WarrantEngine
 from v8_engine.varrant import VarrantEngine
 from v8_engine.breakout import BreakoutEngine
+from v8_engine.regime import MarketRegimeEngine
+from services.market_breadth import MarketBreadthEngine
 
 
 def test_backtest_executes_signal_on_next_bar_not_signal_bar():
@@ -99,3 +101,17 @@ def test_v8_breakout_rejects_missing_ohlcv_values():
     })
     result = BreakoutEngine().analyze_breakout(df, "TEST")
     assert result["status"] == "DATA_INSUFFICIENT"
+
+def test_missing_v8_regime_data_is_not_reported_as_neutral_50():
+    result = MarketRegimeEngine()._default_regime("DATA_INSUFFICIENT")
+    assert result["score"] is None
+    assert result["xu100_trend"] is None
+    assert result["volatility_state"] is None
+    assert result["data_available"] is False
+
+
+def test_missing_market_breadth_does_not_become_fifty_fifty():
+    result = MarketBreadthEngine.get_market_breadth(all_stats={}, xu100_change=float("nan"))
+    assert result["regime_code"] == "DATA_INSUFFICIENT"
+    assert result["pressure_pct"] is None
+    assert result["advance_pct"] is None
