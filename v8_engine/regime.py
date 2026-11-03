@@ -95,7 +95,8 @@ class MarketRegimeEngine:
                 pass
             
             df_change_pct = ((current_price - prev_price) / prev_price) * 100
-            if live_chg is not None and abs(live_chg) > 0.05:
+            if live_chg is not None and np.isfinite(float(live_chg)):
+                # A valid flat live reading (0.00%) is still a real observation.
                 change_pct = float(live_chg)
             else:
                 change_pct = float(df_change_pct)
@@ -219,6 +220,10 @@ class MarketRegimeEngine:
                 "score": round(score, 1),
                 "xu100_trend": round(change_pct, 2),
                 "volatility_state": volatility_state,
+                "atr_14": round(current_atr, 4) if "current_atr" in locals() else None,
+                "atr_pct": round(current_atr / current_price * 100.0, 2) if "current_atr" in locals() and current_price > 0 else None,
+                "data_source": "yfinance",
+                "data_timeframe": "1d",
                 "timestamp": datetime.now().isoformat(),
                 "c_ema5": round(c_ema5, 2),
                 "c_ema20": round(c_ema20, 2),
