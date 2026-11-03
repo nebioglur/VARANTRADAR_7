@@ -3739,46 +3739,41 @@ def api_dip_breakout():
         return jsonify({"status": "error", "message": str(e), "trace": traceback.format_exc()}), 500
 
 
-if __name__ == "__main__":
+_BACKGROUND_SERVICES_STARTED = False
 
-    print("[SYSTEM] VarantRadar Pro Web Server Baslatiliyor...")
+def start_background_services():
+    """Start the single-process background workers for both WSGI and local runs."""
+    global _BACKGROUND_SERVICES_STARTED
+    if _BACKGROUND_SERVICES_STARTED:
+        return
+    _BACKGROUND_SERVICES_STARTED = True
 
-    port = int(os.environ.get("PORT", 5000))
+    if os.environ.get("ENABLE_BACKGROUND_SERVICES", "true").lower() != "true":
+        logging.info("Background services disabled by configuration")
+        return
 
-    # Flask debug restart yapınca ikinci thread açılmasın
-    if os.environ.get("WERKZEUG_RUN_MAIN") != "true":
-        t = threading.Thread(
-            target=background_scanner,
-            daemon=True
-        )
-        t.start()
-        # Simülasyon sürekli arka plan döngüsü (AL/SAT anında Telegram bildirimi)
-        t_sim = threading.Thread(target=simulation_loop, daemon=True, name="simulation-loop")
-        t_sim.start()
-        try:
-            start_live_data_collector()
-        except Exception as e:
-            print(f"[LIVE DATA] Baslatilamadi: {e}")
-        try:
-            from services.detective_engine import start_background_loop
-            start_background_loop()
-        except Exception as e:
-            print(f"[DEDEKTIF] Arka plan baslatilamadi: {e}")
-
-    render_url = os.getenv("RENDER_EXTERNAL_URL")
-
-    if render_url:
-        print(f"[URL] Render URL: {render_url}")
-    else:
-        print(f"[URL] Local URL: http://127.0.0.1:{port}")
-
-    app.run(
-        host="0.0.0.0",
-        port=port
-    )
-
-
-
+    try:
+        threading.Thread(target=background_scanner, daemon=True, name="background-scanner").start()
+    except Exception:
+        logging.exception("Background scanner could not start")
+    try:
+        threading.Thread(target=simulation_loop, daemon=True, name="simulation-loop").start()
+    except Exception:
+        logging.exception("Simulation loop could not start")
+    try:
+        start_live_data_collector()
+    except Exception:
+        logging.exception("Live data collector could not start")
+    try:
+        from services.detective_engine import start_background_loop as start_detective_loop
+        start_detective_loop()
+    except Exception:
+        logging.exception("Detective engine loop could not start")
+    try:
+        from services.dip_breakout_engine import start_background_loop as start_dip_loop
+        start_dip_loop()
+    except Exception:
+        logging.exception("Dip/breakout engine loop could not start")
 
 
 @app.route('/api/telegram/test_suite', methods=['POST'])
@@ -3836,3 +3831,9 @@ def api_telegram_test_suite():
         return jsonify({'status': 'success', 'results': results})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    start_background_services()
+    app.run(host="0.0.0.0", port=port)
