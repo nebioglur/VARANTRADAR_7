@@ -227,9 +227,11 @@ class OutcomeEngine:
                                 or (now.date() == sig_time.date() and (now.hour > 18 or (now.hour == 18 and now.minute >= 15)))
                             )
                             t_eod = _get_existing('t_eod_price')
-                            if t_eod is None and signal_day_closed:
+                            t_eod_confirmed = bool(_get_existing('t_eod_confirmed') or 0)
+                            if signal_day_closed and not t_eod_confirmed:
                                 same_day = df[df.index.date == sig_time.date()]
                                 if not same_day.empty:
+                                    # Replace any legacy partial-day EOD value with the completed session close.
                                     t_eod = float(same_day['Close'].iloc[-1])
 
                             # T+1 means the next available trading session, not the next calendar day.
@@ -292,12 +294,17 @@ class OutcomeEngine:
                                 t_60m_price=COALESCE(v8_outcomes.t_60m_price, excluded.t_60m_price),
                                 t_120m_price=COALESCE(v8_outcomes.t_120m_price, excluded.t_120m_price),
                                 t_240m_price=COALESCE(v8_outcomes.t_240m_price, excluded.t_240m_price),
-                                t_eod_price=COALESCE(v8_outcomes.t_eod_price, excluded.t_eod_price),
                                 t_1d_price=COALESCE(v8_outcomes.t_1d_price, excluded.t_1d_price),
                                 max_favorable_excursion=excluded.max_favorable_excursion,
                                 max_adverse_excursion=excluded.max_adverse_excursion,
                                 final_result=excluded.final_result
                             ''', (sig_id, t3, t5, t10, t15, t30, t60, t120, t240, t_eod, t_1d, mfe, mae, status_update))
+
+                            if t_eod is not None and signal_day_closed and not t_eod_confirmed:
+                                cursor.execute(
+                                    "UPDATE v8_outcomes SET t_eod_price=?, t_eod_confirmed=1 WHERE signal_id=? AND COALESCE(t_eod_confirmed,0)=0",
+                                    (float(t_eod), sig_id)
+                                )
 
                             if status_update == "CLOSED":
                                 # Final outcome uses the completed T+1 close, then EOD.
