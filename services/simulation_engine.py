@@ -173,12 +173,10 @@ class SimulationEngine:
             (high - prev_close).abs(),
             (low - prev_close).abs()
         ], axis=1).max(axis=1)
-        atr_series = true_range.rolling(14, min_periods=3).mean()
+        atr_series = true_range.ewm(alpha=1.0 / 14.0, adjust=False, min_periods=3).mean()
         atr = float(atr_series.iloc[-1]) if len(atr_series) > 0 and pd.notna(atr_series.iloc[-1]) else None
-        if atr is None or atr <= 0:
-            atr = float((high - low).mean()) if len(high) > 0 else (entry_price * 0.02)
-        if not pd.notna(atr) or atr <= 0:
-            atr = entry_price * 0.02
+        if atr is None or not math.isfinite(atr) or atr <= 0:
+            return None
 
         # Sağlam Stop-Loss Aralığı: BIST gün içi dalgalanma gürültüsünde erkenden elenmemek için en az %2.4, en fazla %4.0
         stop_pct = min(0.040, max(0.024, (atr / entry_price) * 1.8))
@@ -222,7 +220,7 @@ class SimulationEngine:
         if risk_per_share <= 0:
             return 0.0, 0.0
 
-        risk_budget = self.daily_budget * (0.005 if is_bear else 0.012)
+        risk_budget = self.daily_budget * (0.005 if is_bear else 0.01)
         max_notional = self.daily_budget * (0.15 if is_bear else 0.33)
         risk_limited_notional = risk_budget * entry_price / risk_per_share
         allocation = min(current_cash, max_notional, risk_limited_notional)
@@ -463,6 +461,7 @@ class SimulationEngine:
                 if dt_current < dt_entry: continue
                 
                 row = df.loc[current_time]
+                bar_open = float(row['Open']) if 'Open' in row and pd.notna(row['Open']) else float(row['Close'])
                 high = float(row['High'])
                 low = float(row['Low'])
                 close = float(row['Close'])
@@ -472,29 +471,8 @@ class SimulationEngine:
                 
                 entry = trade['entry_price']
                 
-                # DİNAMİK AKILLI KÂR KORUMA & İZLEYEN STOP
-                # 1) TP1 öncesinde: Pozisyonu henüz +%2'deyken boğup çıkarmamak için stop erken maliyete çekilmez.
-                #    Yalnızca kâr > +%3.2 ise stop maliyete çekilir (risk sıfırlanır).
-                if not trade.get('scaled_out', False):
-                    # TP1 öncesinde: Pozisyonu erken dalgalanma gürültüsünde boğmamak için stop erken yukarı çekilmez.
-                    # Yalnızca kâr > +%3.0'a ulaşır ve TP1 henüz dolmamışsa başabaş emniyeti (+%0.2) devreye girer.
-                    if high >= entry * 1.030 and trade['stop_price'] < entry * 1.002:
-                        trade['stop_price'] = entry * 1.002
-                        trade['reason_prefix'] = "[ERKEN KÂR KORUMA] "
-                else:
-                    # 2) TP1 alındıktan sonra (Yarısı nakde geçti, kâr cepte):
-                    #    Kalan lotlar için stop başabaşın üstüne taşınır ve kâr kademeli kilitlenir.
-                    # Runner / Tavan Koşucusu Modu: Kalan lotlar kârı kademeli kilitler
-                    if high >= entry * 1.035 and trade['stop_price'] < entry * 1.015:
-                        trade['stop_price'] = entry * 1.015
-                        trade['reason_prefix'] = "[%1.5 KÂR KİLİTLENDİ] "
-                    elif high >= entry * 1.050 and trade['stop_price'] < entry * 1.028:
-                        trade['stop_price'] = entry * 1.028
-                        trade['reason_prefix'] = "[%2.8 KÂR KİLİTLENDİ] "
-                    elif high >= entry * 1.070 and trade['stop_price'] < entry * 1.045:
-                        trade['stop_price'] = entry * 1.045
-                        trade['reason_prefix'] = "[%4.5 KÂR KİLİTLENDİ] "
-
+                # Evaluate this bar against the stop active before this bar.
+                # Any stop increase derived from this bar's high is applied next bar.
                 stop_price = trade['stop_price']
                 tp1_price = trade['tp1_price']
                 tp2_price = trade['tp2_price']
@@ -502,23 +480,25 @@ class SimulationEngine:
                 
                 # En kötü senaryo: Önce Stop Loss patlar varsayımı
                 if low <= stop_price:
-                    sell_price = stop_price * 0.9985 # Slipaj
+                    sell_price = min(stop_price, bar_open) * 0.9985 # gap-aware stop fill + slippage
                     reason = f"{prefix}⛔ ÇELİK STOP KESİLDİ"
                 elif high >= tp2_price:
-                    sell_price = tp2_price
+                    sell_price = max(tp2_price, bar_open) * 0.9985
                     reason = f"🚀 TAVAN (TAM KÂR ALINDI)"
                 elif high >= tp1_price and not trade.get('scaled_out', False):
                     # Yarısını Kâr Al (TP1)
-                    trade['scaled_out'] = True
                     half_shares = trade['shares'] // 2
                     if half_shares > 0:
+                        trade['scaled_out'] = True
                         trade['shares'] -= half_shares
-                        scale_out_price = tp1_price * 0.9985
+                        scale_out_price = max(tp1_price, bar_open) * 0.9985
                         buy_vol = half_shares * entry
                         sell_vol = half_shares * scale_out_price
-                        comm = (buy_vol + sell_vol) * 0.0004
-                        net_profit = (half_shares * (scale_out_price - entry)) - comm
-                        current_cash += sell_vol - comm 
+                        buy_commission = buy_vol * 0.0004
+                        sell_commission = sell_vol * 0.0004
+                        net_profit = (half_shares * (scale_out_price - entry)) - buy_commission - sell_commission
+                        # Buy fee was charged at entry; deduct only the sell fee from cash.
+                        current_cash += sell_vol - sell_commission
                         
                         # Artık geride kalan lotlar için stop başa (maliyete) çekilir! (Risk Free)
                         trade['stop_price'] = entry 
@@ -558,9 +538,10 @@ class SimulationEngine:
                     
                     buy_volume = trade['shares'] * trade['entry_price']
                     sell_volume = trade['shares'] * sell_price
-                    commission = (buy_volume + sell_volume) * 0.0004
+                    buy_commission = buy_volume * 0.0004
+                    sell_commission = sell_volume * 0.0004
                     gross_pnl = trade['shares'] * (sell_price - trade['entry_price'])
-                    trade['pnl_val'] = gross_pnl - commission
+                    trade['pnl_val'] = gross_pnl - buy_commission - sell_commission
                     trade['pnl_pct'] = (trade['pnl_val'] / buy_volume) * 100
                     
                     if "🔄" not in trade.get('exit_reason', '') and trade.get('is_reentry', False):
@@ -575,8 +556,35 @@ class SimulationEngine:
                         stopped_out_symbols.add(sym)
                         stop_times[sym] = current_time
                         
-                    current_cash += sell_volume - commission
+                    # Buy-side fee was already deducted when the position was opened.
+                    current_cash += sell_volume - sell_commission
                     
+            # Update trailing levels only after the current candle has been evaluated.
+            # This prevents using a candle's high to retroactively trigger its new stop.
+            for open_trade in [t for t in active_trades if t['status'] == 'OPEN']:
+                open_df = dfs.get(open_trade['symbol'])
+                if open_df is None or current_time not in open_df.index:
+                    continue
+                bar_high = float(open_df.loc[current_time, 'High'])
+                entry_price_for_stop = float(open_trade['entry_price'])
+                old_stop = float(open_trade['stop_price'])
+                new_stop = old_stop
+                if not open_trade.get('scaled_out', False):
+                    if bar_high >= entry_price_for_stop * 1.030 and old_stop < entry_price_for_stop * 1.002:
+                        new_stop = entry_price_for_stop * 1.002
+                        open_trade['reason_prefix'] = "[ERKEN KÂR KORUMA] "
+                else:
+                    if bar_high >= entry_price_for_stop * 1.070:
+                        new_stop = max(old_stop, entry_price_for_stop * 1.045)
+                        open_trade['reason_prefix'] = "[%4.5 KÂR KİLİTLENDİ] "
+                    elif bar_high >= entry_price_for_stop * 1.050:
+                        new_stop = max(old_stop, entry_price_for_stop * 1.028)
+                        open_trade['reason_prefix'] = "[%2.8 KÂR KİLİTLENDİ] "
+                    elif bar_high >= entry_price_for_stop * 1.035:
+                        new_stop = max(old_stop, entry_price_for_stop * 1.015)
+                        open_trade['reason_prefix'] = "[%1.5 KÂR KİLİTLENDİ] "
+                open_trade['stop_price'] = new_stop
+
             # 2. YENİ ALIMLARI KONTROL ET
             open_symbols = {t['symbol'] for t in active_trades if t['status'] == 'OPEN'}
             
