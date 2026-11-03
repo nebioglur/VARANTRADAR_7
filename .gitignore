@@ -24,3 +24,15 @@ dt2.json
 dt_ase.json
 v8out.json
 scratch/__pycache__/
+
+# Local secrets and runtime state
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+data/
+logs/
+*.log
