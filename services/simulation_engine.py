@@ -535,8 +535,11 @@ class SimulationEngine:
 
                         # Telegram: TP1 otomatik kismi kâr alma emri bildirimi
                         try:
-                            from services.telegram_bot import notify_sim_trade
-                            notify_sim_trade(sym, "SAT (TP1)", scale_out_price,
+                            import os
+                            _adm = os.environ.get("ADMIN_OWNER", "local:nebioglur")
+                            if self.owner == _adm:
+                                from services.telegram_bot import notify_sim_trade
+                                notify_sim_trade(sym, "SAT (TP1)", scale_out_price,
                                              (net_profit / buy_vol) * 100,
                                              "⚖️ TP1: Yarısı kâr alındı, stop maliyete çekildi (risk-free)",
                                              str(current_time)[:10], completed_trades[-1])
@@ -561,8 +564,11 @@ class SimulationEngine:
                         
                     trade['exit_reason'] = reason
                     completed_trades.append(trade)
-                    from services.telegram_bot import notify_sim_trade
-                    notify_sim_trade(sym, "SAT", sell_price, trade["pnl_pct"], reason, str(current_time)[:10], trade)
+                    import os
+                    _adm = os.environ.get("ADMIN_OWNER", "local:nebioglur")
+                    if self.owner == _adm:
+                        from services.telegram_bot import notify_sim_trade
+                        notify_sim_trade(sym, "SAT", sell_price, trade["pnl_pct"], reason, str(current_time)[:10], trade)
                     
                     if "STOP" in reason:
                         stopped_out_symbols.add(sym)
@@ -725,8 +731,11 @@ class SimulationEngine:
                     'market_regime': market_regime,
                     'engine_version': 'V8_ELITE'
                 })
-                from services.telegram_bot import notify_sim_trade
-                notify_sim_trade(sym, "AL", entry_price, 0.0, "Sistem AL verdi", str(current_time)[:10], active_trades[-1])
+                import os
+                _adm = os.environ.get("ADMIN_OWNER", "local:nebioglur")
+                if self.owner == _adm:
+                    from services.telegram_bot import notify_sim_trade
+                    notify_sim_trade(sym, "AL", entry_price, 0.0, "Sistem AL verdi", str(current_time)[:10], active_trades[-1])
                 to_remove.append(s)
             for s in to_remove:
                 if s in pending_signals:
@@ -762,8 +771,11 @@ class SimulationEngine:
                     current_cash += sell_volume - sell_commission
                     trade['pnl_pct'] = (trade['pnl_val'] / buy_volume) * 100
                     trade['exit_reason'] = 'SEANS SONU NAKITE GECIS (17:50)'
-                    from services.telegram_bot import notify_sim_trade
-                    notify_sim_trade(sym, "SAT (GUN SONU)", eod_sell_price, trade["pnl_pct"], "17:50 Otomatik Kapanis", str(last_time)[:10], trade)
+                    import os
+                    _adm = os.environ.get("ADMIN_OWNER", "local:nebioglur")
+                    if self.owner == _adm:
+                        from services.telegram_bot import notify_sim_trade
+                        notify_sim_trade(sym, "SAT (GUN SONU)", eod_sell_price, trade["pnl_pct"], "17:50 Otomatik Kapanis", str(last_time)[:10], trade)
                 else:
                     trade['exit_time'] = None
                     trade['exit_price'] = None

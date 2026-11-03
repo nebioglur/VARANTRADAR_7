@@ -459,80 +459,14 @@ def _background_scanner_impl():
         except Exception as e_compass:
             print(f"[BACKGROUND] Günün Pusulası bülten hatası: {e_compass}")
         
-        # 1. Tavan Adayları Bildirimleri (Aynı gün her hisse için sadece 1 kez, DB Korumalı)
-        for tavan in results.get("tavan_adaylari", []):
-            sym = tavan.get("Symbol")
-            clean_sym = sym.replace(".IS", "") if sym else None
-            if clean_sym and claim_telegram_alert(f"TAVAN_{today_str}_{clean_sym}"):
-                score = tavan.get("Score", 0)
-                notif.send_tavan_alert(sym, score, tavan.get("Report", ""), tavan.get("Position"), extra=tavan)
-                time.sleep(0.5) # Telegram API rate limit önlemi
-                
-        # 2. 1 Saatlik Güçlü Fırsatlar Bildirimleri (Score 4 veya 5 olanlar, günde 1 kez, DB Korumalı)
-        for opp in results.get("opportunities_1h", []):
-            sym = opp.get("Symbol")
-            score_5 = opp.get("Score_5", 0)
-            if sym and score_5 >= 4 and claim_telegram_alert(f"OPP1H_{today_str}_{sym}"):
-                notif.send_1h_opportunity_alert(opp)
-                time.sleep(0.5)
-                
-        # 3. 5m RSI Sinyalleri Bildirimleri (Aynı gün, aynı sinyali sadece 1 kez gönder)
-        for rsi in results.get("signals_5m", []):
-            sym = rsi.get("Symbol")
-            sig = rsi.get("Signal")
-            sig_key = f"{today_str}_{sig}"
-            if sym and sent_5m.get(sym) != sig_key:
-                notif.send_5m_rsi_alert(sym, sig, rsi.get("RSI", 0), rsi.get("Price", 0))
-                sent_5m[sym] = sig_key
-                time.sleep(0.5)
+        # KULLANICI TALEBİ: Telegram bildirimleri yalınlaştırıldı.
+        # Sadece 3 şey gider:
+        # 1. Seans Açılış Pusula Bülteni (09:50) -> Yukarıda claim_telegram_alert ile aktif
+        # 2. Simülasyon Trade Log (AL, TP1, SAT, GÜN SONU) -> SimulationEngine içinde admin_owner için aktif
+        # 3. Gün Sonu Kapanış Raporu (18:10) -> Gün sonu döngüsünde aktif
+        # Diğer gürültü ve tekrarlayan sinyaller (Tavan, 1s fırsat, 5d rsi, 20dk özel sıralama, tuzak) susturuldu.
+        pass
 
-        # 4. Özel Sıralama Bildirimleri (Akıllı Seçim: Hacim Gücü Yüksek, Gün İçi Güç Yüksek, Değişim Az)
-        try:
-            from services.telegram_bot import get_special_ranking_candidates, send_special_ranking_alert
-            all_stats = results.get("all_symbols_stats", {})
-            if all_stats and len(all_stats) > 30:
-                from zoneinfo import ZoneInfo
-                local_now = datetime.now(ZoneInfo("Europe/Istanbul"))
-                now_ts = time.time()
-                if sent_special_ranking["date"] != today_str:
-                    sent_special_ranking["date"] = today_str
-                    sent_special_ranking["sent_symbols"] = set()
-                    sent_special_ranking["last_sent_ts"] = 0.0
-
-                is_market_session = (local_now.weekday() < 5 and (
-                    (local_now.hour == 10 and local_now.minute >= 15) or
-                    (11 <= local_now.hour < 18)
-                ))
-
-                # Seans saatlerinde her 20 dakikada bir güncel liste gönder (kullanıcı isteği: daha sık gelsin)
-                if is_market_session and (now_ts - sent_special_ranking["last_sent_ts"] >= 1200):
-                    candidates = get_special_ranking_candidates(all_stats, top_n=6)
-                    if candidates and len(candidates) >= 1:
-                        success = send_special_ranking_alert(candidates)
-                        if success:
-                            sent_special_ranking["last_sent_ts"] = now_ts
-                            print(f"[BACKGROUND] Telegram Özel Sıralama gönderildi: {[c['symbol'] for c in candidates]}")
-        except Exception as e_special:
-            print(f"[BACKGROUND] Özel Sıralama Telegram hatası: {e_special}")
-
-        # 5. Seans İçi Dinamik Tuzak / Ters Dönüş Uyarıları
-        try:
-            from services.telegram_bot import notify_trap_warning
-            for tavan in results.get("tavan_adaylari", []):
-                sym = tavan.get("Symbol")
-                high = float(tavan.get("Daily_High") or tavan.get("High") or 0)
-                price = float(tavan.get("Price") or tavan.get("Daily_Close") or 0)
-                chg = float(tavan.get("Change") or tavan.get("Daily_Change") or 0)
-                # Eğer günün en yükseğinden %3.5'ten fazla geri çekilmiş ve prim hala %3+ ise (üst fitil oluştuysa)
-                if sym and high > 0 and price > 0 and chg >= 3.0:
-                    pullback_from_high = ((high - price) / high) * 100
-                    trap_key = f"{today_str}_{sym}_trap"
-                    if pullback_from_high >= 3.5 and sent_tavan.get(trap_key) != today_str:
-                        notify_trap_warning(sym, price, f"Günün zirvesinden (₺{high:.2f}) %{pullback_from_high:.1f} geri çekildi, üst fitil uzadı!")
-                        sent_tavan[trap_key] = today_str
-        except Exception as e_trap:
-            print(f"[BACKGROUND] Tuzak uyarısı kontrol hatası: {e_trap}")
-    
     # Hızlı Başlangıç (Fast Start): Eğer cache boşsa kullanıcıyı bekletmemek için sadece BIST 50'yi anında tara
     if not GLOBAL_DASHBOARD_CACHE:
         try:
