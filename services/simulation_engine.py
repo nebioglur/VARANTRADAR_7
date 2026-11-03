@@ -750,16 +750,20 @@ class SimulationEngine:
                 if close_open_now:
                     trade['status'] = 'CLOSED'
                     trade['exit_time'] = str(last_time)
-                    trade['exit_price'] = close
+                    # End-of-day market exit includes conservative sell-side slippage.
+                    eod_sell_price = close * 0.9985
+                    trade['exit_price'] = eod_sell_price
                     buy_volume = trade['shares'] * trade['entry_price']
-                    sell_volume = trade['shares'] * close
-                    commission = (buy_volume + sell_volume) * 0.0004
-                    gross_pnl = trade['shares'] * (close - trade['entry_price'])
-                    trade['pnl_val'] = gross_pnl - commission
+                    sell_volume = trade['shares'] * eod_sell_price
+                    buy_commission = buy_volume * 0.0004
+                    sell_commission = sell_volume * 0.0004
+                    gross_pnl = trade['shares'] * (eod_sell_price - trade['entry_price'])
+                    trade['pnl_val'] = gross_pnl - buy_commission - sell_commission
+                    current_cash += sell_volume - sell_commission
                     trade['pnl_pct'] = (trade['pnl_val'] / buy_volume) * 100
                     trade['exit_reason'] = 'SEANS SONU NAKITE GECIS (17:50)'
                     from services.telegram_bot import notify_sim_trade
-                    notify_sim_trade(sym, "SAT (GUN SONU)", close, trade["pnl_pct"], "17:50 Otomatik Kapanis", str(last_time)[:10], trade)
+                    notify_sim_trade(sym, "SAT (GUN SONU)", eod_sell_price, trade["pnl_pct"], "17:50 Otomatik Kapanis", str(last_time)[:10], trade)
                 else:
                     trade['exit_time'] = None
                     trade['exit_price'] = None
