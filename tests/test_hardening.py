@@ -1,4 +1,5 @@
 import pandas as pd
+import sqlite3
 import pytest
 
 from engines.backtest_engine import BacktestEngine
@@ -7,6 +8,7 @@ from learning.learning_engine import AILearningEngine
 from services.warrant_engine import WarrantEngine
 from v8_engine.varrant import VarrantEngine
 from v8_engine.breakout import BreakoutEngine
+from v8_engine.database import V8Database
 from v8_engine.regime import MarketRegimeEngine
 from services.market_breadth import MarketBreadthEngine
 from services.warrant_math import WarrantMath
@@ -144,3 +146,15 @@ def test_intraday_setup_does_not_fabricate_atr_when_bars_are_invalid():
         "Close": [100.5, 101.5, 102.5, 103.5],
     })
     assert engine._entry_setup(bad, 104.0) is None
+
+def test_v8_outcome_migration_adds_eod_confirmation_without_dropping_rows():
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("CREATE TABLE v8_outcomes (signal_id TEXT PRIMARY KEY, t_eod_price REAL)")
+    cursor.execute("INSERT INTO v8_outcomes (signal_id, t_eod_price) VALUES ('legacy', 101.5)")
+    V8Database._migrate_outcomes(cursor, conn)
+    row = cursor.execute("SELECT signal_id, t_eod_price, t_eod_confirmed FROM v8_outcomes WHERE signal_id='legacy'").fetchone()
+    assert row["signal_id"] == "legacy"
+    assert row["t_eod_price"] == 101.5
+    assert row["t_eod_confirmed"] == 0
