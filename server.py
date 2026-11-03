@@ -1379,6 +1379,10 @@ def api_backtest_run():
                 sample_paths.append(path)
         
         mc_results['simulated_paths'] = sample_paths
+        mc_results["is_simulation"] = True
+        mc_results["is_ai_prediction"] = False
+        mc_results["simulation_method"] = "BOOTSTRAP_RESAMPLING_OF_HISTORICAL_BACKTEST_RETURNS"
+        mc_results["warning"] = "Monte Carlo senaryolarıdır; yapay zekâ tahmini veya gerçekleşecek getiri garantisi değildir."
         # VaR_99'u Worst Case üzerinden simüle et
         mc_results['VaR_99'] = mc_results.get('worst_case_return', 0.0)
         
