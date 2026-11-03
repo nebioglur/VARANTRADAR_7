@@ -27,13 +27,30 @@ class BreakoutEngine:
             return self._default_result(symbol, "DATA_INSUFFICIENT")
 
         try:
-            close = df['Close'] if 'Close' in df.columns else df['close']
-            high = df['High'] if 'High' in df.columns else df['high']
-            low = df['Low'] if 'Low' in df.columns else df['low']
-            open_p = df['Open'] if 'Open' in df.columns else df['open']
-            vol = df['Volume'] if 'Volume' in df.columns else df['volume']
-
-            if vol.sum() == 0 or len(close) < 15:
+            aliases = {
+                "Close": "Close" if "Close" in df.columns else "close",
+                "High": "High" if "High" in df.columns else "high",
+                "Low": "Low" if "Low" in df.columns else "low",
+                "Open": "Open" if "Open" in df.columns else "open",
+                "Volume": "Volume" if "Volume" in df.columns else "volume",
+            }
+            if any(col not in df.columns for col in aliases.values()):
+                return self._default_result(symbol, "DATA_INSUFFICIENT")
+            data = df[[aliases[k] for k in aliases]].copy()
+            data.columns = list(aliases.keys())
+            data = data.apply(pd.to_numeric, errors="coerce").dropna()
+            if len(data) < 25:
+                return self._default_result(symbol, "DATA_INSUFFICIENT")
+            if not np.isfinite(data.to_numpy(dtype=float)).all():
+                return self._default_result(symbol, "DATA_INSUFFICIENT")
+            if (data[["Close", "High", "Low", "Open"]] <= 0).any().any() or (data["Volume"] < 0).any():
+                return self._default_result(symbol, "DATA_INSUFFICIENT")
+            if (data["High"] < data["Low"]).any():
+                return self._default_result(symbol, "DATA_INSUFFICIENT")
+            close, high, low, open_p, vol = (
+                data["Close"], data["High"], data["Low"], data["Open"], data["Volume"]
+            )
+            if float(vol.sum()) <= 0:
                 return self._default_result(symbol, "NO_VOLUME")
 
             c = float(close.iloc[-1])
@@ -60,9 +77,11 @@ class BreakoutEngine:
             c_bb_upper = float(bb_upper.iloc[-1]) if len(bb_upper) > 0 else c
 
             # Hacim Teyidi
-            vol_sma_10 = vol.rolling(10, min_periods=3).mean().replace(0, np.nan)
-            avg_vol = float(vol_sma_10.iloc[-1]) if len(vol_sma_10) > 0 else v
-            rel_vol = v / avg_vol if avg_vol > 0 else 1.0
+            vol_sma_10 = vol.rolling(10, min_periods=10).mean().replace(0, np.nan)
+            avg_vol = float(vol_sma_10.iloc[-1]) if len(vol_sma_10) > 0 and pd.notna(vol_sma_10.iloc[-1]) else float("nan")
+            if not np.isfinite(avg_vol) or avg_vol <= 0:
+                return self._default_result(symbol, "DATA_INSUFFICIENT")
+            rel_vol = v / avg_vol
 
             # 2. KIRILIM TESPİTİ (3 Farklı Kırılım Türü)
             is_breakout = False
@@ -149,18 +168,53 @@ class BreakoutEngine:
             elif c > c_ema20:
                 breakout_score += 12.0
 
-            # RSI Momentum (0 - 20 Puan)
+            # RSI (10 puan) + MFI (10 puan); missing values are not replaced by neutral guesses.
             delta = close.diff()
-            gain = (delta.where(delta > 0, 0)).rolling(window=14, min_periods=5).mean()
-            loss = (-delta.where(delta < 0, 0)).rolling(window=14, min_periods=5).mean()
+            gain = delta.clip(lower=0).rolling(window=14, min_periods=14).mean()
+            loss = (-delta.clip(upper=0)).rolling(window=14, min_periods=14).mean()
             rs = gain / loss.replace(0, np.nan)
             rsi = 100 - (100 / (1 + rs))
-            current_rsi = float(rsi.iloc[-1]) if len(rsi) > 0 and not pd.isna(rsi.iloc[-1]) else 55.0
+            rsi = rsi.mask((loss == 0) & (gain > 0), 100.0)
+            rsi = rsi.mask((loss == 0) & (gain == 0), 50.0)
+            current_rsi = float(rsi.iloc[-1]) if pd.notna(rsi.iloc[-1]) else float("nan")
+
+            typical = (high + low + close) / 3.0
+            raw_flow = typical * vol
+            direction = typical.diff()
+            positive_flow = raw_flow.where(direction > 0, 0.0).rolling(14, min_periods=14).sum()
+            negative_flow = raw_flow.where(direction < 0, 0.0).rolling(14, min_periods=14).sum()
+            money_ratio = positive_flow / negative_flow.replace(0, np.nan)
+            mfi = 100.0 - (100.0 / (1.0 + money_ratio))
+            mfi = mfi.mask((negative_flow == 0) & (positive_flow > 0), 100.0)
+            mfi = mfi.mask((negative_flow == 0) & (positive_flow == 0), 50.0)
+            current_mfi = float(mfi.iloc[-1]) if pd.notna(mfi.iloc[-1]) else float("nan")
+            if not np.isfinite(current_rsi) or not np.isfinite(current_mfi):
+                return self._default_result(symbol, "DATA_INSUFFICIENT")
 
             if 52 <= current_rsi <= 75:
-                breakout_score += 20.0 # İdeal kırılım bölgesi
+                breakout_score += 10.0
             elif current_rsi > 75:
-                breakout_score += 10.0 # Güçlü fakat primli
+                breakout_score += 5.0
+            if 50 <= current_mfi <= 80:
+                breakout_score += 10.0
+            elif current_mfi > 80:
+                breakout_score += 5.0
+            elif current_mfi >= 40:
+                breakout_score += 3.0
+
+            # Wilder ATR(14) and 20-bar realized volatility.
+            prev_close = close.shift(1)
+            true_range = pd.concat([
+                high - low,
+                (high - prev_close).abs(),
+                (low - prev_close).abs(),
+            ], axis=1).max(axis=1)
+            atr14 = true_range.ewm(alpha=1.0 / 14.0, adjust=False, min_periods=14).mean()
+            current_atr = float(atr14.iloc[-1]) if pd.notna(atr14.iloc[-1]) else float("nan")
+            if not np.isfinite(current_atr) or current_atr <= 0:
+                return self._default_result(symbol, "DATA_INSUFFICIENT")
+            atr_pct = current_atr / c * 100.0
+            realized_volatility_20 = float(close.pct_change(fill_method=None).tail(20).std() * 100.0)
 
             # 4. FALSE BREAKOUT RİSKİ (Tuzak Riski: 0 - 100)
             fakeout_risk = 0.0
@@ -217,7 +271,11 @@ class BreakoutEngine:
                     "close_price": round(c, 2),
                     "change_pct": round(change_pct, 2),
                     "relative_volume": round(rel_vol, 2),
-                    "rsi": round(current_rsi, 1)
+                    "rsi": round(current_rsi, 1),
+                    "mfi_14": round(current_mfi, 1),
+                    "atr_14": round(current_atr, 4),
+                    "atr_pct": round(atr_pct, 2),
+                    "realized_volatility_20_pct": round(realized_volatility_20, 2)
                 }
             }
 
@@ -239,6 +297,10 @@ class BreakoutEngine:
                 "close_price": 0.0,
                 "change_pct": 0.0,
                 "relative_volume": 1.0,
-                "rsi": 50.0
+                "rsi": None,
+                "mfi_14": None,
+                "atr_14": None,
+                "atr_pct": None,
+                "realized_volatility_20_pct": None
             }
         }
