@@ -182,20 +182,10 @@ def load_dashboard_cache():
     return {}
 
 def sync_to_github():
-    try:
-        import subprocess
-        # Sadece data dizinini ve dashboard_cache'i gonder
-        git_cmd = r"C:\Users\nebioglur\mingit\cmd\git.exe"
-        if not os.path.exists(git_cmd):
-            git_cmd = "git" # sistem path'inde varsa
-        
-        subprocess.run([git_cmd, "add", "dashboard_cache.json", "data/tavan_daily_audit.json", "data/trades_db.sqlite"], check=False)
-        res = subprocess.run([git_cmd, "commit", "-m", "chore: auto-sync live data [skip ci]"], capture_output=True, text=True)
-        if "nothing to commit" not in res.stdout:
-            subprocess.run([git_cmd, "push", "origin", "main"], check=False)
-            print("[GITHUB] Veriler canli sunucu icin basariyla push edildi.")
-    except Exception as e:
-        print(f"[GITHUB ERROR] {e}")
+    """Disabled: runtime must never commit or push live user data to main."""
+    logging.warning("GitHub runtime sync is disabled; use an explicit, reviewed backup workflow.")
+    return False
+
 
 def save_dashboard_cache(data):
     import time, json
@@ -734,8 +724,7 @@ def _background_scanner_impl():
                             import traceback
                             traceback.print_exc()
                         
-                        # Github Cloud Data Sync (Statik sayfalar ve dış VPS'ler için)
-                        sync_to_github()
+                        # Runtime GitHub writes are intentionally disabled.
                             
                         print("[BACKGROUND] 1h ve Tavan taraması tamamlandı, saatlik tavan denetçisine kaydedildi.")
                 except Exception as e_1h:
@@ -888,13 +877,17 @@ from flask import request
 
 
 
-CORS(app)
+# Same-origin by default; cross-origin access requires an explicit allow-list.
+_allowed_origins = [x.strip() for x in os.environ.get("CORS_ORIGINS", "").split(",") if x.strip()]
+CORS(app, origins=_allowed_origins, supports_credentials=True)
 
 # ============ SESSION AUTH (GÜVENLİK) ============
 import os
 from flask import request, Response, session, redirect, jsonify, render_template_string
 
-app.secret_key = os.environ.get('SECRET_KEY', 'varant_pro_ultra_secret_2026_xyz')
+import secrets
+app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_urlsafe(48)
+app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_SECURE=(os.environ.get("ENVIRONMENT", "").lower() == "production" or os.environ.get("RENDER") == "true"))
 
 # --- Verdent-Managed Supabase Auth (public browser config) ---
 # AUTH KAYNAGI (Verdent-managed Supabase Auth) — bilinçli olarak env override KULLANMAZ:
@@ -1150,12 +1143,12 @@ def api_auth_session():
         log_auth("Missing bearer token")
         return jsonify({"status": "error", "message": "Missing bearer token"}), 401
     token = auth_header[7:].strip()
-    log_auth(f"Token alindi, ilk 10 hane: {token[:10]}...")
+    log_auth("Bearer token received")
     user_id, err_msg = verify_supabase_token(token)
     if not user_id:
-        log_auth(f"verify_supabase_token basarisiz: {err_msg}")
-        return jsonify({"status": "error", "message": f"Token dogrulanmadi: {err_msg}"}), 401
-    log_auth(f"Token gecerli, user_id: {user_id}")
+        log_auth("Bearer token verification failed")
+        return jsonify({"status": "error", "message": "Token doğrulanamadı"}), 401
+    log_auth("Bearer token verified")
     # E-postayi JWT payload'indan oku (token zaten dogrulandi)
     email = None
     try:
@@ -1180,8 +1173,8 @@ def api_auth_session():
 def require_auth():
     if request.method == 'OPTIONS': return
     
-    allowed = ['/login', '/logout', '/api/ping', '/api/auth_config', '/api/auth/session', '/api/client_log', '/api/system_logs_read', '/api/cache_status']
-    if request.path in allowed or request.path.startswith('/api/dashboard_init'): return
+    allowed = ['/login', '/logout', '/api/ping', '/api/auth_config', '/api/auth/session']
+    if request.path in allowed: return
     
     # Allow static assets for login page
     if request.path.endswith('.css') or request.path.endswith('.js') or request.path.endswith('.png') or request.path.endswith('.woff2'):
@@ -2079,7 +2072,9 @@ def api_varant_simulator():
 
 @app.route('/api/system_logs_read', methods=['GET'])
 def api_system_logs_read():
-    """Gecici log okuma ucu"""
+    """Admin-only diagnostic log endpoint."""
+    if not session.get("logged_in") or not is_admin_owner():
+        return jsonify({"status": "error", "message": "Forbidden"}), 403
     try:
         with open('data/system_logs.txt', 'r', encoding='utf-8') as f:
             lines = f.readlines()
