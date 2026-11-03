@@ -6,6 +6,7 @@ from execution.risk_manager import RiskManager
 from learning.learning_engine import AILearningEngine
 from services.warrant_engine import WarrantEngine
 from v8_engine.varrant import VarrantEngine
+from v8_engine.breakout import BreakoutEngine
 
 
 def test_backtest_executes_signal_on_next_bar_not_signal_bar():
@@ -66,3 +67,32 @@ def test_random_learning_simulation_is_disabled_and_does_not_add_trades():
     result = AILearningEngine.simulate_daily_learning()
     assert result["status"] == "DISABLED"
     assert "stats" in result
+
+def test_v8_breakout_exposes_mfi_atr_and_volatility_from_valid_ohlcv():
+    close = [100.0 + i * 0.05 for i in range(59)]
+    close.append(close[-1] + 2.0)
+    df = pd.DataFrame({
+        "Open": [value - 0.2 for value in close],
+        "High": [value + 0.5 for value in close],
+        "Low": [value - 0.5 for value in close],
+        "Close": close,
+        "Volume": [100000.0] * 59 + [350000.0],
+    })
+    result = BreakoutEngine().analyze_breakout(df, "TEST")
+    assert result["status"] not in {"DATA_INSUFFICIENT", "ERROR"}
+    metrics = result["metrics"]
+    assert metrics["mfi_14"] is not None
+    assert metrics["atr_14"] > 0
+    assert metrics["atr_pct"] > 0
+
+
+def test_v8_breakout_rejects_missing_ohlcv_values():
+    df = pd.DataFrame({
+        "Open": [100.0] * 30,
+        "High": [101.0] * 30,
+        "Low": [99.0] * 30,
+        "Close": [100.0] * 30,
+        "Volume": [None] * 30,
+    })
+    result = BreakoutEngine().analyze_breakout(df, "TEST")
+    assert result["status"] == "DATA_INSUFFICIENT"
