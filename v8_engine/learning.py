@@ -53,12 +53,34 @@ class OutcomeEngine:
         except Exception:
             _now = datetime.now()
 
-        # DNA Snapshot (Makine Öğrenmesi için kullanılacak Feature'lar)
+        metrics = breakout_data.get("metrics", {}) or {}
+        try:
+            atr_value = float(metrics.get("atr_14"))
+            if not pd.notna(atr_value) or atr_value <= 0 or not pd.notna(entry_price) or float(entry_price) <= 0:
+                raise ValueError("valid ATR and entry price required")
+            entry_price = float(entry_price)
+        except (TypeError, ValueError):
+            # Do not invent percentage stops/targets when ATR data is unavailable.
+            return None
+
+        breakout_score = float(breakout_data.get("breakout_score", 0) or 0)
+        fakeout_risk = float(breakout_data.get("fakeout_risk", 0) or 0)
+        regime_code = str(regime or "UNKNOWN").upper()
+        confidence_score = max(0.0, min(100.0, 0.60 * breakout_score + 0.40 * (100.0 - fakeout_risk)))
+        if regime_code in {"BEAR", "STRONG_BEAR"}:
+            confidence_score = max(0.0, confidence_score - (15.0 if regime_code == "BEAR" else 30.0))
+
+        # Explicitly a rule-based quality index, never a statistical probability.
         features = {
-            "breakout_score": breakout_data.get("breakout_score", 0),
-            "fakeout_risk": breakout_data.get("fakeout_risk", 0),
-            "rsi": breakout_data.get("metrics", {}).get("rsi", 50),
-            "relative_volume": breakout_data.get("metrics", {}).get("relative_volume", 1),
+            "breakout_score": breakout_score,
+            "fakeout_risk": fakeout_risk,
+            "signal_confidence_score": round(confidence_score, 1),
+            "confidence_method": "RULE_BASED_QUALITY_INDEX_NOT_PROBABILITY",
+            "rsi": metrics.get("rsi"),
+            "mfi_14": metrics.get("mfi_14"),
+            "atr_14": atr_value,
+            "atr_pct": metrics.get("atr_pct"),
+            "relative_volume": metrics.get("relative_volume"),
             "entry_status": execution_data.get("entry_status", "UNKNOWN"),
         }
 
@@ -67,14 +89,15 @@ class OutcomeEngine:
             "symbol": symbol,
             "timestamp": _now.isoformat(),
             "strategy": "V8_BREAKOUT",
-            "market_regime": regime,
-            "score": breakout_data.get("breakout_score", 0),
-            "entry_price": float(entry_price),
-            "stop_price": float(entry_price * 0.95), # Default %5 risk
-            "target1": float(entry_price * 1.03),    # Default %3 hedef
-            "target2": float(entry_price * 1.05),    # Default %5 hedef
+            "market_regime": regime_code,
+            "score": breakout_score,
+            "entry_price": entry_price,
+            "stop_price": max(0.01, entry_price - 1.5 * atr_value),
+            "target1": entry_price + 2.0 * atr_value,
+            "target2": entry_price + 3.0 * atr_value,
             "features_snapshot": features,
-            "status": "ACTIVE"
+            "status": "ACTIVE",
+            "engine_version": "V8_ELITE"
         }
         
         V8Database.save_signal(signal_data)
