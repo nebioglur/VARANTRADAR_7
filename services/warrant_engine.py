@@ -6,8 +6,9 @@ import math
 
 class WarrantEngine:
     """
-    VarantRadar Pro V4 - Varant Motoru
-    BIST Varantlarının simüle edilmesi, Greeks ve Fiyatlama analizleri.
+    Varant pricing analysis.
+    Default lookup is real-provider-only (currently returns no data when unconfigured).
+    Synthetic Black-Scholes examples require an explicit simulation method call.
     """
     def __init__(self):
         self.risk_free_rate = 0.45 # Türkiye CDS ve faiz ortamına göre %45 risksiz faiz
