@@ -3664,6 +3664,24 @@ def api_v8_radar_discovery():
     discovery_list = sorted(discovery_list, key=lambda x: x.get("preparation_score", 0), reverse=True)
     return jsonify({"status": "success", "data": discovery_list})
 
+@app.route('/api/v8/entry-approval', methods=['POST'])
+def api_v8_entry_approval():
+    """Deterministic V8 entry gate; never fabricates missing market evidence."""
+    try:
+        from v8_engine.entry_approval import evaluate_entry_approval
+        payload = request.get_json(force=True, silent=True) or {}
+        result = evaluate_entry_approval(
+            regime=payload.get("regime"),
+            breakout=payload.get("breakout"),
+            risk=payload.get("risk"),
+            warrant=payload.get("warrant"),
+        )
+        return jsonify({"status": "success", "data": result})
+    except Exception:
+        logging.exception("V8 entry approval failed")
+        return jsonify({"status": "error", "message": "Giriş onayı hesaplanamadı"}), 500
+
+
 @app.route('/api/v8/market/regime', methods=['GET'])
 def api_v8_market_regime():
     regime_data = GLOBAL_DASHBOARD_CACHE.get("v8_market_regime")
@@ -3674,7 +3692,7 @@ def api_v8_market_regime():
             regime_data = re_engine.determine_regime()
             GLOBAL_DASHBOARD_CACHE["v8_market_regime"] = regime_data
         except Exception:
-            regime_data = {"regime": "NÖTR (YATAY / DENGE)", "score": 50.0, "xu100_trend": 0.0}
+            regime_data = {"regime": "VERİ BEKLENİYOR", "regime_code": "DATA_INSUFFICIENT", "regime_label": "VERİ BEKLENİYOR", "score": None, "xu100_trend": None, "data_status": "DATA_INSUFFICIENT", "data_available": False, "stale": True}
 
     # KESİN TÜRKÇELEŞTİRME:
     reg_code = str(regime_data.get("regime", "")).upper()
