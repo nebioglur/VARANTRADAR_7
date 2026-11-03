@@ -58,6 +58,13 @@ class MarketRegimeEngine:
                 return self._last_known_regime("DATA_INSUFFICIENT")
             if (df[high_col] < df[low_col]).any():
                 return self._last_known_regime("DATA_INSUFFICIENT")
+            from zoneinfo import ZoneInfo
+            last_bar = pd.Timestamp(df.index[-1])
+            if last_bar.tzinfo is not None:
+                last_bar = last_bar.tz_convert("Europe/Istanbul")
+            data_age_days = (datetime.now(ZoneInfo("Europe/Istanbul")).date() - last_bar.date()).days
+            if data_age_days > 5:
+                return self._last_known_regime("DATA_INSUFFICIENT")
 
             close = df[close_col]
             current_price = float(close.iloc[-1])
@@ -231,7 +238,9 @@ class MarketRegimeEngine:
                 "advancers_ratio": round(advancers_ratio * 100, 1) if advancers_ratio is not None else None,
                 "breadth_available": advancers_ratio is not None,
                 "data_timeframe": "1d",
-                "data_timestamp": pd.Timestamp(df.index[-1]).isoformat()
+                "data_timestamp": pd.Timestamp(df.index[-1]).isoformat(),
+                "data_age_days": data_age_days,
+                "stale": False
             }
             
             self._save_regime_to_db(result)
