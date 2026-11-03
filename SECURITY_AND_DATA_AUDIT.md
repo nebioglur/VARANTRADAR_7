@@ -58,7 +58,7 @@
 ### Tests and CI
 - Added `tests/test_hardening.py` regression tests for next-bar backtests, transaction costs, missing data, risk caps, synthetic/real warrant separation, random learning removal, MFI and ATR.
 - Added `.github/workflows/tests.yml` to run pytest on Codex/fix branches and pull requests to main.
-- CI has not yet been observed passing in this audit report. The tests must be run by GitHub Actions before merge.
+- The first CI attempts exposed legacy root-level manual test scripts (notably a Prophet smoke script that exits at import time). The workflow now targets the dedicated `tests/` regression suite; the latest run must complete successfully before merge.
 
 ## Changed files
 
