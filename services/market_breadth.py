@@ -27,7 +27,9 @@ class MarketBreadthEngine:
                     all_stats = cached.get('all_symbols_stats', {})
                 if xu100_change is None:
                     cached_regime = cached.get('v8_market_regime', {})
-                    xu100_change = float(cached_regime.get('xu100_trend') or 0.0)
+                    cached_change = cached_regime.get('xu100_trend')
+                    if cached_change is not None:
+                        xu100_change = float(cached_change)
             except Exception:
                 all_stats = all_stats or {}
                 # Missing index data remains missing; do not manufacture a 0% move.
