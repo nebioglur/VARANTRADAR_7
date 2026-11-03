@@ -32,7 +32,7 @@ class MarketRegimeEngine:
     def determine_regime(self) -> Dict[str, Any]:
         try:
             df = self._fetch_index_df()
-            if df is None or df.empty:
+            if df is None or df.empty or len(df) < 30:
                 return self._last_known_regime("DATA_INSUFFICIENT")
 
             # yfinance MultiIndex check
@@ -44,17 +44,32 @@ class MarketRegimeEngine:
             high_col = 'high' if 'high' in df.columns else 'High'
             low_col = 'low' if 'low' in df.columns else 'Low'
             
+            if not all(col in df.columns for col in (close_col, open_col, high_col, low_col)):
+                return self._last_known_regime("DATA_INSUFFICIENT")
+            df = df.sort_index().copy()
+            for col in (close_col, open_col, high_col, low_col):
+                df[col] = pd.to_numeric(df[col], errors="coerce")
+            df = df.dropna(subset=[close_col, open_col, high_col, low_col])
+            if len(df) < 30:
+                return self._last_known_regime("DATA_INSUFFICIENT")
+            if not np.isfinite(df[[close_col, open_col, high_col, low_col]].to_numpy(dtype=float)).all():
+                return self._last_known_regime("DATA_INSUFFICIENT")
+            if (df[[close_col, open_col, high_col, low_col]] <= 0).any().any():
+                return self._last_known_regime("DATA_INSUFFICIENT")
+            if (df[high_col] < df[low_col]).any():
+                return self._last_known_regime("DATA_INSUFFICIENT")
+
             close = df[close_col]
             current_price = float(close.iloc[-1])
-            prev_price = float(close.iloc[-2]) if len(close) > 1 else current_price
-            open_price = float(df[open_col].iloc[-1]) if open_col in df.columns else current_price
-            high_price = float(df[high_col].iloc[-1]) if high_col in df.columns else current_price
-            low_price = float(df[low_col].iloc[-1]) if low_col in df.columns else current_price
+            prev_price = float(close.iloc[-2])
+            open_price = float(df[open_col].iloc[-1])
+            high_price = float(df[high_col].iloc[-1])
+            low_price = float(df[low_col].iloc[-1])
             
             # 1. Canlı BIST Değişimi & Fallback
             # Server yüklüyse canlı hesaplanan değişimi ve piyasa genişliğini al
             live_chg = None
-            advancers_ratio = 0.50
+            advancers_ratio = None
             try:
                 import sys
                 srv = sys.modules.get('server')
@@ -62,9 +77,20 @@ class MarketRegimeEngine:
                     if hasattr(srv, 'get_xu100_change'):
                         live_chg = srv.get_xu100_change()
                     all_stats = getattr(srv, 'GLOBAL_DASHBOARD_CACHE', {}).get("all_symbols_stats", {})
-                    if all_stats and len(all_stats) >= 20:
-                        pos = sum(1 for d in all_stats.values() if isinstance(d, dict) and d.get("Change_Pct", 0) > 0)
-                        advancers_ratio = pos / len(all_stats)
+                    if all_stats:
+                        changes = []
+                        for item in all_stats.values():
+                            if not isinstance(item, dict):
+                                continue
+                            value = item.get("Change_Pct")
+                            try:
+                                value = float(value)
+                                if np.isfinite(value):
+                                    changes.append(value)
+                            except (TypeError, ValueError):
+                                continue
+                        if len(changes) >= 20:
+                            advancers_ratio = sum(1 for value in changes if value > 0) / len(changes)
             except Exception:
                 pass
             
@@ -120,14 +146,15 @@ class MarketRegimeEngine:
                 score -= 30.0   # Ağır Satış / Çöküş
 
             # B) Piyasa Genişliği Katkısı (-15 ile +15 arası)
-            if advancers_ratio >= 0.70:
-                score += 15.0   # Piyasanın %70'inden fazlası yeşil
-            elif advancers_ratio >= 0.55:
-                score += 8.0    # Çoğunluk yeşil
-            elif advancers_ratio <= 0.30:
-                score -= 15.0   # Çoğunluk kırmızı
-            elif advancers_ratio <= 0.45:
-                score -= 8.0    # Satıcılar hakim
+            if advancers_ratio is not None:
+                if advancers_ratio >= 0.70:
+                    score += 15.0
+                elif advancers_ratio >= 0.55:
+                    score += 8.0
+                elif advancers_ratio <= 0.30:
+                    score -= 15.0
+                elif advancers_ratio <= 0.45:
+                    score -= 8.0
 
             # C) Kısa Vade & Orta Vade EMA Konumu
             # Kısa vade momentum (EMA5)
@@ -195,7 +222,10 @@ class MarketRegimeEngine:
                 "c_ema5": round(c_ema5, 2),
                 "c_ema20": round(c_ema20, 2),
                 "current_price": round(current_price, 2),
-                "advancers_ratio": round(advancers_ratio * 100, 1)
+                "advancers_ratio": round(advancers_ratio * 100, 1) if advancers_ratio is not None else None,
+                "breadth_available": advancers_ratio is not None,
+                "data_timeframe": "1d",
+                "data_timestamp": pd.Timestamp(df.index[-1]).isoformat()
             }
             
             self._save_regime_to_db(result)
