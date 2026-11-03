@@ -940,65 +940,60 @@ def _supabase_user_from_endpoint(base_url: str, token: str, apikey):
         return json.loads(resp.read().decode('utf-8'))
 
 def verify_supabase_token(token: str):
-    """Supabase access token'ini dogrular.
-    Donus: (user_id, hata_mesaji). Basarida hata_mesaji=None.
-    Token imzayi dogrulamadan cozulup iss'ten gercek proje tespit edilir ve
-    token KENDI projesinin /auth/v1/user ucunda dogrulanir; olmazsa iss'ten
-    turetilen diger proje adreslerinde denenir. Boylece token hangi Supabase
-    projesinden gelirse gelsin dogrulanir (farkli proje imzasi -> "invalid
-    JWT signature" hatasinin kok nedeni cozulur)."""
+    """Validate a Supabase token only against explicitly configured HTTPS endpoints.
+
+    JWT claims are untrusted until verified and must never be used to construct
+    an outbound URL (prevents issuer-controlled SSRF).
+    """
     import hashlib
     import time as _time
-    import urllib.request
     import urllib.error
-    token_hash = hashlib.sha256(token.encode('utf-8')).hexdigest()
+
+    if not isinstance(token, str) or len(token) > 8192 or token.count(".") != 2:
+        return None, "invalid token format"
+
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
     now = _time.time()
     cached = _user_token_cache.get(token_hash)
     if cached and cached[1] > now:
         return cached[0], None
 
     unverified = _decode_jwt_unverified(token)
-    iss = (unverified or {}).get('iss') or ''
-    ref = ((unverified or {}).get('app_metadata') or {}).get('project_ref') or ''
-    print(f"[AUTH] Token iss teshisi: iss={iss[:90]} ref={ref[:24]} sub={str((unverified or {}).get('sub'))[:10]}")
+    iss = (unverified or {}).get("iss") or ""
+    configured = [SUPABASE_URL] + [
+        value.strip() for value in os.environ.get("SUPABASE_AUTH_URLS", "").split(",")
+        if value.strip()
+    ]
+    allowed = []
+    for base in configured:
+        base = base.rstrip("/")
+        if base.startswith("https://") and base not in allowed:
+            allowed.append(base)
 
-    bases = []
-    if iss:
-        b = iss.split('/auth/v1')[0].rstrip('/')
-        if b and b.startswith("http"):
-            bases.append(b)
-    if ref:
-        proxy_base = f"https://supabase-api-prod.verdent.ai/p/{ref}"
-        if proxy_base not in bases:
-            bases.append(proxy_base)
-    if SUPABASE_URL not in bases:
-        bases.append(SUPABASE_URL)
+    # The issuer must match an operator-configured endpoint exactly.
+    matching = [
+        base for base in allowed
+        if iss in (base + "/auth/v1", base + "/auth/v1/")
+    ]
+    if not matching:
+        return None, "untrusted token issuer"
 
-    last_error = "yok"
-    for base in bases:
+    last_error = "verification failed"
+    for base in matching:
         for key_try in (SUPABASE_PUBLISHABLE_KEY, None):
             try:
                 user = _supabase_user_from_endpoint(base, token, key_try)
                 user_id = user.get("id") or user.get("sub")
-                if user_id:
-                    # Guvenlik: imzasiz cozumlenen sub ile uyusmadigindan emin ol
-                    if unverified and unverified.get('sub') and user_id != unverified.get('sub'):
-                        print("[AUTH] user id, token sub ile uyusmadi, reddedildi")
-                        break
+                if user_id and (not unverified or not unverified.get("sub") or user_id == unverified.get("sub")):
                     _user_token_cache[token_hash] = (user_id, now + 120)
-                    print(f"[AUTH] Token dogrulandi: {base}")
                     return user_id, None
-            except urllib.error.HTTPError as e:
-                body = e.read().decode('utf-8', 'ignore')[:160]
-                last_error = f"{e.code} {body}"
-                print(f"[AUTH] Dogrulama denemesi {base} (apikey={'var' if key_try else 'yok'}): {last_error}")
-                # Imza hatasi: bu base token'i vermemis, siradaki base'i dene
+            except urllib.error.HTTPError as exc:
+                last_error = "provider rejected token"
                 continue
-            except Exception as e:
-                last_error = f"istisna: {e}"
-                print(f"[AUTH] Dogrulama denemesi {base} {last_error}")
+            except Exception:
+                last_error = "provider verification unavailable"
                 break
-    return None, f"Token dogrulanamadi (iss={iss[:60] or 'yok'}) - Son hata: {last_error}"
+    return None, last_error
 
 def _migrate_legacy_owner_data(new_owner: str, email: str):
     """Ayni e-postayla eski Supabase projesinde acilan (sb:...) hesaplarin
