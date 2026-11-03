@@ -39,7 +39,8 @@ class V8Database:
                 target1 REAL,
                 target2 REAL,
                 features_snapshot TEXT,
-                status TEXT
+                status TEXT,
+                engine_version TEXT NOT NULL DEFAULT 'LEGACY'
             )
         ''')
         
@@ -75,9 +76,19 @@ class V8Database:
         ''')
         
         conn.commit()
+        V8Database._migrate_signals(cursor, conn)
         V8Database._migrate_outcomes(cursor, conn)
         conn.close()
         
+    @staticmethod
+    def _migrate_signals(cursor, conn):
+        """Add the engine cohort column without dropping existing signal history."""
+        cursor.execute("PRAGMA table_info(v8_signals)")
+        existing = {row['name'] for row in cursor.fetchall()}
+        if 'engine_version' not in existing:
+            cursor.execute("ALTER TABLE v8_signals ADD COLUMN engine_version TEXT NOT NULL DEFAULT 'LEGACY'")
+        conn.commit()
+
     @staticmethod
     def _migrate_outcomes(cursor, conn):
         """Mevcut v8_outcomes tablosuna eksik kolonlari ekler."""
