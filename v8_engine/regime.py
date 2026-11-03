@@ -274,9 +274,11 @@ class MarketRegimeEngine:
                     "regime_code": reg_raw,
                     "regime_label": regime_tr,
                     "score": row["regime_score"],
-                    "xu100_trend": row["xu100_trend"] or 0.0,
-                    "volatility_state": row["volatility_state"] or "NORMAL",
+                    "xu100_trend": row["xu100_trend"],
+                    "volatility_state": row["volatility_state"],
                     "timestamp": row["timestamp"],
+                    "data_status": "STALE_LAST_KNOWN",
+                    "data_available": True,
                     "stale": True
                 }
         except Exception as e:
@@ -309,8 +311,11 @@ class MarketRegimeEngine:
             "regime": tr_label,
             "regime_code": status,
             "regime_label": tr_label,
-            "score": 50.0,
-            "xu100_trend": 0.0,
-            "volatility_state": "NORMAL",
-            "timestamp": datetime.now().isoformat()
+            "score": None,
+            "xu100_trend": None,
+            "volatility_state": None,
+            "timestamp": datetime.now().isoformat(),
+            "data_status": status,
+            "data_available": False,
+            "stale": True
         }
