@@ -1291,7 +1291,8 @@ def api_chart_data():
         data = TechnicalEngine.get_chart_data(symbol, interval)
         return jsonify(sanitize_for_json(data))
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/backtest/run', methods=['GET'])
 def api_backtest_run():
@@ -1397,7 +1398,8 @@ def api_backtest_run():
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 # ============ Online Kullanıcı Sayacı (Heartbeat) ============
 import time as _time
@@ -1445,7 +1447,8 @@ def index():
         response = make_response(html)
     except Exception as e:
         import traceback
-        return f'<pre>{traceback.format_exc()}</pre>', 500
+        logging.exception("Page rendering failed")
+        return "İstek işlenemedi", 500
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
@@ -1504,7 +1507,8 @@ def api_analyze():
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/autocomplete', methods=['GET'])
 def api_autocomplete():
@@ -1671,7 +1675,8 @@ def api_scan_mtf():
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/scan', methods=['GET'])
 def api_scan():
@@ -1683,7 +1688,8 @@ def api_scan():
         results = scanner.scan_pool_bulk(pool).get("opportunities", [])
         return jsonify({"status": "success", "count": len(results), "results": sanitize_for_json(results)})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/scan_warrants', methods=['GET'])
 def api_scan_warrants():
@@ -1695,7 +1701,8 @@ def api_scan_warrants():
         results = scanner.scan_pool_bulk(pool).get("opportunities", [])
         return jsonify({"status": "success", "count": len(results), "results": sanitize_for_json(results)})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/scan_bist50', methods=['GET'])
 def api_scan_bist50():
@@ -1706,7 +1713,8 @@ def api_scan_bist50():
         results = scanner.scan_pool_bulk(pool).get("opportunities", [])
         return jsonify({"status": "success", "count": len(results), "results": sanitize_for_json(results)})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/scan_yildiz', methods=['GET'])
 def api_scan_yildiz():
@@ -1717,7 +1725,8 @@ def api_scan_yildiz():
         results = scanner.scan_pool_bulk(pool).get("opportunities", [])
         return jsonify({"status": "success", "count": len(results), "results": sanitize_for_json(results)})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/scan_all', methods=['GET'])
 def api_scan_all():
@@ -1733,7 +1742,8 @@ def api_scan_all():
             
         return jsonify({"status": "success", "count": len(res), "results": sanitize_for_json(res)})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 # --- MANUEL TARAMA (Kullanıcı butonu ile tetiklenir) ---
 _manual_scan_lock = threading.Lock()
@@ -1991,7 +2001,8 @@ def api_scan_fx():
         results = scanner.scan_pool_bulk(pool).get("opportunities", [])
         return jsonify({"status": "success", "count": len(results), "results": sanitize_for_json(results)})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/scan_commodity', methods=['GET'])
 def api_scan_commodity():
@@ -2002,7 +2013,8 @@ def api_scan_commodity():
         results = scanner.scan_pool_bulk(pool).get("opportunities", [])
         return jsonify({"status": "success", "count": len(results), "results": sanitize_for_json(results)})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/scan_crypto', methods=['GET'])
 def api_scan_crypto():
@@ -2013,7 +2025,8 @@ def api_scan_crypto():
         results = scanner.scan_pool_bulk(pool).get("opportunities", [])
         return jsonify({"status": "success", "count": len(results), "results": sanitize_for_json(results)})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/varant_simulator', methods=['GET'])
 def api_varant_simulator():
@@ -2071,7 +2084,8 @@ def api_varant_simulator():
             "warrants": sanitize_for_json(warrants)
         })
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/system_logs_read', methods=['GET'])
 def api_system_logs_read():
@@ -2158,7 +2172,8 @@ def api_force_refresh():
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/health', methods=['GET'])
 def api_health():
@@ -2168,7 +2183,8 @@ def api_health():
         health_report = pipeline.get_health_report()
         return jsonify({"status": "success", "data": health_report})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/news/global', methods=['GET'])
 def api_news_global():
@@ -2190,7 +2206,8 @@ def api_news_global():
                 })
         return jsonify({"status": "success", "news": news_items})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/news/ticker/<symbol>', methods=['GET'])
 def api_news_ticker(symbol):
@@ -2202,7 +2219,8 @@ def api_news_ticker(symbol):
             news = []
         return jsonify({"status": "success", "news": news})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/brokerage/<symbol>', methods=['GET'])
 def api_brokerage(symbol):
@@ -2227,7 +2245,8 @@ def api_brokerage(symbol):
         
         akd_data = generate_ai_akd(symbol, c, chg_pct, vol)
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 
 @app.route('/api/simulation/live_orders', methods=['GET'])
@@ -2354,7 +2373,8 @@ def api_simulation_live_orders():
             "orders": sanitize_for_json(sorted(orders, key=lambda x: x["score"], reverse=True))
         })
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/simulation/terminal', methods=['GET'])
 def api_simulation_terminal():
@@ -2363,7 +2383,8 @@ def api_simulation_terminal():
         from services.live_trade_monitor import get_terminal_state
         return jsonify({"status": "success", "terminal": sanitize_for_json(get_terminal_state(get_owner_key()))})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/simulation/terminal/open', methods=['POST'])
 def api_simulation_terminal_open():
@@ -2387,7 +2408,8 @@ def api_simulation_terminal_open():
         )
         return jsonify({"status": "success" if ok else "error", "message": msg}), (200 if ok else 400)
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/simulation/terminal/update', methods=['POST'])
 def api_simulation_terminal_update():
@@ -2406,7 +2428,8 @@ def api_simulation_terminal_update():
         )
         return jsonify({"status": "success" if ok else "error", "message": msg}), (200 if ok else 400)
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/simulation/terminal/close', methods=['POST'])
 def api_simulation_terminal_close():
@@ -2420,7 +2443,8 @@ def api_simulation_terminal_close():
         ok, msg = close_position(int(pos_id), reason="MANUEL KAPATMA (Kullanici)", owner=get_owner_key())
         return jsonify({"status": "success" if ok else "error", "message": msg}), (200 if ok else 400)
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/simulation/terminal/close_by_symbol', methods=['POST'])
 def api_simulation_terminal_close_by_symbol():
@@ -2434,7 +2458,8 @@ def api_simulation_terminal_close_by_symbol():
         ok, msg = close_position_by_symbol(symbol, reason="MANUEL KAPATMA (Portfoyden SAT)", owner=get_owner_key())
         return jsonify({"status": "success" if ok else "error", "message": msg}), (200 if ok else 400)
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/leaderboard', methods=['GET'])
 def api_leaderboard():
@@ -2483,7 +2508,8 @@ def api_leaderboard():
             r["rank"] = i + 1
         return jsonify({"status": "success", "leaderboard": rows})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/portfolio/reset_request', methods=['POST'])
 def api_portfolio_reset_request():
@@ -2509,7 +2535,8 @@ def api_portfolio_reset_request():
             pass
         return jsonify({"status": "success", "message": "Sıfırlama talebiniz yöneticiye iletildi."})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/portfolio/reset_status', methods=['GET'])
 def api_portfolio_reset_status():
@@ -2524,7 +2551,8 @@ def api_portfolio_reset_status():
         conn.close()
         return jsonify({"status": "success", "last_request": row["status"] if row else None})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/admin/simulation/run', methods=['POST'])
 def api_admin_simulation_run():
@@ -2557,7 +2585,8 @@ def api_admin_simulation_run():
         return jsonify({"status": "success", "date": date_str, "results": results})
     except Exception as e:
         import traceback
-        return jsonify({"status": "error", "message": str(e), "trace": traceback.format_exc()}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 
 @app.route('/api/admin/reset_requests', methods=['GET'])
@@ -2576,7 +2605,8 @@ def api_admin_reset_requests():
         conn.close()
         return jsonify({"status": "success", "requests": reqs})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/admin/reset_requests/decide', methods=['POST'])
 def api_admin_reset_decide():
@@ -2611,7 +2641,8 @@ def api_admin_reset_decide():
         conn.close()
         return jsonify({"status": "success", "message": msg})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/admin/set_cash', methods=['POST'])
 def api_admin_set_cash():
@@ -2655,7 +2686,8 @@ def api_admin_set_cash():
         now_val = _get_setting(_cash_key(owner))
         return jsonify({"status": "success", "owner": owner, "cash": float(now_val)})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 @app.route('/api/tavan_history', methods=['GET'])
 def api_tavan_history():
@@ -2852,7 +2884,8 @@ def api_telegram_settings():
             "chat_id_masked": ('•••' + cid[-4:]) if cid else None,
         })
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 
 @app.route('/api/telegram/test', methods=['POST'])
@@ -2871,7 +2904,8 @@ def api_telegram_test():
             return jsonify({"status": "success", "message": "Test mesaji gonderildi. Telegram'ı kontrol edin."})
         return jsonify({"status": "error", "message": "Gonderim basarisiz. Token/Chat ID'yi ve botun sohbeti baslattigini kontrol edin."}), 500
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 
 @app.route('/api/telegram/send_special_ranking', methods=['POST'])
@@ -2911,7 +2945,8 @@ def api_telegram_send_special_ranking():
         else:
             return jsonify({"status": "error", "message": "Telegram gönderimi başarısız oldu. Token/Chat ID ve bot izinlerini kontrol edin."}), 500
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 
 @app.route('/api/telegram/send_morning_compass', methods=['POST'])
@@ -2932,7 +2967,8 @@ def api_telegram_send_morning_compass():
         else:
             return jsonify({"status": "error", "message": "Telegram gönderimi başarısız oldu. Token/Chat ID ve bot izinlerini kontrol edin."}), 500
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 
 @app.route('/api/telegram/send_tavan_candidates', methods=['POST'])
@@ -2983,7 +3019,8 @@ def api_telegram_send_tavan_candidates():
             "count": len(selected)
         })
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 
 @app.route('/api/simulation/send_telegram', methods=['POST'])
@@ -3049,7 +3086,8 @@ def api_simulation_send_telegram():
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 
 
@@ -3671,7 +3709,8 @@ def api_logs():
             
         return jsonify({"status": "success", "logs": "".join(lines[-200:])})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 
 @app.route('/api/detective', methods=['GET'])
@@ -3693,7 +3732,8 @@ def api_detective():
         })
     except Exception as e:
         import traceback
-        return jsonify({"status": "error", "message": str(e), "trace": traceback.format_exc()}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 
 @app.route('/api/detective/detail/<symbol>', methods=['GET'])
@@ -3706,7 +3746,8 @@ def api_detective_detail(symbol):
             return jsonify({"status": "error", "message": "Veri henüz hazır değil ya da sembol kapsamda değil."}), 404
         return jsonify({"status": "success", "detail": sanitize_for_json(d)})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 
 @app.route('/api/dip_breakout', methods=['GET'])
@@ -3740,7 +3781,8 @@ def api_dip_breakout():
                         "error": safe.get("error")})
     except Exception as e:
         import traceback
-        return jsonify({"status": "error", "message": str(e), "trace": traceback.format_exc()}), 500
+        logging.exception("API operation failed")
+        return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 
 _BACKGROUND_SERVICES_STARTED = False
