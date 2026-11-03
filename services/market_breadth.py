@@ -163,7 +163,7 @@ class MarketBreadthEngine:
             max_positions = 2
 
         result = {
-            "data_status": "OK",
+            "data_status": "OK" if total > 0 and xu100_change is not None else "PARTIAL",
             "xu100_change": round(xu100_change, 2) if xu100_change is not None else None,
             "total_symbols": total,
             "advances": advances,
