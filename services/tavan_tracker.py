@@ -112,69 +112,23 @@ class TavanAuditTracker:
     @classmethod
     def _compute_super12_set(cls, all_symbols_stats: Dict[str, Any]) -> set:
         """
-        UI'daki SUPER_12 hesabinin sunucu tarafindaki birebir kopyasi.
-        super_score = tavan_skoru + rel_vol*10 (+ breakout bonuslari), en yuksek 12 hisse.
+        ORTAK SUPER_12 kumesi (v8_engine/playbook.score_super12_candidates).
+        Oncelik: 1) hizli kâr, 2) +%5 hedefi, 3) tavan potansiyeli.
+        Tavan bolgesindeki (mesafe < %1) hisseler AL adayi degil; ancak kume
+        istatistigi icin tavan takibinde kalabilir.
         """
-        scores = {}
-        for sym, data in (all_symbols_stats or {}).items():
-            if not isinstance(data, dict):
-                continue
-            try:
-                price = float(data.get("Price") or data.get("Daily_Close") or 0)
-                change = float(data.get('Change_Pct') or 0)
-                vol_lot = float(data.get('Volume') or 0)
-                vol_tl = price * vol_lot
-                if vol_tl < 50000000:
-                    continue
-            except (ValueError, TypeError):
-                continue
-
-            r_vol = 0.0
-            state = "NONE"
-            v8 = data.get("v8_discovery")
-            if isinstance(v8, dict):
-                state = v8.get("state", "NONE") or "NONE"
-                metrics = v8.get("metrics")
-                if isinstance(metrics, dict):
-                    try:
-                        r_vol = float(metrics.get("relative_volume") or 0)
-                    except (ValueError, TypeError):
-                        r_vol = 0.0
-
-            t = 50.0
-            if 0 < change <= 7:
-                t += change * 3
-            elif change > 7:
-                t += 20
-            elif change < 0:
-                t += change * 3
-
-            if change > 0:
-                if r_vol > 1.5: t += 15
-                if r_vol > 2.5: t += 15
-                if r_vol < 0.8: t -= 15
-            elif change < 0:
-                if r_vol > 1.5: t -= 15
-                if r_vol > 2.5: t -= 15
-                if r_vol < 0.8: t += 10
-
-            if state == "BREAKOUT":
-                t += 20
-            elif state == "PRE_BREAKOUT":
-                t += 15
-            t = min(max(t, 0), 100)
-
-            sup = t + (r_vol * 10)
-            if state == "BREAKOUT":
-                sup += 50
-            elif state == "PRE_BREAKOUT":
-                sup += 30
-            if change > 9.9:
-                sup += 20
-            scores[sym] = sup
-
-        top12 = sorted(scores.items(), key=lambda kv: kv[1], reverse=True)[:12]
-        return {sym for sym, _ in top12}
+        regime = "NEUTRAL"
+        try:
+            from server import GLOBAL_DASHBOARD_CACHE as _gdc
+            regime = (_gdc.get("v8_market_regime") or {}).get("regime", "NEUTRAL")
+        except Exception:
+            pass
+        try:
+            from v8_engine.playbook import score_super12_candidates
+            candidates = score_super12_candidates(all_symbols_stats or {}, regime, top_n=12)
+            return {str(c.get("symbol") or "") for c in candidates if c.get("symbol")}
+        except Exception:
+            return set()
 
     @classmethod
     def _compute_opportunity_score(cls, stat: Dict[str, Any]) -> float:

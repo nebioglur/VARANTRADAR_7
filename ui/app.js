@@ -7610,7 +7610,7 @@ function renderAllStocksTable() {
         
         const sym = s.symbol.replace('.IS', '');
         let actionBtns = `<button onclick="quickTradeBuy('${sym}')" style="background:rgba(34,197,94,0.2); color:#22c55e; border:1px solid rgba(34,197,94,0.5); border-radius:4px; padding:3px 10px; cursor:pointer; font-weight:bold; font-size:0.75rem; margin-right:4px; transition:0.2s;" onmouseover="this.style.background='#22c55e'; this.style.color='#fff';" onmouseout="this.style.background='rgba(34,197,94,0.2)'; this.style.color='#22c55e';">AL</button>
-                          <button onclick="quickTradeBuy('${sym}')" style="background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid rgba(239,68,68,0.5); border-radius:4px; padding:3px 10px; cursor:pointer; font-weight:bold; font-size:0.75rem; transition:0.2s;" onmouseover="this.style.background='#ef4444'; this.style.color='#fff';" onmouseout="this.style.background='rgba(239,68,68,0.2)'; this.style.color='#ef4444';">SAT</button>
+                          <button onclick="quickTrade('${sym}', 'sell', null, ${Number(s.price).toFixed(2)}, null, null)" style="background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid rgba(239,68,68,0.5); border-radius:4px; padding:3px 10px; cursor:pointer; font-weight:bold; font-size:0.75rem; transition:0.2s;" onmouseover="this.style.background='#ef4444'; this.style.color='#fff';" onmouseout="this.style.background='rgba(239,68,68,0.2)'; this.style.color='#ef4444';">SAT</button>
                           <button onclick="showSR('${sym}', ${s.price}, ${s.high}, ${s.low})" style="background:rgba(59,130,246,0.2); color:#3b82f6; border:1px solid rgba(59,130,246,0.5); border-radius:4px; padding:3px 6px; cursor:pointer; font-weight:bold; font-size:0.7rem; transition:0.2s;" onmouseover="this.style.background='#3b82f6'; this.style.color='#fff';" onmouseout="this.style.background='rgba(59,130,246,0.2)'; this.style.color='#3b82f6';" title="Destek ve Direnc Seviyeleri">D/D</button>`;
         
         let prevClose = s.price / (1 + (s.change / 100));
@@ -7734,113 +7734,155 @@ function renderSuper12Table() {
     const tbody = document.getElementById('tb-super12-stocks');
     if (!tbody || !globalDashboardData || !globalDashboardData.all_symbols_stats) return;
     
+    // ==== ORTAK PUANLAMA (v8_engine/playbook.py score_super12_candidates ile ayni) ====
+    // Siralama onciligi: 1) hizli kâr, 2) +%5 hedefi, 3) tavan potansiyeli.
+    // Skorlar kazanma olasiligi DEGILDIR; rejime gore agiriklandirilmis siralama puanidir.
+    const RANK_WEIGHTS = {
+        STRONG_BULL:     { profit_take: 0.45, plus5: 0.35, ceiling: 0.20 },
+        BULL:            { profit_take: 0.50, plus5: 0.32, ceiling: 0.18 },
+        NEUTRAL:         { profit_take: 0.55, plus5: 0.30, ceiling: 0.15 },
+        HIGH_VOLATILITY: { profit_take: 0.70, plus5: 0.25, ceiling: 0.05 },
+        BEAR:            { profit_take: 0.85, plus5: 0.15, ceiling: 0.00 },
+        STRONG_BEAR:     { profit_take: 1.00, plus5: 0.00, ceiling: 0.00 }
+    };
+    const REGIME_LABELS = {
+        STRONG_BULL: 'GÜÇLÜ BOĞA', BULL: 'BOĞA', NEUTRAL: 'NÖTR',
+        HIGH_VOLATILITY: 'YÜKSEK OYNK.', BEAR: 'AYI', STRONG_BEAR: 'GÜÇLÜ AYI'
+    };
+    let regime = 'NEUTRAL';
+    try {
+        const r = (globalDashboardData.v8_market_regime || {}).regime || 'NEUTRAL';
+        regime = String(r).toUpperCase().replace(/ /g, '_');
+        if (!RANK_WEIGHTS[regime]) regime = 'NEUTRAL';
+    } catch (e) { regime = 'NEUTRAL'; }
+    const weights = RANK_WEIGHTS[regime];
+    const bnd = v => Math.max(0, Math.min(100, Number(v) || 0));
+
     let allStats = Object.entries(globalDashboardData.all_symbols_stats).map(([sym, data]) => {
         let price = data.Price || data.Daily_Close || 0;
         let change = data.Change_Pct || 0;
         let volLot = data.Volume || 0;
         let volTL = volLot * price;
-        
-        let rVol = 0;
-        let state = 'NONE';
+
+        let rVol = 0, state = 'NONE';
         if (data.v8_discovery) {
             state = data.v8_discovery.state || 'NONE';
             if (data.v8_discovery.metrics) {
                 rVol = data.v8_discovery.metrics.relative_volume || 0;
             }
         }
-        
-        let tScore = 50;
-        if (change > 0 && change <= 7) tScore += (change * 3);
-        else if (change > 7) tScore += 20;
-        else if (change < 0) tScore += (change * 3);
-        
-        if (change > 0) {
-            if (rVol > 1.5) tScore += 15;
-            if (rVol > 2.5) tScore += 15;
-            if (rVol < 0.8) tScore -= 15;
-        } else if (change < 0) {
-            if (rVol > 1.5) tScore -= 15;
-            if (rVol > 2.5) tScore -= 15;
-            if (rVol < 0.8) tScore += 10;
-        }
-        if (state === 'BREAKOUT') tScore += 20;
-        else if (state === 'PRE_BREAKOUT') tScore += 15;
-        tScore = Math.min(Math.max(tScore, 0), 100);
+        const intra = data.intraday_strength || {};
+        const hourlyFlow = intra.hourly_flow || data.hourly_flow || 'Denge';
+        const hourlyStrength = bnd(intra.hourly_strength || data.hourly_strength || 0);
+        const hourlyVolume = Number(intra.hourly_volume_ratio || 0) || 0;
+        const sectorStrength = Number(data.sector_strength || data.Domino_Strength || 0) || 0;
+        let distCeil = data.Distance_To_Ceiling_Pct;
+        if (distCeil != null && !isNaN(Number(distCeil))) distCeil = Math.max(0, Number(distCeil));
+        else distCeil = null;
 
-        let superScore = tScore + (rVol * 10);
-        if (state === 'BREAKOUT') superScore += 50;
-        if (state === 'PRE_BREAKOUT') superScore += 30;
-        if (change > 9.9) superScore += 20;
-        
+        // Bilesen 1: Hizli kâr alma potansiyeli
+        const profitScore = bnd(
+            0.35 * hourlyStrength +
+            0.25 * Math.min(rVol / 2.0, 1) * 100 +
+            0.25 * Math.min(Math.max(change, 0) / 3.0, 1) * 100 +
+            0.15 * (hourlyFlow === 'Toplanıyor' ? 100 : (hourlyFlow === 'Denge' ? 50 : 0))
+        );
+        // Bilesen 2: +%5 ikinci hedefe erisme potansiyeli
+        const plus5Score = bnd(
+            0.30 * hourlyStrength +
+            0.30 * Math.min(rVol / 2.5, 1) * 100 +
+            0.25 * (state === 'BREAKOUT' ? 100 : (state === 'PRE_BREAKOUT' ? 70 : 35)) +
+            0.15 * Math.min(Math.max(sectorStrength, 0) / 50.0, 1) * 100
+        );
+        // Bilesen 3: Tavana erisme potansiyeli (yalnizca siralama sinyali, AL karari degil)
+        let ceilingScore = null;
+        if (distCeil != null) ceilingScore = bnd((1 - distCeil / 10) * 100);
+        else if (state === 'BREAKOUT') ceilingScore = bnd(50 + Math.min(rVol, 3) * 10);
+
+        const baseEligible = (
+            price > 0 && change >= 0.2 && change < 5.0 &&
+            volTL >= 30000000 && rVol >= 1.0 && hourlyFlow !== 'Satılıyor'
+        );
+        const score = profitScore * weights.profit_take + plus5Score * weights.plus5 + (ceilingScore || 0) * weights.ceiling;
+
         return {
             symbol: sym,
             price: price,
             change: change,
-              high: data.High || price,
-              low: data.Low || price,
+            high: data.High || price,
+            low: data.Low || price,
             volume_lot: volLot,
             volume_tl: volTL,
             rel_vol: rVol,
-            tavan_score: tScore,
-            super_score: superScore
+            hourly_flow: hourlyFlow,
+            hourly_strength: hourlyStrength,
+            hourly_volume: hourlyVolume,
+            profit_take_score: profitScore,
+            plus5_score: plus5Score,
+            ceiling_score: ceilingScore,
+            ceiling_distance_pct: distCeil,
+            rank_score: score,
+            base_eligible: baseEligible
         };
     });
-    
-    allStats = allStats.filter(s => s.volume_tl >= 50000000);
-    allStats.sort((a, b) => b.super_score - a.super_score);
-    const top12 = allStats.slice(0, 12);
+
+    // Kilit kural: TAVAN BOLGESINDEKI (mesafe < %1) hisse AL adayi yapilmaz;
+    // tavan potansiyeli siralama sinyali olarak gosterilir.
+    allStats.forEach(s => {
+        s.ceiling_locked = (s.ceiling_distance_pct != null && s.ceiling_distance_pct < 1.0);
+        s.entry_status = s.ceiling_locked ? 'TAVAN BÖLGESİ (AL YOK)' : 'AL ADAYI';
+    });
+    const eligible = allStats.filter(s => s.base_eligible);
+    eligible.sort((a, b) => b.rank_score - a.rank_score);
+    const top12 = eligible.slice(0, 12);
     
     tbody.innerHTML = top12.map((s, index) => {
         const color = s.change > 0 ? 'var(--accent-green)' : (s.change < 0 ? 'var(--accent-red)' : 'var(--text-color)');
         const sign = s.change > 0 ? '+' : '';
-        const volLotM = (s.volume_lot / 1000000).toFixed(1) + 'M';
-        const volTLM = (s.volume_tl / 1000000).toFixed(1) + 'M \u20BA';
         const relVolPct = (s.rel_vol * 100).toFixed(0);
         const relVolText = "%" + relVolPct;
-        
-        
-        let p_val = (s.high + s.low + s.price) / 3;
-        let dR1 = (2 * p_val) - s.low;
-        let dS1 = (2 * p_val) - s.high;
-        if (s.price > dR1) dR1 = p_val + (s.high - s.low);
-        if (s.price < dS1) dS1 = p_val - (s.high - s.low);
-        let hR1 = s.price + (dR1 - s.price) * 0.4;
-        let hS1 = s.price - (s.price - dS1) * 0.4;
-        
-        let dR1_p = s.price > 0 ? ((dR1 - s.price)/s.price)*100 : 0;
-        let dS1_p = s.price > 0 ? ((dS1 - s.price)/s.price)*100 : 0;
-        let hR1_p = s.price > 0 ? ((hR1 - s.price)/s.price)*100 : 0;
-        let hS1_p = s.price > 0 ? ((hS1 - s.price)/s.price)*100 : 0;
-        
-        let ddCell = '<td style="font-size:0.65rem; line-height:1.2; min-width:140px;">' +
-                     '<div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span style="color:var(--text-muted);">S:</span> <span><span style="color:var(--accent-red);">' + hS1.toFixed(2) + '(%'+hS1_p.toFixed(1)+')</span> / <span style="color:var(--accent-green);">' + hR1.toFixed(2) + '(+%'+hR1_p.toFixed(1)+')</span></span></div>' +
-                     '<div style="display:flex; justify-content:space-between;"><span style="color:var(--text-muted);">G:</span> <span><span style="color:var(--accent-red);">' + dS1.toFixed(2) + '(%'+dS1_p.toFixed(1)+')</span> / <span style="color:var(--accent-green);">' + dR1.toFixed(2) + '(+%'+dR1_p.toFixed(1)+')</span></span></div>' +
-                     '</td>';
+        const flowColor = s.hourly_flow === 'Toplanıyor' ? 'var(--accent-green)' : (s.hourly_flow === 'Satılıyor' ? 'var(--accent-red)' : 'var(--text-muted)');
+        const ceilText = s.ceiling_score != null ? s.ceiling_score.toFixed(0) : '-';
+        const ceilTitle = s.ceiling_distance_pct != null ? ('Tavana uzaklık: %' + s.ceiling_distance_pct.toFixed(1)) : 'Tavan verisi yok';
 
-          let scColor = '#ef4444'; 
-        if (s.tavan_score >= 80) scColor = '#22c55e'; 
-        else if (s.tavan_score >= 60) scColor = '#3b82f6'; 
-        else if (s.tavan_score >= 40) scColor = '#f97316'; 
-        let scoreBadge = '<span style="font-weight:900; padding:3px 10px; border-radius:12px; background:' + scColor + '22; color:' + scColor + '; border:1px solid ' + scColor + '66; min-width:35px; display:inline-block; text-align:center;">' + s.tavan_score.toFixed(0) + '</span>';
-        
+        const compBadge = (val, title) => {
+            let c = '#ef4444';
+            if (val != null && val >= 70) c = '#22c55e';
+            else if (val != null && val >= 50) c = '#3b82f6';
+            else if (val != null && val >= 35) c = '#f97316';
+            const text = (val != null && !isNaN(val)) ? Number(val).toFixed(0) : '-';
+            return '<span title="' + title + '" style="font-weight:900; padding:2px 8px; border-radius:10px; background:' + c + '22; color:' + c + '; border:1px solid ' + c + '66; min-width:30px; display:inline-block; text-align:center; cursor:help;">' + text + '</span>';
+        };
+
         const sym = s.symbol.replace('.IS', '');
-        let actionBtns = '<div style="white-space:nowrap; display:flex; gap:4px; align-items:center;"><button onclick="quickTradeBuy(\'' + sym + '\')" style="background:rgba(34,197,94,0.2); color:#22c55e; border:1px solid rgba(34,197,94,0.5); border-radius:4px; padding:3px 10px; cursor:pointer; font-weight:bold; font-size:0.75rem; margin-right:4px; transition:0.2s;" onmouseover="this.style.background=\'#22c55e\'; this.style.color=\'#fff\';" onmouseout="this.style.background=\'rgba(34,197,94,0.2)\'; this.style.color=\'#22c55e\';">AL</button>' +
-                         '<button onclick="quickTradeBuy(\'' + sym + '\')" style="background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid rgba(239,68,68,0.5); border-radius:4px; padding:3px 10px; cursor:pointer; font-weight:bold; font-size:0.75rem; transition:0.2s;" onmouseover="this.style.background=\'#ef4444\'; this.style.color=\'#fff\';" onmouseout="this.style.background=\'rgba(239,68,68,0.2)\'; this.style.color=\'#ef4444\';">SAT</button>' +
+        let actionBtns = '<div style="white-space:nowrap; display:flex; gap:4px; align-items:center;">' +
+                         (s.ceiling_locked
+                             ? '<button disabled title="Tavan bölgesindeki hisse kovalanmaz — AL kapalı" style="background:rgba(100,116,139,0.2); color:#94a3b8; border:1px solid rgba(100,116,139,0.4); border-radius:4px; padding:3px 10px; font-weight:bold; font-size:0.75rem; cursor:not-allowed; margin-right:4px;">AL🔒</button>'
+                             : '<button onclick="quickTradeBuy(\'' + sym + '\')" style="background:rgba(34,197,94,0.2); color:#22c55e; border:1px solid rgba(34,197,94,0.5); border-radius:4px; padding:3px 10px; cursor:pointer; font-weight:bold; font-size:0.75rem; margin-right:4px; transition:0.2s;" onmouseover="this.style.background=\'#22c55e\'; this.style.color=\'#fff\';" onmouseout="this.style.background=\'rgba(34,197,94,0.2)\'; this.style.color=\'#22c55e\';">AL</button>') +
+                          '<button onclick="quickTrade(\'' + sym + '\', \'sell\', null, ' + Number(s.price).toFixed(2) + ', null, null)" style="background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid rgba(239,68,68,0.5); border-radius:4px; padding:3px 10px; cursor:pointer; font-weight:bold; font-size:0.75rem; transition:0.2s;" onmouseover="this.style.background=\'#ef4444\'; this.style.color=\'#fff\';" onmouseout="this.style.background=\'rgba(239,68,68,0.2)\'; this.style.color=\'#ef4444\';">SAT</button>' +
                          ' <button onclick="showSR(\'' + sym + '\', ' + s.price + ', ' + s.high + ', ' + s.low + ')" style="background:rgba(59,130,246,0.2); color:#3b82f6; border:1px solid rgba(59,130,246,0.5); border-radius:4px; padding:3px 6px; cursor:pointer; font-weight:bold; font-size:0.7rem; transition:0.2s;" onmouseover="this.style.background=\'#3b82f6\'; this.style.color=\'#fff\';" onmouseout="this.style.background=\'rgba(59,130,246,0.2)\'; this.style.color=\'#3b82f6\';" title="Destek ve Direnc Seviyeleri">D/D</button></div>';
-        
+
         let rankBadge = '<span style="display:inline-block; width:30px; text-align:center; color:var(--text-muted); font-size:0.85rem; font-weight:bold; margin-right:5px; background:rgba(0,0,0,0.05); border-radius:4px;">#' + (index+1) + '</span>';
-                        
+        const statusColor = s.ceiling_locked ? '#f97316' : '#22c55e';
+
         return '<tr>' +
                '<td style="font-weight:bold; cursor:pointer; color:' + color + ';" onclick="openGraphicTab(\'' + s.symbol + '\')">' + rankBadge + ' ' + sym + '</td>' +
                '<td style="font-weight:600; color:' + color + ';">\u20BA' + s.price.toFixed(2) + '</td>' +
                '<td style="color:' + color + '; font-weight:bold;">' + sign + s.change.toFixed(2) + '%</td>' +
-               '<td style="color:var(--text-muted);">' + volTLM + '</td>' +
-               '<td style="color:var(--text-muted);">' + volLotM + '</td>' +
+               '<td style="font-weight:bold;">' + s.hourly_strength.toFixed(0) + '/100</td>' +
+               '<td style="color:' + flowColor + ';">' + s.hourly_flow + '</td>' +
                '<td style="color:' + color + '; font-weight:bold;">' + relVolText + '</td>' +
-               '<td>' + scoreBadge + '</td>' +
+               '<td>' + compBadge(s.profit_take_score, 'Hızlı kâr alma potansiyeli (öncelik 1)') + '</td>' +
+               '<td>' + compBadge(s.plus5_score, '+%5 hedefine erişim potansiyeli (öncelik 2)') + '</td>' +
+               '<td>' + compBadge(s.ceiling_score, ceilTitle + ' — tavan potansiyeli yalnızca sıralama sinyalidir') + '</td>' +
+               '<td style="font-weight:900; font-size:0.9rem;">' + s.rank_score.toFixed(1) + '</td>' +
+               '<td><span style="font-weight:bold; color:' + statusColor + '; font-size:0.72rem; white-space:nowrap;">' + s.entry_status + '</span><br><span style="font-size:0.62rem; color:var(--text-muted);">' + (REGIME_LABELS[regime] || regime) + '</span></td>' +
                '<td>' + actionBtns + '</td>' +
                '</tr>';
     }).join('');
+    if (!top12.length) {
+        tbody.innerHTML = '<tr><td colspan="12" style="text-align:center; padding:2rem;">Bu seans için ortak kriterlere uyan aday yok (rejim: ' + (REGIME_LABELS[regime] || regime) + ').</td></tr>';
+    }
 }
 
 window.showSR = function(sym, price, high, low) {

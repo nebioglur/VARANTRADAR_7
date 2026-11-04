@@ -327,10 +327,24 @@ class SimulationEngine:
         if _sim_risk_pct <= 0:
             _sim_risk_pct = 0.005 if is_bear else 0.012
 
-        # Haftalik kâr koruma valfi: hafta icinde %6 hedefe ulasildiysa
-        # kalan seanslarda sadece en A kalite tek islem acilir. "Hep kâr"
-        # hedefinin anahtari: kazanci korumak, zorlamak degil.
+        # ORTAK KADEMELİ ÇIKIŞ PLANI: Hedef1 %3 / Hedef2 %5 / kalan pay (runner)
+        # tavan veya iz süren stop ile. Satış oranları rejime gore dinamik.
+        try:
+            from v8_engine.playbook import get_exit_plan as _get_exit_plan
+            _exit_plan = _get_exit_plan(
+                _sim_regime,
+                volatility_state=str(_sim_scenario.get("volatility_state") or ""),
+            )
+        except Exception:
+            _exit_plan = {"tp1_sell_pct": 50, "tp2_sell_pct": 30, "runner_pct": 20}
+
+        # Haftalik hedef/zarar kilidi (ortak playbook): +%6 hedefe ulasildiysa
+        # yeni giris TAMAMEN durur (kâr koruma); rejime gore zarar limiti
+        # (ayi/yuksek volatilite -1.5, notr -2.0, boga -2.5) asildiysa da
+        # yeni girisler kapanir. Acik pozisyonlar kendi stop/planlariyla yonetilir.
         _weekly_target_reached = False
+        _weekly_loss_locked = False
+        _week_guard = {}
         try:
             wconn = get_connection()
             wcur = wconn.cursor()
@@ -343,18 +357,31 @@ class SimulationEngine:
             wconn.close()
             if wrow and wrow[0]:
                 base = float(wrow[0])
-                week_gain_pct = (float(wrow[1] or 0) / base * 100.0) if base > 0 else 0.0
+                week_pnl = float(wrow[1] or 0)
+                week_gain_pct = (week_pnl / base * 100.0) if base > 0 else 0.0
                 _weekly_target_reached = week_gain_pct >= 6.0
+                try:
+                    from v8_engine.playbook import get_weekly_guard as _get_weekly_guard
+                    _week_guard = _get_weekly_guard(
+                        week_pnl, base, _sim_regime,
+                        volatility_state=str(_sim_scenario.get("volatility_state") or ""),
+                    )
+                    _weekly_loss_locked = bool(_week_guard.get("loss_limit_reached"))
+                    _weekly_target_reached = bool(_week_guard.get("target_reached"))
+                except Exception:
+                    pass
         except Exception:
             pass
 
         if _sim_regime in ("BEAR", "STRONG_BEAR"):
             effective_max_positions = 0
             print(f"[SimEngine] {date_str} -> Rejim kilidi ({_sim_regime}): simülasyon girişleri kapalı")
+        elif _weekly_loss_locked:
+            effective_max_positions = 0
+            print(f"[SimEngine] {date_str} -> Haftalık zarar kilidi aktif: yeni girişler durduruldu (açık pozisyonlar planıyla yönetilir)")
         elif _weekly_target_reached:
-            effective_max_positions = min(1, self.max_positions)
-            minimum_score += 2
-            print(f"[SimEngine] {date_str} -> Haftalık %6 hedefi doldu: KÂR KORUMA MODU (maks 1 pozisyon, skor +2)")
+            effective_max_positions = 0
+            print(f"[SimEngine] {date_str} -> Haftalık %6 hedefi doldu: KÂR KORUMA MODU (yeni giriş yok, açık pozisyonlar izleniyor)")
         elif _sim_scenario.get("max_positions") is not None:
             # Bogada genisler, notrde standart, volatilitede daralir.
             effective_max_positions = min(self.max_positions, max(1, int(_sim_scenario["max_positions"])))
@@ -590,16 +617,25 @@ class SimulationEngine:
                     sell_price = tp2_price
                     reason = f"🚀 TAVAN (TAM KÂR ALINDI)"
                 elif high >= tp1_price and not trade.get('scaled_out', False):
-                    # Yarısını Kâr Al (TP1)
+                    # Kademeli kâr alma (TP1): satış oranı rejime gore exit planindan gelir.
+                    # Boga/yuksek volatilitede erken ve buyuk kisim satilir (kasa guvenligi),
+                    # guclu bogada runner payi buyur (tavan potansiyeli).
                     trade['scaled_out'] = True
-                    half_shares = trade['shares'] // 2
-                    if half_shares > 0:
-                        trade['shares'] -= half_shares
+                    try:
+                        _tp1_pct = int(_exit_plan.get("tp1_sell_pct", 50))
+                    except Exception:
+                        _tp1_pct = 50
+                    _tp1_pct = max(10, min(90, _tp1_pct))
+                    out_shares = max(1, int(round(trade['shares'] * _tp1_pct / 100.0)))
+                    if out_shares >= trade['shares']:
+                        out_shares = max(1, trade['shares'] - 1)
+                    if out_shares > 0:
+                        trade['shares'] -= out_shares
                         scale_out_price = tp1_price * 0.9985
-                        buy_vol = half_shares * entry
-                        sell_vol = half_shares * scale_out_price
+                        buy_vol = out_shares * entry
+                        sell_vol = out_shares * scale_out_price
                         comm = (buy_vol + sell_vol) * 0.0004
-                        net_profit = (half_shares * (scale_out_price - entry)) - comm
+                        net_profit = (out_shares * (scale_out_price - entry)) - comm
                         current_cash += sell_vol - comm 
                         
                         # Artık geride kalan lotlar için stop başa (maliyete) çekilir! (Risk Free)
@@ -609,12 +645,12 @@ class SimulationEngine:
                             'symbol': sym,
                             'entry_time': trade['entry_time'],
                             'entry_price': entry,
-                            'shares': half_shares,
+                            'shares': out_shares,
                             'exit_time': str(current_time),
                             'exit_price': scale_out_price,
                             'pnl_val': net_profit,
                             'pnl_pct': (net_profit / buy_vol) * 100,
-                            'exit_reason': "⚖️ ÇELİK TP1 (YARISI SATILDI)",
+                            'exit_reason': f"⚖️ KADEMELİ TP1 (%{_tp1_pct} SATILDI, STOP MALİYETE ÇEKİLDİ)",
                             'strategy_name': trade.get('strategy_name'),
                             'entry_score': trade.get('entry_score'),
                             'entry_checks': trade.get('entry_checks'),

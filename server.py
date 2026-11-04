@@ -2204,6 +2204,34 @@ def api_simulation_terminal():
 def api_simulation_terminal_open():
     """Manuel anlik alim (canlı pozisyon aç)."""
     try:
+        # ORTAK HAFTALIK KILIT: +%6 hedefe ulasildiysa veya rejime gore zarar
+        # limiti asildiysa yeni giris acilmaz (acik pozisyonlar yonetilmeye devam eder).
+        try:
+            from v8_engine.playbook import get_weekly_guard
+            from services.trade_database import get_connection
+            from datetime import datetime, timedelta
+            _now = datetime.now(ZoneInfo("Europe/Istanbul"))
+            _monday = (_now.date() - timedelta(days=_now.weekday())).strftime("%Y-%m-%d")
+            _owner = get_owner_key()
+            with get_connection() as _conn:
+                _cur = _conn.cursor()
+                _cur.execute(
+                    "SELECT start_equity, SUM(daily_pnl) FROM equity_log WHERE owner=? AND date_str >= ?",
+                    (_owner, _monday),
+                )
+                _wrow = _cur.fetchone()
+            _base = float((_wrow or [None, None])[0] or 0)
+            _week_pnl = float((_wrow or [None, 0])[1] or 0)
+            if _base > 0:
+                _regime = (GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or {}).get("regime", "NEUTRAL")
+                _guard = get_weekly_guard(_week_pnl, _base, _regime)
+                if _guard.get("entries_paused"):
+                    return jsonify({
+                        "status": "error",
+                        "message": f"Haftalık kilit aktif ({_guard.get('lock_reason') or 'KİLİT'}): yeni giriş açılamaz. Açık pozisyonlar planıyla yönetilir.",
+                    }), 400
+        except Exception:
+            pass
         from services.live_trade_monitor import open_position
         data = request.get_json(force=True, silent=True) or {}
         symbol = data.get('symbol', '')
@@ -2721,6 +2749,19 @@ def api_simulation_daily_pnl():
             weekly_end = float(weekly_rows[-1].get('end_equity') or weekly_start) if weekly_rows else weekly_start
             weekly_pct = ((weekly_end - weekly_start) / weekly_start * 100.0) if weekly_start > 0 else 0.0
             target_pct = 6.0
+            # ORTAK HAFTALIK KILIT (playbook): rejime gore zarar limiti ve
+            # giris durdurma durumu panoda gosterilir; V8 ve simülasyon ayni
+            # karari kullanir.
+            weekly_guard = {}
+            try:
+                from v8_engine.playbook import get_weekly_guard
+                _regime = (GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or {}).get("regime", "NEUTRAL")
+                weekly_guard = get_weekly_guard(
+                    weekly_end - weekly_start, weekly_start, _regime,
+                )
+                weekly_guard.pop("regime", None)
+            except Exception:
+                pass
             return jsonify({
                 "status": "success",
                 "equity_curve": sanitize_for_json(equity_curve),
@@ -2732,7 +2773,8 @@ def api_simulation_daily_pnl():
                     "gap_pct": round(target_pct - weekly_pct, 2),
                     "reached": weekly_pct >= target_pct,
                     "sessions": len(weekly_rows),
-                    "label": "Haftalık %6 hedef takibi (garanti değildir)"
+                    "label": "Haftalık %6 hedef takibi (garanti değildir)",
+                    "guard": sanitize_for_json(weekly_guard),
                 }
             })
     except Exception as e:
