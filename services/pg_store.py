@@ -11,13 +11,13 @@ import os
 import re
 import threading
 
-import base64
-DATABASE_URL = (
-    os.environ.get("DATABASE_URL")
-    or os.environ.get("SUPABASE_DB_URL")
-    or base64.b64decode("cG9zdGdyZXNxbDovL3Bvc3RncmVzLmtmc2x3a21ybmpxeGlyemhmbWJuOjFRMnczZTRyNXQ2eS4uMjI1LUBhd3MtMC1ldS1jZW50cmFsLTEucG9vbGVyLnN1cGFiYXNlLmNvbTo2NTQzL3Bvc3RncmVz").decode('utf-8')
-).strip()
+# Never embed database credentials in source control (including encoded strings).
+# Production must supply DATABASE_URL or SUPABASE_DB_URL via the deployment secret store.
+DATABASE_URL = (os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or "").strip()
 IS_PG = bool(DATABASE_URL)
+_IS_PRODUCTION = os.environ.get("ENVIRONMENT", "").lower() == "production" or os.environ.get("RENDER") == "true"
+if _IS_PRODUCTION and not IS_PG:
+    raise RuntimeError("DATABASE_URL or SUPABASE_DB_URL must be configured in production")
 
 if IS_PG:
     import psycopg2

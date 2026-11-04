@@ -4535,6 +4535,7 @@ async function fetchSimulationData() {
             // Calculate KPIs
             const equityCurve = data.equity_curve || [];
             const trades = data.trades || [];
+            const cum = data.cumulative_summary || {};
             
             let startBakiye = 0;
             let endBakiye = 0;
@@ -4548,8 +4549,41 @@ async function fetchSimulationData() {
                 }
             }
             
+            // Asla Sıfırlanmayan Kümülatif Toplam Kasa (Geçmiş Tüm Aylar + Anlık Açık Pozisyonlar Dahil)
+            const baseCap = cum.base_capital || startBakiye || 100000.0;
+            const cumEquity = cum.cumulative_equity !== undefined ? cum.cumulative_equity : (endBakiye || baseCap);
+            const cumPnl = cum.cumulative_net_pnl !== undefined ? cum.cumulative_net_pnl : (cumEquity - baseCap);
+            const cumPct = cum.cumulative_return_pct !== undefined ? cum.cumulative_return_pct : ((cumPnl / baseCap) * 100);
+            const isCumProfit = cumPnl >= 0;
+
             const isProfit = totalGetiri >= 0;
             const el = (id) => document.getElementById(id);
+
+            // 👑 YENİ KÜMÜLATİF KART GÜNCELLEMESİ
+            if (el('sim-kpi-cumulative-equity')) {
+                el('sim-kpi-cumulative-equity').innerText = cumEquity.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₺';
+                el('sim-kpi-cumulative-equity').style.color = isCumProfit ? 'var(--accent-green)' : 'var(--accent-red)';
+            }
+            if (el('sim-kpi-cumulative-sub')) {
+                const sign = isCumProfit ? '+' : '';
+                let detailText = `<b style="color:${isCumProfit ? 'var(--accent-green)' : 'var(--accent-red)'}">Net K/Z: ${sign}₺${cumPnl.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${sign}%${cumPct.toFixed(2)})</b>`;
+                if (cum.monthly_breakdown && cum.monthly_breakdown.length > 0) {
+                    const mParts = cum.monthly_breakdown.map(m => {
+                        const mName = m.month === '2026-09' ? 'Eylül' : (m.month === '2026-10' ? 'Ekim' : m.month);
+                        const mSign = m.pnl >= 0 ? '+' : '';
+                        return `${mName}: ${mSign}₺${Math.round(m.pnl).toLocaleString('tr-TR')}`;
+                    });
+                    detailText += `<br><span style="color:#94a3b8; font-size:0.73rem;">${mParts.join(' · ')}</span>`;
+                } else {
+                    detailText += `<br><span style="color:#94a3b8; font-size:0.73rem;">Geçmiş aylar dahil kesintisiz yekün</span>`;
+                }
+                el('sim-kpi-cumulative-sub').innerHTML = detailText;
+            }
+
+            if (el('home-kpi-cumulative-equity')) {
+                el('home-kpi-cumulative-equity').innerText = '👑 Kasa: ' + cumEquity.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₺';
+            }
+
             if (el('sim-kpi-start')) el('sim-kpi-start').innerText = startBakiye.toLocaleString('tr-TR', {minimumFractionDigits:2}) + ' ₺';
             if (el('sim-kpi-end')) el('sim-kpi-end').innerText = endBakiye.toLocaleString('tr-TR', {minimumFractionDigits:2}) + ' ₺';
             if (el('sim-kpi-total-pct')) {
@@ -6615,8 +6649,47 @@ function initV8BacktestPanel() {
         }).catch(() => {});
 }
 
+window.currentV8Cohort = 'elite';
+
+window.setV8Cohort = function(cohort) {
+    window.currentV8Cohort = cohort;
+    const btnElite = document.getElementById('v8-cohort-elite-btn');
+    const btnAll = document.getElementById('v8-cohort-all-btn');
+    const btnLegacy = document.getElementById('v8-cohort-legacy-btn');
+    const badgeInfo = document.getElementById('v8-cohort-badge-info');
+
+    if (btnElite) {
+        btnElite.style.background = cohort === 'elite' ? '#10b981' : 'transparent';
+        btnElite.style.color = cohort === 'elite' ? '#fff' : 'var(--text-muted)';
+        btnElite.style.fontWeight = cohort === 'elite' ? '700' : '600';
+    }
+    if (btnAll) {
+        btnAll.style.background = cohort === 'all' ? '#3b82f6' : 'transparent';
+        btnAll.style.color = cohort === 'all' ? '#fff' : 'var(--text-muted)';
+        btnAll.style.fontWeight = cohort === 'all' ? '700' : '600';
+    }
+    if (btnLegacy) {
+        btnLegacy.style.background = cohort === 'legacy' ? '#6b7280' : 'transparent';
+        btnLegacy.style.color = cohort === 'legacy' ? '#fff' : 'var(--text-muted)';
+        btnLegacy.style.fontWeight = cohort === 'legacy' ? '700' : '600';
+    }
+
+    if (badgeInfo) {
+        if (cohort === 'elite') {
+            badgeInfo.innerHTML = '<span style="color:#34d399;">⚡ V8 Elite: Rejim Korumalı & %90 Başarı Hedefli</span>';
+        } else if (cohort === 'legacy') {
+            badgeInfo.innerHTML = '<span style="color:#9ca3af;">🏷️ Eski Motor: Filtresiz & Ayı Dönemi (Geçmiş)</span>';
+        } else {
+            badgeInfo.innerHTML = '<span style="color:#60a5fa;">📊 Tüm Zamanlar (Eski + Yeni Birleşik)</span>';
+        }
+    }
+
+    loadV8Learning();
+};
+
 function loadV8Learning() {
-    vrAuthorizedFetch(`${V8_API}/learning/outcomes`)
+    const cohort = window.currentV8Cohort || 'elite';
+    vrAuthorizedFetch(`${V8_API}/learning/outcomes?cohort=${cohort}`)
         .then(res => res.json())
         .then(json => {
             const tbody = document.getElementById('v8-learning-tbody');
@@ -6755,6 +6828,10 @@ function loadV8Learning() {
                     : (d.engine_version && d.engine_version !== 'LEGACY'
                         ? '<span style="font-size:0.62rem; color:#60a5fa; border:1px solid #60a5fa55; border-radius:4px; padding:1px 4px; margin-left:4px;">DIŞ</span>'
                         : '<span style="font-size:0.62rem; color:#94a3b8; border:1px solid #94a3b844; border-radius:4px; padding:1px 4px; margin-left:4px;">ESKİ</span>');
+
+                const engineBadge = d.is_elite 
+                    ? `<span style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.4); padding:2px 6px; border-radius:4px; font-size:0.72rem; font-weight:800;">⚡ ELİTE</span>`
+                    : `<span style="background:rgba(255,255,255,0.05); color:#94a3b8; border:1px solid rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px; font-size:0.72rem;">ESKİ</span>`;
 
                 tr.innerHTML = `
                     <td style="font-size:0.75rem; color:var(--text-muted); white-space:nowrap;">${timeStr}</td>

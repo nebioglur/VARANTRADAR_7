@@ -39,7 +39,8 @@ class V8Database:
                 target1 REAL,
                 target2 REAL,
                 features_snapshot TEXT,
-                status TEXT
+                status TEXT,
+                engine_version TEXT NOT NULL DEFAULT 'LEGACY'
             )
         ''')
         
@@ -56,6 +57,7 @@ class V8Database:
                 t_120m_price REAL,
                 t_240m_price REAL,
                 t_eod_price REAL,
+                t_eod_confirmed INTEGER NOT NULL DEFAULT 0,
                 t_1d_price REAL,
                 max_favorable_excursion REAL,
                 max_adverse_excursion REAL,
@@ -75,9 +77,19 @@ class V8Database:
         ''')
         
         conn.commit()
+        V8Database._migrate_signals(cursor, conn)
         V8Database._migrate_outcomes(cursor, conn)
         conn.close()
         
+    @staticmethod
+    def _migrate_signals(cursor, conn):
+        """Add the engine cohort column without dropping existing signal history."""
+        cursor.execute("PRAGMA table_info(v8_signals)")
+        existing = {row['name'] for row in cursor.fetchall()}
+        if 'engine_version' not in existing:
+            cursor.execute("ALTER TABLE v8_signals ADD COLUMN engine_version TEXT NOT NULL DEFAULT 'LEGACY'")
+        conn.commit()
+
     @staticmethod
     def _migrate_outcomes(cursor, conn):
         """Mevcut v8_outcomes tablosuna eksik kolonlari ekler."""
@@ -89,6 +101,7 @@ class V8Database:
             't_120m_price': 'REAL',
             't_240m_price': 'REAL',
             't_1d_price': 'REAL',
+            't_eod_confirmed': 'INTEGER NOT NULL DEFAULT 0',
         }
         for col, ctype in needed.items():
             if col not in existing:
@@ -134,6 +147,7 @@ class V8Database:
             features = signal_data.get('features_snapshot', {})
             features_str = json.dumps(features) if isinstance(features, dict) else features
             
+            engine_ver = signal_data.get('engine_version', 'V8_ELITE')
             cursor.execute('''
                 INSERT OR REPLACE INTO v8_signals
                 (signal_id, symbol, timestamp, strategy, market_regime, score, entry_price, stop_price, target1, target2, features_snapshot, status, engine_version)

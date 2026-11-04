@@ -14,7 +14,7 @@ class MarketRegimeEngine:
     def determine_regime(self) -> Dict[str, Any]:
         try:
             df = self._fetch_index_df()
-            if df is None or df.empty:
+            if df is None or df.empty or len(df) < 30:
                 return self._last_known_regime("DATA_INSUFFICIENT")
 
             # yfinance MultiIndex check
@@ -25,6 +25,28 @@ class MarketRegimeEngine:
             high_col = 'high' if 'high' in df.columns else 'High'
             low_col = 'low' if 'low' in df.columns else 'Low'
             
+            if not all(col in df.columns for col in (close_col, open_col, high_col, low_col)):
+                return self._last_known_regime("DATA_INSUFFICIENT")
+            df = df.sort_index().copy()
+            for col in (close_col, open_col, high_col, low_col):
+                df[col] = pd.to_numeric(df[col], errors="coerce")
+            df = df.dropna(subset=[close_col, open_col, high_col, low_col])
+            if len(df) < 30:
+                return self._last_known_regime("DATA_INSUFFICIENT")
+            if not np.isfinite(df[[close_col, open_col, high_col, low_col]].to_numpy(dtype=float)).all():
+                return self._last_known_regime("DATA_INSUFFICIENT")
+            if (df[[close_col, open_col, high_col, low_col]] <= 0).any().any():
+                return self._last_known_regime("DATA_INSUFFICIENT")
+            if (df[high_col] < df[low_col]).any():
+                return self._last_known_regime("DATA_INSUFFICIENT")
+            from zoneinfo import ZoneInfo
+            last_bar = pd.Timestamp(df.index[-1])
+            if last_bar.tzinfo is not None:
+                last_bar = last_bar.tz_convert("Europe/Istanbul")
+            data_age_days = (datetime.now(ZoneInfo("Europe/Istanbul")).date() - last_bar.date()).days
+            if data_age_days > 5:
+                return self._last_known_regime("DATA_INSUFFICIENT")
+
             close = df[close_col]
             # CANLI gun ici fiyati kullan (1h bar): gun icindeki sert ralli/dusus
             # son gunluk bar kapanisinda sakli kaliyor; +3%'luk gun bile "AYI" okunuyordu.
@@ -98,6 +120,10 @@ class MarketRegimeEngine:
                 "score": score,
                 "xu100_trend": round(change_pct, 2),
                 "volatility_state": volatility_state,
+                "atr_14": round(current_atr, 4) if "current_atr" in locals() else None,
+                "atr_pct": round(current_atr / current_price * 100.0, 2) if "current_atr" in locals() and current_price > 0 else None,
+                "data_source": "yfinance",
+                "data_timeframe": "1d",
                 "timestamp": datetime.now().isoformat(),
                 "c_ema5": round(c_ema5, 2),
                 "c_ema20": round(c_ema20, 2),
@@ -163,9 +189,11 @@ class MarketRegimeEngine:
                 return {
                     "regime": row["regime"],
                     "score": row["regime_score"],
-                    "xu100_trend": row["xu100_trend"] or 0.0,
-                    "volatility_state": row["volatility_state"] or "NORMAL",
+                    "xu100_trend": row["xu100_trend"],
+                    "volatility_state": row["volatility_state"],
                     "timestamp": row["timestamp"],
+                    "data_status": "STALE_LAST_KNOWN",
+                    "data_available": True,
                     "stale": True
                 }
         except Exception as e:

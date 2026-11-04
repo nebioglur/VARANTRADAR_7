@@ -21,15 +21,9 @@ class AILearningEngine:
         "YATAY": {"Technical_AI": 0.25, "SmartMoney_AI": 0.25, "Fundamental_AI": 0.25, "Sentiment_AI": 0.15, "Macro_AI": 0.10}
     }
 
-    # Başlangıç Başarı Oranları (Backtest bazlı varsayılan)
-    DEFAULT_STATS = {
-        "Technical_AI": {"win_rate": 68.5, "total_trades": 120, "history": [65.0, 66.2, 67.8, 68.5]},
-        "Fundamental_AI": {"win_rate": 72.1, "total_trades": 85, "history": [70.0, 71.5, 71.8, 72.1]},
-        "Macro_AI": {"win_rate": 64.3, "total_trades": 150, "history": [60.0, 62.5, 63.8, 64.3]},
-        "SmartMoney_AI": {"win_rate": 75.8, "total_trades": 92, "history": [72.0, 74.5, 75.2, 75.8]},
-        "Sentiment_AI": {"win_rate": 58.2, "total_trades": 60, "history": [55.0, 56.5, 57.8, 58.2]}
-    }
-    
+    # No fabricated baseline metrics. Statistics are populated only from recorded outcomes.
+    DEFAULT_STATS = {}
+
     @classmethod
     def load_weights(cls) -> Dict[str, Dict[str, float]]:
         """Ağırlıkları JSON dosyasından okur, yoksa oluşturur."""
@@ -113,37 +107,11 @@ class AILearningEngine:
     @classmethod
     def simulate_daily_learning(cls):
         """
-        Gece 00:00'da çalışan otonom öğrenme simülasyonu.
-        Günlük başarılı olan ajanların win_rate'ini hafifçe artırır, başarısız olanları düşürür.
-        Tarihçeye (history) son durumu ekler.
+        Legacy scheduler compatibility only.
+        No synthetic trades, random outcomes, or fabricated win-rate updates are permitted.
         """
-        import random
-        stats = cls.get_agent_stats()
-        
-        for agent, data in stats.items():
-            current_rate = data["win_rate"]
-            trades = data["total_trades"]
-            
-            # Rastgele 1-3 yeni işlem yapmış gibi simüle et
-            new_trades = random.randint(1, 3)
-            # %60-%80 arası bir ajan yeni işlemleri de benzer oranda tutturur
-            successes = sum([1 for _ in range(new_trades) if random.random() < (current_rate / 100.0)])
-            
-            total_success = (current_rate / 100.0 * trades) + successes
-            new_total_trades = trades + new_trades
-            
-            new_win_rate = (total_success / new_total_trades) * 100.0
-            new_win_rate = round(new_win_rate, 1)
-            
-            data["win_rate"] = new_win_rate
-            data["total_trades"] = new_total_trades
-            
-            # History listesine ekle (sadece son 10 günü tut)
-            if "history" not in data:
-                data["history"] = [current_rate]
-            data["history"].append(new_win_rate)
-            if len(data["history"]) > 10:
-                data["history"] = data["history"][-10:]
-                
-        cls.save_agent_stats(stats)
-        return stats
+        return {
+            "status": "DISABLED",
+            "reason": "Random learning simulation removed; only verified closed-trade outcomes may update statistics.",
+            "stats": cls.get_agent_stats(),
+        }
