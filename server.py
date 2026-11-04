@@ -2655,6 +2655,58 @@ def api_simulation_daily_pnl():
             c.execute("SELECT * FROM trades WHERE owner=? ORDER BY date_str DESC, entry_time DESC", (owner,))
             trade_rows = c.fetchall()
             trades = [dict(row) for row in trade_rows]
+
+            # Bakiye eğrisi için gerçekleşen işlem defteri kaynak kabul edilir.
+            # Eski equity_log satırlarında kuruş yuvarlama/önceki yarış durumundan
+            # kalan farklar olabilir; seansları işlem kayıtlarından tekrar uzlaştır.
+            realized_by_date = {}
+            for trade in trades:
+                trade_date = str(trade.get("date_str") or "")
+                if not trade_date:
+                    continue
+                bucket = realized_by_date.setdefault(trade_date, {"pnl": 0.0, "count": 0, "wins": 0})
+                bucket["count"] += 1
+                realized = float(trade.get("realized_pnl") or 0)
+                bucket["pnl"] += realized
+                if trade.get("exit_time") and realized > 0:
+                    bucket["wins"] += 1
+            if not equity_rows:
+                if realized_by_date:
+                    equity_curve = []
+                    running_balance = 100000.0
+                    for trade_date in sorted(realized_by_date):
+                        totals = realized_by_date[trade_date]
+                        start = running_balance
+                        running_balance += totals["pnl"]
+                        equity_curve.append({
+                            "date_str": trade_date,
+                            "start_equity": start,
+                            "end_equity": running_balance,
+                            "daily_pnl": totals["pnl"],
+                            "total_trades": totals["count"],
+                            "win_trades": totals["wins"],
+                        })
+            else:
+                known_dates = {str(row.get("date_str") or "") for row in equity_curve}
+                for trade_date in realized_by_date:
+                    if trade_date not in known_dates:
+                        equity_curve.append({"date_str": trade_date, "start_equity": 100000.0, "end_equity": 100000.0, "daily_pnl": 0.0})
+                equity_curve.sort(key=lambda row: str(row.get("date_str") or ""))
+            previous_end = None
+            for row in equity_curve:
+                day = str(row.get("date_str") or "")
+                start = previous_end if previous_end is not None else float(row.get("start_equity") or 100000.0)
+                totals = realized_by_date.get(day)
+                if totals is not None:
+                    daily_pnl = totals["pnl"]
+                    row["total_trades"] = totals["count"]
+                    row["win_trades"] = totals["wins"]
+                else:
+                    daily_pnl = float(row.get("daily_pnl") or 0)
+                row["start_equity"] = start
+                row["daily_pnl"] = daily_pnl
+                row["end_equity"] = start + daily_pnl
+                previous_end = row["end_equity"]
             
             from services.statistics_engine import StatisticsEngine
             performance = StatisticsEngine.get_trade_performance(owner)
@@ -2881,12 +2933,15 @@ def api_v8_learning_outcomes():
                             observed.append((float(price) - entry) / entry * 100.0)
                         except (TypeError, ValueError):
                             pass
+            raw_mfe = float(r["mfe"] or 0)
+            observed_mfe = max(0.0, max(observed)) if observed else raw_mfe
             raw_mae = float(r["mae"] or 0)
-            observed_mae = min(observed) if observed else raw_mae
-            # Fiyat penceresi olmayan ham kayıtlarda da imkânsız uç değeri
-            # göstermeyip geçersizliği işaretle.
+            observed_mae = min(0.0, min(observed)) if observed else raw_mae
+            # Ham eski değerleri yalnızca gözlenen pencerelerle uyuşuyorsa geçerli say.
+            mfe_valid = abs(raw_mfe - observed_mfe) <= 0.25 if observed else 0.0 <= raw_mfe <= 15.0
             mae_valid = abs(raw_mae - observed_mae) <= 0.25 if observed else abs(raw_mae) <= 15.0
-            display_mae = observed_mae if observed else max(-15.0, min(15.0, raw_mae))
+            display_mfe = observed_mfe if observed else max(0.0, min(15.0, raw_mfe))
+            display_mae = observed_mae if observed else max(-15.0, min(0.0, raw_mae))
             item = {
                 "signal_id": r["signal_id"],
                 "symbol": r["symbol"],
@@ -2906,7 +2961,9 @@ def api_v8_learning_outcomes():
                 "t_240m_price": r["t_240m_price"],
                 "t_eod_price": r["t_eod_price"],
                 "t_1d_price": r["t_1d_price"],
-                "mfe": r["mfe"],
+                "mfe": round(display_mfe, 4),
+                "mfe_raw": raw_mfe,
+                "mfe_valid": mfe_valid,
                 "mae": round(display_mae, 4),
                 "mae_raw": raw_mae,
                 "mae_valid": mae_valid,

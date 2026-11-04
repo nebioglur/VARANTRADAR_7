@@ -154,11 +154,8 @@ class SimulationEngine:
 
         # Telegram events run only after the same trade snapshot is committed.
         try:
-            from services.telegram_bot import notify_simulation_trade_event
-            for trade in trades:
-                notify_simulation_trade_event("AL", trade, date_str)
-                if trade.get("exit_time"):
-                    notify_simulation_trade_event("SAT", trade, date_str)
+            from services.telegram_bot import notify_simulation_trade_events
+            notify_simulation_trade_events(trades, date_str)
         except Exception as alert_error:
             print(f"[SimEngine] Telegram işlem bildirimi hatası: {alert_error}")
 

@@ -4508,6 +4508,13 @@ async function testTelegramSettings() {
     }
 }
 
+function parseIstanbulMarketTime(value) {
+    if (!value) return new Date(NaN);
+    const normalized = String(value).trim().replace(' ', 'T');
+    const hasTimezone = /(?:Z|[+-]\\d{2}:?\\d{2})$/i.test(normalized);
+    return new Date(hasTimezone ? normalized : `${normalized}+03:00`);
+}
+
 async function fetchSimulationData() {
     const tbody = document.getElementById('sim-trade-log-tbody');
     if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> İşlem Geçmişi Yükleniyor...</td></tr>';
@@ -4601,10 +4608,9 @@ async function fetchSimulationData() {
                         const formatDt = (iso) => {
                             if (!iso) return '-';
                             try {
-                                const d = new Date(iso);
+                                const d = parseIstanbulMarketTime(iso);
                                 if(isNaN(d.getTime())) return iso;
-                                const pad = n => n.toString().padStart(2, '0');
-                                return pad(d.getDate()) + '/' + pad(d.getMonth()+1) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+                                return d.toLocaleString('tr-TR', {timeZone:'Europe/Istanbul', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit', hourCycle:'h23'});
                             } catch(e) { return iso; }
                         };
                         const entryTimeFmt = formatDt(t.entry_time);
@@ -5616,8 +5622,18 @@ function renderEquityCurveChart(equityData) {
         equityChartInstance.destroy();
     }
     
-    const labels = equityData.map(d => d.date_str);
-    const dataPoints = equityData.map(d => d.end_equity);
+    const ordered = [...equityData].sort((a, b) => String(a.date_str).localeCompare(String(b.date_str)));
+    const labels = [];
+    const dataPoints = [];
+    if (ordered.length) {
+        const firstStart = Number(ordered[0].start_equity || ordered[0].end_equity || 0);
+        labels.push('Başlangıç');
+        dataPoints.push(firstStart);
+        ordered.forEach(row => {
+            labels.push(row.date_str || 'Seans sonu');
+            dataPoints.push(Number(row.end_equity || row.start_equity || 0));
+        });
+    }
     
     equityChartInstance = new Chart(ctx, {
         type: 'line',
@@ -6621,10 +6637,16 @@ function loadV8Learning() {
             const winCount = verified.filter(x => x.final_result === 'WIN').length;
             const lossCount = verified.filter(x => x.final_result === 'LOSS').length;
             const openCount = verified.filter(x => x.status === 'ACTIVE').length;
+            const neutralCount = verified.filter(x => x.final_result === 'NEUTRAL').length;
+            const target1Count = verified.filter(x => x.status === 'CLOSED' && Number(x.mfe) >= 3.0).length;
+            const target2Count = verified.filter(x => x.status === 'CLOSED' && Number(x.mfe) >= 5.0).length;
             const decided = winCount + lossCount;
             const wrRate = decided > 0 ? (winCount / decided) * 100 : null;
             const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
             setTxt('v8-wr-total', verified.length);
+            setTxt('v8-wr-neutral', neutralCount);
+            setTxt('v8-wr-target1', target1Count);
+            setTxt('v8-wr-target2', target2Count);
             setTxt('v8-wr-rate', wrRate === null ? '—' : `%${wrRate.toFixed(0)}`);
             setTxt('v8-wr-win', winCount);
             setTxt('v8-wr-loss', lossCount);
@@ -6694,12 +6716,13 @@ function loadV8Learning() {
             function v8DurumEtiketi(d) {
                 if (d.status === 'ACTIVE') return '<span style="color:#60a5fa; font-weight:bold; background:rgba(96,165,250,0.12); border:1px solid rgba(96,165,250,0.35); border-radius:5px; padding:3px 6px;">🟢 AÇIK / İŞLEMDE</span>';
                 if (d.final_result === 'WIN' && d.status === 'CLOSED') {
-                    // Hedef 2'ye (+%5) dokunan islemi Hedef 1 kazancindan ayristir.
+                    // Kapanışın artıda olması hedefe ulaşıldığını tek başına kanıtlamaz.
                     const mfe = Number(d.mfe) || 0;
-                    if (mfe >= 4.9) return '<span style="color:#10b981; font-weight:bold;">🚀 HEDEF 2 (+%5)</span>';
-                    return '<span style="color:#10b981; font-weight:bold;">✅ KAPALI · HEDEF 1 (+%3)</span>';
+                    if (mfe >= 5.0) return '<span style="color:#10b981; font-weight:bold;">🚀 HEDEF 2 (+%5)</span>';
+                    if (mfe >= 3.0) return '<span style="color:#10b981; font-weight:bold;">🎯 HEDEF 1 (+%3)</span>';
+                    return '<span style="color:#10b981; font-weight:bold;">✅ KÂRDA KAPANDI · HEDEFE ULAŞMADI</span>';
                 }
-                if (d.final_result === 'WIN') return '<span style="color:#10b981; font-weight:bold;">✅ KAPALI · HEDEF 1 (+%3)</span>';
+                if (d.final_result === 'WIN') return '<span style="color:#10b981; font-weight:bold;">✅ KÂRDA KAPANDI · HEDEFE ULAŞMADI</span>';
                 if (d.final_result === 'LOSS') return '<span style="color:#ef4444; font-weight:bold;">⛔ KAPALI · ZARARLA KAPANDI</span>';
                 if (d.final_result === 'NEUTRAL' && d.status === 'CLOSED') return '<span style="color:var(--text-muted); font-weight:bold;">✅ KAPANDI</span>';
                 return '<span style="color:#60a5fa; font-weight:bold;">🟢 İŞLEMDE</span>';
@@ -6720,7 +6743,7 @@ function loadV8Learning() {
 
             json.data.forEach(d => {
                 const tr = document.createElement('tr');
-                const timeStr = new Date(d.timestamp).toLocaleString('tr-TR', {timeZone:'Europe/Istanbul', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+                const timeStr = parseIstanbulMarketTime(d.timestamp).toLocaleString('tr-TR', {timeZone:'Europe/Istanbul', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit', hourCycle:'h23'});
                 const mfeVal = d.mfe || 0;
                 const maeVal = d.mae || 0;
                 const mfeColor = mfeVal > 2.0 ? 'color:#10b981; font-weight:bold;' : 'color:rgba(16,185,129,0.75);';
@@ -6738,7 +6761,7 @@ function loadV8Learning() {
                     <td style="font-weight:bold; color:var(--text-main);">${d.symbol}${engineBadge}</td>
                     <td style="text-align:right; font-weight:bold; color:var(--text-main);">${(d.entry_price || 0).toFixed(2)}</td>
                     ${windowCells}
-                    <td style="text-align:right; ${mfeColor}">+${mfeVal.toFixed(2)}%</td>
+                    <td style="text-align:right; ${mfeColor}" title="${d.mfe_valid ? 'Ölçülen en yüksek uygun fiyat değişimi' : 'Ham MFE geçersizdi; gözlenen zaman pencerelerinden düzeltildi'}">+${mfeVal.toFixed(2)}%${d.mfe_valid ? '' : ' *'}</td>
                     <td style="text-align:right; ${maeColor}" title="${d.mae_valid ? 'Gözlenen fiyat pencerelerinden hesaplandı' : 'Ham MAE geçersizdi; gözlenen veriden düzeltildi'}">${maeVal.toFixed(2)}%${d.mae_valid ? '' : ' *'}</td>
                     <td style="text-align:center; font-size:0.72rem; white-space:nowrap;">${v8DurumEtiketi(d)}</td>
                 `;

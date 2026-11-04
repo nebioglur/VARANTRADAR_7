@@ -10,11 +10,10 @@ Her senaryo sunlari tanimlar:
                        notrde standart, volatilitede daralir)
   - stop_mult        : zarar kes carpani
   - posture          : Turkce yatirimci talimati
-  - ev_note          : islem basi beklenen deger projeksiyonu
+  - ev_note          : gerçek örneklem yeterliyse ölçülen EV; aksi halde doğrulanmadı
 
-Beklenen deger (EV) hesabi ampirik canli istatistige dayanir:
-kazanma ~%82, ort kazanc +2.2%, ort zarar -1.8% (TP1 + freeroll dahil).
-Bu sabit bir garanti degil, senaryo planlama girisidir.
+Sabit kazanma oranı veya getiri garantisi kullanılmaz. Performans yalnızca
+saklanmış, sonuçlanmış simülasyon işlemlerinden hesaplanmalıdır.
 """
 
 from typing import Dict, Any, List
@@ -110,8 +109,7 @@ SCENARIOS: Dict[str, Dict[str, Any]] = {
 
 _DEFAULT = SCENARIOS["NEUTRAL"]
 
-# OZEL SIRALAMA agirliklari: rejime gore dinamik. Ayi gununde tavan
-# potansiyeli tamamen devre disi kalir; kâr alma agirligi domine eder.
+# Rejim bazlı sıralama: önce hızlı kâr, sonra +%5, en son tavan potansiyeli.
 RANK_WEIGHTS: Dict[str, Dict[str, float]] = {
     "STRONG_BULL":     {"profit_take": 0.45, "plus5": 0.35, "ceiling": 0.20},
     "BULL":            {"profit_take": 0.50, "plus5": 0.32, "ceiling": 0.18},
@@ -121,10 +119,181 @@ RANK_WEIGHTS: Dict[str, Dict[str, float]] = {
     "STRONG_BEAR":     {"profit_take": 1.00, "plus5": 0.00, "ceiling": 0.00},
 }
 
+WEEKLY_TARGET_PCT = 6.0
+WEEKLY_LOSS_LIMITS = {
+    "BEAR": 1.5,
+    "STRONG_BEAR": 1.5,
+    "HIGH_VOLATILITY": 1.5,
+    "NEUTRAL": 2.0,
+    "BULL": 2.5,
+    "STRONG_BULL": 2.5,
+}
+EXIT_ALLOCATIONS = {
+    "STRONG_BULL": {"tp1": 30, "tp2": 40, "runner": 30},
+    "BULL": {"tp1": 40, "tp2": 40, "runner": 20},
+    "NEUTRAL": {"tp1": 50, "tp2": 30, "runner": 20},
+    "HIGH_VOLATILITY": {"tp1": 60, "tp2": 25, "runner": 15},
+    "BEAR": {"tp1": 60, "tp2": 30, "runner": 10},
+    "STRONG_BEAR": {"tp1": 100, "tp2": 0, "runner": 0},
+}
+
+
+def normalize_regime(regime: str, volatility_state: str = "") -> str:
+    """Regime label'larını tek kanonik anahtara dönüştürür."""
+    value = str(regime or "NEUTRAL").strip().upper().replace(" ", "_")
+    vol = str(volatility_state or "").strip().upper()
+    if "HIGH" in vol or "YÜKSEK" in vol or "YUKSEK" in vol:
+        return "HIGH_VOLATILITY"
+    aliases = {
+        "STRONG_BULL": "STRONG_BULL", "BULL": "BULL", "NEUTRAL": "NEUTRAL",
+        "HIGH_VOLATILITY": "HIGH_VOLATILITY", "BEAR": "BEAR", "STRONG_BEAR": "STRONG_BEAR",
+        "GÜÇLÜ_BOĞA_(RALLİ)": "STRONG_BULL", "BOĞA_(YÜKSELİŞ_TRENDİ)": "BULL",
+        "NÖTR_(YATAY_/_DENGE)": "NEUTRAL", "AYI_(DÜŞÜŞ_BASKISI)": "BEAR",
+        "GÜÇLÜ_AYI_(SERT_SATIŞ)": "STRONG_BEAR",
+    }
+    return aliases.get(value, value if value in SCENARIOS else "NEUTRAL")
+
 
 def get_rank_weights(regime: str) -> Dict[str, float]:
     """Rejime gore ozel siralama agirliklarini dondurur."""
-    return dict(RANK_WEIGHTS.get(str(regime or "").upper(), RANK_WEIGHTS["NEUTRAL"]))
+    key = normalize_regime(regime)
+    return dict(RANK_WEIGHTS.get(key, RANK_WEIGHTS["NEUTRAL"]))
+
+
+def get_weekly_guard(week_pnl: float, base_equity: float, regime: str, volatility_state: str = "") -> Dict[str, Any]:
+    """Haftalık gerçekleşmiş P&L için hedef/zarar kilidi; açık işlemleri kapatmaz."""
+    key = normalize_regime(regime, volatility_state)
+    base = max(0.0, float(base_equity or 0.0))
+    pnl = float(week_pnl or 0.0)
+    week_pct = pnl / base * 100.0 if base > 0 else 0.0
+    loss_limit_pct = WEEKLY_LOSS_LIMITS.get(key, WEEKLY_LOSS_LIMITS["NEUTRAL"])
+    target_hit = week_pct >= WEEKLY_TARGET_PCT
+    loss_hit = week_pct <= -loss_limit_pct
+    return {
+        "regime": key,
+        "week_pnl": round(pnl, 2),
+        "week_pct": round(week_pct, 2),
+        "target_pct": WEEKLY_TARGET_PCT,
+        "loss_limit_pct": loss_limit_pct,
+        "target_reached": target_hit,
+        "loss_limit_reached": loss_hit,
+        "entries_paused": target_hit or loss_hit or key == "STRONG_BEAR",
+        "lock_reason": "HAFTALIK_KÂR_KORUMA" if target_hit else ("HAFTALIK_ZARAR_KİLİDİ" if loss_hit else ("GÜÇLÜ_AYI" if key == "STRONG_BEAR" else "")),
+    }
+
+
+def get_exit_plan(regime: str, volatility_state: str = "") -> Dict[str, Any]:
+    key = normalize_regime(regime, volatility_state)
+    allocation = EXIT_ALLOCATIONS.get(key, EXIT_ALLOCATIONS["NEUTRAL"])
+    return {
+        "target1_pct": 3.0,
+        "target2_pct": 5.0,
+        "tp1_sell_pct": allocation["tp1"],
+        "tp2_sell_pct": allocation["tp2"],
+        "runner_pct": allocation["runner"],
+        "runner_exit": "TAVAN_FİYATI veya iz süren stop; tavan fiyatı mevcut değilse hedef uydurulmaz",
+    }
+
+
+def _bounded_score(value: Any) -> float:
+    try:
+        return max(0.0, min(100.0, float(value or 0.0)))
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def score_super12_candidates(all_stats: dict, regime: str = "NEUTRAL", volatility_state: str = "", top_n: int = 12) -> List[Dict[str, Any]]:
+    """SUPER12 ortak puanlaması; skorlar sıralama puanıdır, kazanma olasılığı değildir."""
+    key = normalize_regime(regime, volatility_state)
+    weights = get_rank_weights(key)
+    scenario = get_scenario(key)
+    candidates = []
+    for symbol, raw in (all_stats or {}).items():
+        if not isinstance(raw, dict):
+            continue
+        try:
+            price = float(raw.get("Price") or raw.get("Daily_Close") or raw.get("price") or 0)
+            change = float(raw.get("Change_Pct") or raw.get("change_pct") or 0)
+            volume_lot = float(raw.get("Volume") or raw.get("volume") or 0)
+            volume_tl = float(raw.get("Volume_TL") or raw.get("volume_tl") or volume_lot * price)
+        except (TypeError, ValueError):
+            continue
+        v8 = raw.get("v8_discovery") if isinstance(raw.get("v8_discovery"), dict) else {}
+        metrics = v8.get("metrics") if isinstance(v8.get("metrics"), dict) else {}
+        intra = raw.get("intraday_strength") if isinstance(raw.get("intraday_strength"), dict) else {}
+        rel_vol = _bounded_score(float(metrics.get("relative_volume") or raw.get("Vol_Multiplier") or raw.get("Volume_Ratio") or 0))
+        hourly_flow = str(intra.get("hourly_flow") or raw.get("hourly_flow") or "Denge")
+        hourly_strength = _bounded_score(intra.get("hourly_strength") or raw.get("hourly_strength") or raw.get("Hourly_Strength") or 0)
+        hourly_volume = float(intra.get("hourly_volume_ratio") or raw.get("hourly_volume") or 0)
+        sector_strength = float(raw.get("sector_strength") or raw.get("Domino_Strength") or 0)
+        state = str(v8.get("state") or "NONE").upper()
+        distance_to_ceiling = raw.get("Distance_To_Ceiling_Pct") or raw.get("distance_to_ceiling_pct")
+        try:
+            distance_to_ceiling = max(0.0, float(distance_to_ceiling)) if distance_to_ceiling is not None else None
+        except (TypeError, ValueError):
+            distance_to_ceiling = None
+
+        profit_score = _bounded_score(
+            0.35 * hourly_strength
+            + 0.25 * min(rel_vol / 2.0, 1.0) * 100
+            + 0.25 * min(max(change, 0.0) / 3.0, 1.0) * 100
+            + 0.15 * (100 if hourly_flow == "Toplanıyor" else 50 if hourly_flow == "Denge" else 0)
+        )
+        plus5_score = _bounded_score(
+            0.30 * hourly_strength
+            + 0.30 * min(rel_vol / 2.5, 1.0) * 100
+            + 0.25 * (100 if state == "BREAKOUT" else 70 if state == "PRE_BREAKOUT" else 35)
+            + 0.15 * min(max(sector_strength, 0.0) / 50.0, 1.0) * 100
+        )
+        ceiling_score = None
+        if distance_to_ceiling is not None:
+            ceiling_score = _bounded_score((1.0 - distance_to_ceiling / 10.0) * 100)
+        elif state == "BREAKOUT":
+            ceiling_score = _bounded_score(50 + min(rel_vol, 3.0) * 10)
+
+        base_eligible = (
+            price > 0
+            and 0.2 <= change < 5.0
+            and volume_tl >= 30_000_000
+            and rel_vol >= 1.0
+            and hourly_flow != "Satılıyor"
+        )
+        if key == "STRONG_BEAR":
+            regime_eligible = False
+        elif key == "BEAR":
+            defense = scenario.get("defense_mode") or {}
+            regime_eligible = bool(defense.get("enabled")) and change >= 0.5 and rel_vol >= 1.5 and sector_strength >= 25
+        else:
+            regime_eligible = True
+        if not base_eligible or not regime_eligible:
+            continue
+        score = (
+            profit_score * weights["profit_take"]
+            + plus5_score * weights["plus5"]
+            + (ceiling_score or 0.0) * weights["ceiling"]
+        )
+        candidates.append({
+            "symbol": str(symbol),
+            "price": price,
+            "change_pct": change,
+            "volume_lot": volume_lot,
+            "volume_tl": volume_tl,
+            "rel_vol": rel_vol,
+            "hourly_flow": hourly_flow,
+            "hourly_strength": hourly_strength,
+            "hourly_volume": hourly_volume,
+            "profit_take_score": round(profit_score, 1),
+            "plus5_score": round(plus5_score, 1),
+            "ceiling_score": round(ceiling_score, 1) if ceiling_score is not None else None,
+            "ceiling_distance_pct": distance_to_ceiling,
+            "rank_score": round(score, 1),
+            "score_is_probability": False,
+            "market_regime": key,
+            "entry_eligible": True,
+            "entry_status": "SAVUNMA ADAYI" if key == "BEAR" else "AL ADAYI",
+        })
+    candidates.sort(key=lambda item: item["rank_score"], reverse=True)
+    return candidates[:max(0, int(top_n))]
 
 
 def get_scenario(regime: str) -> Dict[str, Any]:

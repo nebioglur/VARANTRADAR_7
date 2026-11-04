@@ -579,6 +579,97 @@ def notify_simulation_trade_event(action: str, trade: dict, date_str: str) -> bo
     return sent
 
 
+def notify_simulation_trade_events(trades: list, date_str: str) -> bool:
+    """Aynı simülasyon turundaki yeni AL/SAT olaylarını tek Telegram mesajında toplar."""
+    import hashlib
+    from datetime import datetime, timedelta, timezone
+    from zoneinfo import ZoneInfo
+    from services.trade_database import get_connection
+
+    now = datetime.now(ZoneInfo("Europe/Istanbul"))
+    now_utc = datetime.now(timezone.utc)
+    now_str = now_utc.isoformat()
+    stale_before = (now_utc - timedelta(minutes=10)).isoformat()
+    pending = []
+
+    for trade in trades:
+        symbol = str(trade.get("symbol") or "").replace(".IS", "").upper()
+        entry_time = str(trade.get("entry_time") or "")
+        exit_time = str(trade.get("exit_time") or "")
+        for action, event_time in (("AL", entry_time), ("SAT", exit_time)):
+            if not event_time:
+                continue
+            try:
+                event_dt = datetime.fromisoformat(event_time.replace("Z", "+00:00"))
+                if event_dt.tzinfo is None:
+                    event_dt = event_dt.replace(tzinfo=ZoneInfo("Europe/Istanbul"))
+                if event_dt < now - timedelta(minutes=12) or event_dt > now + timedelta(minutes=5):
+                    continue
+            except (TypeError, ValueError):
+                continue
+
+            identity = "|".join((date_str, symbol, action, entry_time, event_time))
+            event_key = hashlib.sha256(identity.encode("utf-8")).hexdigest()
+            try:
+                conn = get_connection()
+                cur = conn.cursor()
+                cur.execute(
+                    "INSERT INTO simulation_alerts (event_key,status,updated_at,attempts) "
+                    "VALUES (?,'sending',?,1) ON CONFLICT(event_key) DO NOTHING",
+                    (event_key, now_str),
+                )
+                claimed = cur.rowcount == 1
+                if not claimed:
+                    cur.execute(
+                        "UPDATE simulation_alerts SET status='sending',updated_at=?,attempts=attempts+1 "
+                        "WHERE event_key=? AND (status='failed' OR (status='sending' AND updated_at < ?))",
+                        (now_str, event_key, stale_before),
+                    )
+                    claimed = cur.rowcount == 1
+                conn.commit()
+                conn.close()
+            except Exception as exc:
+                logger.error("Simülasyon grup bildirimi kilidi alınamadı: %s", exc)
+                continue
+            if claimed:
+                pending.append((event_key, action, event_dt, trade, symbol))
+
+    if not pending:
+        return False
+
+    lines = ["🧪 <b>SİMÜLASYON İŞLEM ÖZETİ</b>"]
+    for _, action, event_dt, trade, symbol in pending:
+        when = event_dt.strftime("%H:%M")
+        shares = int(trade.get("shares") or 0)
+        if action == "AL":
+            price = float(trade.get("entry_price") or 0)
+            lines.append(f"🟢 AL · {when} · <b>#{symbol}</b> · ₺{price:.2f} · {shares} lot")
+        else:
+            price = float(trade.get("exit_price") or 0)
+            pnl = float(trade.get("pnl_val") or 0)
+            pct = float(trade.get("pnl_pct") or 0)
+            sign = "+" if pnl >= 0 else ""
+            reason = str(trade.get("exit_reason") or "").upper()
+            label = "KISMİ KÂR AL" if "TP1" in reason else "SAT"
+            lines.append(f"{'💰' if pnl >= 0 else '🔴'} {label} · {when} · <b>#{symbol}</b> · ₺{price:.2f} · {shares} lot · {sign}₺{pnl:,.2f} ({sign}%{pct:.2f})")
+    lines.append("ℹ️ Simülasyon verisidir; gerçek emir veya yatırım tavsiyesi değildir.")
+    sent = send_telegram_message("\n".join(lines))
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        status = "sent" if sent else "failed"
+        cur.executemany(
+            "UPDATE simulation_alerts SET status=?,updated_at=? WHERE event_key=?",
+            [(status, datetime.now(timezone.utc).isoformat(), key) for key, *_ in pending],
+        )
+        conn.commit()
+        conn.close()
+    except Exception as exc:
+        logger.error("Simülasyon grup bildirimi sonucu kaydedilemedi: %s", exc)
+    return sent
+
+
 def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.0, reason: str = "", date_str: str = "", trade: dict = None) -> bool:
     import hashlib
     from datetime import datetime, timedelta, timezone

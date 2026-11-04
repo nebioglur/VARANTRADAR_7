@@ -214,22 +214,21 @@ class OutcomeEngine:
                             mfe = _get_existing('max_favorable_excursion') or 0.0
                             mae = _get_existing('max_adverse_excursion') or 0.0
 
-                            # MFE/MAE: giristen bugunku tum barlar uzerinden
+                            # MFE/MAE: giris anindan sonraki barlarin high/low
+                            # degerlerinden hesaplanir; kapanis fiyatlari ara tepe/dibi kaçırır.
                             try:
-                                entry_ts = sig_time
-                                bars = df.loc[df.index >= entry_ts, 'Close']
-                                if bars.empty:
-                                    bars = df['Close']
-                                pcts = ((bars - entry_price) / entry_price) * 100.0
-                                if not pcts.empty:
-                                    day_max = float(pcts.max())
-                                    day_min = float(pcts.min())
-                                    mfe = max(mfe, day_max)
-                                    mae = min(mae, day_min)
+                                bars = df.loc[df.index >= sig_time]
+                                if not bars.empty:
+                                    highs = bars['High'] if 'High' in bars else bars['Close']
+                                    lows = bars['Low'] if 'Low' in bars else bars['Close']
+                                    high_pct = ((highs - entry_price) / entry_price) * 100.0
+                                    low_pct = ((lows - entry_price) / entry_price) * 100.0
+                                    mfe = max(float(high_pct.max()), 0.0)
+                                    mae = min(float(low_pct.min()), 0.0)
                             except Exception:
                                 pct_change = ((current_price - entry_price) / entry_price) * 100
-                                if pct_change > mfe: mfe = pct_change
-                                if pct_change < mae: mae = pct_change
+                                mfe = max(mfe, pct_change, 0.0)
+                                mae = min(mae, pct_change, 0.0)
 
                             status_update = "ACTIVE"
                             # Sinyal gun sonunda kapanir (seans bitisi ~18:15) ya da 6 saat
