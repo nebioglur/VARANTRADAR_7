@@ -378,12 +378,17 @@ class SimulationEngine:
         _weekly_loss_locked = False
         _week_guard = {}
         try:
+            # Haftanin pazartesi tarihini Python'da hesapla: SQLite'a ozel
+            # date(?, 'weekday 0', ...) sozdizimi PostgreSQL'de gecerli degil.
+            from datetime import date as _dt
+            _d = _dt.fromisoformat(str(date_str)[:10])
+            _monday = (_d - timedelta(days=_d.weekday())).isoformat()
             wconn = get_connection()
             wcur = wconn.cursor()
             wcur.execute(
                 "SELECT start_equity, SUM(daily_pnl) FROM equity_log "
-                "WHERE owner=? AND date_str >= date(?, 'weekday 0', '-6 days')",
-                (self.owner, date_str),
+                "WHERE owner=? AND date_str >= ?",
+                (self.owner, _monday),
             )
             wrow = wcur.fetchone()
             wconn.close()

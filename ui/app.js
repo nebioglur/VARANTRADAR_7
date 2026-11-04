@@ -7830,6 +7830,12 @@ function renderSuper12Table() {
     try {
         const r = (globalDashboardData.v8_market_regime || {}).regime || 'NEUTRAL';
         regime = String(r).toUpperCase().replace(/ /g, '_');
+        const aliases = {
+            'GÜÇLÜ_BOĞA_(RALLİ)': 'STRONG_BULL', 'BOĞA_(YÜKSELİŞ_TRENDİ)': 'BULL',
+            'NÖTR_(YATAY_/_DENGE)': 'NEUTRAL', 'AYI_(DÜŞÜŞ_BASKISI)': 'BEAR',
+            'GÜÇLÜ_AYI_(SERT_SATIŞ)': 'STRONG_BEAR'
+        };
+        if (aliases[regime]) regime = aliases[regime];
         if (!RANK_WEIGHTS[regime]) regime = 'NEUTRAL';
     } catch (e) { regime = 'NEUTRAL'; }
     const weights = RANK_WEIGHTS[regime];
