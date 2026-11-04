@@ -6829,13 +6829,13 @@ function loadV8Learning() {
                         ? '<span style="font-size:0.62rem; color:#60a5fa; border:1px solid #60a5fa55; border-radius:4px; padding:1px 4px; margin-left:4px;">DIŞ</span>'
                         : '<span style="font-size:0.62rem; color:#94a3b8; border:1px solid #94a3b844; border-radius:4px; padding:1px 4px; margin-left:4px;">ESKİ</span>');
 
-                const engineBadge = d.is_elite 
+                const eliteBadge = d.is_elite
                     ? `<span style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.4); padding:2px 6px; border-radius:4px; font-size:0.72rem; font-weight:800;">⚡ ELİTE</span>`
                     : `<span style="background:rgba(255,255,255,0.05); color:#94a3b8; border:1px solid rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px; font-size:0.72rem;">ESKİ</span>`;
 
                 tr.innerHTML = `
                     <td style="font-size:0.75rem; color:var(--text-muted); white-space:nowrap;">${timeStr}</td>
-                    <td style="font-weight:bold; color:var(--text-main);">${d.symbol}${engineBadge}</td>
+                    <td style="font-weight:bold; color:var(--text-main);">${d.symbol}${engineBadge}${eliteBadge}</td>
                     <td style="text-align:right; font-weight:bold; color:var(--text-main);">${(d.entry_price || 0).toFixed(2)}</td>
                     ${windowCells}
                     <td style="text-align:right; ${mfeColor}" title="${d.mfe_valid ? 'Ölçülen en yüksek uygun fiyat değişimi' : 'Ham MFE geçersizdi; gözlenen zaman pencerelerinden düzeltildi'}">+${mfeVal.toFixed(2)}%${d.mfe_valid ? '' : ' *'}</td>
