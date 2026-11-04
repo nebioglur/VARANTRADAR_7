@@ -46,12 +46,8 @@ class SimulationEngine:
 
         conn = get_connection()
         cursor = conn.cursor()
-        # Idempotent yeniden calistirma: ayni gunun eski islemleri temizlenir,
-        # boylece farkli motor surumlerinin kayitlari karismaz.
-        try:
-            cursor.execute("DELETE FROM trades WHERE owner=? AND date_str=?", (self.owner, date_str))
-        except Exception as e:
-            print(f"[SimEngine] Eski trade temizleme hatasi: {e}")
+        # KULLANICI KURALI: Bir kez pozisyona girilen ve loga dusen islem ASLA silinmez.
+        # DELETE FROM trades kaldirildi; ON CONFLICT DO UPDATE ile guncellenir.
         for key in order:
             t = merged[key]
             try:
@@ -419,7 +415,46 @@ class SimulationEngine:
                 valid_signals.append(s)
                 
         valid_signals.sort(key=lambda x: (x.get('_total_rank_score', 0), float(x.get('score', 0))), reverse=True)
-        selected = valid_signals[:self.max_positions]
+
+        # KULLANICI KURALI (KİLİTLİ TRADE LOG):
+        # Eğer gün içinde daha önce işlem açılmış hisseler varsa (örneğin sabah girilen EPLAS),
+        # bu hisseler yeni taramada skorları düşse dahi 'selected' listesinde KORUNUR ve terk edilmez.
+        locked_symbols = set()
+        try:
+            conn_l = get_connection()
+            cur_l = conn_l.cursor()
+            cur_l.execute("SELECT DISTINCT symbol FROM trades WHERE owner=? AND date_str=?", (self.owner, date_str))
+            locked_symbols = {r['symbol'] if isinstance(r, dict) or hasattr(r, 'keys') else r[0] for r in cur_l.fetchall()}
+            conn_l.close()
+        except Exception as e_lock:
+            print(f"[SimEngine] Locked symbols read err: {e_lock}")
+
+        selected = []
+        selected_symbols = set()
+
+        # 1. Öncelik: Zaten bugün işlem görmüş/alınmış hisseler
+        for s in valid_signals:
+            if s['symbol'] in locked_symbols:
+                selected.append(s)
+                selected_symbols.add(s['symbol'])
+
+        # Eğer DB'de işlem görmüş ama bugünkü valid_signals içinde elenmiş bir hisse varsa (örn. gün ortası skoru değişti),
+        # signals tablosundan orijinal sinyalini çekip listeye geri ekle
+        missing_locked = locked_symbols - selected_symbols
+        if missing_locked:
+            for s in signals:
+                if s['symbol'] in missing_locked:
+                    selected.append(s)
+                    selected_symbols.add(s['symbol'])
+
+        # 2. Öncelik: Kalan kontenjanı en yüksek skorlu yeni adaylarla doldur
+        for s in valid_signals:
+            if len(selected) >= max(self.max_positions, len(locked_symbols)):
+                break
+            if s['symbol'] not in selected_symbols:
+                selected.append(s)
+                selected_symbols.add(s['symbol'])
+
         if not selected:
             return
 
