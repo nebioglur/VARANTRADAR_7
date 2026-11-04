@@ -18,9 +18,9 @@ class SimulationEngine:
     - Trade geçmişini ve Equity curve'ü veritabanına yazar.
     """
     
-    def __init__(self, daily_budget=100000.0, max_positions=3, owner=None):
+    def __init__(self, daily_budget=100000.0, max_positions=999, owner=None):
         self.daily_budget = daily_budget
-        self.max_positions = max_positions
+        self.max_positions = 999  # KULLANICI ISTEGI: Simulasyonda islem sayisi SINIRSIZ
         self.owner = owner or "local:nebioglur"
 
     def _save_trades(self, date_str: str, trades: list):
@@ -447,10 +447,8 @@ class SimulationEngine:
                     selected.append(s)
                     selected_symbols.add(s['symbol'])
 
-        # 2. Öncelik: Kalan kontenjanı en yüksek skorlu yeni adaylarla doldur
+        # 2. Öncelik: KULLANICI İSTEĞİ - Sınırsız aday: Kriterleri sağlayan TÜM geçerli hisseler eklenir
         for s in valid_signals:
-            if len(selected) >= max(self.max_positions, len(locked_symbols)):
-                break
             if s['symbol'] not in selected_symbols:
                 selected.append(s)
                 selected_symbols.add(s['symbol'])
@@ -661,18 +659,9 @@ class SimulationEngine:
                     to_remove.append(s)
                     continue
 
-                # PİYASA REJİMİNE GÖRE MAKSİMUM AÇIK POZİSYON KONTROLÜ
-                # Ayı piyasasında aşırı işlem açıp sermayeyi eritmemek için kademeli tavan:
-                if is_strong_bear:
-                    regime_max_positions = 0  # ŞİDDETLİ AYI: Nakitte kal, 0 yeni alım
-                elif is_bear:
-                    regime_max_positions = 1  # AYI: En fazla 1 pozisyon (Sadece elit A+ hisse)
-                elif regime_code == 'BULL':
-                    regime_max_positions = self.max_positions  # BOĞA: Tam kapasite (4 pozisyon)
-                else:
-                    regime_max_positions = 2  # NÖTR: 2 pozisyon dengeli risk
-
-                if sym in open_symbols or len(open_symbols) >= regime_max_positions:
+                # KULLANICI İSTEĞİ: Simülasyonda işlem / eşzamanlı pozisyon sayısı SINIRSIZ.
+                # Tek şart: Aynı hisse açıkken tekrar açılmaz.
+                if sym in open_symbols:
                     continue
 
                 # Öğlen tuzak saati filtresi (13:45 - 15:15 ölü bölge):
