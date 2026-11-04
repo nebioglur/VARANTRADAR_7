@@ -38,9 +38,18 @@ class SimulationEngine:
             m['pnl_val'] = float(m.get('pnl_val') or 0) + float(t.get('pnl_val') or 0)
             buy_vol = int(m.get('shares') or 0) * float(m.get('entry_price') or 0)
             m['pnl_pct'] = (m['pnl_val'] / buy_vol * 100) if buy_vol > 0 else 0
-            m['exit_time'] = t.get('exit_time') or m.get('exit_time')
-            m['exit_price'] = t.get('exit_price') or m.get('exit_price')
-            m['exit_reason'] = f"{m.get('exit_reason', '')} + {t.get('exit_reason', '')}".strip(' +')
+            prior_exit = m.get('exit_time')
+            next_exit = t.get('exit_time')
+            if not prior_exit or not next_exit:
+                m['exit_time'] = None
+                m['exit_price'] = None
+                m['exit_reason'] = f"{m.get('exit_reason', '')} + {t.get('exit_reason', '')}".strip(' +')
+                if 'AÇIK POZİSYON' not in m['exit_reason']:
+                    m['exit_reason'] += ' + AÇIK POZİSYON'
+            else:
+                m['exit_time'] = next_exit
+                m['exit_price'] = t.get('exit_price') or m.get('exit_price')
+                m['exit_reason'] = f"{m.get('exit_reason', '')} + {t.get('exit_reason', '')}".strip(' +')
 
         conn = get_connection()
         cursor = conn.cursor()
@@ -84,8 +93,8 @@ class SimulationEngine:
 
         # Equity Log (hesap bazli) - birlestirilmis kayitlar uzerinden;
         # boylece equity_log ile trades tablosu SUM'u daima tutarli olur.
-        total_pnl = sum(t.get('pnl_val', 0) for t in merged.values() if t.get('exit_time'))
-        win_trades = sum(1 for t in merged.values() if t.get('pnl_val', 0) > 0)
+        total_pnl = sum(float(t.get('pnl_val') or 0) for t in trades if t.get('exit_time'))
+        win_trades = sum(1 for t in merged.values() if t.get('exit_time') and float(t.get('pnl_val') or 0) > 0)
 
         try:
             # Bakiye zinciri: yalnizca ONCEKI GUNUN bitisi baz alinir.
@@ -572,15 +581,9 @@ class SimulationEngine:
                             'market_regime': trade.get('market_regime')
                         })
 
-                        # Telegram: TP1 otomatik kismi kâr alma emri bildirimi
-                        try:
-                            from services.telegram_bot import notify_sim_trade
-                            notify_sim_trade(sym, "SAT (TP1)", scale_out_price,
-                                             (net_profit / buy_vol) * 100,
-                                             "⚖️ TP1: Yarısı kâr alındı, stop maliyete çekildi (risk-free)",
-                                             str(current_time)[:10], completed_trades[-1])
-                        except Exception:
-                            pass
+                        # Simülasyon işlem bacakları tek tek Telegram'a gönderilmez;
+                        # temiz ve toplu seans özeti akşam raporunda paylaşılır.
+
                             
                 if sell_price is not None:
                     trade['status'] = 'CLOSED'
@@ -599,9 +602,6 @@ class SimulationEngine:
                         
                     trade['exit_reason'] = reason
                     completed_trades.append(trade)
-                    from services.telegram_bot import notify_sim_trade
-                    notify_sim_trade(sym, "SAT", sell_price, trade["pnl_pct"], reason, str(current_time)[:10], trade)
-                    
                     if "STOP" in reason:
                         stopped_out_symbols.add(sym)
                         stop_times[sym] = current_time
@@ -717,8 +717,6 @@ class SimulationEngine:
                     'risk_amount': risk_amount,
                     'market_regime': market_regime
                 })
-                from services.telegram_bot import notify_sim_trade
-                notify_sim_trade(sym, "AL", entry_price, 0.0, "Sistem AL verdi", str(current_time)[:10], active_trades[-1])
                 to_remove.append(s)
             for s in to_remove:
                 if s in pending_signals:
@@ -773,8 +771,6 @@ class SimulationEngine:
                         'risk_amount': risk_amount,
                         'market_regime': market_regime
                     })
-                    from services.telegram_bot import notify_sim_trade
-                    notify_sim_trade(sym, "AL (Yeniden)", entry_price, 0.0, "Yeniden Giris", str(current_time)[:10], active_trades[-1])
                     stopped_out_symbols.remove(sym)
 
         # Seans sonu: acik pozisyonlari kapat.
@@ -803,8 +799,6 @@ class SimulationEngine:
                     trade['pnl_val'] = gross_pnl - commission
                     trade['pnl_pct'] = (trade['pnl_val'] / buy_volume) * 100
                     trade['exit_reason'] = 'SEANS SONU NAKITE GECIS (17:50)'
-                    from services.telegram_bot import notify_sim_trade
-                    notify_sim_trade(sym, "SAT (GUN SONU)", close, trade["pnl_pct"], "17:50 Otomatik Kapanis", str(last_time)[:10], trade)
                 else:
                     trade['exit_time'] = None
                     trade['exit_price'] = None

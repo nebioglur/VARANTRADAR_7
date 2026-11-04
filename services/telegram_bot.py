@@ -233,12 +233,14 @@ def send_simulation_report(total_trades: int = 0, total_profit: float = 0.0, ret
                 t_count = int(eq['total_trades']) if eq['total_trades'] is not None else total_trades
                 pnl_pct = (daily_pnl / start_equity * 100) if start_equity > 0 else 0.0
 
-            cur.execute("SELECT * FROM trades WHERE date_str=? AND owner=? ORDER BY pnl_val DESC", (date_str, owner))
+            cur.execute("SELECT * FROM trades WHERE date_str=? AND owner=? AND exit_time IS NOT NULL ORDER BY pnl_val DESC", (date_str, owner))
             trades_list = [dict(r) for r in cur.fetchall()]
-            if not t_count:
-                t_count = len(trades_list)
-            if not win_trades:
-                win_trades = sum(1 for t in trades_list if float(t.get('pnl_val', 0)) > 0)
+            t_count = len(trades_list)
+            win_trades = sum(1 for t in trades_list if float(t.get('pnl_val') or 0) > 0)
+            if trades_list:
+                daily_pnl = sum(float(t.get('pnl_val') or 0) for t in trades_list)
+                pnl_pct = (daily_pnl / start_equity * 100) if start_equity > 0 else 0.0
+                end_equity = start_equity + daily_pnl
     except Exception as db_err:
         logger.error(f"[TG-REPORT] DB veri çekme hatası: {db_err}")
 
@@ -971,7 +973,7 @@ def format_simulation_report(date_str: str, start_equity: float, end_equity: flo
             text += f"   <i>...ve {len(trades) - 6} işlem daha</i>\n"
         text += f"\n"
         
-    text += f"🏆 <i>Tüm işlemler kurallara uygun icra edildi. Sistem yarın için taranmaya hazır!</i>"
+    text += "ℹ️ <i>Bu rapor simülasyon verisidir; gerçek emir veya gerçekleşmiş getiri değildir. Yatırım tavsiyesi değildir.</i>"
     return text
 
 

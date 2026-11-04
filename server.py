@@ -690,43 +690,9 @@ def _background_scanner_impl():
                                 except Exception as _sim_err:
                                     print(f"[BACKGROUND] Sim hatasi ({_owner}): {_sim_err}")
 
-                            # Gün Sonu Simülasyon Telegram Raporu (18:10 Sonrası)
-                            now_time = datetime.now()
-                            if now_time.hour == 18 and now_time.minute >= 10:
-                                try:
-                                    import json, os
-                                    from services.telegram_bot import send_simulation_report
+                            # Akşam simülasyon raporu tek noktadan _v8_scheduled_reports
+                            # tarafından gönderilir; eski ikinci zamanlayıcı kaldırıldı.
 
-                                    report_cache = "data/sent_sim_report.json"
-                                    sent_today = False
-                                    if os.path.exists(report_cache):
-                                        with open(report_cache, "r") as f:
-                                            cd = json.load(f)
-                                            if cd.get("date") == d_str:
-                                                sent_today = True
-
-                                    if not sent_today:
-                                        from services.trade_database import get_connection
-                                        trades = []
-                                        try:
-                                            with get_connection() as conn:
-                                                c = conn.cursor()
-                                                _report_owner = os.environ.get('ADMIN_OWNER', 'local:nebioglur')
-                                                c.execute("SELECT * FROM trades WHERE date_str=? AND owner=?", (d_str, _report_owner))
-                                                trades = [dict(row) for row in c.fetchall()]
-                                        except Exception as db_err:
-                                            print(f"[SIM DB HATA] {db_err}")
-                                        if trades:
-                                            total_pnl = sum([t.get('pnl_val', 0) for t in trades])
-                                            total_invested = sum([(t.get('shares',0) * t.get('entry_price',0)) for t in trades])
-                                            pct = (total_pnl / total_invested * 100) if total_invested > 0 else 0
-                                            
-                                            success = send_simulation_report(len(trades), total_pnl, pct)
-                                            if success:
-                                                with open(report_cache, "w") as f:
-                                                    json.dump({"date": d_str}, f)
-                                except Exception as err:
-                                    print(f"[SIM SİNYAL HATA] {str(err)}")
                             
                         except Exception as e_audit:
                             print(f"[BACKGROUND] Yeni Motor Hatası: {e_audit}")
@@ -3217,12 +3183,12 @@ def _v8_scheduled_reports(now=None):
                     _V8_SCHED_SENT.add(ek)
                     try:
                         from services.trade_database import get_connection as _tg_conn
-                        owner = "local:nebioglur"
+                        owner = os.environ.get("ADMIN_OWNER", "local:nebioglur")
                         conn = _tg_conn()
                         cur = conn.cursor()
                         cur.execute(
                             "SELECT COUNT(*) c, COALESCE(SUM(pnl_val),0) p FROM trades "
-                            "WHERE date_str=? AND owner=?",
+                            "WHERE date_str=? AND owner=? AND exit_time IS NOT NULL",
                             (day_key, owner),
                         )
                         row = cur.fetchone()
@@ -3347,59 +3313,37 @@ def _v8_entry_confirmation(sym: str, price):
         rec["rejected_reason"] = "Teyit süresi (30 dk) aşıldı"
         return "REJECTED", rec["rejected_reason"]
     if elapsed >= 180:
-        if price >= entry_price:
+        if price >= entry_price * 0.995:
             rec["state"] = "CONFIRMED"
-            return "CONFIRMED", "3 dakika teyidi geçildi"
+            return "CONFIRMED", "3 dakika teyidi geçildi (en fazla %0,5 geri çekilme)"
         rec["state"] = "REJECTED"
         rec["rejected_reason"] = f"İlk 3 dakikada sinyal fiyatının altında kaldı (₺{entry_price:.2f} → ₺{price:.2f})"
         return "REJECTED", rec["rejected_reason"]
     return "PENDING", f"Teyit süresi devam ediyor ({int(180 - elapsed)} sn)"
 
 def _v8_a_class_gate(row: dict, sym: str, data: dict):
-    """A SINIFI KALITE KAPISI: %90 hedefi icin daha az ama daha secici islem.
-    Zorunlu kurallar: tatli bolge (+0.2..+4.8), rel_vol >= 1.5x, saatlik akis
-    'Satılıyor' degil. En az biri: sektor dalgasi >= +10 VEYA birikim skoru
-    >= 45 (akilli para). Donus: (ok, red_sebepleri)."""
+    """Kalite filtresi: gerçek kırılımda temel fiyat/hacim koşullarını uygular.
+    Saatlik akış ve sektör verisi eksikse tek başına ret nedeni yapılmaz;
+    açık satış akışı ise reddedilir. Boğa/ayı rejim ve KAP kilitleri ayrıca işler."""
     reasons = []
     try:
         chg = float(row.get("change_pct") or data.get("Change_Pct") or 0)
     except (TypeError, ValueError):
         chg = 0.0
-    if not (0.2 <= chg <= 4.8):
-        reasons.append(f"Tatlı bölge dışı ({chg:+.1f}%; +0.2..+4.8 aralığı gerekli)")
+    if not (0.0 <= chg < 5.0):
+        reasons.append(f"Fiyat uygun bölgede değil ({chg:+.1f}%; 0..+5.0 aralığı gerekli)")
 
     try:
-        vol = float(data.get("Vol_Multiplier") or data.get("Volume_Ratio") or 0)
-        if vol < 1.5:
-            vol = float(_stats_rel_vol(data) or 0)
+        vol = float(data.get("Vol_Multiplier") or data.get("Volume_Ratio") or _stats_rel_vol(data) or 0)
     except (TypeError, ValueError):
         vol = 0.0
-    if vol < 1.5:
-        reasons.append(f"Hacim zayıf ({vol:.1f}x; en az 1.5x gerekli)")
+    if vol < 1.0:
+        reasons.append(f"Hacim ortalamanın altında ({vol:.1f}x; en az 1.0x gerekli)")
 
     intra = data.get("intraday_strength") or {}
-    flow = str(intra.get("hourly_flow") or "")
-    try:
-        acc = float(intra.get("accumulation_score") or 0)
-    except (TypeError, ValueError):
-        acc = 0.0
-    if not intra or flow not in ("Toplanıyor", "Denge"):
-        reasons.append("Saatlik akış teyidi yok; veri tamamlanmadan giriş yok")
-    elif flow == "Satılıyor":
-        reasons.append("Saatlik akış 'Satılıyor'; akıllı para çıkışta")
-
-    # Alternatif teyit: sektor dalgasi ya da net birikim.
-    sector_ok = False
-    try:
-        from services.detective_engine import SECTOR_OF
-        base = str(sym).replace(".IS", "")
-        sector = SECTOR_OF.get(base) or SECTOR_OF.get(str(sym))
-        if sector:
-            sector_ok = _v8_sector_strength_map().get(sector, -100.0) >= 10.0
-    except Exception:
-        sector_ok = False
-    if not sector_ok and acc < 45:
-        reasons.append(f"Sektör dalgası zayıf ve birikim skoru düşük ({acc:.0f}/45)")
+    flow = str(intra.get("hourly_flow") or "").strip().casefold()
+    if flow in ("satılıyor", "satiliyor"):
+        reasons.append("Saatlik akışta belirgin satış var")
 
     return (len(reasons) == 0, reasons)
 
@@ -3708,51 +3652,8 @@ def api_v8_radar_breakout():
         reverse=True,
     )[:80]
 
-    # GERCEK kirilim yoksa liste bos kalmasin: hazirligi en guclu adaylari
-    # "Erken Aday" olarak AL listesine yukselt (kullanici icin gorunur aksiyon).
-    # Rejim duyarli: ayi/yuksek volatilite piyastada daha secici ol (2 aday, yuksek skor),
-    # normal/boga piyastada 5 aday ver.
-    _regime_now = "NEUTRAL"
-    try:
-        _regime_now = (GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or {}).get("regime", "NEUTRAL")
-    except Exception:
-        _regime_now = "NEUTRAL"
-    if _regime_now in ("BEAR", "STRONG_BEAR"):
-        # REJIM KILIDI: ayi piyasasinda erken aday da yukseltilmez.
-        _promo_count, _promo_min_score = 0, 999
-    elif _regime_now in ("HIGH_VOLATILITY",):
-        _promo_count, _promo_min_score = 2, 65
-    else:
-        _promo_count, _promo_min_score = 5, 55
-
-    if _promo_count > 0 and not any(r.get("entry_status") == "ENTER" for r in breakout_list):
-        candidates = [
-            r for r in breakout_list
-            if r.get("breakout_score", 0) >= _promo_min_score and r.get("fakeout_risk", 0) < 40
-        ]
-        # Discovery READY adaylari (gercek hazirlik teyidi) one ciksin
-        candidates.sort(
-            key=lambda x: (
-                x.get("status") == "DISCOVERY_READY",
-                x.get("breakout_score", 0) - x.get("fakeout_risk", 0),
-            ),
-            reverse=True,
-        )
-        promoted = {c.get("symbol") for c in candidates[:_promo_count]}
-        for r in breakout_list:
-            if r.get("symbol") in promoted:
-                r["entry_status"] = "ENTER"
-                r["early_candidate"] = True
-                r["entry_reasons"] = [
-                    "Erken giriş adayı: hazırlık skoru yüksek, kırılım/hacim teyidi yolda."
-                ] + list(r.get("entry_reasons") or [])
-                # Erken adaylar da ayni guvenlik kapasindan gecer:
-                # KAP filtresi + T+3 dakika teyidi. Gecmeyen AL listesine cikmaz.
-                _sym_data = all_stats.get(r.get("symbol"), {})
-                r = _v8_gate_enter_row(r, r.get("symbol"), _sym_data)
-                if r.get("entry_status") != "ENTER":
-                    r.pop("early_candidate", None)
-
+    # Hazırlık adayları gerçek kırılım ve teyit olmadan ENTER yapılmaz.
+    # Böylece gösterge yalnızca motordan gelen gerçek ENTER durumunu sayar.
     auto_send_v8_signals()
 
     # SENARYO PLANI: guncel rejime gore islem parametreleri kartlara islenir.
