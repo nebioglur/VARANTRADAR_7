@@ -235,12 +235,13 @@ def send_simulation_report(total_trades: int = 0, total_profit: float = 0.0, ret
 
             cur.execute("SELECT * FROM trades WHERE date_str=? AND owner=? AND exit_time IS NOT NULL ORDER BY pnl_val DESC", (date_str, owner))
             trades_list = [dict(r) for r in cur.fetchall()]
+            cur.execute("SELECT COALESCE(SUM(realized_pnl),0) p FROM trades WHERE date_str=? AND owner=?", (date_str, owner))
+            realized_row = cur.fetchone()
+            daily_pnl = float(realized_row["p"] or 0) if realized_row else 0.0
             t_count = len(trades_list)
-            win_trades = sum(1 for t in trades_list if float(t.get('pnl_val') or 0) > 0)
-            if trades_list:
-                daily_pnl = sum(float(t.get('pnl_val') or 0) for t in trades_list)
-                pnl_pct = (daily_pnl / start_equity * 100) if start_equity > 0 else 0.0
-                end_equity = start_equity + daily_pnl
+            win_trades = sum(1 for t in trades_list if float(t.get('realized_pnl') or t.get('pnl_val') or 0) > 0)
+            pnl_pct = (daily_pnl / start_equity * 100) if start_equity > 0 else 0.0
+            end_equity = start_equity + daily_pnl
     except Exception as db_err:
         logger.error(f"[TG-REPORT] DB veri çekme hatası: {db_err}")
 
@@ -496,6 +497,86 @@ def _sr_text_block(symbol: str) -> str:
         f"⚖️ <b>Pivot:</b> {piv:.2f} TL\n"
     )
 
+
+
+def send_simulation_session_opening(day_key: str = "") -> bool:
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    now = datetime.now(ZoneInfo("Europe/Istanbul"))
+    day_key = day_key or now.strftime("%Y-%m-%d")
+    text = (
+        "🟢 <b>SIMÜLASYON SEANSI AÇILDI</b>\n"
+        f"📅 {now.strftime('%d.%m.%Y')} · {now.strftime('%H:%M')}\n"
+        "Bildirim akışı: Simülasyon AL/SAT işlemleri ve gün sonu özeti.\n"
+        "ℹ️ Simülasyon verisidir; gerçek emir veya yatırım tavsiyesi değildir."
+    )
+    return send_telegram_message(text)
+
+
+def notify_simulation_trade_event(action: str, trade: dict, date_str: str) -> bool:
+    """Simülasyon işlem defterine kaydedilmiş, güncel AL/TP1/SAT olayını kısa bildirir."""
+    import hashlib
+    from datetime import datetime, timedelta, timezone
+    from zoneinfo import ZoneInfo
+    from services.trade_database import get_connection
+
+    entry_time = str(trade.get("entry_time") or "")
+    exit_time = str(trade.get("exit_time") or "")
+    event_time = entry_time if action == "AL" else exit_time
+    if not event_time:
+        return False
+    try:
+        event_dt = datetime.fromisoformat(event_time.replace("Z", "+00:00"))
+        now = datetime.now(ZoneInfo("Europe/Istanbul"))
+        if event_dt.tzinfo is None:
+            event_dt = event_dt.replace(tzinfo=ZoneInfo("Europe/Istanbul"))
+        if event_dt < now - timedelta(minutes=12) or event_dt > now + timedelta(minutes=5):
+            return False
+    except (TypeError, ValueError):
+        return False
+
+    symbol = str(trade.get("symbol") or "").replace(".IS", "").upper()
+    event_key = hashlib.sha256("|".join((date_str, symbol, action, entry_time, event_time)).encode()).hexdigest()
+    now_str = datetime.now(timezone.utc).isoformat()
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("INSERT INTO simulation_alerts (event_key,status,updated_at,attempts) VALUES (?,'sending',?,1) ON CONFLICT(event_key) DO NOTHING", (event_key, now_str))
+        claimed = cur.rowcount == 1
+        if not claimed:
+            cur.execute("UPDATE simulation_alerts SET status='sending',updated_at=?,attempts=attempts+1 WHERE event_key=? AND status='failed'", (now_str, event_key))
+            claimed = cur.rowcount == 1
+        conn.commit()
+        conn.close()
+    except Exception as exc:
+        logger.error("Simülasyon olay kilidi alınamadı: %s", exc)
+        return False
+    if not claimed:
+        return True
+
+    when = event_dt.strftime("%H:%M")
+    price = float((trade.get("entry_price") if action == "AL" else trade.get("exit_price")) or 0)
+    shares = int(trade.get("shares") or 0)
+    if action == "AL":
+        text = f"🟢 <b>SİMÜLASYON AL</b> · {when}\n<b>#{symbol}</b> · ₺{price:.2f} · {shares} lot"
+    else:
+        reason = str(trade.get("exit_reason") or "SATIŞ")
+        label = "KISMİ KÂR AL (TP1)" if "TP1" in reason.upper() else "SAT"
+        pnl = float(trade.get("pnl_val") or 0)
+        pct = float(trade.get("pnl_pct") or 0)
+        sign = "+" if pnl >= 0 else ""
+        text = f"{'💰' if pnl >= 0 else '🔴'} <b>SİMÜLASYON {label}</b> · {when}\n<b>#{symbol}</b> · ₺{price:.2f} · {shares} lot\nK/Z: {sign}₺{pnl:,.2f} ({sign}%{pct:.2f}) · {reason}"
+    text += "\nℹ️ Simülasyon verisidir; gerçek emir değildir."
+    sent = send_telegram_message(text)
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE simulation_alerts SET status=?,updated_at=? WHERE event_key=?", ("sent" if sent else "failed", datetime.now(timezone.utc).isoformat(), event_key))
+        conn.commit()
+        conn.close()
+    except Exception as exc:
+        logger.error("Simülasyon olay gönderim sonucu kaydedilemedi: %s", exc)
+    return sent
 
 
 def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.0, reason: str = "", date_str: str = "", trade: dict = None) -> bool:

@@ -4588,6 +4588,10 @@ async function fetchSimulationData() {
                         const exitPriceStr = isClosed ? `₺${t.exit_price.toFixed(2)}` : '<span style="color:var(--text-muted)">-</span>';
                         // Acik pozisyonlarda da anlik K/Z goster (sim motoru hesaplar)
                         const pnlValStr = `${pnlSign}₺${(t.pnl_val || 0).toFixed(2)}`;
+                        const realizedPnlVal = Number(t.realized_pnl || 0);
+                        const realizedPnlStr = !isClosed && realizedPnlVal !== 0
+                            ? `<div style="font-size:.68rem;color:var(--text-muted);margin-top:3px;">Gerçekleşen: ₺${realizedPnlVal.toFixed(2)}</div>`
+                            : '';
                         const pnlPctStr = `${pnlSign}${(t.pnl_pct || 0).toFixed(2)}%`;
                         const strategyStr = t.strategy_name
                             ? `<div style="margin-top:0.25rem; color:var(--accent-blue); font-size:0.7rem;" title="${t.entry_checks || ''}">${t.strategy_name}${t.risk_amount ? ` · Risk: ₺${Number(t.risk_amount).toFixed(0)}` : ''}</div>`
@@ -4613,7 +4617,7 @@ async function fetchSimulationData() {
                             <td>${t.shares || '-'}</td>
                             <td>₺${t.entry_price.toFixed(2)}</td>
                             <td>${exitPriceStr}</td>
-                            <td style="color:${pnlColor}; font-weight:bold;">${pnlValStr}</td>
+                            <td style="color:${pnlColor}; font-weight:bold;">${pnlValStr}${realizedPnlStr}</td>
                             <td style="color:${pnlColor}; font-weight:bold;">${pnlPctStr}</td>
                             <td>${statusStr}</td>
                         `;
@@ -4651,6 +4655,7 @@ function renderSimulationPerformance(performance, targetId = 'sim-performance-su
 }
 
 let _knownTradeEvents = new Set();
+let _tradeEventsInitialized = false;
 let _tradeAudioContext = null;
 let _tradeNotifyReady = false;
 
@@ -4688,6 +4693,14 @@ function playTradeAlert(kind) {
 }
 
 function notifyNewTradeEvents(trades) {
+    if (!_tradeEventsInitialized) {
+        trades.forEach(t => {
+            _knownTradeEvents.add(`BUY:${t.id || `${t.symbol}:${t.entry_time}`}`);
+            if (t.exit_time) _knownTradeEvents.add(`SELL:${t.id || `${t.symbol}:${t.exit_time}`}`);
+        });
+        _tradeEventsInitialized = true;
+        return;
+    }
     const events = [];
     trades.forEach(t => {
         const entryKey = `BUY:${t.id || `${t.symbol}:${t.entry_time}`}`;

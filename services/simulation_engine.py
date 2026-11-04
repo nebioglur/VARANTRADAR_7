@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+import threading
 from datetime import datetime, time, timedelta
 import json
 from services.trade_database import get_connection
@@ -16,10 +17,22 @@ class SimulationEngine:
     - Trade geçmişini ve Equity curve'ü veritabanına yazar.
     """
     
+    _owner_locks = {}
+    _owner_locks_guard = threading.Lock()
+
     def __init__(self, daily_budget=100000.0, max_positions=3, owner=None):
         self.daily_budget = daily_budget
         self.max_positions = max_positions
         self.owner = owner or "local:nebioglur"
+
+    @classmethod
+    def _lock_for(cls, owner):
+        with cls._owner_locks_guard:
+            lock = cls._owner_locks.get(owner)
+            if lock is None:
+                lock = threading.Lock()
+                cls._owner_locks[owner] = lock
+            return lock
 
     def _save_trades(self, date_str: str, trades: list):
         # Ayni (sembol, giris dakikasi) icin birden fazla cikis bacagi olusabilir
@@ -31,9 +44,12 @@ class SimulationEngine:
             key = (t['symbol'], t['entry_time'])
             if key not in merged:
                 merged[key] = dict(t)
+                merged[key]['realized_pnl'] = float(t.get('pnl_val') or 0) if t.get('exit_time') else 0.0
                 order.append(key)
                 continue
             m = merged[key]
+            if t.get('exit_time'):
+                m['realized_pnl'] = float(m.get('realized_pnl') or 0) + float(t.get('pnl_val') or 0)
             m['shares'] = int(m.get('shares') or 0) + int(t.get('shares') or 0)
             m['pnl_val'] = float(m.get('pnl_val') or 0) + float(t.get('pnl_val') or 0)
             buy_vol = int(m.get('shares') or 0) * float(m.get('entry_price') or 0)
@@ -53,28 +69,27 @@ class SimulationEngine:
 
         conn = get_connection()
         cursor = conn.cursor()
-        # Idempotent yeniden calistirma: ayni gunun eski islemleri temizlenir,
-        # boylece farkli motor surumlerinin kayitlari karismaz.
-        try:
-            cursor.execute("DELETE FROM trades WHERE owner=? AND date_str=?", (self.owner, date_str))
-        except Exception as e:
-            print(f"[SimEngine] Eski trade temizleme hatasi: {e}")
+        # Trade log kalici tutulur: yeni taramada sinyal kaybolsa bile onceki
+        # islem satirlari silinmez; ayni islem anahtari gelirse guncellenir.
+
         for key in order:
             t = merged[key]
             try:
                 cursor.execute("""
                     INSERT INTO trades (
                         owner, date_str, symbol, entry_time, entry_price, exit_time,
-                        exit_price, shares, pnl_val, pnl_pct, exit_reason, strategy_name,
+                        exit_price, shares, pnl_val, realized_pnl, pnl_pct, exit_reason, strategy_name,
                         entry_score, entry_checks, atr_value, risk_amount, market_regime
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(owner, date_str, symbol, entry_time) DO UPDATE SET
-                        exit_time=excluded.exit_time,
-                        exit_price=excluded.exit_price,
-                        pnl_val=excluded.pnl_val,
-                        pnl_pct=excluded.pnl_pct,
-                        exit_reason=excluded.exit_reason,
+                        exit_time=CASE WHEN trades.exit_time IS NOT NULL AND excluded.exit_time IS NULL THEN trades.exit_time ELSE excluded.exit_time END,
+                        exit_price=CASE WHEN trades.exit_time IS NOT NULL AND excluded.exit_time IS NULL THEN trades.exit_price ELSE excluded.exit_price END,
+                        shares=CASE WHEN trades.exit_time IS NOT NULL AND excluded.exit_time IS NULL THEN trades.shares ELSE excluded.shares END,
+                        pnl_val=CASE WHEN trades.exit_time IS NOT NULL AND excluded.exit_time IS NULL THEN trades.pnl_val ELSE excluded.pnl_val END,
+                        realized_pnl=CASE WHEN excluded.realized_pnl=0 THEN trades.realized_pnl ELSE excluded.realized_pnl END,
+                        pnl_pct=CASE WHEN trades.exit_time IS NOT NULL AND excluded.exit_time IS NULL THEN trades.pnl_pct ELSE excluded.pnl_pct END,
+                        exit_reason=CASE WHEN trades.exit_time IS NOT NULL AND excluded.exit_time IS NULL THEN trades.exit_reason ELSE excluded.exit_reason END,
                         strategy_name=excluded.strategy_name,
                         entry_score=excluded.entry_score,
                         entry_checks=excluded.entry_checks,
@@ -84,7 +99,7 @@ class SimulationEngine:
                 """, (
                     self.owner, date_str, t['symbol'], t['entry_time'], t['entry_price'],
                     t.get('exit_time'), t.get('exit_price'), t.get('shares'),
-                    t.get('pnl_val'), t.get('pnl_pct'), t.get('exit_reason'),
+                    t.get('pnl_val'), t.get('realized_pnl', 0.0), t.get('pnl_pct'), t.get('exit_reason'),
                     t.get('strategy_name'), t.get('entry_score'), t.get('entry_checks'),
                     t.get('atr_value'), t.get('risk_amount'), t.get('market_regime')
                 ))
@@ -93,8 +108,16 @@ class SimulationEngine:
 
         # Equity Log (hesap bazli) - birlestirilmis kayitlar uzerinden;
         # boylece equity_log ile trades tablosu SUM'u daima tutarli olur.
-        total_pnl = sum(float(t.get('pnl_val') or 0) for t in trades if t.get('exit_time'))
-        win_trades = sum(1 for t in merged.values() if t.get('exit_time') and float(t.get('pnl_val') or 0) > 0)
+        cursor.execute(
+            "SELECT COALESCE(SUM(realized_pnl),0) pnl, COUNT(*) n, "
+            "COALESCE(SUM(CASE WHEN exit_time IS NOT NULL AND realized_pnl > 0 THEN 1 ELSE 0 END),0) wins "
+            "FROM trades WHERE owner=? AND date_str=?",
+            (self.owner, date_str),
+        )
+        day_totals = cursor.fetchone()
+        total_pnl = float(day_totals['pnl'] or 0) if day_totals else 0.0
+        stored_trade_count = int(day_totals['n'] or 0) if day_totals else 0
+        win_trades = int(day_totals['wins'] or 0) if day_totals else 0
 
         try:
             # Bakiye zinciri: yalnizca ONCEKI GUNUN bitisi baz alinir.
@@ -121,13 +144,23 @@ class SimulationEngine:
                     win_trades=excluded.win_trades
             """, (
                 self.owner, date_str, start_eq, start_eq + total_pnl,
-                total_pnl, len(order), win_trades
+                total_pnl, stored_trade_count, win_trades
             ))
         except Exception as e:
             print(f"[SimEngine] Equity save err: {e}")
 
         conn.commit()
         conn.close()
+
+        # Telegram events run only after the same trade snapshot is committed.
+        try:
+            from services.telegram_bot import notify_simulation_trade_event
+            for trade in trades:
+                notify_simulation_trade_event("AL", trade, date_str)
+                if trade.get("exit_time"):
+                    notify_simulation_trade_event("SAT", trade, date_str)
+        except Exception as alert_error:
+            print(f"[SimEngine] Telegram işlem bildirimi hatası: {alert_error}")
 
     def _check_ema_stop(self, sub_df):
         """ EMA8 < EMA21 kesişimi olup olmadığını kontrol eder """
@@ -242,6 +275,18 @@ class SimulationEngine:
         return allocation, min(risk_budget, allocation * risk_per_share / entry_price)
 
     def run_daily_simulation(self, date_str: str):
+        # Aynı hesap için eşzamanlı replay önlenir: iki koşucu üst üste binince
+        # aynı hisse hem AL hem SAT mesajı üretiyor ve trade defteri sarsılıyordu.
+        lock = self._lock_for(self.owner)
+        if not lock.acquire(blocking=False):
+            print(f"[SimEngine] {self.owner} simülasyonu zaten çalışıyor; bu tur atlandı.")
+            return
+        try:
+            self._run_daily_simulation_inner(date_str)
+        finally:
+            lock.release()
+
+    def _run_daily_simulation_inner(self, date_str: str):
         signals = MarketDataManager.get_signals(date_str)
         if not signals:
             return

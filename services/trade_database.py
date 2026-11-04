@@ -73,6 +73,7 @@ def init_db():
             exit_price REAL,
             shares INTEGER,
             pnl_val REAL,
+            realized_pnl REAL DEFAULT 0,
             pnl_pct REAL,
             exit_reason TEXT,
             strategy_name TEXT,
@@ -111,6 +112,7 @@ def init_db():
         """)
     for column, definition in [
         ('strategy_name', 'TEXT'),
+        ('realized_pnl', 'REAL DEFAULT 0'),
         ('entry_score', 'REAL'),
         ('entry_checks', 'TEXT'),
         ('atr_value', 'REAL'),
@@ -119,6 +121,9 @@ def init_db():
     ]:
         if column not in _table_columns(cursor, 'trades'):
             cursor.execute(f"ALTER TABLE trades ADD COLUMN {column} {definition}")
+
+    # Onceki kapali simulasyon kayitlarinda toplam PnL, gerceklesmis PnL idi.
+    cursor.execute("UPDATE trades SET realized_pnl = COALESCE(pnl_val, 0) WHERE exit_time IS NOT NULL AND realized_pnl = 0")
 
     # 4. Simulation Equity Log (Günlük bakiye değişimi - hesap bazlı)
     # Yeni sart: (owner, date_str) PK. Eski ortak tablo dusurulur (sifirdan baslangic).

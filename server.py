@@ -296,11 +296,9 @@ def start_live_data_collector():
                     except Exception as coll_err:
                         print(f"[LIVE DATA] toplama hatasi: {coll_err}")
 
-                    # V8 giris sinyallerini Telegram'a otomatik dusur (dedup'lu, hizli)
-                    try:
-                        auto_send_v8_signals()
-                    except Exception:
-                        pass
+                    # Telegram'a V8 aday listesi otomatik yollanmaz; kanal sadece
+                    # seans açılışı, gerçek simülasyon AL/SAT olayları ve gün sonu özeti alır.
+
                         
                     # FAST PRICE UPDATE
                     try:
@@ -445,11 +443,8 @@ def _background_scanner_impl():
     sent_1h = {}
     sent_5m = {}
     
-    # Sunucu başlatıldığında tek seferlik Telegram kontrol/açılış bildirimi gönder
-    try:
-        notif.send_system_startup_alert()
-    except Exception as e_start:
-        print(f"[BACKGROUND] Telegram açılış bildirimi hatası: {e_start}")
+    # Sunucu yeniden başladı bildirimleri kapalı; açılış mesajı yalnızca seans saatinde gönderilir.
+
     
     def process_notifications(results):
         if not results or not isinstance(results, dict):
@@ -550,8 +545,8 @@ def _background_scanner_impl():
             except Exception as e_5m:
                 print(f"[BACKGROUND] Hızlı Başlangıç 5m hatası: {e_5m}")
             
-            process_notifications(GLOBAL_DASHBOARD_CACHE)
-            print("[BACKGROUND] Hızlı Başlangıç Faz 3 tamamlandı - Tüm fırsatlar HAZIR!")
+            # Otomatik tarayıcı aday bildirimleri kapalı; istenen Telegram akışı yalnızca simülasyondur.
+
         except Exception as e:
             print(f"[BACKGROUND] Hızlı Başlangıç Hatası: {e}")
             import traceback
@@ -672,26 +667,10 @@ def _background_scanner_impl():
                             MarketDataManager.record_signals(d_str, tavan_candidates)
                             MarketDataManager.fetch_and_store_intraday(d_str)
                             
-                            # Günlük simülasyonu çalıştır (kayıtlı her hesap için ayrı)
-                            try:
-                                from services.trade_database import get_connection as _get_conn
-                                with _get_conn() as _uc:
-                                    _cur = _uc.cursor()
-                                    _cur.execute("SELECT owner_key FROM app_users")
-                                    _owners = [r["owner_key"] for r in _cur.fetchall()]
-                            except Exception:
-                                _owners = []
-                            if not _owners:
-                                _owners = ["local:nebioglur"]
-                            for _owner in _owners:
-                                try:
-                                    sim = SimulationEngine(owner=_owner)
-                                    sim.run_daily_simulation(d_str)
-                                except Exception as _sim_err:
-                                    print(f"[BACKGROUND] Sim hatasi ({_owner}): {_sim_err}")
-
-                            # Akşam simülasyon raporu tek noktadan _v8_scheduled_reports
-                            # tarafından gönderilir; eski ikinci zamanlayıcı kaldırıldı.
+                            # Günlük simülasyon tek koşturucuda çalışır: simulation_loop (her 2 dk).
+                            # Buradan ikinci kez çağrılırsa iki replay aynı anda çalışır; bu,
+                            # mükerrer Telegram mesajlarına ve aynı hissenin eşzamanlı
+                            # AL/SAT görünmesine neden oluyordu. (Koşturucu: simulation_loop / manuel API)
 
                             
                         except Exception as e_audit:
@@ -706,8 +685,7 @@ def _background_scanner_impl():
                 except Exception as e_1h:
                     print(f"[BACKGROUND] 1h Tarama hatası: {e_1h}")
                 
-                # Telegram bildirimlerini gonder
-                process_notifications(GLOBAL_DASHBOARD_CACHE)
+                # Otomatik tavan/RSI/saatlik fırsat Telegram mesajları kapalı.
                 print(f"[BACKGROUND] Kapsamlı Tarama tamamlandı. Veriler önbelleğe ve diske kaydedildi.")
             
         except Exception as e:
@@ -771,11 +749,6 @@ def simulation_loop():
                     MarketDataManager.fetch_and_store_intraday(d_str, period="5d")
                 except Exception as _md_err:
                     print(f"[SIMLOOP] Intraday veri hatasi: {_md_err}")
-                    try:
-                        from services.telegram_bot import send_telegram_message
-                        send_telegram_message(f"🚨 [SIMLOOP] Intraday veri toplama HATASI: {_md_err}")
-                    except:
-                        pass
 
             try:
                 from services.trade_database import get_connection as _get_conn
@@ -2665,11 +2638,7 @@ def api_tavan_tracker():
 def api_simulation_daily_pnl():
     try:
         from services.trade_database import get_connection
-        conn = get_connection()
-        
-        # Get all trades
         import sqlite3
-        from contextlib import closing
         with get_connection() as conn:
             conn.row_factory = sqlite3.Row
             c = conn.cursor()
@@ -2682,8 +2651,8 @@ def api_simulation_daily_pnl():
                 from datetime import datetime
                 equity_curve = [{"date_str": datetime.now().strftime("%Y-%m-%d"), "start_equity": 100000.0, "end_equity": 100000.0, "total_pnl": 0.0}]
 
-            # Fetch closed trades (hesaba ozel)
-            c.execute("SELECT * FROM trades WHERE owner=? ORDER BY entry_time DESC LIMIT 100", (owner,))
+            # Fetch all retained trades for this account, open and closed.
+            c.execute("SELECT * FROM trades WHERE owner=? ORDER BY date_str DESC, entry_time DESC", (owner,))
             trade_rows = c.fetchall()
             trades = [dict(row) for row in trade_rows]
             
@@ -2803,69 +2772,32 @@ def api_telegram_test():
 
 @app.route('/api/simulation/send_telegram', methods=['POST'])
 def api_simulation_send_telegram():
+    """Tekil özel format üretmez; aynı tek-gün özeti ve dedup akışını kullanır."""
     try:
-        data = request.json
+        data = request.get_json(silent=True) or {}
         date_str = data.get('date')
         if not date_str:
-            return jsonify({"status": "error", "message": "Date is required"}), 400
-            
-        sim_res = api_simulation_daily_pnl().json
-        if sim_res.get("status") != "success":
-            return jsonify({"status": "error", "message": "Simülasyon hesaplanamadı"}), 500
-            
-        eq_log = sim_res.get("equity_curve", [])
-        day_data = next((d for d in eq_log if d["date_str"] == date_str), None)
-        
-        if not day_data:
-            return jsonify({"status": "error", "message": "Belirtilen tarih için simülasyon verisi bulunamadı"}), 404
-            
-        trades = [t for t in sim_res.get("trades", []) if t["date_str"] == date_str]
-        
-        # Telegram Mesajını Oluştur
-        is_profit = day_data['daily_pnl'] >= 0
-        icon = "🟢" if is_profit else "🔴"
-        
-        total_invested = sum([(t.get('shares',0) * t.get('entry_price',0)) for t in trades])
-        pct = (day_data['daily_pnl'] / total_invested * 100) if total_invested > 0 else 0
-        
-        msg = (
-            f"🧪 <b>ORACLE SİMÜLASYON RAPORU</b> 🧪\n"
-            f"📅 <b>Tarih:</b> {date_str}\n"
-            f"📊 <b>İşlem Gören Hisse Sayısı:</b> {len(trades)}\n"
-            f"💰 <b>Yatırılan Tutar:</b> {total_invested:,.2f} ₺\n"
-            f"{icon} <b>Günlük K/Z:</b> {day_data['daily_pnl']:,.2f} ₺ (%{pct:.2f})\n\n"
-            f"📋 <b>GÜN İÇİ İŞLEMLER:</b>\n"
-        )
-        
-        for t in trades:
-            pnl = float(t.get('pnl', t.get('pnl_val', 0)) or 0)
-            pnl_pct = float(t.get('pnl_pct', 0) or 0)
-            t_icon = "🟢" if pnl >= 0 else "🔴"
-            msg += (
-                f"▪️ <b>#{t.get('symbol', t.get('ticker', '-'))}</b> - {t.get('shares', t.get('quantity', 0))} Lot\n"
-                f"   └ <i>Alış:</i> {float(t.get('buy_price', t.get('entry_price', 0)) or 0):.2f} ₺ ⏱️ {t.get('buy_time', '10:15')}\n"
-                f"   └ <i>Satış:</i> {float(t.get('sell_price', t.get('exit_price', 0)) or 0):.2f} ₺ ⏱️ {t.get('sell_time', 'Zirve')}\n"
-                f"   └ <i>K/Z:</i> {t_icon} {pnl:,.2f} ₺ (%{pnl_pct:.2f})\n\n"
-            )
-            
-        msg += f"🤖 <i>VarantRadar Pro Simülasyon Motoru</i>"
-        
-        from services.notification_manager import NotificationManager
-        notif = NotificationManager()
-        if not notif.telegram_chat_id or "BURAYA_" in str(notif.telegram_token):
-            return jsonify({"status": "error", "message": "Telegram ayarları yapılandırılmamış."}), 400
-            
-        success = notif.send_telegram_message(msg)
-        if success:
-            return jsonify({"status": "success", "message": "Rapor Telegram'a gönderildi."})
-        else:
-            return jsonify({"status": "error", "message": "Telegram'a gönderilirken bir hata oluştu."}), 500
-            
+            return jsonify({"status": "error", "message": "Tarih gerekli."}), 400
+        owner = get_owner_key()
+        from services.trade_database import get_connection
+        with get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT start_equity FROM equity_log WHERE owner=? AND date_str=?", (owner, date_str))
+            equity = cur.fetchone()
+            if not equity:
+                return jsonify({"status": "error", "message": "Bu tarihe ait simülasyon özeti yok."}), 404
+            base = float(equity['start_equity'] or 0)
+            cur.execute("SELECT COUNT(*) c, COALESCE(SUM(realized_pnl),0) p FROM trades WHERE owner=? AND date_str=? AND exit_time IS NOT NULL", (owner, date_str))
+            totals = cur.fetchone()
+        profit = float(totals['p'] or 0)
+        count = int(totals['c'] or 0)
+        pct = profit / base * 100 if base > 0 else 0.0
+        from services.telegram_bot import send_simulation_report
+        if send_simulation_report(count, profit, pct, date_str, owner):
+            return jsonify({"status": "success", "message": "Standart simülasyon gün özeti gönderildi (aynı gün tekrarı engellenir)."})
+        return jsonify({"status": "error", "message": "Telegram gönderilemedi; ayarları kontrol edin."}), 503
     except Exception as e:
-        import traceback
-        traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
-
 
 
 import time
@@ -3154,28 +3086,28 @@ def _v8_scheduled_reports(now=None):
     try:
         from datetime import datetime as _dt_sched, timezone, timedelta as _td_sched
         from services.telegram_bot import (
-            claim_telegram_alert, send_morning_compass_bulletin,
+            claim_telegram_alert, send_simulation_session_opening,
             send_simulation_report,
         )
         if now is None:
             now = _dt_sched.now(ZoneInfo("Europe/Istanbul"))
         day_key = now.strftime("%Y-%m-%d")
 
-        # 1) SABAH PUSULA BULTENI (09:30-10:30 penceresi, gunde 1 kez)
-        if now.hour == 9 and 30 <= now.minute <= 59:
-            mk = f"MORNING_BULLETIN_{day_key}"
-            if mk not in _V8_SCHED_SENT:
-                if claim_telegram_alert(mk):
-                    _V8_SCHED_SENT.add(mk)
+        # Seans açılışı (10:00-10:05, günde bir kez); yalnızca kısa sistem durumu.
+        if now.hour == 10 and 0 <= now.minute <= 5:
+            sk = f"SIM_SESSION_OPEN_{day_key}"
+            if sk not in _V8_SCHED_SENT:
+                if claim_telegram_alert(sk):
+                    _V8_SCHED_SENT.add(sk)
                     try:
-                        ok = send_morning_compass_bulletin()
-                        print(f"[V8-SCHED] Sabah bulteni: {'gonderildi' if ok else 'gonderilemedi (config?)'}")
-                    except Exception as mb_e:
-                        print(f"[V8-SCHED] Sabah bulteni hatasi: {mb_e}")
+                        ok = send_simulation_session_opening(day_key)
+                        print(f"[SIM-SCHED] Seans açılışı: {'gönderildi' if ok else 'gönderilemedi'}")
+                    except Exception as opening_err:
+                        print(f"[SIM-SCHED] Seans açılışı hatası: {opening_err}")
                 else:
-                    _V8_SCHED_SENT.add(mk)
+                    _V8_SCHED_SENT.add(sk)
 
-        # 2) AKSAM GUN SONU KAR RAPORU (18:20'den sonra, gunde 1 kez)
+        # Gün sonu simülasyon özeti (18:20'den sonra, günde bir kez).
         if (now.hour == 18 and now.minute >= 20) or now.hour >= 19:
             ek = f"EVENING_REPORT_{day_key}"
             if ek not in _V8_SCHED_SENT:
@@ -3187,8 +3119,9 @@ def _v8_scheduled_reports(now=None):
                         conn = _tg_conn()
                         cur = conn.cursor()
                         cur.execute(
-                            "SELECT COUNT(*) c, COALESCE(SUM(pnl_val),0) p FROM trades "
-                            "WHERE date_str=? AND owner=? AND exit_time IS NOT NULL",
+                            "SELECT COUNT(CASE WHEN exit_time IS NOT NULL THEN 1 END) c, "
+                            "COALESCE(SUM(realized_pnl),0) p FROM trades "
+                            "WHERE date_str=? AND owner=?",
                             (day_key, owner),
                         )
                         row = cur.fetchone()
@@ -3654,7 +3587,8 @@ def api_v8_radar_breakout():
 
     # Hazırlık adayları gerçek kırılım ve teyit olmadan ENTER yapılmaz.
     # Böylece gösterge yalnızca motordan gelen gerçek ENTER durumunu sayar.
-    auto_send_v8_signals()
+    # V8 sinyalleri uygulama içinde kalır; Telegram'a yalnızca simülasyon olayları gider.
+
 
     # SENARYO PLANI: guncel rejime gore islem parametreleri kartlara islenir.
     # Bogada hedefler genisler, notrde standart, volatilitede daralir,
