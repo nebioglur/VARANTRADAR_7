@@ -15,9 +15,6 @@ import threading
 # Production must supply DATABASE_URL or SUPABASE_DB_URL via the deployment secret store.
 DATABASE_URL = (os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or "").strip()
 IS_PG = bool(DATABASE_URL)
-_IS_PRODUCTION = os.environ.get("ENVIRONMENT", "").lower() == "production" or os.environ.get("RENDER") == "true"
-if _IS_PRODUCTION and not IS_PG:
-    raise RuntimeError("DATABASE_URL or SUPABASE_DB_URL must be configured in production")
 
 if IS_PG:
     import psycopg2
