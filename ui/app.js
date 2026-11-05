@@ -4605,22 +4605,41 @@ async function fetchSimulationData() {
             }
             if (el('sim-kpi-trades')) el('sim-kpi-trades').innerText = trades.length;
             const weekly = data.weekly_target || {};
-            const weeklyBox = el('sim-weekly-target');
-            if (weeklyBox) {
-                const actual = Number(weekly.actual_pct || 0);
-                const target = Number(weekly.target_pct || 6);
-                const color = actual >= target ? 'var(--accent-green)' : (actual >= 0 ? 'var(--accent-yellow)' : 'var(--accent-red)');
-                weeklyBox.style.display = 'block';
-                weeklyBox.innerHTML = `
-                    <div style="display:flex;justify-content:space-between;gap:.75rem;flex-wrap:wrap;align-items:center;">
-                        <div><strong style="color:#facc15;"><i class="fa-solid fa-bullseye"></i> Haftalık hedef takibi</strong>
-                        <div style="font-size:.75rem;color:var(--text-muted);margin-top:.25rem;">Son ${weekly.sessions || 0} seans · hedef garanti değildir; risk kontrol göstergesidir.</div></div>
-                        <div style="font-size:1.35rem;font-weight:800;color:${color};">${actual >= 0 ? '+' : ''}%${actual.toFixed(2)} / %${target.toFixed(2)}</div>
-                    </div>
-                    <div style="height:8px;border-radius:99px;background:rgba(148,163,184,.18);margin-top:.7rem;overflow:hidden;">
-                        <div style="height:100%;width:${Math.min(100, Math.max(0, actual / target * 100))}%;background:${color};border-radius:99px;"></div>
-                    </div>
-                    <div style="font-size:.75rem;color:var(--text-muted);margin-top:.45rem;">${actual >= target ? 'Hedef ulaşıldı; yeni işlem açmak yerine kârı koru.' : `Hedefe kalan: %${Math.max(0, target - actual).toFixed(2)}`}</div>`;
+            const wkSum = data.weekly_summary || {};
+            const wkActual = Number(wkSum.current_return_pct !== undefined ? wkSum.current_return_pct : (weekly.actual_pct || 0));
+            const wkPnl = Number(wkSum.net_pnl_tl || 0);
+            const wkWinRate = Number(wkSum.win_rate || 0);
+            const wkProgress = Number(wkSum.progress_pct !== undefined ? wkSum.progress_pct : Math.min(100, Math.max(0, (wkActual / 6.0) * 100)));
+            const isTargetReached = wkActual >= 6.0;
+
+            if (el('sim-weekly-status-badge')) {
+                if (isTargetReached) {
+                    el('sim-weekly-status-badge').innerHTML = '<i class="fa-solid fa-trophy"></i> HEDEF TAMAMLANDI 🎯';
+                    el('sim-weekly-status-badge').style.background = 'rgba(16,185,129,0.25)';
+                    el('sim-weekly-status-badge').style.color = '#34d399';
+                    el('sim-weekly-status-badge').style.borderColor = 'rgba(16,185,129,0.5)';
+                } else if (wkActual > 0) {
+                    el('sim-weekly-status-badge').innerHTML = `<i class="fa-solid fa-arrow-trend-up"></i> +%${wkActual.toFixed(2)} (Hedef Yolunda)`;
+                    el('sim-weekly-status-badge').style.background = 'rgba(59,130,246,0.2)';
+                    el('sim-weekly-status-badge').style.color = '#60a5fa';
+                    el('sim-weekly-status-badge').style.borderColor = 'rgba(59,130,246,0.4)';
+                } else {
+                    el('sim-weekly-status-badge').innerHTML = '<i class="fa-solid fa-shield-halved"></i> Koruma Aktif (%6 Hedef)';
+                    el('sim-weekly-status-badge').style.background = 'rgba(148,163,184,0.15)';
+                    el('sim-weekly-status-badge').style.color = '#94a3b8';
+                    el('sim-weekly-status-badge').style.borderColor = 'rgba(148,163,184,0.3)';
+                }
+            }
+            if (el('sim-weekly-pnl-val')) {
+                const sign = wkActual >= 0 ? '+' : '';
+                el('sim-weekly-pnl-val').innerText = `${sign}%${wkActual.toFixed(2)} (${sign}₺${wkPnl.toFixed(2)})`;
+                el('sim-weekly-pnl-val').style.color = wkActual >= 0 ? '#38bdf8' : '#f87171';
+            }
+            if (el('sim-weekly-winrate')) {
+                el('sim-weekly-winrate').innerText = `%${wkWinRate.toFixed(1)}`;
+            }
+            if (el('sim-weekly-progress-bar')) {
+                el('sim-weekly-progress-bar').style.width = `${Math.min(100, Math.max(0, wkProgress))}%`;
             }
             
             // Render Equity Curve Chart

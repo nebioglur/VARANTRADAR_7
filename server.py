@@ -1285,13 +1285,63 @@ def api_backtest_run():
         from services.backtest_engine import BacktestEngine
         from services.quant_lab import QuantLab
         
-        df = yf.download(symbol, period=period, interval=interval, progress=False)
-        if df.empty:
-            return jsonify({"status": "error", "message": "Veri bulunamadı"}), 404
+        df = None
+        clean_sym = symbol.replace('.IS', '').strip()
+        candidates = [f"{clean_sym}.IS", clean_sym]
+        
+        # 1. Deneme: yf.download threads=False (PythonAnywhere proxy/single-worker uyumlu)
+        for sym_cand in candidates:
+            try:
+                raw = yf.download(sym_cand, period=period, interval=interval, threads=False, progress=False, timeout=15)
+                if raw is not None and not raw.empty:
+                    df = raw
+                    symbol = sym_cand
+                    break
+            except Exception:
+                pass
+                
+        # 2. Deneme: yf.Ticker history
+        if df is None or df.empty:
+            for sym_cand in candidates:
+                try:
+                    t = yf.Ticker(sym_cand)
+                    raw = t.history(period=period, interval=interval)
+                    if raw is not None and not raw.empty:
+                        df = raw
+                        symbol = sym_cand
+                        break
+                except Exception:
+                    pass
+
+        # 3. Deneme: DataPipeline
+        if df is None or df.empty:
+            try:
+                from data.pipeline import DataPipeline
+                raw = DataPipeline().get_clean_data(f"{clean_sym}.IS", period=period, interval=interval)
+                if raw is not None and not raw.empty:
+                    df = raw
+            except Exception:
+                pass
+
+        if df is None or df.empty:
+            return jsonify({"status": "error", "message": f"{clean_sym} için geçmiş piyasa verisi alınamadı. Lütfen sembolü kontrol edin."}), 404
             
-        # Sütunları küçük harfe çevir (BacktestEngine öyle bekliyor)
-        df.columns = [c[0].lower() if isinstance(c, tuple) else str(c).lower() for c in df.columns]
+        # Sütunları küçük harfe ve tek boyuta çevir (MultiIndex koruması)
+        if hasattr(df.columns, 'levels') and len(df.columns.levels) > 1:
+            try:
+                df = df.xs(symbol, level=1, axis=1)
+            except Exception:
+                df.columns = [c[0].lower() if isinstance(c, tuple) else str(c).lower() for c in df.columns]
+        else:
+            df.columns = [c[0].lower() if isinstance(c, tuple) else str(c).lower() for c in df.columns]
+            
         df['date'] = df.index.astype(str)
+        if 'close' not in df.columns and 'adj close' in df.columns:
+            df['close'] = df['adj close']
+        df['close'] = pd.to_numeric(df['close'], errors='coerce')
+        df = df.dropna(subset=['close'])
+        if len(df) < 20:
+            return jsonify({"status": "error", "message": f"{clean_sym} için yeterli geçmiş veri bulunamadı (en az 20 bar gerekli)"}), 400
         
         # İndikatörleri hesapla (BacktestEngine kullanıyor)
         close = df['close']
@@ -2968,6 +3018,7 @@ def api_simulation_daily_pnl():
                 "equity_curve": sanitize_for_json(equity_curve),
                 "trades": sanitize_for_json(trades),
                 "performance": sanitize_for_json(performance),
+                "weekly_summary": sanitize_for_json(weekly_summary),
                 "weekly_target": {
                     "target_pct": target_pct,
                     "actual_pct": round(weekly_pct, 2),

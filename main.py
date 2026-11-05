@@ -92,6 +92,38 @@ def run_simulation_api(symbol: str) -> dict:
     
     df = pipeline.get_clean_data(symbol, period="2y", interval="1d")
     if df is None or df.empty:
+        for p in ["1y", "6mo", "3mo"]:
+            df = pipeline.get_clean_data(symbol, period=p, interval="1d")
+            if df is not None and not df.empty:
+                break
+    if df is None or df.empty:
+        try:
+            import yfinance as yf
+            clean_s = symbol.replace(".IS", "").strip()
+            for cand in [symbol, f"{clean_s}.IS", clean_s]:
+                try:
+                    t = yf.Ticker(cand)
+                    raw = t.history(period="1y", interval="1d")
+                    if raw is not None and not raw.empty:
+                        df = raw
+                        break
+                except Exception:
+                    pass
+            if (df is None or df.empty):
+                for cand in [symbol, f"{clean_s}.IS", clean_s]:
+                    try:
+                        raw = yf.download(cand, period="1y", interval="1d", threads=False, progress=False)
+                        if raw is not None and not raw.empty:
+                            df = raw
+                            break
+                    except Exception:
+                        pass
+            if df is not None and not df.empty:
+                df.columns = [c[0].lower() if isinstance(c, tuple) else str(c).lower() for c in df.columns]
+        except Exception:
+            pass
+
+    if df is None or df.empty:
         return {"error": f"Veri çekilemedi veya geçersiz sembol: {symbol}"}
         
     high_low = df['high'] - df['low']
