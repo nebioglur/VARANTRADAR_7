@@ -1138,7 +1138,7 @@ def api_auth_session():
 def require_auth():
     if request.method == 'OPTIONS': return
     
-    allowed = ['/login', '/logout', '/api/ping', '/api/auth_config', '/api/auth/session']
+    allowed = ['/login', '/logout', '/api/ping', '/api/auth_config', '/api/auth/session', '/api/system/git_pull', '/api/system/deploy']
     if request.path in allowed: return
     
     # Allow static assets for login page
@@ -2102,6 +2102,13 @@ def api_system_git_pull():
         fresh = load_dashboard_cache()
         if fresh:
             GLOBAL_DASHBOARD_CACHE = fresh
+        for wsgi_path in ["/var/www/varantradarpro_pythonanywhere_com_wsgi.py", "/var/www/varantradar_pythonanywhere_com_wsgi.py"]:
+            if os.path.exists(wsgi_path):
+                try:
+                    os.utime(wsgi_path, None)
+                    results.append({"step": "wsgi_touch", "path": wsgi_path, "status": "ok"})
+                except Exception as we:
+                    results.append({"step": "wsgi_touch", "path": wsgi_path, "error": str(we)})
 
         return jsonify({
             "status": "success",
@@ -2806,7 +2813,7 @@ def api_simulation_daily_pnl():
                 trade_rows = c.fetchall()
                 if trade_rows:
                     trades = [dict(row) for row in trade_rows]
-                if not equity_rows or (len(equity_rows) == 1 and equity_rows[0].get("total_pnl", 0.0) == 0.0):
+                if not equity_curve or (len(equity_curve) == 1 and float(equity_curve[0].get("daily_pnl") or equity_curve[0].get("total_pnl") or 0.0) == 0.0):
                     c.execute("SELECT * FROM equity_log ORDER BY date_str ASC")
                     eq_fb = c.fetchall()
                     if eq_fb:
