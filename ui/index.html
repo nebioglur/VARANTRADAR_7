@@ -41,11 +41,11 @@
         @media (min-width: 851px) { body { zoom: 0.8; } }
         .data-table th, .data-table td { text-align: center !important; }
 
-        /* Mobil menü ve hamburger: 992px ve üzeri masaüstü ekranlarda KESİNLİKLE görünmez */
+        /* Mobil menü ve hamburger: Masaüstü/laptop (769px+) ekranlarda KESİNLİKLE görünmez */
         .mobile-hamburger, .mobile-slide-menu, .mobile-menu-overlay {
-            display: none;
+            display: none !important;
         }
-        @media (min-width: 992px) {
+        @media (min-width: 769px) {
             .mobile-hamburger,
             .mobile-slide-menu,
             .mobile-menu-overlay {
@@ -55,8 +55,8 @@
                 pointer-events: none !important;
             }
         }
-        @media (max-width: 991px) {
-            .mobile-hamburger { display: flex !important; }
+        @media (max-width: 768px) {
+            .mobile-hamburger { display: inline-flex !important; }
             .mobile-slide-menu.open { display: flex !important; right: 0 !important; }
             .mobile-menu-overlay.open { display: block !important; }
         }
@@ -1771,17 +1771,17 @@
             <!-- 5 KPI Cards row (Asla Sıfırlanmayan Kümülatif Kasa Dahil) -->
             <div id="sim-kpi-row" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:1.2rem; margin-bottom:2rem;">
                 <!-- 👑 YENİ KÜMÜLATİF KART: GEÇEN AYLAR DAHİL ASLA SIFIRLANMAYAN ANLIK YEKÜN -->
-                <div class="card" style="background: linear-gradient(145deg, rgba(245, 158, 11, 0.14) 0%, rgba(16, 185, 129, 0.18) 100%); border: 1.5px solid rgba(245, 158, 11, 0.55); text-align:center; padding: 1.2rem 1rem; position:relative; box-shadow: 0 4px 20px rgba(245, 158, 11, 0.15); display: flex; flex-direction: column; justify-content: space-between;">
-                    <div style="display:flex; justify-content:center; align-items:center; gap:6px; margin-bottom:0.6rem; flex-wrap:wrap;">
-                        <span style="font-size:0.78rem; color:#fbbf24; text-transform:uppercase; letter-spacing:0.8px; font-weight:800;">
-                            <i class="fa-solid fa-crown" style="color:#f59e0b; margin-right:4px;"></i> Toplam Kasa
+                <div class="card" style="background: linear-gradient(145deg, rgba(245, 158, 11, 0.14) 0%, rgba(16, 185, 129, 0.18) 100%); border: 1.5px solid rgba(245, 158, 11, 0.55); text-align:center; padding: 1.4rem 1rem; box-shadow: 0 4px 20px rgba(245, 158, 11, 0.15); display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 140px;">
+                    <div style="display:flex; justify-content:center; align-items:center; gap:8px; margin-bottom:0.75rem;">
+                        <span style="font-size:0.8rem; color:#fbbf24; text-transform:uppercase; letter-spacing:0.8px; font-weight:800; display:flex; align-items:center; gap:4px;">
+                            <i class="fa-solid fa-crown" style="color:#f59e0b;"></i> TOPLAM KASA
                         </span>
-                        <span style="font-size:0.65rem; background:rgba(245, 158, 11, 0.25); color:#fbbf24; padding:2px 7px; border-radius:12px; font-weight:800; border:1px solid rgba(245,158,11,0.4); letter-spacing:0.5px;">
+                        <span style="font-size:0.65rem; background:rgba(245, 158, 11, 0.25); color:#fbbf24; padding:2px 8px; border-radius:12px; font-weight:800; border:1px solid rgba(245,158,11,0.4); white-space:nowrap;">
                             <i class="fa-solid fa-infinity"></i> SIFIRLANMAZ
                         </span>
                     </div>
-                    <div id="sim-kpi-cumulative-equity" style="font-size:1.75rem; font-weight:900; color:#10b981; letter-spacing:-0.5px; line-height:1.2; word-break:break-word;">100.000,00 ₺</div>
-                    <div id="sim-kpi-cumulative-sub" style="font-size:0.72rem; color:var(--text-muted); margin-top:0.4rem; line-height:1.3;">
+                    <div id="sim-kpi-cumulative-equity" style="font-size:1.85rem; font-weight:900; color:#10b981; letter-spacing:-0.5px; line-height:1.2; margin-bottom:0.35rem;">100.000,00 ₺</div>
+                    <div id="sim-kpi-cumulative-sub" style="font-size:0.72rem; color:var(--text-muted); line-height:1.3;">
                         Geçmiş aylar dahil kesintisiz yekün
                     </div>
                 </div>
@@ -2226,8 +2226,36 @@
 
         <!-- AL KARARI VERİLMİŞ HİSSELER — KARTLAR -->
         <div style="margin-bottom:0.75rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem;">
-            <h3 style="margin:0; color:#10b981; font-size:1rem;"><i class="fa-solid fa-bolt"></i> V8 Kırılım & Giriş Onaylı Hisseler</h3>
-            <span style="font-size:0.72rem; color:var(--text-muted);">Sistematik teyitli AL fırsatları ve yakın izleme listesi</span>
+            <h3 style="margin:0; color:#10b981; font-size:1rem;"><i class="fa-solid fa-bolt"></i> Giriş Onaylı Hisseler</h3>
+            <span style="font-size:0.72rem; color:var(--text-muted);">Sadece sistematik olarak onaylananlar gösterilir</span>
+        </div>
+
+        <!-- SENARYO PLANI: rejim + pozisyon/risk/hedef + sektorsel dalga -->
+        <div id="v8-playbook-strip" style="display:none; background:rgba(59,130,246,0.07); border:1px solid rgba(59,130,246,0.3); border-radius:10px; padding:0.8rem 1rem; margin-bottom:1rem;"></div>
+
+        <!-- HAFTALIK KÂR PANOSU: %6 hedef takibi + dinamik risk -->
+        <div id="v8-weekly-strip" style="display:none; background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.3); border-radius:10px; padding:0.8rem 1rem; margin-bottom:1rem;"></div>
+
+        <!-- RISK YONETIMI: POZISYON BOYUTLANDIRMA -->
+        <div style="background:rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.25); border-radius:10px; padding:0.7rem 0.9rem; margin-bottom:0.9rem; display:flex; flex-wrap:wrap; gap:0.75rem; align-items:center; font-size:0.8rem;">
+            <span style="font-weight:700; color:#60a5fa;"><i class="fa-solid fa-scale-balanced"></i> Pozisyon Boyutu:</span>
+            <label style="display:flex; align-items:center; gap:4px;">Kasa (₺)
+                <input id="v8-capital" type="number" min="0" step="1000" placeholder="100000" style="width:110px; background:rgba(0,0,0,0.3); color:var(--text-main); border:1px solid rgba(255,255,255,0.15); border-radius:6px; padding:3px 6px;">
+            </label>
+            <label style="display:flex; align-items:center; gap:4px;">İşlem Riski (%)
+                <input id="v8-risk-pct" type="number" min="0.5" max="10" step="0.5" value="1.5" style="width:70px; background:rgba(0,0,0,0.3); color:var(--text-main); border:1px solid rgba(255,255,255,0.15); border-radius:6px; padding:3px 6px;">
+            </label>
+            <span style="color:var(--text-muted); font-size:0.72rem;">Kartlarda önerilen lot; zarar kes mesafesine göre kasa × risk ile hesaplanır.</span>
+        </div>
+
+        <!-- STRATEJI BACKTEST PANELI -->
+        <div style="background:rgba(168,85,247,0.06); border:1px solid rgba(168,85,247,0.3); border-radius:10px; padding:0.8rem 1rem; margin-bottom:1rem;">
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem;">
+                <span style="font-weight:700; color:#c084fc; font-size:0.85rem;"><i class="fa-solid fa-flask"></i> Strateji Backtest (BIST50 · 2 yıllık geçmiş)</span>
+                <button id="v8-backtest-btn" type="button" onclick="runV8Backtest(this)" style="background:#a855f7; color:white; border:0; border-radius:6px; padding:5px 12px; font-size:0.75rem; font-weight:700; cursor:pointer;">Çalıştır</button>
+            </div>
+            <div id="v8-backtest-status" style="font-size:0.75rem; color:var(--text-muted); margin-top:0.4rem;">Henüz çalıştırılmadı. Sonucu görmek için çalıştırın.</div>
+            <div id="v8-backtest-result" style="margin-top:0.5rem;"></div>
         </div>
         <div id="v8-enter-cards" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:1rem; margin-bottom:2rem;">
             <div style="text-align:center; color:var(--text-muted); padding:2rem; grid-column:1/-1;"><i class="fa-solid fa-circle-notch fa-spin"></i> Yükleniyor...</div>
@@ -2558,12 +2586,13 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="app.js?v=20261106_v32"></script>
+    <script src="app.js?v=20261106_v33"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js?v=20260916_v13"></script>
     <script>
         // 📱 Mobil Hamburger Menü Yönetimi
         function toggleMobileMenu() {
+            if (window.innerWidth > 768) return;
             var menu = document.getElementById('mobileSlideMenu');
             var overlay = document.getElementById('mobileMenuOverlay');
             if (menu.classList.contains('open')) {
@@ -2600,7 +2629,7 @@
         // PWA service worker kaydi (canli veri API'leri onbelleklenmez)
         if ("serviceWorker" in navigator) {
             window.addEventListener("load", function () {
-                navigator.serviceWorker.register("/sw.js?v=20261106_v32").then(function(reg) { if (reg) reg.update(); }).catch(function () {});
+                navigator.serviceWorker.register("/sw.js?v=20261106_v33").then(function(reg) { if (reg) reg.update(); }).catch(function () {});
             });
         }
     </script>

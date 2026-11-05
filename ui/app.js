@@ -4779,9 +4779,11 @@ async function fetchSimulationData() {
             }
         } else {
             if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="text-red text-center" style="padding:2rem;">Simülasyon verisi alınamadı: ${data.message || 'Bilinmeyen hata'}</td></tr>`;
+            if (document.getElementById('sim-weekly-status-badge')) document.getElementById('sim-weekly-status-badge').innerHTML = '<i class="fa-solid fa-shield-halved"></i> Koruma Aktif (%6 Hedef)';
         }
     } catch (e) {
         if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="text-red text-center" style="padding:2rem;">Bağlantı hatası: ${e.message}</td></tr>`;
+        if (document.getElementById('sim-weekly-status-badge')) document.getElementById('sim-weekly-status-badge').innerHTML = '<i class="fa-solid fa-shield-halved"></i> Koruma Aktif (%6 Hedef)';
     }
 }
 

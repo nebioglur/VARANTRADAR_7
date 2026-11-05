@@ -2842,7 +2842,8 @@ def api_simulation_daily_pnl():
         from services.trade_database import get_connection
         import sqlite3
         with get_connection() as conn:
-            conn.row_factory = sqlite3.Row
+            from services.trade_database import SmartRow
+            conn.row_factory = SmartRow
             c = conn.cursor()
             owner = get_owner_key()
             

@@ -17,7 +17,8 @@ class V8Database:
             return _pg_store.connect()
         os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
         conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
+        from services.trade_database import SmartRow
+        conn.row_factory = SmartRow
         return conn
 
     @staticmethod

@@ -2095,14 +2095,17 @@ body.light-mode .mobile-slide-menu a.menu-item.active {
     color: #4338CA;
 }
 
-@media (max-width: 991px) {
-    .mobile-hamburger { display: flex !important; }
-}
-
-@media (min-width: 992px) {
+@media (min-width: 769px) {
     .mobile-hamburger,
     .mobile-slide-menu,
     .mobile-menu-overlay {
         display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
     }
+}
+
+@media (max-width: 768px) {
+    .mobile-hamburger { display: inline-flex !important; }
 }

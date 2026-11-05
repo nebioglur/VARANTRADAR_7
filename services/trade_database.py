@@ -11,12 +11,28 @@ from services import pg_store
 IS_PG = pg_store.IS_PG
 DB_PATH = os.path.join("data", "trading_engine.db")
 
+class SmartRow(dict):
+    """sqlite3.Row ve dict uyumlu hibrit satir: hem r['col'], r[0] indeks hem de r.get('col') destekler."""
+    def __init__(self, cursor, row):
+        fields = [col[0] for col in cursor.description]
+        super().__init__(zip(fields, row))
+        self._fields = fields
+        self._row = tuple(row)
+
+    def __getitem__(self, item):
+        if isinstance(item, int):
+            return self._row[item]
+        return super().__getitem__(item)
+
+    def keys(self):
+        return self._fields
+
 def get_connection():
     if IS_PG:
         return pg_store.connect()
     os.makedirs("data", exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
+    conn.row_factory = SmartRow
     return conn
 
 def _table_columns(cursor, table):
