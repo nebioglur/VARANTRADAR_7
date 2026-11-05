@@ -190,3 +190,6 @@ class BreakoutEngine:
             "reasons": [],
             "metrics": {}
         }
+
+
+V8BreakoutEngine = BreakoutEngine

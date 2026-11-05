@@ -299,11 +299,15 @@ class SimulationEngine:
         if not signals:
             return
 
+        xu100_change = 0.0
         try:
-            from server import get_xu100_change
-            xu100_change = float(get_xu100_change())
+            with open('dashboard_cache.json', encoding='utf-8') as _cf:
+                _cc = json.load(_cf)
+                _vr = _cc.get('v8_market_regime', {})
+                if _vr and _vr.get('xu100_trend') is not None:
+                    xu100_change = float(_vr['xu100_trend'])
         except Exception:
-            xu100_change = 0.0
+            pass
 
         # ── GENİŞLİK MOTORU (Market Breadth) ─────────────────────────────────
         # Piyasa Genişliği: Sadece XU100 değil, kaç hisse düşüyor / yükseliyor?
@@ -699,9 +703,15 @@ class SimulationEngine:
                             'market_regime': trade.get('market_regime')
                         })
 
-                        # Simülasyon işlem bacakları tek tek Telegram'a gönderilmez;
-                        # temiz ve toplu seans özeti akşam raporunda paylaşılır.
-
+                        # Telegram: TP1 otomatik kismi kâr alma emri bildirimi (atomik dedup korumalı)
+                        try:
+                            from services.telegram_bot import notify_sim_trade
+                            notify_sim_trade(sym, "SAT (TP1)", scale_out_price,
+                                         (net_profit / buy_vol) * 100,
+                                         "⚖️ TP1: Yarısı kâr alındı, stop maliyete çekildi (risk-free)",
+                                         str(current_time)[:10], completed_trades[-1])
+                        except Exception:
+                            pass
                             
                 if sell_price is not None:
                     trade['status'] = 'CLOSED'
@@ -721,6 +731,12 @@ class SimulationEngine:
                         
                     trade['exit_reason'] = reason
                     completed_trades.append(trade)
+                    try:
+                        from services.telegram_bot import notify_sim_trade
+                        notify_sim_trade(sym, "SAT", sell_price, trade["pnl_pct"], reason, str(current_time)[:10], trade)
+                    except Exception:
+                        pass
+                    
                     if "STOP" in reason:
                         stopped_out_symbols.add(sym)
                         stop_times[sym] = current_time
@@ -876,6 +892,11 @@ class SimulationEngine:
                     'market_regime': market_regime,
                     'engine_version': 'V8_ELITE'
                 })
+                try:
+                    from services.telegram_bot import notify_sim_trade
+                    notify_sim_trade(sym, "AL", entry_price, 0.0, "Sistem AL verdi", str(current_time)[:10], active_trades[-1])
+                except Exception:
+                    pass
                 to_remove.append(s)
             for s in to_remove:
                 if s in pending_signals:
@@ -962,6 +983,11 @@ class SimulationEngine:
                     current_cash += sell_volume - sell_commission
                     trade['pnl_pct'] = (trade['pnl_val'] / buy_volume) * 100
                     trade['exit_reason'] = 'SEANS SONU NAKITE GECIS (17:50)'
+                    try:
+                        from services.telegram_bot import notify_sim_trade
+                        notify_sim_trade(sym, "SAT (GUN SONU)", eod_sell_price, trade["pnl_pct"], "17:50 Otomatik Kapanis", str(last_time)[:10], trade)
+                    except Exception:
+                        pass
                 else:
                     trade['exit_time'] = None
                     trade['exit_price'] = None

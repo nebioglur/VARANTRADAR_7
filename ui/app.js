@@ -341,6 +341,7 @@ async function fetchHomeWinrateStats() {
 
 
 function switchMainTab(tabName, btnElement) {
+    window.switchMainTab = switchMainTab;
     if (tabName !== 'dashboard') {
         lastActiveTab = tabName;
     }
@@ -381,6 +382,9 @@ function switchMainTab(tabName, btnElement) {
     const btWrapper = document.getElementById('backtest-wrapper');
     if (btWrapper) btWrapper.style.display = tabName === 'backtest' ? 'block' : 'none';
     
+    const v8Wrapper = document.getElementById('v8-wrapper');
+    if (v8Wrapper) v8Wrapper.style.display = tabName === 'v8' ? 'block' : 'none';
+
     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
     if (btnElement) btnElement.classList.add('active');
     
@@ -404,6 +408,17 @@ function switchMainTab(tabName, btnElement) {
     }
     if (tabName === 'simulation') {
         fetchSimulationData();
+    }
+    if (tabName === 'v8') {
+        if (typeof refreshV8Data === 'function') refreshV8Data();
+        if (typeof v8Interval !== 'undefined' && !v8Interval && typeof refreshV8Data === 'function') {
+            v8Interval = setInterval(refreshV8Data, 15000);
+        }
+    } else {
+        if (typeof v8Interval !== 'undefined' && v8Interval) {
+            clearInterval(v8Interval);
+            v8Interval = null;
+        }
     }
     if (tabName === 'portfolio') {
         fetchLiveTerminal();

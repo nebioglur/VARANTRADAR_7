@@ -228,3 +228,6 @@ class MarketRegimeEngine:
             "volatility_state": "UNKNOWN",
             "timestamp": datetime.now().isoformat()
         }
+
+
+V8RegimeEngine = MarketRegimeEngine

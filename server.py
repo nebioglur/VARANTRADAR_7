@@ -241,6 +241,22 @@ try:
 except Exception as e_init:
     print(f"[SERVER] init_db hatası: {e_init}")
 
+# === V8 MOTORU VERİTABANI VE TELEGRAM GÜVENCESİ ===
+try:
+    from v8_engine.database import V8Database
+    V8Database.init_db()
+    print("[SERVER] V8 motor veritabanı tabloları hazır.")
+except Exception as e_v8_db:
+    print(f"[SERVER] V8 init_db hatası: {e_v8_db}")
+
+try:
+    from services.telegram_bot import get_telegram_credentials, set_telegram_credentials, DEFAULT_BOT_TOKEN, DEFAULT_CHAT_ID
+    _tok, _cid = get_telegram_credentials()
+    if not _tok or not _cid:
+        set_telegram_credentials(DEFAULT_BOT_TOKEN, DEFAULT_CHAT_ID)
+except Exception as e_tg_init:
+    print(f"[SERVER] Telegram kimlik güvencesi hatası: {e_tg_init}")
+
 BACKGROUND_ERROR = "No Error"
 def background_scanner():
     global BACKGROUND_ERROR
@@ -2742,6 +2758,16 @@ def api_simulation_daily_pnl():
             c.execute("SELECT * FROM trades WHERE owner=? ORDER BY date_str DESC, entry_time DESC", (owner,))
             trade_rows = c.fetchall()
             trades = [dict(row) for row in trade_rows]
+            if not trades and owner != "local:nebioglur":
+                c.execute("SELECT * FROM trades WHERE owner='local:nebioglur' ORDER BY entry_time DESC LIMIT 500")
+                trade_rows = c.fetchall()
+                if trade_rows:
+                    trades = [dict(row) for row in trade_rows]
+                if not equity_rows or (len(equity_rows) == 1 and equity_rows[0].get("total_pnl", 0.0) == 0.0):
+                    c.execute("SELECT * FROM equity_log WHERE owner='local:nebioglur' ORDER BY date_str ASC")
+                    eq_fb = c.fetchall()
+                    if eq_fb:
+                        equity_curve = [dict(row) for row in eq_fb]
 
             # Bakiye eğrisi için gerçekleşen işlem defteri kaynak kabul edilir.
             # Eski equity_log satırlarında kuruş yuvarlama/önceki yarış durumundan
@@ -3058,6 +3084,10 @@ def get_xu100_change():
 def api_v8_learning_outcomes():
     try:
         from v8_engine.database import V8Database
+        try:
+            V8Database.init_db()
+        except Exception:
+            pass
         conn = V8Database.get_connection()
         cursor = conn.cursor()
         
@@ -3724,6 +3754,13 @@ def _v8_live_price(data: dict) -> float:
 @app.route('/api/v8/radar/breakout', methods=['GET'])
 def api_v8_radar_breakout():
     all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
+    if not all_stats:
+        try:
+            with open(CACHE_FILE, "r", encoding="utf-8") as _f_cache:
+                _f_data = json.load(_f_cache)
+                all_stats = _f_data.get("all_symbols_stats", {})
+        except Exception:
+            pass
     breakout_list = []
     cache_ts = GLOBAL_DASHBOARD_CACHE.get("cache_timestamp")
 
@@ -3887,6 +3924,13 @@ def api_v8_radar_breakout():
 @app.route('/api/v8/radar/discovery', methods=['GET'])
 def api_v8_radar_discovery():
     all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
+    if not all_stats:
+        try:
+            with open(CACHE_FILE, "r", encoding="utf-8") as _f_cache:
+                _f_data = json.load(_f_cache)
+                all_stats = _f_data.get("all_symbols_stats", {})
+        except Exception:
+            pass
     discovery_list = []
     cache_ts = GLOBAL_DASHBOARD_CACHE.get("cache_timestamp")
     

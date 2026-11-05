@@ -321,3 +321,6 @@ class OutcomeEngine:
         t = threading.Thread(target=_tracker, daemon=True)
         t.start()
         print("[V8] Outcome & Learning Tracker Thread Started.")
+
+
+V8LearningEngine = OutcomeEngine

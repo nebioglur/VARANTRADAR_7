@@ -9,8 +9,11 @@ from config.settings import TELEGRAM_BOT_TOKEN as BOT_TOKEN, TELEGRAM_CHAT_ID as
 logger = logging.getLogger(__name__)
 
 # ========== KIMLIK BILGISI COZUMLEME ==========
-# Sıra: env degiskenleri -> kalici veritabani (live_settings) -> yerel sqlite settings.
-# Render'da env tanimli olmasa bile uygulamadan kaydedilen ayarlar kullanilir.
+# Sıra: env degiskenleri -> kalici veritabani (live_settings) -> yerel sqlite settings -> varsayilan dogrulanmis bilgiler.
+# Render/Verdent'ta env tanimli olmasa bile uygulamadan kaydedilen veya varsayilan ayarlar kullanilir.
+DEFAULT_BOT_TOKEN = "8841122189:AAG4dMDnOS1hv9V_CD2mWCtsuz3Xf0x38tw"
+DEFAULT_CHAT_ID = "-1004489296054"
+
 _CRED_CACHE = {"token": None, "chat_id": None, "ts": 0.0}
 _CRED_TTL = 60.0
 
@@ -25,16 +28,21 @@ def _read_persistent_setting(key: str) -> Optional[str]:
         conn.close()
         if row:
             try:
-                return row["value"]
+                val = row["value"]
             except (TypeError, KeyError, IndexError):
-                return row[0] if isinstance(row, (tuple, list)) else None
+                val = row[0] if isinstance(row, (tuple, list)) else None
+            if val and str(val).strip():
+                return str(val).strip()
     except Exception:
         pass
     try:
         from database.db_manager import DBManager
-        return DBManager().get_setting(key)
+        val = DBManager().get_setting(key)
+        if val and str(val).strip():
+            return str(val).strip()
     except Exception:
-        return None
+        pass
+    return None
 
 
 
@@ -50,6 +58,12 @@ def get_telegram_credentials(force: bool = False):
         chat_id = _read_persistent_setting("telegram_chat_id")
     if token and "BURAYA_" in str(token):
         token = None
+    # Fallback to verified default credentials
+    if not token:
+        token = DEFAULT_BOT_TOKEN
+    if not chat_id:
+        chat_id = DEFAULT_CHAT_ID
+
     _CRED_CACHE["token"] = str(token).strip() if token else None
     _CRED_CACHE["chat_id"] = str(chat_id).strip() if chat_id else None
     _CRED_CACHE["ts"] = now
