@@ -27,8 +27,16 @@ logging.getLogger().addHandler(file_handler)
 logging.getLogger().setLevel(logging.INFO)
 
 from flask import Flask, request, jsonify, send_from_directory, make_response
-from flask_cors import CORS
-import feedparser
+try:
+    from flask_cors import CORS
+except ImportError:
+    def CORS(app, *args, **kwargs):
+        return app
+
+try:
+    import feedparser
+except ImportError:
+    feedparser = None
 
 # Ana dizindeki main.py'deki fonksiyonu çağıracağız
 from main import run_simulation_api
