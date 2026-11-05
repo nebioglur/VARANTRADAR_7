@@ -60,40 +60,33 @@ window.fetch = function(resource, options = {}) {
     return _originalFetch(resource, options);
 };
 
-// ========== GLOBAL HATA YAKALAYICI ==========
-// Yakalanmayan bir hata uygulamanin tamamini (saat, tablolar, piller) sessizce
-// öldürebilir; artik hatayi sunucuya loglayip kullaniciya gorunur "Yenile"
-// uyarisi gösteriyoruz.
+// ========== GLOBAL HATA YAKALAYICI & GÜVENLİK AĞI ==========
 function _vrReportError(context, message) {
     try {
-        fetch('/api/client_log', { method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ m: `${context}: ${String(message).slice(0, 400)}` }) });
+        console.warn(`[VR_${context}]`, message);
+        fetch('/api/client_log', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ m: `${context}: ${String(message).slice(0, 400)}` })
+        });
     } catch (_) {}
-    if (!document.getElementById('vr-error-banner')) {
-        const banner = document.createElement('div');
-        banner.id = 'vr-error-banner';
-        banner.style.cssText = 'position:fixed; bottom:12px; left:50%; transform:translateX(-50%); z-index:99999; background:rgba(239,68,68,0.95); color:#fff; padding:8px 14px; border-radius:10px; font-size:0.8rem; font-weight:600; display:flex; gap:10px; align-items:center; box-shadow:0 4px 16px rgba(0,0,0,0.4);';
-        banner.innerHTML = `<span>Bir görüntü hatası oluştu.</span><button onclick="location.reload()" style="background:#fff; color:#b91c1c; border:0; border-radius:6px; padding:4px 10px; font-weight:800; cursor:pointer;">Yenile</button>`;
-        document.body && document.body.appendChild(banner);
-    }
 }
 window.addEventListener('error', (e) => {
-    if (e && e.message) _vrReportError('JS_ERROR', `${e.message} @ ${e.filename?.split('/').pop()}:${e.lineno}`);
+    if (e && e.message) {
+        if (e.message.includes('ResizeObserver') || e.message.includes('Script error')) return;
+        _vrReportError('JS_ERROR', `${e.message} @ ${e.filename?.split('/').pop()}:${e.lineno}`);
+    }
 });
 window.addEventListener('unhandledrejection', (e) => {
-    _vrReportError('PROMISE_REJECT', e.reason?.message || e.reason);
+    console.warn('[PROMISE_REJECT]', e.reason?.message || e.reason);
 });
 
 // ========== SAAT + TABLO GÜVENLİK AĞI ==========
-// Sayfadaki herhangi bir init hatasi ana saat dongusunu ve veri cekimini
-// durdurursa devreye girer: saat 3 sn sonra hala 00:00:00 ise yedek saat
-// baslatir, veri 10 sn sonra hala bos ise dashboard cekimini tetikler.
 window.addEventListener('load', () => {
     setTimeout(() => {
         const clockEl = document.getElementById('live-clock');
         if (clockEl && clockEl.innerText.trim() === '00:00:00') {
             console.warn('[WATCHDOG] Ana saat dongusu calismiyor, yedek saat baslatiliyor.');
-            _vrReportError('WATCHDOG_CLOCK', 'live-clock stuck at 00:00:00');
             setInterval(() => {
                 const now = new Date();
                 const el = document.getElementById('live-clock');
@@ -108,9 +101,9 @@ window.addEventListener('load', () => {
         }
     }, 3000);
     setTimeout(() => {
-        if (typeof globalDashboardData === 'undefined' || !globalDashboardData || Object.keys(globalDashboardData).length === 0) {
+        const hash = window.location.hash || '';
+        if ((!hash || hash === '#home') && (typeof globalDashboardData === 'undefined' || !globalDashboardData || Object.keys(globalDashboardData).length === 0)) {
             console.warn('[WATCHDOG] Dashboard verisi bos, fetchDashboardData tetikleniyor.');
-            _vrReportError('WATCHDOG_DATA', 'dashboard data empty after 10s');
             if (typeof fetchDashboardData === 'function') fetchDashboardData();
         }
     }, 10000);

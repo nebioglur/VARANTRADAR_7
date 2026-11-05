@@ -2536,7 +2536,7 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="app.js?v=20261105_v27"></script>
+    <script src="app.js?v=20261105_v28"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js?v=20260916_v13"></script>
     <script>
@@ -2578,7 +2578,7 @@
         // PWA service worker kaydi (canli veri API'leri onbelleklenmez)
         if ("serviceWorker" in navigator) {
             window.addEventListener("load", function () {
-                navigator.serviceWorker.register("/sw.js?v=20261105_v27").then(function(reg) { if (reg) reg.update(); }).catch(function () {});
+                navigator.serviceWorker.register("/sw.js?v=20261105_v28").then(function(reg) { if (reg) reg.update(); }).catch(function () {});
             });
         }
     </script>
