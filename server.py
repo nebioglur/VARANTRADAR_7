@@ -3501,10 +3501,6 @@ def _v8_entry_confirmation(sym: str, price):
         rec["state"] = "REJECTED"
         rec["rejected_reason"] = f"Sinyal sonrası fiyat hızla düştü (₺{entry_price:.2f} → ₺{price:.2f})"
         return "REJECTED", rec["rejected_reason"]
-    if elapsed > 1800:
-        rec["state"] = "REJECTED"
-        rec["rejected_reason"] = "Teyit süresi (30 dk) aşıldı"
-        return "REJECTED", rec["rejected_reason"]
     if elapsed >= 180:
         if price >= entry_price * 0.995:
             rec["state"] = "CONFIRMED"
@@ -3523,15 +3519,17 @@ def _v8_a_class_gate(row: dict, sym: str, data: dict):
         chg = float(row.get("change_pct") or data.get("Change_Pct") or 0)
     except (TypeError, ValueError):
         chg = 0.0
-    if not (0.0 <= chg < 5.0):
-        reasons.append(f"Fiyat uygun bölgede değil ({chg:+.1f}%; 0..+5.0 aralığı gerekli)")
+    if chg >= 9.2:
+        reasons.append(f"Hisse tavana kilitli/çok yakın (+{chg:+.1f}%; tavan riski)")
+    elif chg < -2.5:
+        reasons.append(f"Hisse belirgin ekside ({chg:+.1f}%)")
 
     try:
         vol = float(data.get("Vol_Multiplier") or data.get("Volume_Ratio") or _stats_rel_vol(data) or 0)
     except (TypeError, ValueError):
         vol = 0.0
-    if vol < 1.0:
-        reasons.append(f"Hacim ortalamanın altında ({vol:.1f}x; en az 1.0x gerekli)")
+    if vol < 0.8:
+        reasons.append(f"Hacim ortalamanın altında ({vol:.1f}x; en az 0.8x gerekli)")
 
     intra = data.get("intraday_strength") or {}
     flow = str(intra.get("hourly_flow") or "").strip().casefold()
@@ -3581,7 +3579,7 @@ def _v8_gate_enter_row(row: dict, sym: str, data: dict) -> dict:
     cstate, cmsg = _v8_entry_confirmation(sym, live_price)
     row["confirm_state"] = cstate
     row["confirm_message"] = cmsg
-    if cstate != "CONFIRMED":
+    if cstate == "REJECTED":
         row["entry_status"] = "WAIT_CONFIRMATION"
         row["entry_reasons"] = [f"[TEYİT] {cmsg}"] + list(row.get("entry_reasons") or [])
     return row
@@ -3905,8 +3903,8 @@ def api_v8_radar_breakout():
             r["defense_mode"] = False
             r["entry_reasons"] = ["[SAVUNMA] Ayı gününde en fazla 1 savunma işlemi açılır; bu aday limite takıldı"] + list(r.get("entry_reasons") or [])
 
-    # TAVAN RİSKİ KAPISI: gun ici +%5 ve uzerinde olan hisseler "tavan
-    # kovalama" bolgesindedir; izleme listesinde bile aday gibi gorunmez.
+    # TAVAN RİSKİ KAPISI: gun ici +%9.2 ve uzerinde olan hisseler "tavan
+    # kovalama" bolgesindedir; BIST tavan kilit (%10) riski tasir.
     # Acikca UZAK DUR (NO_ENTRY) olarak isaretlenir; UI izleme kartlarina
     # almaz, erken aday promosyonu zaten uygulanamaz.
     for row in breakout_list:
@@ -3914,11 +3912,11 @@ def api_v8_radar_breakout():
             chg = float(row.get("change_pct") or row.get("intraday_change_pct") or 0)
         except (TypeError, ValueError):
             chg = 0.0
-        if chg >= 5.0:
+        if chg >= 9.2:
             row["entry_status"] = "NO_ENTRY"
             row["ceiling_risk"] = True
             row["entry_reasons"] = [
-                f"[TAVAN RİSKİ] +{chg:.1f} ile kovalama bölgesinde; tavan sonrası teyit beklenmeli"
+                f"[TAVAN RİSKİ] +{chg:.1f} ile tavana kilitli/kovalama bölgesinde"
             ] + list(row.get("entry_reasons") or [])
 
     return jsonify({"status": "success", "data": breakout_list})
