@@ -126,16 +126,16 @@
             </button>
         </div>
         <!-- 📱 Hamburger Menü Butonu (Sadece Mobilde Görünür) -->
-        <button type="button" class="mobile-hamburger" onclick="toggleMobileMenu()" aria-label="Menüyü Aç">
+        <button type="button" class="mobile-hamburger" onclick="toggleMobileMenu()" aria-label="Menüyü Aç" style="display:none;">
             <i class="fa-solid fa-bars"></i>
         </button>
     </header>
 
     <!-- 📱 Mobil Slide-Out Menü Overlay -->
-    <div class="mobile-menu-overlay" id="mobileMenuOverlay" onclick="closeMobileMenu()"></div>
+    <div class="mobile-menu-overlay" id="mobileMenuOverlay" onclick="closeMobileMenu()" style="display:none;"></div>
 
     <!-- 📱 Mobil Slide-Out Menü -->
-    <div class="mobile-slide-menu" id="mobileSlideMenu">
+    <div class="mobile-slide-menu" id="mobileSlideMenu" style="display:none;">
         <div class="menu-header">
             <h3><i class="fa-solid fa-layer-group"></i> Menü</h3>
             <button type="button" class="menu-close" onclick="closeMobileMenu()"><i class="fa-solid fa-xmark"></i></button>
@@ -2558,7 +2558,7 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="app.js?v=20261106_v31"></script>
+    <script src="app.js?v=20261106_v32"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js?v=20260916_v13"></script>
     <script>
@@ -2600,7 +2600,7 @@
         // PWA service worker kaydi (canli veri API'leri onbelleklenmez)
         if ("serviceWorker" in navigator) {
             window.addEventListener("load", function () {
-                navigator.serviceWorker.register("/sw.js?v=20261106_v31").then(function(reg) { if (reg) reg.update(); }).catch(function () {});
+                navigator.serviceWorker.register("/sw.js?v=20261106_v32").then(function(reg) { if (reg) reg.update(); }).catch(function () {});
             });
         }
     </script>

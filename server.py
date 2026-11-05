@@ -3119,6 +3119,69 @@ def api_telegram_test():
         return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
 
 
+@app.route('/api/telegram/send_tavan_candidates', methods=['POST'])
+def api_telegram_send_tavan_candidates():
+    """Tavan adaylari / Dag Kekligi sinyallerini Telegram'a gonderir."""
+    try:
+        from services.telegram_bot import send_batch_vip_signals
+        from services.notification_manager import NotificationManager
+        candidates = GLOBAL_DASHBOARD_CACHE.get("tavan_adaylari", [])
+        if not candidates:
+            all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
+            candidates = [v for v in all_stats.values() if float(v.get("Score", 0) or 0) >= 80]
+
+        if not candidates:
+            return jsonify({"status": "warning", "message": "Gönderilecek tavan adayı bulunamadı (liste boş)."}), 200
+
+        # Batch VIP sinyali olarak gonder
+        ok = send_batch_vip_signals(candidates[:10])
+        nm = NotificationManager()
+        for c in candidates[:3]:
+            try:
+                sym = c.get('symbol') or c.get('Symbol', '')
+                sc = int(float(c.get('score', c.get('Score', 85)) or 85))
+                rs = c.get('reason') or c.get('Reason') or 'Tavan & Hacim Kırılımı'
+                nm.send_tavan_alert(sym, sc, rs, extra=c)
+            except Exception:
+                pass
+        return jsonify({"status": "success", "message": f"{min(len(candidates), 10)} adet tavan adayı Telegram'a iletildi."})
+    except Exception as e:
+        logging.exception("send_tavan_candidates error")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/telegram/send_special_ranking', methods=['POST'])
+def api_telegram_send_special_ranking():
+    """%90 uzeri basari ozel siralamasini Telegram'a gonderir."""
+    try:
+        from services.telegram_bot import get_special_ranking_candidates, send_special_ranking_alert
+        all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
+        candidates = get_special_ranking_candidates(all_stats, top_n=5)
+        if not candidates:
+            return jsonify({"status": "warning", "message": "Filtrelere uyan özel sıralama adayı bulunamadı."}), 200
+        ok = send_special_ranking_alert(candidates)
+        if ok:
+            return jsonify({"status": "success", "message": f"{len(candidates)} adet %90 üzeri başarı adayı Telegram'a iletildi."})
+        return jsonify({"status": "error", "message": "Telegram gönderimi başarısız oldu."}), 500
+    except Exception as e:
+        logging.exception("send_special_ranking error")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/telegram/send_morning_compass', methods=['POST'])
+def api_telegram_send_morning_compass():
+    """Gunun Pusulasi bultenini Telegram'a gonderir."""
+    try:
+        from services.telegram_bot import send_morning_compass_bulletin
+        ok = send_morning_compass_bulletin()
+        if ok:
+            return jsonify({"status": "success", "message": "Günün Pusulası bülteni Telegram'a iletildi."})
+        return jsonify({"status": "error", "message": "Telegram gönderimi başarısız oldu."}), 500
+    except Exception as e:
+        logging.exception("send_morning_compass error")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @app.route('/api/simulation/send_telegram', methods=['POST'])
 def api_simulation_send_telegram():
     """Tekil özel format üretmez; aynı tek-gün özeti ve dedup akışını kullanır."""

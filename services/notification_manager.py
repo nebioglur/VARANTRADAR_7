@@ -60,9 +60,6 @@ class NotificationManager:
         return True
 
     def send_tavan_alert(self, symbol: str, score: int, reason: str, position: dict = None, extra: dict = None) -> bool:
-        """KULLANICI TALEBİ: Tavan radarı telegram bildirimi kapatıldı (yalnızca simülasyon trade log gider)."""
-        return True
-    def _send_tavan_alert_disabled(self, symbol: str, score: int, reason: str, position: dict = None, extra: dict = None) -> bool:
         extra = extra or {}
         phase = str(extra.get("Phase_Badge", "TAVAN RADARI"))
         if score < 75:

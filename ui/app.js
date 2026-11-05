@@ -766,7 +766,7 @@ async function analyzeSymbol() {
             }
             loadingEl.style.display = 'none';
             if (response.status !== 200 || data.status === "error") {
-                alert("⛔ UPLINK ERROR\n\n" + (data.message || data.error));
+                alert(data.message || data.error || "Veri çekilemedi.");
                 cancelLoadingAndGoBack();
                 return;
             }
@@ -4517,6 +4517,79 @@ async function testTelegramSettings() {
     }
 }
 
+async function sendSpecialRankingTelegram() {
+    const btn = document.getElementById('all-stocks-tg-send-btn');
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gönderiliyor...';
+    }
+    _tgShowMsg('Özel Sıralama Telegram\'a gönderiliyor...', true);
+
+    try {
+        const res = await vrAuthorizedFetch('/api/telegram/send_special_ranking', { method: 'POST' });
+        const data = await res.json();
+        if (data.status === 'success') {
+            _tgShowMsg('✅ ' + data.message, true);
+            alert('✅ ' + data.message);
+        } else if (data.status === 'warning') {
+            _tgShowMsg('⚠️ ' + data.message, false);
+            alert('⚠️ ' + data.message);
+        } else {
+            _tgShowMsg('❌ Hata: ' + (data.message || 'Gönderilemedi.'), false);
+            alert('❌ ' + (data.message || 'Gönderilemedi.'));
+        }
+    } catch (e) {
+        _tgShowMsg('❌ Bağlantı hatası: ' + e.message, false);
+        alert('❌ Bağlantı hatası: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+    }
+}
+
+async function sendMorningCompassTelegram() {
+    _tgShowMsg('Günün Pusulası Telegram\'a gönderiliyor...', true);
+    try {
+        const res = await vrAuthorizedFetch('/api/telegram/send_morning_compass', { method: 'POST' });
+        const data = await res.json();
+        if (data.status === 'success') {
+            _tgShowMsg('✅ ' + data.message, true);
+            alert('✅ ' + data.message);
+        } else {
+            _tgShowMsg('❌ Hata: ' + (data.message || 'Gönderilemedi.'), false);
+            alert('❌ ' + (data.message || 'Gönderilemedi.'));
+        }
+    } catch (e) {
+        _tgShowMsg('❌ Bağlantı hatası: ' + e.message, false);
+        alert('❌ Bağlantı hatası: ' + e.message);
+    }
+}
+
+async function sendTavanCandidatesTelegram() {
+    _tgShowMsg('Dağ Kekliği & Tavan Sinyalleri Telegram\'a gönderiliyor...', true);
+    try {
+        const res = await vrAuthorizedFetch('/api/telegram/send_tavan_candidates', { method: 'POST' });
+        const data = await res.json();
+        if (data.status === 'success') {
+            _tgShowMsg('✅ ' + data.message, true);
+            alert('✅ ' + data.message);
+        } else if (data.status === 'warning') {
+            _tgShowMsg('⚠️ ' + data.message, false);
+            alert('⚠️ ' + data.message);
+        } else {
+            _tgShowMsg('❌ Hata: ' + (data.message || 'Gönderilemedi.'), false);
+            alert('❌ ' + (data.message || 'Gönderilemedi.'));
+        }
+    } catch (e) {
+        _tgShowMsg('❌ Bağlantı hatası: ' + e.message, false);
+        alert('❌ Bağlantı hatası: ' + e.message);
+    }
+}
+
+
 function parseIstanbulMarketTime(value) {
     if (!value) return new Date(NaN);
     const normalized = String(value).trim().replace(' ', 'T');
@@ -4653,7 +4726,8 @@ async function fetchSimulationData() {
                 } else {
                     trades.forEach(t => {
                         const tr = document.createElement('tr');
-                        const isClosed = t.exit_time && t.exit_price;
+                        const isTP1 = String(t.entry_time || '').includes('[TP1]') || String(t.exit_reason || '').includes('TP1');
+                        const isClosed = (t.exit_time && t.exit_price) || isTP1;
                         const pnlColor = t.pnl_pct >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
                         const pnlSign = t.pnl_pct >= 0 ? '+' : '';
                         
@@ -4669,15 +4743,21 @@ async function fetchSimulationData() {
                         const strategyStr = t.strategy_name
                             ? `<div style="margin-top:0.25rem; color:var(--accent-blue); font-size:0.7rem;" title="${t.entry_checks || ''}">${t.strategy_name}${t.risk_amount ? ` · Risk: ₺${Number(t.risk_amount).toFixed(0)}` : ''}</div>`
                             : '';
-                        const statusStr = (isClosed ? (t.exit_reason || 'Kapandı') : '<span style="color:var(--accent-yellow); font-weight:bold;"><i class="fa-solid fa-spinner fa-spin"></i> AÇIK POZİSYON</span>') + strategyStr;
+                        const tp1Badge = '<span style="background:rgba(16,185,129,0.18); color:#34d399; border:1px solid rgba(16,185,129,0.35); padding:2px 8px; border-radius:12px; font-weight:800; font-size:0.75rem;"><i class="fa-solid fa-scale-balanced"></i> TP1 KÂR ALINDI (%50)</span>';
+                        let exitLabel = isClosed ? (t.exit_reason || 'Kapandı') : '<span style="color:var(--accent-yellow); font-weight:bold;"><i class="fa-solid fa-spinner fa-spin"></i> AÇIK POZİSYON</span>';
+                        if (isTP1) {
+                            exitLabel = tp1Badge + (t.exit_reason ? ` <span style="font-size:0.75rem; color:#cbd5e1;">${t.exit_reason}</span>` : '');
+                        }
+                        const statusStr = exitLabel + strategyStr;
 
                         const formatDt = (iso) => {
                             if (!iso) return '-';
+                            const cleanIso = String(iso).replace(' [TP1]', '').trim();
                             try {
-                                const d = parseIstanbulMarketTime(iso);
-                                if(isNaN(d.getTime())) return iso;
+                                const d = parseIstanbulMarketTime(cleanIso);
+                                if(isNaN(d.getTime())) return cleanIso;
                                 return d.toLocaleString('tr-TR', {timeZone:'Europe/Istanbul', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit', hourCycle:'h23'});
-                            } catch(e) { return iso; }
+                            } catch(e) { return cleanIso; }
                         };
                         const entryTimeFmt = formatDt(t.entry_time);
                         const exitTimeFmt = isClosed ? formatDt(t.exit_time) : '<span style="color:var(--accent-yellow)">İşlemde</span>';

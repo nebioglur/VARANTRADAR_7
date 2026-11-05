@@ -808,6 +808,8 @@ def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.
     try:
         _t_owner = trade.get('owner') or os.environ.get('ADMIN_OWNER', 'local:nebioglur')
         _t_entry_time = str(trade.get('entry_time') or event_time)
+        if 'TP1' in action and '[TP1]' not in _t_entry_time:
+            _t_entry_time = _t_entry_time + ' [TP1]'
         _t_entry_price = float(trade.get('entry_price') or price)
         _t_exit_time = trade.get('exit_time') or (event_time if "SAT" in action else None)
         _t_exit_price = trade.get('exit_price') or (price if "SAT" in action else None)

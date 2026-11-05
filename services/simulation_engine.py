@@ -728,7 +728,7 @@ class SimulationEngine:
                         
                         completed_trades.append({
                             'symbol': sym,
-                            'entry_time': trade['entry_time'],
+                            'entry_time': trade['entry_time'] + ' [TP1]',
                             'entry_price': entry,
                             'shares': out_shares,
                             'exit_time': str(current_time),
