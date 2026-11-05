@@ -4333,6 +4333,14 @@ def api_telegram_test_suite():
         return jsonify({'status': 'error', 'message': 'İşlem sırasında hata oluştu'}), 500
 
 
+# WSGI/Production startup: Ensure background workers run when imported by uWSGI / Gunicorn
+if os.environ.get("ENABLE_BACKGROUND_SERVICES", "true").lower() == "true":
+    try:
+        start_background_services()
+    except Exception as _bg_err:
+        logging.exception("WSGI background services startup error: %s", _bg_err)
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     start_background_services()
