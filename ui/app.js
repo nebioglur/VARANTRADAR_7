@@ -7883,7 +7883,7 @@ function renderSuper12Table() {
         else if (state === 'BREAKOUT') ceilingScore = bnd(50 + Math.min(rVol, 3) * 10);
 
         const baseEligible = (
-            price > 0 && change >= 0.2 && change < 5.0 &&
+            price > 0 && !data.Price_Stale && change >= 0.2 && change < 5.0 &&
             volTL >= 30000000 && rVol >= 1.0 && hourlyFlow !== 'Satılıyor'
         );
         const score = profitScore * weights.profit_take + plus5Score * weights.plus5 + (ceilingScore || 0) * weights.ceiling;

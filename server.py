@@ -318,8 +318,24 @@ def start_live_data_collector():
                                             row = fast_data.xs(sym_is, level=1, axis=1).iloc[-1] if hasattr(fast_data.columns, 'levels') else fast_data[sym_is].iloc[-1]
 
                                         close_px = float(row["Close"])
-                                        if not math.isnan(close_px):
-                                            GLOBAL_DASHBOARD_CACHE["all_symbols_stats"][sym]["Price"] = round(close_px, 2)
+                                        if not math.isnan(close_px) and close_px > 0:
+                                            _stat_row = GLOBAL_DASHBOARD_CACHE["all_symbols_stats"][sym]
+                                            _stat_row["Price"] = round(close_px, 2)
+                                            _stat_row["Price_Stale"] = False
+                                            _stat_row["Last_Price_Update"] = today_str
+                                            # CAPA DOGRULAMA: tarayici cache'indeki Daily_Close
+                                            # (onceki gun resmi kapanisi) ile Yahoo'nun onceki gun
+                                            # kapanisi arasinda %25+ sapma varsa tarayici verisi
+                                            # bayat demektir (orn. OZATD: cache 4650, gercek 140).
+                                            # Bayat Daily_Close, Price ve degisim capasini da
+                                            # beraberinde bozuyordu; taze kapanisla degistirilir.
+                                            try:
+                                                _cached_dc = float(_stat_row.get("Daily_Close") or 0)
+                                                if _cached_dc > 0 and abs(_cached_dc - close_px) / _cached_dc > 0.25:
+                                                    _stat_row["Daily_Close"] = round(close_px, 2)
+                                                    _stat_row["Change_Pct"] = 0.0
+                                            except Exception:
+                                                pass
                                             # DEGISIM DOGRU CAPA: onceki gunun resmi kapanisina gore.
                                             # (Eski kod son 5dk mumun acilis-kapanis deltasi aliyordu
                                             #  -> cogu hisse 5dk'da yatay kaldigi icin 0.00 gorunuyordu.)
@@ -358,6 +374,18 @@ def start_live_data_collector():
                                             updates += 1
                                     except Exception:
                                         pass
+
+                            # BAYATLIK ISARETLEME: bugun Yahoo'dan taze bar gelmeyen
+                            # semboller (orn. cok dusuk likidite) eski fiyatiyla
+                            # AL adayi listesine girmemeli; Price_Stale=True ile
+                            # isaretlenir ve SUPER12/V8 filtreleri eler.
+                            _stale_marked = 0
+                            for _sym, _row in GLOBAL_DASHBOARD_CACHE["all_symbols_stats"].items():
+                                if not isinstance(_row, dict):
+                                    continue
+                                if _row.get("Last_Price_Update") != today_str:
+                                    _row["Price_Stale"] = True
+                                    _stale_marked += 1
 
                             # CACHE GENELI YEDEK CAPA: Yahoo satiri gelmeyen semboller
                             # icin cache'teki Price ile Daily_Close (onceki gun resmi
@@ -3156,7 +3184,7 @@ def api_v8_radar_share_signal():
 
         bo = data.get("v8_breakout") or {}
         metrics = bo.get("metrics") or {}
-        entry = float(data.get("Daily_Close") or data.get("Price") or 0)
+        entry = float(data.get("Price") or data.get("Daily_Close") or 0)
         if entry <= 0:
             return jsonify({"status": "error", "message": f"{symbol} için fiyat verisi yok."}), 404
 
@@ -3397,7 +3425,7 @@ def _v8_defense_mode_check(row: dict, sym: str, data: dict) -> bool:
         vol = 0.0
     if vol < 1.5:
         return False  # sig hacim savunma islemine girmez
-    price = float(data.get("Daily_Close") or data.get("Price") or 0)
+    price = float(data.get("Price") or data.get("Daily_Close") or 0)
     if price < 3:
         return False
     try:
@@ -3585,7 +3613,7 @@ def auto_send_v8_signals():
                 bo_row, reasons = intra.get("breakout") or {}, ["1 saatlik barda kırılım teyidi (gün içi sinyal)"] + list(intra.get("reasons") or [])
             else:
                 continue
-            entry = float(data.get("Daily_Close") or data.get("Price") or 0)
+            entry = float(data.get("Price") or data.get("Daily_Close") or 0)
             if entry <= 0:
                 continue
             # KAP HABER FILTRESI: onemli olay duyurusu varsa sinyal gitmez.
@@ -3679,18 +3707,36 @@ def api_v8_kap_status():
     except Exception as e:
         return jsonify({"ok": False, "filter_active": False, "error": str(e)})
 
+def _v8_live_price(data: dict) -> float:
+    """Kartlarda gosterilecek fiyat: once CANLI Price (bayat degilse),
+    yoksa Daily_Close. OZATD vakasi: cache'teki eski kapanis 4650 TL
+    gorunuyordu; canli fiyat geldiginde o kullanilir."""
+    try:
+        if not data.get("Price_Stale"):
+            p = float(data.get("Price") or 0)
+            if p > 0:
+                return p
+        return float(data.get("Price") or data.get("Daily_Close") or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
 @app.route('/api/v8/radar/breakout', methods=['GET'])
 def api_v8_radar_breakout():
     all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
     breakout_list = []
     cache_ts = GLOBAL_DASHBOARD_CACHE.get("cache_timestamp")
-    
+
     for sym, data in all_stats.items():
+        # BAYAT FIYAT KORUMASI: bugun taze fiyat gelmemis semboller
+        # (OZATD gibi cok dusuk likiditeliler) eski fiyatiyla kart uretmez.
+        if data.get("Price_Stale") and not data.get("v8_breakout", {}).get("is_breakout"):
+            continue
         bo = data.get("v8_breakout")
         if bo and bo.get("is_breakout"):
             row = dict(bo)
             row["symbol"] = sym
-            row["price"] = data.get("Daily_Close", 0.0)
+            row["price"] = _v8_live_price(data)
             row["change_pct"] = data.get("Change_Pct", 0.0)
             row["volume"] = data.get("Volume", 0)
             row["volume_strength"] = _stats_rel_vol(data)
@@ -3708,7 +3754,7 @@ def api_v8_radar_breakout():
             if intra_bo.get("is_breakout") and intra.get("entry_status") == "ENTER":
                 row = dict(intra_bo)
                 row["symbol"] = sym
-                row["price"] = data.get("Daily_Close", 0.0)
+                row["price"] = _v8_live_price(data)
                 row["change_pct"] = data.get("Change_Pct", 0.0)
                 row["volume"] = data.get("Volume", 0)
                 row["volume_strength"] = _stats_rel_vol(data)
@@ -3732,7 +3778,7 @@ def api_v8_radar_breakout():
             rel_vol = _stats_rel_vol(data)
             breakout_list.append({
                 "symbol": sym,
-                "price": data.get("Daily_Close", 0.0),
+                "price": _v8_live_price(data),
                 "change_pct": data.get("Change_Pct", 0.0),
                 "volume": data.get("Volume", 0),
                 "is_breakout": False,
@@ -3754,7 +3800,7 @@ def api_v8_radar_breakout():
         elif data.get("Daily_Close") or data.get("Price"):
             # V8 verisi geçici olarak boşsa günlük taramayı da tamamen
             # kaybetme; bunları AL değil, düşük öncelikli BEKLE adayı yap.
-            price = float(data.get("Daily_Close") or data.get("Price") or 0)
+            price = _v8_live_price(data)
             change = float(data.get("Change_Pct") or 0)
             rel_vol = _stats_rel_vol(data)
             fallback_score = max(35.0, min(65.0, 48.0 + change * 2.0 + (rel_vol - 1.0) * 5.0))
@@ -3852,14 +3898,14 @@ def api_v8_radar_discovery():
             disc["metrics"] = dict(disc.get("metrics") or {})
             disc["metrics"]["relative_volume"] = _stats_rel_vol(data)
             disc["symbol"] = sym
-            disc["price"] = data.get("Daily_Close", 0.0)
+            disc["price"] = _v8_live_price(data)
             disc["change_pct"] = data.get("Change_Pct", 0.0)
             disc["volume"] = data.get("Volume", 0)
             disc["volume_strength"] = _stats_rel_vol(data)
             disc["scan_timestamp"] = cache_ts
             discovery_list.append(disc)
         elif data.get("Daily_Close") or data.get("Price"):
-            price = float(data.get("Daily_Close") or data.get("Price") or 0)
+            price = _v8_live_price(data)
             change = float(data.get("Change_Pct") or 0)
             rel_vol = _stats_rel_vol(data)
             discovery_list.append({

@@ -253,6 +253,7 @@ def score_super12_candidates(all_stats: dict, regime: str = "NEUTRAL", volatilit
 
         base_eligible = (
             price > 0
+            and not bool(raw.get("Price_Stale"))
             and 0.2 <= change < 5.0
             and volume_tl >= 30_000_000
             and rel_vol >= 1.0
