@@ -1964,6 +1964,7 @@ window.onload = function() {
     }
     
     fetchDashboardData();
+    fetchSimulationData(); // Ana sayfadaki Kasa Kümülatif KPI'ını doldur
     // Veri boşsa hızlı yeniden denemek için 15 sn, dolunca 30 sn'ye geçer
     dashboardPollInterval = setInterval(fetchDashboardData, 15000);
     
@@ -4525,7 +4526,11 @@ function parseIstanbulMarketTime(value) {
 
 async function fetchSimulationData() {
     const tbody = document.getElementById('sim-trade-log-tbody');
-    if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> İşlem Geçmişi Yükleniyor...</td></tr>';
+    const simWrapper = document.getElementById('simulation-wrapper');
+    const isSimVisible = simWrapper && simWrapper.style.display !== 'none';
+    if (tbody && isSimVisible) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> İşlem Geçmişi Yükleniyor...</td></tr>';
+    }
 
     try {
         const res = await vrAuthorizedFetch(`/api/simulation/daily_pnl?t=` + Date.now());
