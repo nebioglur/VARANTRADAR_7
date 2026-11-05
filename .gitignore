@@ -36,3 +36,5 @@ scratch/__pycache__/
 data/
 logs/
 *.log
+
+cloudflared.exe
