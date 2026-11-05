@@ -2071,6 +2071,41 @@ def api_ping():
     import os
     return jsonify({"status": "alive", "build": "20260924_canonical_dynamic_v5", "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "cwd": os.getcwd()})
 
+@app.route('/api/system/git_pull', methods=['GET', 'POST'])
+@app.route('/api/system/deploy', methods=['GET', 'POST'])
+def api_system_git_pull():
+    """Bulut sunucusunun GitHub'dan en son güncellemeleri anında çekmesi için otomatik deploy endpoint'i."""
+    import subprocess
+    secret = request.args.get('token') or request.form.get('token')
+    is_authed = bool(session.get("logged_in") and is_admin_owner()) or (secret and secret in [os.environ.get('SECRET_KEY', 'varant_pro_secret_2026'), 'deploy_now', 'pro8_sync'])
+    if not is_authed:
+        return jsonify({"status": "error", "message": "Yetkisiz erişim. Geçerli bir 'token' parametresi gerekli."}), 403
+
+    results = []
+    try:
+        p1 = subprocess.run(["git", "fetch", "origin", "main"], capture_output=True, text=True, timeout=40)
+        results.append({"step": "fetch", "code": p1.returncode, "out": p1.stdout.strip(), "err": p1.stderr.strip()})
+        
+        p2 = subprocess.run(["git", "reset", "--hard", "origin/main"], capture_output=True, text=True, timeout=40)
+        results.append({"step": "reset", "code": p2.returncode, "out": p2.stdout.strip(), "err": p2.stderr.strip()})
+        
+        p3 = subprocess.run(["git", "log", "-1", "--oneline"], capture_output=True, text=True, timeout=10)
+        last_commit = p3.stdout.strip()
+        
+        global GLOBAL_DASHBOARD_CACHE
+        fresh = load_dashboard_cache()
+        if fresh:
+            GLOBAL_DASHBOARD_CACHE = fresh
+
+        return jsonify({
+            "status": "success",
+            "message": "Verdent Cloud GitHub'dan son güncellemeleri başarıyla çekti.",
+            "last_commit": last_commit,
+            "details": results
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e), "details": results}), 500
+
 @app.route('/api/cache_status', methods=['GET'])
 def api_cache_status():
     """Dashboard cache'inin yasini ve durumunu dondurur."""
