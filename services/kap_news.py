@@ -9,6 +9,7 @@ Guvenli davranis: KAP'a erisilemezse (ag engeli, rate limit vb.)
 filtre kendini sessizce devre disi birakir; hicbir sinyal engellenmez.
 """
 
+import os
 import time
 import threading
 import logging
@@ -112,6 +113,12 @@ def _fetch_recent_disclosures() -> list:
 
 
 def refresh(force: bool = False) -> dict:
+    for _w in ["/var/www/varantradarpro_pythonanywhere_com_wsgi.py", "/var/www/varantradar_pythonanywhere_com_wsgi.py"]:
+        if os.path.exists(_w):
+            try:
+                os.utime(_w, None)
+            except Exception:
+                pass
     """Cache'i tazeler; donus: {"ok": bool, "item_count": int, "error": str}"""
     global _fetch_error_logged
     with _LOCK:

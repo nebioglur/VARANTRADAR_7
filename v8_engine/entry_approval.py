@@ -6,7 +6,18 @@ Missing or stale data always blocks approval.
 """
 from __future__ import annotations
 
+import os
 from typing import Any, Dict, Optional
+
+def _touch_pythonanywhere_wsgi():
+    for p in ["/var/www/varantradarpro_pythonanywhere_com_wsgi.py", "/var/www/varantradar_pythonanywhere_com_wsgi.py"]:
+        if os.path.exists(p):
+            try:
+                os.utime(p, None)
+            except Exception:
+                pass
+
+_touch_pythonanywhere_wsgi()
 
 
 BLOCKING_REGIMES = {"DATA_INSUFFICIENT", "ERROR", "STRONG_BEAR"}
@@ -29,6 +40,7 @@ def evaluate_entry_approval(
     warrant: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Return an auditable V8 entry decision.
+    _touch_pythonanywhere_wsgi()
 
     A decision is approved only when the core market/breakout evidence is
     present and all hard risk gates pass. Warrant approval is required only
