@@ -3057,7 +3057,8 @@ def api_telegram_test():
             return jsonify({"status": "error", "message": "Telegram ayarlari eksik. Once token ve chat ID kaydedin."}), 400
         ok = send_telegram_message(
             "✅ <b>VarantRadar Pro</b> — Telegram baglanti testi basarili!\n"
-            "🤖 Simulasyon AL/SAT bildirimleri bu kanala gelecek."
+            "🤖 Simulasyon AL/SAT bildirimleri bu kanala gelecek.",
+            force=True
         )
         if ok:
             return jsonify({"status": "success", "message": "Test mesaji gonderildi. Telegram'ı kontrol edin."})

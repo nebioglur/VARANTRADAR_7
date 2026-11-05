@@ -198,7 +198,8 @@ class SimulationEngine:
         # Telegram events run only after the same trade snapshot is committed.
         try:
             from services.telegram_bot import notify_simulation_trade_events
-            notify_simulation_trade_events(trades, date_str)
+            # Devre disi: notify_sim_trade aninda tekil zengin kart atiyor; mukerrer engeli
+            pass
         except Exception as alert_error:
             print(f"[SimEngine] Telegram işlem bildirimi hatası: {alert_error}")
 

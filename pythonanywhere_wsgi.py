@@ -22,6 +22,8 @@ os.chdir(project_home)
 os.environ["ENABLE_BACKGROUND_SERVICES"] = "true"
 os.environ["ENVIRONMENT"] = "production"
 os.environ["SECRET_KEY"] = "varantradar_secret_key_2026_prod_secure"
+os.environ["TELEGRAM_PRIMARY_HOST"] = "pythonanywhere"
+os.environ["IS_PRIMARY_TELEGRAM"] = "true"
 
 # 3. Flask uygulamasını 'application' olarak dışa aktar
 from server import app as application

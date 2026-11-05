@@ -91,10 +91,51 @@ def set_telegram_credentials(token: str, chat_id: str) -> bool:
 
 
 
-def send_telegram_message(text: str, parse_mode: str = "HTML") -> bool:
+def is_authorized_telegram_sender() -> tuple:
+    """
+    Sadece ve sadece ana yetkili uretim ortami (PythonAnywhere) Telegram mesaji gonderebilir.
+    Diger tum ikincil/eski deploy ortamlari (Render, Verdent Cloud, yerel test bilgisayari):
+    - Bilgi kirliligi ve mukerrer sinyal gondermemesi icin otomatik engellenir.
+    """
+    # 1. Acik devre disi birakma bayragi
+    if os.environ.get("DISABLE_TELEGRAM", "").lower() in ("1", "true", "yes"):
+        return False, "DISABLE_TELEGRAM bayragi aktif"
+
+    # 2. Render veya Verdent Cloud ortamindaysa -> KESIN ENGELLE!
+    if os.environ.get("RENDER") == "true" or os.environ.get("RENDER_SERVICE_ID"):
+        return False, "Render ikincil sunucusunda calisiyor (bilgi kirliligi engellendi)"
+    if os.environ.get("VERDENT") or os.environ.get("VERDENT_PROJECT_ID") or os.environ.get("VERDENT_APP_ID"):
+        return False, "Verdent Cloud ikincil sunucusunda calisiyor (bilgi kirliligi engellendi)"
+
+    # 3. PythonAnywhere ana sunucu kontrolu
+    is_pythonanywhere = (
+        os.path.exists("/home/varantradarpro") or
+        bool(os.environ.get("PYTHONANYWHERE_SITE")) or
+        bool(os.environ.get("PYTHONANYWHERE_DOMAIN")) or
+        os.environ.get("TELEGRAM_PRIMARY_HOST") == "pythonanywhere" or
+        os.environ.get("IS_PRIMARY_TELEGRAM") == "true"
+    )
+    if is_pythonanywhere:
+        return True, "PythonAnywhere Yetkili Ana Sunucu"
+
+    # 4. Yerel gelistirme ortami (Windows / Mac vb.):
+    if os.environ.get("ENABLE_LOCAL_TELEGRAM") == "1":
+        return True, "Yerel test izinli"
+
+    return False, "Ikincil/yerel ortam (yalnizca PythonAnywhere ana sunucusu Telegram bildirimi gonderebilir)"
+
+
+def send_telegram_message(text: str, parse_mode: str = "HTML", force: bool = False) -> bool:
+    if not force:
+        allowed, reason = is_authorized_telegram_sender()
+        if not allowed:
+            logger.info(f"[TG-GUARD] Telegram gonderimi engellendi ({reason}): {text[:50]}...")
+            return False
     """
     Belirlenen Chat ID'ye Telegram uzerinden mesaj gonderir.
     """
+
+
     bot_token, chat_id = get_telegram_credentials()
     if not bot_token or not chat_id:
         logger.error("Telegram ayarlari eksik (env + veritabani bos). Bildirim gonderilemedi! "
@@ -401,9 +442,16 @@ _ASSETS_DIR = _os.path.join(_os.path.dirname(__file__), "assets")
 
 
 
-def send_voice_alert(alert_type: str, caption: str) -> bool:
+def send_voice_alert(alert_type: str, caption: str, force: bool = False) -> bool:
+    if not force:
+        allowed, reason = is_authorized_telegram_sender()
+        if not allowed:
+            logger.info(f"[TG-GUARD] Sesli uyari engellendi ({reason}): {caption[:50]}...")
+            return False
     """Sesli uyarI gonderir: buy_alert / sell_alert mp3 + mesaj.
     Ses dosyasi yoksa duz mesaj fallback."""
+
+
     bot_token, chat_id = get_telegram_credentials()
     if not bot_token or not chat_id:
         return send_telegram_message(caption)
@@ -622,7 +670,10 @@ def notify_simulation_trade_events(trades: list, date_str: str) -> bool:
             except (TypeError, ValueError):
                 continue
 
-            identity = "|".join((date_str, symbol, action, entry_time, event_time))
+            clean_sym = symbol.replace(".IS", "").strip().upper()
+            norm_entry = str(entry_time or "")[:19]
+            norm_event = str(event_time or "")[:19]
+            identity = "|".join((date_str, clean_sym, action.strip().upper(), norm_entry, norm_event))
             event_key = hashlib.sha256(identity.encode("utf-8")).hexdigest()
             try:
                 conn = get_connection()
@@ -713,7 +764,10 @@ def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.
         logger.warning("Simulasyon Telegram olayi icin zaman okunamadi: %s", event_time)
         return False
 
-    identity = "|".join((date_str, symbol, action, entry_time, event_time))
+    clean_sym = symbol.replace(".IS", "").strip().upper()
+    norm_entry = str(entry_time or "")[:19]
+    norm_event = str(event_time or "")[:19]
+    identity = "|".join((date_str, clean_sym, action.strip().upper(), norm_entry, norm_event))
     event_key = hashlib.sha256(identity.encode("utf-8")).hexdigest()
     event_now = datetime.now(timezone.utc)
     now_str = event_now.isoformat()
@@ -992,7 +1046,12 @@ def claim_telegram_alert(event_key: str) -> bool:
 
 
 
-def send_telegram_photo(photo_path: str, caption: str = "") -> bool:
+def send_telegram_photo(photo_path: str, caption: str = "", force: bool = False) -> bool:
+    if not force:
+        allowed, reason = is_authorized_telegram_sender()
+        if not allowed:
+            logger.info(f"[TG-GUARD] Fotograf gonderimi engellendi ({reason})")
+            return False
     """Telegram'a fotoğraf ve başlık metni gönderir."""
     bot_token, raw_chat_id = get_telegram_credentials()
     if not bot_token or not raw_chat_id:
