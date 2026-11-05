@@ -793,6 +793,8 @@ def simulation_loop():
                 _owners = []
             if not _owners:
                 _owners = ["local:nebioglur"]
+            if "local:nebioglur" not in _owners:
+                _owners.append("local:nebioglur")
 
             for _owner in _owners:
                 try:
@@ -2758,13 +2760,13 @@ def api_simulation_daily_pnl():
             c.execute("SELECT * FROM trades WHERE owner=? ORDER BY date_str DESC, entry_time DESC", (owner,))
             trade_rows = c.fetchall()
             trades = [dict(row) for row in trade_rows]
-            if not trades and owner != "local:nebioglur":
-                c.execute("SELECT * FROM trades WHERE owner='local:nebioglur' ORDER BY entry_time DESC LIMIT 500")
+            if not trades:
+                c.execute("SELECT * FROM trades ORDER BY date_str DESC, entry_time DESC LIMIT 500")
                 trade_rows = c.fetchall()
                 if trade_rows:
                     trades = [dict(row) for row in trade_rows]
                 if not equity_rows or (len(equity_rows) == 1 and equity_rows[0].get("total_pnl", 0.0) == 0.0):
-                    c.execute("SELECT * FROM equity_log WHERE owner='local:nebioglur' ORDER BY date_str ASC")
+                    c.execute("SELECT * FROM equity_log ORDER BY date_str ASC")
                     eq_fb = c.fetchall()
                     if eq_fb:
                         equity_curve = [dict(row) for row in eq_fb]

@@ -36,6 +36,46 @@ class SimulationEngine:
                 cls._owner_locks[owner] = lock
             return lock
 
+    def _save_single_trade(self, date_str: str, trade: dict):
+        """Her AL/SAT aninda islemi veritabanina dogrudan yazar,
+        boylece Telegram bildirimi giden her islem aninda Trade Log'da gorunur."""
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO trades (
+                    owner, date_str, symbol, entry_time, entry_price, exit_time,
+                    exit_price, shares, pnl_val, realized_pnl, pnl_pct, exit_reason, strategy_name,
+                    entry_score, entry_checks, atr_value, risk_amount, market_regime, engine_version
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(owner, date_str, symbol, entry_time) DO UPDATE SET
+                    exit_time=COALESCE(excluded.exit_time, trades.exit_time),
+                    exit_price=COALESCE(excluded.exit_price, trades.exit_price),
+                    shares=COALESCE(excluded.shares, trades.shares),
+                    pnl_val=COALESCE(excluded.pnl_val, trades.pnl_val),
+                    realized_pnl=CASE WHEN excluded.realized_pnl != 0 THEN excluded.realized_pnl ELSE trades.realized_pnl END,
+                    pnl_pct=COALESCE(excluded.pnl_pct, trades.pnl_pct),
+                    exit_reason=COALESCE(excluded.exit_reason, trades.exit_reason),
+                    strategy_name=COALESCE(excluded.strategy_name, trades.strategy_name),
+                    entry_score=COALESCE(excluded.entry_score, trades.entry_score),
+                    entry_checks=COALESCE(excluded.entry_checks, trades.entry_checks),
+                    atr_value=COALESCE(excluded.atr_value, trades.atr_value),
+                    risk_amount=COALESCE(excluded.risk_amount, trades.risk_amount),
+                    market_regime=COALESCE(excluded.market_regime, trades.market_regime),
+                    engine_version=COALESCE(excluded.engine_version, trades.engine_version)
+            """, (
+                self.owner, date_str, trade['symbol'], trade['entry_time'], trade['entry_price'],
+                trade.get('exit_time'), trade.get('exit_price'), trade.get('shares'),
+                trade.get('pnl_val', 0.0), trade.get('realized_pnl', 0.0), trade.get('pnl_pct', 0.0), trade.get('exit_reason'),
+                trade.get('strategy_name'), trade.get('entry_score'), trade.get('entry_checks'),
+                trade.get('atr_value'), trade.get('risk_amount'), trade.get('market_regime'), trade.get('engine_version', 'V8_ELITE')
+            ))
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            print(f"[SimEngine] _save_single_trade err {trade.get('symbol')}: {e}")
+
     def _save_trades(self, date_str: str, trades: list):
         # Ayni (sembol, giris dakikasi) icin birden fazla cikis bacagi olusabilir
         # (TP1 kismi + kalan pozisyon stopu gibi). DB tek satir tutabildigi icin
@@ -81,9 +121,9 @@ class SimulationEngine:
                     INSERT INTO trades (
                         owner, date_str, symbol, entry_time, entry_price, exit_time,
                         exit_price, shares, pnl_val, realized_pnl, pnl_pct, exit_reason, strategy_name,
-                        entry_score, entry_checks, atr_value, risk_amount, market_regime
+                        entry_score, entry_checks, atr_value, risk_amount, market_regime, engine_version
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(owner, date_str, symbol, entry_time) DO UPDATE SET
                         exit_time=CASE WHEN trades.exit_time IS NOT NULL AND excluded.exit_time IS NULL THEN trades.exit_time ELSE excluded.exit_time END,
                         exit_price=CASE WHEN trades.exit_time IS NOT NULL AND excluded.exit_time IS NULL THEN trades.exit_price ELSE excluded.exit_price END,
@@ -703,6 +743,10 @@ class SimulationEngine:
                             'market_regime': trade.get('market_regime')
                         })
 
+                        completed_trades[-1]['owner'] = self.owner
+                        completed_trades[-1]['engine_version'] = trade.get('engine_version', 'V8_ELITE')
+                        self._save_single_trade(str(current_time)[:10], completed_trades[-1])
+
                         # Telegram: TP1 otomatik kismi kâr alma emri bildirimi (atomik dedup korumalı)
                         try:
                             from services.telegram_bot import notify_sim_trade
@@ -730,7 +774,10 @@ class SimulationEngine:
                         reason = "🔄 " + reason
                         
                     trade['exit_reason'] = reason
+                    trade['owner'] = self.owner
+                    trade['engine_version'] = trade.get('engine_version', 'V8_ELITE')
                     completed_trades.append(trade)
+                    self._save_single_trade(str(current_time)[:10], trade)
                     try:
                         from services.telegram_bot import notify_sim_trade
                         notify_sim_trade(sym, "SAT", sell_price, trade["pnl_pct"], reason, str(current_time)[:10], trade)
@@ -892,6 +939,9 @@ class SimulationEngine:
                     'market_regime': market_regime,
                     'engine_version': 'V8_ELITE'
                 })
+                active_trades[-1]['owner'] = self.owner
+                active_trades[-1]['engine_version'] = 'V8_ELITE'
+                self._save_single_trade(str(current_time)[:10], active_trades[-1])
                 try:
                     from services.telegram_bot import notify_sim_trade
                     notify_sim_trade(sym, "AL", entry_price, 0.0, "Sistem AL verdi", str(current_time)[:10], active_trades[-1])
@@ -983,6 +1033,9 @@ class SimulationEngine:
                     current_cash += sell_volume - sell_commission
                     trade['pnl_pct'] = (trade['pnl_val'] / buy_volume) * 100
                     trade['exit_reason'] = 'SEANS SONU NAKITE GECIS (17:50)'
+                    trade['owner'] = self.owner
+                    trade['engine_version'] = trade.get('engine_version', 'V8_ELITE')
+                    self._save_single_trade(str(last_time)[:10], trade)
                     try:
                         from services.telegram_bot import notify_sim_trade
                         notify_sim_trade(sym, "SAT (GUN SONU)", eod_sell_price, trade["pnl_pct"], "17:50 Otomatik Kapanis", str(last_time)[:10], trade)

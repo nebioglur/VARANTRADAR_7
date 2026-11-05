@@ -749,6 +749,62 @@ def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.
 
     logger.info("[TG-TRADE] Bildirim hazirlaniyor: %s %s %s @ %.2f", date_str, symbol, action, price)
 
+    # Otomatik DB senkronizasyonu: Telegram bildirimi giden her islem
+    # aninda trades tablosunda da garantiye alinir.
+    try:
+        _t_owner = trade.get('owner') or os.environ.get('ADMIN_OWNER', 'local:nebioglur')
+        _t_entry_time = str(trade.get('entry_time') or event_time)
+        _t_entry_price = float(trade.get('entry_price') or price)
+        _t_exit_time = trade.get('exit_time') or (event_time if "SAT" in action else None)
+        _t_exit_price = trade.get('exit_price') or (price if "SAT" in action else None)
+        _t_shares = int(trade.get('shares') or 0)
+        _t_pnl_val = float(trade.get('pnl_val') or 0.0)
+        _t_pnl_pct = float(trade.get('pnl_pct') or pnl_pct)
+        _t_reason = str(trade.get('exit_reason') or reason)
+        _t_strat = str(trade.get('strategy_name') or "")
+        _t_score = float(trade.get('entry_score', trade.get('score', 0)) or 0)
+        _t_checks = str(trade.get('entry_checks') or "")
+        _t_atr = float(trade.get('atr_value') or 0.0)
+        _t_risk = float(trade.get('risk_amount') or 0.0)
+        _t_regime = str(trade.get('market_regime') or "")
+        _t_ver = str(trade.get('engine_version') or 'V8_ELITE')
+
+        _conn = get_connection()
+        try:
+            _cur = _conn.cursor()
+            _cur.execute("""
+                INSERT INTO trades (
+                    owner, date_str, symbol, entry_time, entry_price, exit_time,
+                    exit_price, shares, pnl_val, realized_pnl, pnl_pct, exit_reason, strategy_name,
+                    entry_score, entry_checks, atr_value, risk_amount, market_regime, engine_version
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(owner, date_str, symbol, entry_time) DO UPDATE SET
+                    exit_time=COALESCE(excluded.exit_time, trades.exit_time),
+                    exit_price=COALESCE(excluded.exit_price, trades.exit_price),
+                    shares=CASE WHEN excluded.shares > 0 THEN excluded.shares ELSE trades.shares END,
+                    pnl_val=CASE WHEN excluded.pnl_val != 0 THEN excluded.pnl_val ELSE trades.pnl_val END,
+                    pnl_pct=CASE WHEN excluded.pnl_pct != 0 THEN excluded.pnl_pct ELSE trades.pnl_pct END,
+                    exit_reason=COALESCE(excluded.exit_reason, trades.exit_reason),
+                    strategy_name=COALESCE(excluded.strategy_name, trades.strategy_name),
+                    entry_score=COALESCE(excluded.entry_score, trades.entry_score),
+                    entry_checks=COALESCE(excluded.entry_checks, trades.entry_checks),
+                    atr_value=COALESCE(excluded.atr_value, trades.atr_value),
+                    risk_amount=COALESCE(excluded.risk_amount, trades.risk_amount),
+                    market_regime=COALESCE(excluded.market_regime, trades.market_regime),
+                    engine_version=COALESCE(excluded.engine_version, trades.engine_version)
+            """, (
+                _t_owner, date_str, symbol, _t_entry_time, _t_entry_price,
+                _t_exit_time, _t_exit_price, _t_shares, _t_pnl_val,
+                float(trade.get('realized_pnl') or 0.0), _t_pnl_pct, _t_reason,
+                _t_strat, _t_score, _t_checks, _t_atr, _t_risk, _t_regime, _t_ver
+            ))
+            _conn.commit()
+        finally:
+            _conn.close()
+    except Exception as _sync_exc:
+        logger.warning("[TG-SYNC] Trade DB sync hatasi: %s", _sync_exc)
+
     trade_score = trade.get("entry_score", trade.get("score", 0))
 
     def _send_once(message: str) -> bool:
