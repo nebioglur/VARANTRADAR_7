@@ -2313,9 +2313,9 @@ async function fetchDashboardData() {
         if (data && data.status === 'success') {
             const marketWarning = document.getElementById('market-closed-warning');
             const marketDetail = document.getElementById('market-closed-warning-detail');
-            const marketOpen = data.market?.is_open === true && data.data_fresh === true;
+            const isMarketActuallyOpen = data.market?.is_open === true;
             if (marketWarning) {
-                marketWarning.style.display = marketOpen ? 'none' : 'block';
+                marketWarning.style.display = isMarketActuallyOpen ? 'none' : 'block';
             }
             if (marketDetail && data.market) {
                 marketDetail.textContent =
@@ -2326,25 +2326,24 @@ async function fetchDashboardData() {
             setElText('total-analyzed-counter', `RADAR BUGÜNE KADAR ${data.total_analyzed || 0} VERİYİ ANALİZ ETTİ`);
             const shieldEl = document.getElementById('shield-status');
             if (shieldEl) {
-                if (!marketOpen) {
+                if (!isMarketActuallyOpen) {
                     shieldEl.innerHTML = `<span style="color:var(--accent-yellow); font-size:1.1rem;"><i class="fa-solid fa-lock"></i> Piyasa Kapalı — Kapanış Fiyatları</span>`;
                 } else {
                     const chg = data.xu100_change || 0;
                     if (chg <= -1.0) {
-                    shieldEl.innerHTML = `<span style="color:#ef4444; font-size:1.1rem;"><i class="fa-solid fa-triangle-exclamation"></i> Ayı (%100 Nakit)</span>`;
+                        shieldEl.innerHTML = `<span style="color:#ef4444; font-size:1.1rem;"><i class="fa-solid fa-triangle-exclamation"></i> Ayı (%100 Nakit)</span>`;
                     } else if (chg <= 0.0) {
-                    shieldEl.innerHTML = `<span style="color:var(--accent-yellow); font-size:1.1rem;"><i class="fa-solid fa-scale-balanced"></i> Dalgalı (%60 Nakit)</span>`;
+                        shieldEl.innerHTML = `<span style="color:var(--accent-yellow); font-size:1.1rem;"><i class="fa-solid fa-scale-balanced"></i> Dalgalı (%60 Nakit)</span>`;
                     } else {
-                    shieldEl.innerHTML = `<span style="color:var(--accent-green); font-size:1.1rem;"><i class="fa-solid fa-arrow-trend-up"></i> Boğa (%30 Nakit)</span>`;
+                        shieldEl.innerHTML = `<span style="color:var(--accent-green); font-size:1.1rem;"><i class="fa-solid fa-arrow-trend-up"></i> Boğa (%30 Nakit)</span>`;
                     }
                 }
             }
 
-            
             // Son tarama saatini ekranda göster
             const lastUpdated = data.last_updated || "Bilinmiyor";
-            const timeHTML = marketOpen
-                ? `<i class="fa-solid fa-clock"></i> Son Tarama: ${lastUpdated}`
+            const timeHTML = isMarketActuallyOpen
+                ? `<i class="fa-solid fa-circle-dot" style="color:var(--accent-green); animation: pulse 2s infinite;"></i> Canlı Seans Aktif (Son: ${lastUpdated})`
                 : `<i class="fa-solid fa-lock"></i> Piyasa kapalı — Kapanış Verisi`;
             const timeEl1 = document.getElementById('last-scan-time');
             if (timeEl1) timeEl1.innerHTML = timeHTML;
@@ -7876,19 +7875,14 @@ function renderAllStocksTable() {
             <tr style="${rowStyle}">
                 <td style="font-weight:bold; cursor:pointer; color:${color};" onclick="openGraphicTab('${s.symbol}')">${sym}${trendBadge}</td>
                 <td style="font-weight:600; color:${color};">₺${s.price.toFixed(2)}</td>
+                <td style="color:var(--text-muted); font-size:0.85rem;">₺${prevClose.toFixed(2)}</td>
                 <td style="color:${color}; font-weight:bold;">${sign}${s.change.toFixed(2)}%</td>
                 <td style="color:${intraColor}; font-weight:bold;">${intraSign}${s.intra_change.toFixed(2)}%</td>
-                <td style="color:${flowColor}; font-weight:bold;">${flowHtml}</td>
-                <td style="color:${s.hourly_strength >= 70 ? 'var(--accent-green)' : 'var(--text-muted)'}; font-weight:bold;" title="Saatlik güç / seans içi teyit">${Number(s.hourly_strength || 0).toFixed(0)}/100</td>
-                <td style="color:${s.hourly_volume >= 1.5 ? 'var(--accent-green)' : 'var(--text-muted)'}; font-weight:bold;" title="Saatlik göreceli hacim">${Number(s.hourly_volume || 0).toFixed(2)}x</td>
-                <td style="color:var(--text-muted);">${volTLM}</td>
+                <td style="text-align:center;">${flowHtml}</td>
+                <td style="color:var(--text-color);">${volTLM}</td>
+                <td style="color:${s.hourly_volume >= 1.5 ? 'var(--accent-green)' : 'var(--text-muted)'}; font-weight:bold;">${relVolText} (${Number(s.hourly_volume || s.rel_vol || 0).toFixed(2)}x)</td>
                 <td>${scoreBadge}</td>
                 <td>${trustBadge}</td>
-                <td class="all-stocks-detail-col" style="display:none; color:var(--text-muted);">₺${prevClose.toFixed(2)}</td>
-                <td class="all-stocks-detail-col" style="display:none; color:var(--text-muted);">${volLotM}</td>
-                <td class="all-stocks-detail-col" style="display:none; color:${color}; font-weight:bold;">${relVolText}</td>
-                ${stopCell}
-                ${moneyCell}
                 <td>${actionBtns}</td>
             </tr>
         `;

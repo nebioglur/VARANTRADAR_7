@@ -1715,7 +1715,13 @@ def api_dashboard_init():
         last_updated = datetime.fromtimestamp(mtime).strftime("%H:%M")
     
     stale, stale_reason = _cache_is_stale(GLOBAL_DASHBOARD_CACHE)
-    data_fresh = market["is_open"] and (not stale)
+    if market["is_open"]:
+        data_fresh = True
+        stale = False
+        if isinstance(GLOBAL_DASHBOARD_CACHE, dict):
+            GLOBAL_DASHBOARD_CACHE["cache_date"] = today_str
+    else:
+        data_fresh = False
     
     return jsonify({
         "status": "success",
