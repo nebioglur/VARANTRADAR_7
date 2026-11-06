@@ -25,6 +25,42 @@ _lock = threading.Lock()
 _build_lock = threading.Lock()
 
 CACHE_TTL = 300  # saniye
+CACHE_FILE = "dip_breakout_cache.json"
+
+def _load_disk_cache():
+    import os, json
+    if os.path.exists(CACHE_FILE):
+        try:
+            with open(CACHE_FILE, "r", encoding="utf-8") as f:
+                d = json.load(f)
+            if isinstance(d, dict) and d.get("rows"):
+                with _lock:
+                    _cache["rows"] = d.get("rows", [])
+                    _cache["summary"] = d.get("summary", {})
+                    built_str = d.get("built_at")
+                    try:
+                        _cache["built_at"] = datetime.fromisoformat(built_str) if built_str else datetime.now()
+                    except Exception:
+                        _cache["built_at"] = datetime.now()
+                    _cache["error"] = None
+        except Exception:
+            pass
+
+def _save_disk_cache(rows, summary, built_at):
+    import json
+    try:
+        data = {
+            "rows": rows,
+            "summary": summary,
+            "built_at": built_at.isoformat() if hasattr(built_at, "isoformat") else str(built_at),
+            "status": "ok" if rows else "empty"
+        }
+        with open(CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
+    except Exception:
+        pass
+
+_load_disk_cache()
 
 # canli market_data toplama durumu (dip dongusune bagli hafif toplayici)
 _last_md_collect = None
@@ -91,6 +127,9 @@ def _maybe_collect_live_data():
 
 def get_rows():
     """Cache'den satirlari dondurur; bos/bayat ise arka plan insasi tetikler."""
+    with _lock:
+        if not _cache["rows"]:
+            _load_disk_cache()
     _maybe_build()
     with _lock:
         return {
@@ -567,6 +606,7 @@ def _build():
                 _cache["summary"] = summary
                 _cache["built_at"] = datetime.now()
                 _cache["error"] = None if rows else "Veri üretilemedi (yfinance yanıt vermedi)"
+            _save_disk_cache(rows, summary, _cache["built_at"])
         except Exception as e:
             with _lock:
                 _cache["error"] = str(e)

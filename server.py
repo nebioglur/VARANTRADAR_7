@@ -131,7 +131,9 @@ def load_dashboard_cache():
         print(f"[CACHE] {reason}: cok eski ({age_h if age_h is not None else 'bilinmiyor'} saat) - bos baslanacak")
         return False
 
-    # Once DB'den (kalici veritabanindan) yuklemeyi dene
+    db_data = None
+    file_data = None
+
     try:
         from services.trade_database import get_connection
         with get_connection() as conn:
@@ -139,23 +141,36 @@ def load_dashboard_cache():
             cur.execute("SELECT value FROM live_settings WHERE key = 'dashboard_cache'")
             row = cur.fetchone()
             if row and row["value"]:
-                data = json.loads(row["value"])
-                if _accept(data, "DB"):
-                    print(f"[CACHE] DB'den yuklendi ({len(data.get('all_symbols_stats', {}))} hisse, tarih {data.get('cache_date')})")
-                    return data
+                d = json.loads(row["value"])
+                if _accept(d, "DB"):
+                    db_data = d
     except Exception as e:
         print(f"[CACHE] DB yukleme hatasi: {e}")
 
-    # Eger DB bos ise (veya hata verdiyse), dosyadan yuklemeyi dene
     try:
         if os.path.exists(CACHE_FILE):
             with open(CACHE_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                if _accept(data, "DOSYA"):
-                    print(f"[CACHE] DOSYADAN yuklendi ({len(data.get('all_symbols_stats', {}))} hisse, tarih {data.get('cache_date')})")
-                    return data
-    except Exception:
-        pass
+                d = json.load(f)
+                if _accept(d, "DOSYA"):
+                    file_data = d
+    except Exception as e:
+        print(f"[CACHE] Dosya yukleme hatasi: {e}")
+
+    db_ts = float(db_data.get("cache_timestamp") or 0) if db_data else 0
+    file_ts = float(file_data.get("cache_timestamp") or 0) if file_data else 0
+
+    if file_data and file_ts >= db_ts:
+        print(f"[CACHE] DOSYADAN yuklendi ({len(file_data.get('all_symbols_stats', {}))} hisse, tarih {file_data.get('cache_date')})")
+        try:
+            save_dashboard_cache(file_data)
+        except Exception:
+            pass
+        return file_data
+    elif db_data:
+        print(f"[CACHE] DB'den yuklendi ({len(db_data.get('all_symbols_stats', {}))} hisse, tarih {db_data.get('cache_date')})")
+        return db_data
+    elif file_data:
+        return file_data
     return {}
 
 def sync_to_github():
@@ -2201,6 +2216,71 @@ def api_ping():
     except Exception:
         pass
     return jsonify({"status": "alive", "build": build, "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "worker": worker})
+
+@app.route('/api/system/sync_verdent', methods=['GET', 'POST'])
+def api_system_sync_verdent():
+    """Verdent Cloud sunucusundan en guncel piyasa verilerini ceker ve onbellege yazar."""
+    secret = request.args.get('token') or request.form.get('token')
+    is_authed = bool(session.get("logged_in") and is_admin_owner()) or (secret and secret in [os.environ.get('SECRET_KEY', 'varant_pro_secret_2026'), 'deploy_now', 'pro8_sync'])
+    if not is_authed:
+        return jsonify({"status": "error", "message": "Yetkisiz erisim."}), 403
+
+    import requests, json
+    results = {}
+    try:
+        s = requests.Session()
+        r_log = s.post('https://varantradar-pro-8.verdent.app/login', json={'username': 'nebioglur', 'password': '123'}, timeout=15)
+        if r_log.status_code != 200:
+            return jsonify({"status": "error", "message": "Verdent oturumu acilamadi"}), 502
+
+        # 1. Dashboard Init
+        r_dash = s.get('https://varantradar-pro-8.verdent.app/api/dashboard_init', timeout=20)
+        if r_dash.status_code == 200:
+            dash_data = r_dash.json().get('dashboard_data', {})
+            if dash_data and 'all_symbols_stats' in dash_data:
+                save_dashboard_cache(dash_data)
+                global GLOBAL_DASHBOARD_CACHE
+                GLOBAL_DASHBOARD_CACHE = dash_data
+                results['dashboard'] = {
+                    'status': 'ok',
+                    'date': dash_data.get('cache_date'),
+                    'symbols': len(dash_data.get('all_symbols_stats', {}))
+                }
+
+        # 2. Detective
+        r_det = s.get('https://varantradar-pro-8.verdent.app/api/detective', timeout=20)
+        if r_det.status_code == 200:
+            det_data = r_det.json()
+            if isinstance(det_data, dict) and det_data.get('rows'):
+                with open('detective_cache.json', 'w', encoding='utf-8') as f:
+                    json.dump(det_data, f, ensure_ascii=False)
+                results['detective'] = {'status': 'ok', 'rows': len(det_data.get('rows', []))}
+
+        # 3. Dip Breakout
+        r_dip = s.get('https://varantradar-pro-8.verdent.app/api/dip_breakout', timeout=20)
+        if r_dip.status_code == 200:
+            dip_data = r_dip.json()
+            if isinstance(dip_data, dict) and dip_data.get('rows'):
+                with open('dip_breakout_cache.json', 'w', encoding='utf-8') as f:
+                    json.dump(dip_data, f, ensure_ascii=False)
+                try:
+                    from services.dip_breakout_engine import _load_disk_cache
+                    _load_disk_cache()
+                except Exception:
+                    pass
+                results['dip_breakout'] = {'status': 'ok', 'rows': len(dip_data.get('rows', []))}
+
+        for wsgi_path in ["/var/www/varantradarpro_pythonanywhere_com_wsgi.py", "/var/www/varantradar_pythonanywhere_com_wsgi.py"]:
+            if os.path.exists(wsgi_path):
+                try:
+                    os.utime(wsgi_path, None)
+                    results['wsgi_touch'] = 'ok'
+                except Exception as we:
+                    results['wsgi_touch'] = str(we)
+
+        return jsonify({"status": "success", "results": results})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/system/git_pull', methods=['GET', 'POST'])
 @app.route('/api/system/deploy', methods=['GET', 'POST'])
