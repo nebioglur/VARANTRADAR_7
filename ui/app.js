@@ -2384,6 +2384,7 @@ async function fetchDashboardData() {
 }
 
 // Clock updates
+updateLiveClock();
 setInterval(updateLiveClock, 1000);
 
 function updateLiveClock() {
@@ -6367,14 +6368,14 @@ function loadV8Playbook() {
         .then(json => {
             const sc = json.scenario || {};
             if (json.status !== 'success' || !sc.label) return;
-            const sectors = json.sector_pulse || [];
-            const secTextEl = document.getElementById('v8-sectors-text');
-            if (secTextEl && sectors.length) {
-                secTextEl.textContent = sectors.slice(0, 3).map(s => `${s.sector} (%${s.avg_change >= 0 ? '+' : ''}${s.avg_change})`).join(' · ');
-            }
+            const sectors = json.sector_pulse || [];
+
             const secTextEl = document.getElementById('v8-sectors-text');
+
             if (secTextEl && sectors.length) {
+
                 secTextEl.textContent = sectors.slice(0, 3).map(s => `${s.sector} (%${s.avg_change >= 0 ? '+' : ''}${s.avg_change})`).join(' · ');
+
             }
             const locked = (sc.max_positions || 0) === 0;
             const sectorHtml = sectors.length
