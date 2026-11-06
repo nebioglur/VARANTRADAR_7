@@ -4133,7 +4133,7 @@ def _v8_live_price(data: dict) -> float:
 
 @app.route('/api/v8/radar/breakout', methods=['GET'])
 def api_v8_radar_breakout():
-    v8_cache_file = "v8_breakout_cache.json"
+    v8_cache_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "v8_breakout_cache.json")
     if os.path.exists(v8_cache_file):
         try:
             with open(v8_cache_file, "r", encoding="utf-8") as _vf:

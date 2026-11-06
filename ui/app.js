@@ -40,13 +40,18 @@ async function vrAuthorizedFetch(resource, options = {}) {
     try {
         const authKit = window.VerdentAuthKit;
         if (authKit) {
-            const { supabase } = await authKit;
+            // Timeout: VerdentAuthKit Promise asılırsa 3 saniye sonra vazgeç
+            const kit = await Promise.race([
+                authKit,
+                new Promise((_, reject) => setTimeout(() => reject(new Error('AuthKit timeout')), 3000))
+            ]);
+            const { supabase } = kit;
             const { data } = await supabase.auth.getSession();
             const token = data?.session?.access_token;
             if (token) headers.set('Authorization', `Bearer ${token}`);
         }
     } catch (e) {
-        console.warn('[Auth] İstatistik isteği için token alınamadı', e);
+        console.warn('[Auth] Token alınamadı (devam ediliyor):', e.message || e);
     }
     return fetch(resource, { ...options, headers, credentials: 'include' });
 }
@@ -4612,11 +4617,13 @@ async function fetchSimulationData() {
 
         if (data.status === 'success') {
             globalSimData = data;
-            notifyNewTradeEvents(data.trades || []);
-            fetchLiveOrders();
-            fetchLiveTerminal();
-            ltRefreshResetUI();
-            fetchAdminResetRequests();
+            try {
+                notifyNewTradeEvents(data.trades || []);
+                fetchLiveOrders();
+                fetchLiveTerminal();
+                ltRefreshResetUI();
+                fetchAdminResetRequests();
+            } catch(_helperErr) { console.warn("[SIM] Helper call error:", _helperErr); }
             
             // Calculate KPIs
             const equityCurve = data.equity_curve || [];
@@ -4715,10 +4722,7 @@ async function fetchSimulationData() {
                 el('sim-weekly-progress-bar').style.width = `${Math.min(100, Math.max(0, wkProgress))}%`;
             }
             
-            // Render Equity Curve Chart
-            renderEquityCurveChart(equityCurve);
-            
-            // Render Trades Table
+            // Render Trades Table FIRST (chart errors must not block trade log)
             if (tbody) {
                 tbody.innerHTML = '';
                 if (trades.length === 0) {
@@ -4767,7 +4771,7 @@ async function fetchSimulationData() {
                             <td>${exitTimeFmt}</td>
                             <td style="font-weight:bold; color:var(--text-light);">${t.symbol}</td>
                             <td>${t.shares || '-'}</td>
-                            <td>₺${t.entry_price.toFixed(2)}</td>
+                            <td>₺${(t.entry_price || 0).toFixed(2)}</td>
                             <td>${exitPriceStr}</td>
                             <td style="color:${pnlColor}; font-weight:bold;">${pnlValStr}${realizedPnlStr}</td>
                             <td style="color:${pnlColor}; font-weight:bold;">${pnlPctStr}</td>
@@ -4777,6 +4781,10 @@ async function fetchSimulationData() {
                     });
                 }
             }
+            // Render Equity Curve Chart (after trade table, errors isolated)
+            try { renderEquityCurveChart(equityCurve); } catch(_chartErr) { console.warn("[SIM] Chart render error:", _chartErr); }
+            // Render performance summary
+            try { renderSimulationPerformance(data.performance || {}); } catch(_perfErr) { console.warn("[SIM] Perf render error:", _perfErr); }
         } else {
             if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="text-red text-center" style="padding:2rem;">Simülasyon verisi alınamadı: ${data.message || 'Bilinmeyen hata'}</td></tr>`;
             if (document.getElementById('sim-weekly-status-badge')) document.getElementById('sim-weekly-status-badge').innerHTML = '<i class="fa-solid fa-shield-halved"></i> Koruma Aktif (%6 Hedef)';
@@ -6274,7 +6282,7 @@ const V8_REGIME_TR = {
 };
 
 function loadV8Regime() {
-    vrAuthorizedFetch(`${V8_API}/market/regime`)
+    vrAuthorizedFetch(`${V8_API}/market/regime?t=${Date.now()}`)
         .then(res => res.json())
         .then(data => {
             const rawRegime = data.regime || "UNKNOWN";
@@ -6315,7 +6323,7 @@ function loadV8Regime() {
 }
 
 function loadV8Discovery() {
-    vrAuthorizedFetch(`${V8_API}/radar/discovery`)
+    vrAuthorizedFetch(`${V8_API}/radar/discovery?t=${Date.now()}`)
         .then(res => res.json())
         .then(json => {
             const tbody = document.getElementById('v8-discovery-tbody');
@@ -6362,7 +6370,7 @@ function loadV8Discovery() {
 function loadV8Playbook() {
     const strip = document.getElementById('v8-playbook-strip');
     if (!strip) return;
-    vrAuthorizedFetch(`${V8_API}/playbook`)
+    vrAuthorizedFetch(`${V8_API}/playbook?t=${Date.now()}`)
         .then(r => r.json())
         .then(json => {
             const sc = json.scenario || {};
@@ -6413,7 +6421,7 @@ function loadV8Playbook() {
 function loadV8Weekly() {
     const strip = document.getElementById('v8-weekly-strip');
     if (!strip) return;
-    vrAuthorizedFetch(`${V8_API}/weekly`)
+    vrAuthorizedFetch(`${V8_API}/weekly?t=${Date.now()}`)
         .then(r => r.json())
         .then(json => {
             if (json.status !== 'success') return;
@@ -6485,11 +6493,11 @@ function loadV8Breakout() {
         // Haftalik kâr panosu (%6 hedef takibi + dinamik risk).
         loadV8Weekly();
         // Senaryo agirliklarini ozel siralamaya tasi (global cache).
-        vrAuthorizedFetch(`${V8_API}/playbook`).then(r => r.json()).then(json => {
+        vrAuthorizedFetch(`${V8_API}/playbook?t=${Date.now()}`).then(r => r.json()).then(json => {
             if (json.status === 'success' && json.scenario) window._v8Scenario = json.scenario;
         }).catch(() => {});
     }
-    vrAuthorizedFetch(`${V8_API}/radar/breakout`)
+    vrAuthorizedFetch(`${V8_API}/radar/breakout?t=${Date.now()}`)
         .then(res => res.json())
         .then(json => {
             // Gizli tbody için backward compat
