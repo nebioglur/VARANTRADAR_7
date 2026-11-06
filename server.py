@@ -47,6 +47,11 @@ from scanner.universal_scanner import UniversalScanner
 from data.pipeline import DataPipeline
 from data.providers.yfinance_provider import YFinanceProvider
 from config.bist_symbols import BIST_SYMBOLS, BIST30_SYMBOLS, BIST50_SYMBOLS, YILDIZ_SYMBOLS, FX_SYMBOLS, COMMODITY_SYMBOLS, CRYPTO_SYMBOLS
+from data.cache_freshness import (
+    CACHE_MAX_AGE_MINUTES,
+    cache_is_stale as _cache_is_stale,
+    mark_prices_updated as _mark_prices_updated,
+)
 
 def sanitize_for_json(obj):
     """
@@ -94,30 +99,6 @@ def save_stats(stats):
         print(f"Stats save error: {e}")
 
 CACHE_FILE = "dashboard_cache.json"
-CACHE_MAX_AGE_MINUTES = 30  # Piyasa acikken cache bu sureden eski ise 'data_fresh=false'
-
-
-def _cache_is_stale(data):
-    """Cache'in ne kadar eski oldugunu kontrol eder."""
-    from datetime import datetime
-    if not isinstance(data, dict) or not data:
-        return True, "cache bos"
-    today_str = datetime.now().strftime("%Y-%m-%d")
-    cache_date = data.get("cache_date")
-    if cache_date != today_str:
-        return True, f"onceki gunun cache'i ({cache_date})"
-    ts = data.get("cache_timestamp")
-    if ts:
-        try:
-            age_min = (datetime.now().timestamp() - float(ts)) / 60
-            if age_min > CACHE_MAX_AGE_MINUTES:
-                return True, f"cache {int(age_min)} dk eski"
-            return False, f"cache {int(age_min)} dk oncesi"
-        except Exception:
-            pass
-    return False, "yas bilinmiyor"
-
-
 def _cache_age_hours(data):
     """Cache'in saat cinsinden yasi (cache_timestamp yoksa None)."""
     import time as _time
@@ -431,6 +412,8 @@ def start_live_data_collector():
                             if updates > 0 or _fixed > 0:
                                 from datetime import datetime as _dt
                                 GLOBAL_DASHBOARD_CACHE["cache_date"] = _dt.now().strftime("%Y-%m-%d")
+                                if updates > 0:
+                                    _mark_prices_updated(GLOBAL_DASHBOARD_CACHE)
                                 save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
                                 print(f"[LIVE DATA] {updates} hissenin canlı fiyatları Dashboard'a yansıtıldı! ({_fixed} sembol cache-ici yedek capa ile dolduruldu)")
                     except Exception as fast_err:
@@ -535,7 +518,8 @@ def _background_scanner_impl():
             print("[BACKGROUND] Hızlı Başlangıç (Fast Start) - BIST 50 taranıyor...")
             fast_results = scanner.scan_pool_bulk(BIST50_SYMBOLS)
             from datetime import datetime
-            fast_results["cache_date"] = datetime.now().strftime("%Y-%m-%d")
+            if fast_results.get("all_symbols_stats"):
+                _mark_prices_updated(fast_results)
 
             _prev_regime = GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else None
             GLOBAL_DASHBOARD_CACHE = sanitize_for_json(fast_results)
@@ -640,6 +624,7 @@ def _background_scanner_impl():
                 _merged_stats = dict(_prev_stats)
                 _merged_stats.update(sanitize_for_json(results.get("all_symbols_stats", {})))
                 results["all_symbols_stats"] = _merged_stats
+                _mark_prices_updated(results)
 
                 GLOBAL_DASHBOARD_CACHE = sanitize_for_json(results)
                 save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
@@ -654,7 +639,7 @@ def _background_scanner_impl():
                     existing_stats = {}
                 existing_stats.update(sanitize_for_json(results.get("all_symbols_stats", {})))
                 GLOBAL_DASHBOARD_CACHE["all_symbols_stats"] = existing_stats
-                GLOBAL_DASHBOARD_CACHE["cache_date"] = today_str
+                _mark_prices_updated(GLOBAL_DASHBOARD_CACHE)
                 save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
                 print(f"[BACKGROUND] Kısmi veri geldi ({stats_count} hisse). Mevcut cache ile birleştirildi (toplam {len(existing_stats)} hisse).")
                 results = GLOBAL_DASHBOARD_CACHE
@@ -1681,14 +1666,14 @@ def api_quote():
 @app.route('/api/dashboard_init', methods=['GET'])
 def api_dashboard_init():
     from datetime import datetime
-    today_str = datetime.now().strftime("%Y-%m-%d")
     global GLOBAL_DASHBOARD_CACHE
+    # PythonAnywhere's background task and web worker are separate processes.
+    # Read the durable cache so dashboard requests see the worker's updates.
+    persisted_cache = load_dashboard_cache()
+    if persisted_cache:
+        GLOBAL_DASHBOARD_CACHE = persisted_cache
     market = bist_market_status()
 
-    try:
-        start_live_data_collector()
-    except Exception:
-        pass
     clean_cache = sanitize_for_json(
         market_safe_dashboard_data(GLOBAL_DASHBOARD_CACHE, market["is_open"])
     )
@@ -1703,7 +1688,7 @@ def api_dashboard_init():
     # Gercek cache yasina gore freshness belirle
     cache_ts = None
     if isinstance(GLOBAL_DASHBOARD_CACHE, dict):
-        cache_ts = GLOBAL_DASHBOARD_CACHE.get("cache_timestamp")
+        cache_ts = GLOBAL_DASHBOARD_CACHE.get("price_updated_at") or GLOBAL_DASHBOARD_CACHE.get("cache_timestamp")
     
     last_updated = "Bilinmiyor"
     if cache_ts:
@@ -1716,13 +1701,7 @@ def api_dashboard_init():
         last_updated = datetime.fromtimestamp(mtime).strftime("%H:%M")
     
     stale, stale_reason = _cache_is_stale(GLOBAL_DASHBOARD_CACHE)
-    if market["is_open"]:
-        data_fresh = True
-        stale = False
-        if isinstance(GLOBAL_DASHBOARD_CACHE, dict):
-            GLOBAL_DASHBOARD_CACHE["cache_date"] = today_str
-    else:
-        data_fresh = False
+    data_fresh = not stale if market["is_open"] else False
     
     return jsonify({
         "status": "success",
@@ -2201,7 +2180,27 @@ def api_system_logs_read():
 def api_ping():
     """Uygulamanin calistigini dogrulamak icin basit health-check."""
     import os
-    return jsonify({"status": "alive", "build": "20260924_canonical_dynamic_v5", "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "cwd": os.getcwd()})
+    import subprocess
+    try:
+        build = os.environ.get("APP_BUILD_ID") or subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=os.path.dirname(__file__), stderr=subprocess.DEVNULL,
+            text=True, timeout=2
+        ).strip()
+    except Exception:
+        build = os.environ.get("APP_BUILD_ID", "unknown")
+    worker = {"running": False, "last_seen": None}
+    try:
+        with open(os.path.join(os.path.dirname(__file__), "data", "background_worker_heartbeat.json"), encoding="utf-8") as f:
+            heartbeat = json.load(f)
+        last_seen = float(heartbeat.get("timestamp", 0))
+        worker = {
+            "running": last_seen > 0 and time.time() - last_seen < 180,
+            "last_seen": datetime.fromtimestamp(last_seen, ZoneInfo("Europe/Istanbul")).isoformat() if last_seen else None,
+        }
+    except Exception:
+        pass
+    return jsonify({"status": "alive", "build": build, "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "worker": worker})
 
 @app.route('/api/system/git_pull', methods=['GET', 'POST'])
 @app.route('/api/system/deploy', methods=['GET', 'POST'])
@@ -2249,8 +2248,11 @@ def api_system_git_pull():
 def api_cache_status():
     """Dashboard cache'inin yasini ve durumunu dondurur."""
     global GLOBAL_DASHBOARD_CACHE
+    persisted_cache = load_dashboard_cache()
+    if persisted_cache:
+        GLOBAL_DASHBOARD_CACHE = persisted_cache
     stale, reason = _cache_is_stale(GLOBAL_DASHBOARD_CACHE)
-    cache_ts = GLOBAL_DASHBOARD_CACHE.get("cache_timestamp") if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else None
+    cache_ts = (GLOBAL_DASHBOARD_CACHE.get("price_updated_at") or GLOBAL_DASHBOARD_CACHE.get("cache_timestamp")) if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else None
     cache_date = GLOBAL_DASHBOARD_CACHE.get("cache_date") if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else None
     stats_count = len(GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})) if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else 0
     return jsonify({
@@ -2285,11 +2287,10 @@ def api_force_refresh():
         return jsonify({"status": "error", "message": "yetkisiz"}), 401
 
     try:
-        # Cache'i bosalt
+        # Taramayi once tamamla; bos/hatali provider yaniti mevcut son iyi veriyi
+        # silmemeli.
         old_count = len(GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})) if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else 0
-        GLOBAL_DASHBOARD_CACHE = {}
-        save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
-        print(f"[FORCE REFRESH] Cache temizlendi (onceki {old_count} sembol). Hizli BIST50 taramasi basliyor...")
+        print(f"[FORCE REFRESH] Onceki {old_count} sembol korunuyor; BIST50 taze taramasi basliyor...")
 
         # Hizli BIST50 taramasi baslat (kullaniciyi beklemeden)
         from config.bist_symbols import BIST50_SYMBOLS
@@ -2298,8 +2299,13 @@ def api_force_refresh():
         pipeline = DataPipeline()
         scanner = UniversalScanner(pipeline)
         fast_results = scanner.scan_pool_bulk(BIST50_SYMBOLS)
+        if not isinstance(fast_results, dict) or not fast_results.get("all_symbols_stats"):
+            return jsonify({
+                "status": "error",
+                "message": "Guncel piyasa verisi alinmadi; son kayitli veriler korundu."
+            }), 503
         from datetime import datetime
-        fast_results["cache_date"] = datetime.now().strftime("%Y-%m-%d")
+        _mark_prices_updated(fast_results)
         GLOBAL_DASHBOARD_CACHE = sanitize_for_json(fast_results)
         save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
         print(f"[FORCE REFRESH] BIST50 taramasi tamamlandi ({len(GLOBAL_DASHBOARD_CACHE.get('all_symbols_stats', {}))} sembol)")
