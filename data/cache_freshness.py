@@ -17,9 +17,8 @@ def cache_is_stale(data, now=None):
     if cache_date != today_str:
         return True, f"onceki gunun cache'i ({cache_date})"
 
-    # Older snapshots have no price_updated_at. Their cache_timestamp is
-    # accepted temporarily for backward compatibility.
-    timestamp = data.get("price_updated_at") or data.get("cache_timestamp")
+    # Generic cache writes must never make legacy market prices appear fresh.
+    timestamp = data.get("price_updated_at")
     if not timestamp:
         return True, "fiyat guncelleme zamani bilinmiyor"
     try:

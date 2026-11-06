@@ -24,6 +24,13 @@ class CacheFreshnessTests(unittest.TestCase):
     def test_missing_price_timestamp_is_stale(self):
         self.assertTrue(cache_is_stale({"cache_date": self.today}, self.now)[0])
 
+    def test_legacy_cache_timestamp_does_not_prove_a_price_refresh(self):
+        cache = {
+            "cache_date": self.today,
+            "cache_timestamp": self.now.timestamp(),
+        }
+        self.assertTrue(cache_is_stale(cache, self.now)[0])
+
     def test_previous_day_snapshot_is_stale(self):
         cache = {"cache_date": "2026-11-05", "price_updated_at": self.now.timestamp()}
         self.assertTrue(cache_is_stale(cache, self.now)[0])
