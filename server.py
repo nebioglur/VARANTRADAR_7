@@ -26,7 +26,7 @@ file_handler.setFormatter(logging.Formatter('[%(asctime)s] [%(levelname)s] %(mes
 logging.getLogger().addHandler(file_handler)
 logging.getLogger().setLevel(logging.INFO)
 
-from flask import Flask, request, jsonify, send_from_directory, make_response
+from flask import Flask, request, jsonify, send_from_directory, make_response, send_file
 try:
     from flask_cors import CORS
 except ImportError:
@@ -1148,7 +1148,7 @@ def require_auth():
     # Arama motorlari + PWA dosyalari + APK indirme oturum kapisi disinda
     if request.path in ('/robots.txt', '/sitemap.xml', '/manifest.json', '/sw.js', '/icons/icon-192.png', '/icons/icon-512.png'):
         return
-    if request.path == '/apk/VarantRadarPro.apk':
+    if request.path == '/apk/VarantRadarPro.apk' or request.path.startswith('/apk/'):
         return
 
     if not session.get('logged_in'):
@@ -1475,6 +1475,21 @@ def index():
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
     return response
+
+@app.route('/apk/<path:filename>')
+def serve_apk(filename):
+    for d in ['ui/apk', 'apk']:
+        target = os.path.join(d, filename)
+        if os.path.exists(target):
+            response = make_response(send_file(
+                os.path.abspath(target),
+                mimetype='application/vnd.android.package-archive',
+                as_attachment=True,
+                download_name=filename
+            ))
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            return response
+    return "APK Bulunamadı", 404
 
 @app.route("/<path:filename>")
 def static_files(filename):
