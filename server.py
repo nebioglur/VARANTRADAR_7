@@ -807,12 +807,43 @@ def simulation_loop():
             t_close = now.replace(hour=18, minute=10, second=0, microsecond=0)
             in_market = t_open <= now <= t_close
 
-            if in_market:
-                try:
-                    from services.market_data import MarketDataManager
+            try:
+                from services.market_data import MarketDataManager
+                from services.trade_database import get_connection as _sc_conn
+                with _sc_conn() as _sc:
+                    _sc_cur = _sc.cursor()
+                    _sc_cur.execute("SELECT COUNT(*) as cnt FROM signals WHERE date_str = ?", (d_str,))
+                    _sig_cnt = _sc_cur.fetchone()["cnt"]
+                if _sig_cnt == 0:
+                    all_cands = list(GLOBAL_DASHBOARD_CACHE.get('tavan_adaylari', []) or [])
+                    sim_seen = {c.get('symbol') or c.get('Symbol') for c in all_cands if (c.get('symbol') or c.get('Symbol'))}
+                    for opp in (GLOBAL_DASHBOARD_CACHE.get('opportunities_1h', []) + GLOBAL_DASHBOARD_CACHE.get('opportunities', [])):
+                        osym = opp.get('symbol') or opp.get('Symbol')
+                        if osym and osym not in sim_seen:
+                            all_cands.append(opp)
+                            sim_seen.add(osym)
+                    _stats = GLOBAL_DASHBOARD_CACHE.get('all_symbols_stats', {}) or {}
+                    for sym, d in _stats.items():
+                        if not isinstance(d, dict) or sym in sim_seen: continue
+                        p = float(d.get('Price') or d.get('Daily_Close') or 0)
+                        ch = float(d.get('Change_Pct') or 0)
+                        v = float(d.get('Vol_Multiplier') or d.get('Volume_Ratio') or 0)
+                        vtl = float(d.get('Volume_TL') or (float(d.get('Volume', 0)) * p) or 0)
+                        if p >= 4.0 and 0.5 <= ch < 5.2 and v >= 1.2 and vtl >= 25_000_000:
+                            cand = dict(d)
+                            cand['symbol'] = sym
+                            cand['score'] = float(d.get('Score') or 92.0)
+                            cand['morning_price'] = p
+                            cand['ceiling_target'] = p * 1.10
+                            cand['morning_phase'] = 'Phase 1 (10:15)'
+                            all_cands.append(cand)
+                            sim_seen.add(sym)
+                    if all_cands:
+                        MarketDataManager.record_signals(d_str, all_cands)
+                if in_market or _sig_cnt == 0:
                     MarketDataManager.fetch_and_store_intraday(d_str, period="5d")
-                except Exception as _md_err:
-                    print(f"[SIMLOOP] Intraday veri hatasi: {_md_err}")
+            except Exception as _md_err:
+                print(f"[SIMLOOP] Intraday veri hatasi: {_md_err}")
 
             try:
                 from services.trade_database import get_connection as _get_conn
@@ -2614,6 +2645,45 @@ def api_admin_simulation_run():
             owners = [r["owner_key"] for r in cur.fetchall()]
         if not owners:
             owners = [owner]
+
+        from services.market_data import MarketDataManager
+        from services.trade_database import get_connection as _sc_conn
+        with _sc_conn() as _sc:
+            _sc_cur = _sc.cursor()
+            _sc_cur.execute("SELECT COUNT(*) as cnt FROM signals WHERE date_str = ?", (date_str,))
+            _sig_cnt = _sc_cur.fetchone()["cnt"]
+        if _sig_cnt == 0:
+            all_cands = list(GLOBAL_DASHBOARD_CACHE.get('tavan_adaylari', []) or [])
+            sim_seen = {c.get('symbol') or c.get('Symbol') for c in all_cands if (c.get('symbol') or c.get('Symbol'))}
+            for opp in (GLOBAL_DASHBOARD_CACHE.get('opportunities_1h', []) + GLOBAL_DASHBOARD_CACHE.get('opportunities', [])):
+                osym = opp.get('symbol') or opp.get('Symbol')
+                if osym and osym not in sim_seen:
+                    all_cands.append(opp)
+                    sim_seen.add(osym)
+            _stats = GLOBAL_DASHBOARD_CACHE.get('all_symbols_stats', {}) or {}
+            for sym, d in _stats.items():
+                if not isinstance(d, dict) or sym in sim_seen: continue
+                p = float(d.get('Price') or d.get('Daily_Close') or 0)
+                ch = float(d.get('Change_Pct') or 0)
+                v = float(d.get('Vol_Multiplier') or d.get('Volume_Ratio') or 0)
+                vtl = float(d.get('Volume_TL') or (float(d.get('Volume', 0)) * p) or 0)
+                if p >= 4.0 and 0.5 <= ch < 5.2 and v >= 1.2 and vtl >= 25_000_000:
+                    cand = dict(d)
+                    cand['symbol'] = sym
+                    cand['score'] = float(d.get('Score') or 92.0)
+                    cand['morning_price'] = p
+                    cand['ceiling_target'] = p * 1.10
+                    cand['morning_phase'] = 'Phase 1 (10:15)'
+                    all_cands.append(cand)
+                    sim_seen.add(sym)
+            if all_cands:
+                MarketDataManager.record_signals(date_str, all_cands)
+        with _sc_conn() as _sc:
+            _sc_cur = _sc.cursor()
+            _sc_cur.execute("SELECT COUNT(*) as cnt FROM market_data WHERE date_str = ?", (date_str,))
+            _md_cnt = _sc_cur.fetchone()["cnt"]
+        if _md_cnt == 0:
+            MarketDataManager.fetch_and_store_intraday(date_str, period="5d")
 
         from services.simulation_engine import SimulationEngine
         results = []
