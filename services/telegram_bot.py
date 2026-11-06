@@ -211,7 +211,7 @@ def send_vip_signal(stock_data: dict) -> bool:
     return send_telegram_message(text)
 
 
-def send_batch_vip_signals(vip_list: list) -> bool:
+def send_batch_vip_signals(vip_list: list, force: bool = False) -> bool:
     """
     Birden fazla VIP hisseyi tek bir mesajda gonderir. En iyiden kotuye siralar ve numaralandirir.
     """
@@ -264,7 +264,7 @@ def send_batch_vip_signals(vip_list: list) -> bool:
             
     text += f"\n<i>Not: Bu hisseler tum teknik filtreleri gecerek AR-GE sisteminden 100 tam puan almistir!</i>"
     
-    return send_telegram_message(text)
+    return send_telegram_message(text, force=force)
 
 
 def send_simulation_report(total_trades: int = 0, total_profit: float = 0.0, return_pct: float = 0.0, date_str: str = "", owner: str = None) -> bool:
@@ -1563,7 +1563,7 @@ def get_special_ranking_candidates(all_symbols_stats: dict, top_n: int = 5) -> l
 
 
 
-def send_special_ranking_alert(candidates: list) -> bool:
+def send_special_ranking_alert(candidates: list, force: bool = False) -> bool:
     """
     En iyi %90+ başarı oranlı seçkin hisseleri güven skoru, destek, direnç ve
     canlı aksiyon planıyla şık bir Telegram mesajında gönderir.
@@ -1622,7 +1622,7 @@ def send_special_ranking_alert(candidates: list) -> bool:
 
     text += "💡 <i>Kural: Desteğe yakın toplayın, 1. Kâr Al seviyesinde yarısını satıp stopu maliyete çekerek sıfır riskle trendi izleyin.</i>"
 
-    return send_telegram_message(text)
+    return send_telegram_message(text, force=force)
 
 
 

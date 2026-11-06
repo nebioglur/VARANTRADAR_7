@@ -3256,7 +3256,7 @@ def api_telegram_send_tavan_candidates():
             return jsonify({"status": "warning", "message": "Gönderilecek tavan adayı bulunamadı (liste boş)."}), 200
 
         # Batch VIP sinyali olarak gonder
-        ok = send_batch_vip_signals(candidates[:10])
+        ok = send_batch_vip_signals(candidates[:10], force=True)
         nm = NotificationManager()
         for c in candidates[:3]:
             try:
@@ -3281,7 +3281,7 @@ def api_telegram_send_special_ranking():
         candidates = get_special_ranking_candidates(all_stats, top_n=5)
         if not candidates:
             return jsonify({"status": "warning", "message": "Filtrelere uyan özel sıralama adayı bulunamadı."}), 200
-        ok = send_special_ranking_alert(candidates)
+        ok = send_special_ranking_alert(candidates, force=True)
         if ok:
             return jsonify({"status": "success", "message": f"{len(candidates)} adet %90 üzeri başarı adayı Telegram'a iletildi."})
         return jsonify({"status": "error", "message": "Telegram gönderimi başarısız oldu."}), 500
