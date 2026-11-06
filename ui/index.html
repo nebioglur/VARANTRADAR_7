@@ -20,7 +20,7 @@
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=20261106_v36">
+    <link rel="stylesheet" href="style.css?v=20261106_v37">
     <style>
         .sim-toolbar { display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; }
         .sim-pill {
@@ -41,24 +41,19 @@
         @media (min-width: 851px) { body { zoom: 0.8; } }
         .data-table th, .data-table td { text-align: center !important; }
 
-        /* Mobil menü ve hamburger: Masaüstü/laptop (769px+) ekranlarda KESİNLİKLE görünmez */
+        /* Mobil hamburger menu kapali: Tum menu butonlari dogrudan top-nav icinde gorunur (Resim 2) */
         .mobile-hamburger, .mobile-slide-menu, .mobile-menu-overlay {
             display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
         }
-        @media (min-width: 769px) {
-            .mobile-hamburger,
-            .mobile-slide-menu,
-            .mobile-menu-overlay {
-                display: none !important;
-                visibility: hidden !important;
-                opacity: 0 !important;
-                pointer-events: none !important;
-            }
+        .nav-actions {
+            display: flex !important;
+            flex-wrap: wrap !important;
         }
-        @media (max-width: 768px) {
-            .mobile-hamburger { display: inline-flex !important; }
-            .mobile-slide-menu.open { display: flex !important; right: 0 !important; }
-            .mobile-menu-overlay.open { display: block !important; }
+        .nav-actions .nav-btn {
+            display: inline-flex !important;
         }
     </style>
     <!-- ApexCharts -->
@@ -2586,7 +2581,7 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="app.js?v=20261106_v36"></script>
+    <script src="app.js?v=20261106_v37"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js?v=20260916_v13"></script>
     <script>

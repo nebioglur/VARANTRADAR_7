@@ -2095,18 +2095,21 @@ body.light-mode .mobile-slide-menu a.menu-item.active {
     color: #4338CA;
 }
 
-@media (min-width: 769px) {
-    .mobile-hamburger,
-    .mobile-slide-menu,
-    .mobile-menu-overlay {
-        display: none !important;
-        visibility: hidden !important;
-        opacity: 0 !important;
-        pointer-events: none !important;
-    }
+/* Mobil ve masaustu tum ekranlarda hamburger ve slide-out menu KESINLIKLE kapali */
+.mobile-hamburger,
+.mobile-slide-menu,
+.mobile-menu-overlay {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
 }
 
-@media (max-width: 768px) {
-    .mobile-hamburger { display: inline-flex !important; }
-    .nav-actions .nav-btn { display: none !important; }
+/* Nav butonlari mobilde de her zaman acik ve gorunur (Image 2 tasarimi) */
+.nav-actions {
+    display: flex !important;
+    flex-wrap: wrap !important;
+}
+.nav-actions .nav-btn {
+    display: inline-flex !important;
 }
