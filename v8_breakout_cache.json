@@ -1,0 +1,2585 @@
+{
+  "data": [
+    {
+      "breakout_score": 85.0,
+      "ceiling_risk": true,
+      "change_pct": 8.27,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +8.3 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Piyasa NÖTR; doğrulanmış trend oluşana kadar nakit korunuyor"
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": 1,
+      "metrics": {
+        "atr_pct": 6.63,
+        "close_price": 5.89,
+        "relative_volume": 2.14,
+        "resistance_level": 5.83,
+        "rsi": 68.9
+      },
+      "price": 5.89,
+      "reasons": [
+        "Yakın direnci aştı",
+        "Bollinger üst bandını kırdı",
+        "Çok güçlü hacim patlaması",
+        "Tepeden kapanış (güçlü alıcılar)"
+      ],
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "CONFIRMED_BREAKOUT",
+      "symbol": "FZLGY.IS",
+      "volume": 18201527.0,
+      "volume_strength": 2.14
+    },
+    {
+      "breakout_score": 80.0,
+      "change_pct": 1.62,
+      "entry_reasons": [
+        "Piyasa NÖTR; doğrulanmış trend oluşana kadar nakit korunuyor"
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": 1,
+      "metrics": {
+        "atr_pct": 3.54,
+        "close_price": 144.3,
+        "relative_volume": 1.54,
+        "resistance_level": 139.7,
+        "rsi": 67.2
+      },
+      "price": 144.3,
+      "reasons": [
+        "Yakın direnci aştı",
+        "Güçlü hacim desteği",
+        "Tepeden kapanış (güçlü alıcılar)"
+      ],
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "CONFIRMED_BREAKOUT",
+      "symbol": "GARAN.IS",
+      "volume": 43896321.0,
+      "volume_strength": 1.54
+    },
+    {
+      "breakout_score": 75.0,
+      "ceiling_risk": true,
+      "change_pct": 6.71,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +6.7 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Piyasa NÖTR; doğrulanmış trend oluşana kadar nakit korunuyor"
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": 1,
+      "metrics": {
+        "atr_pct": 6.16,
+        "close_price": 9.7,
+        "relative_volume": 2.28,
+        "resistance_level": 9.54,
+        "rsi": 63.0
+      },
+      "price": 9.7,
+      "reasons": [
+        "Yakın direnci aştı",
+        "Bollinger üst bandını kırdı",
+        "Çok güçlü hacim patlaması"
+      ],
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "CONFIRMED_BREAKOUT",
+      "symbol": "VAKFA.IS",
+      "volume": 134920112.0,
+      "volume_strength": 2.28
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 7.53,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +7.5 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.38,
+        "rsi": 54.41
+      },
+      "momentum_speed": "NORMAL",
+      "price": 1.57,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "AKYHO.IS",
+      "volume": 1034589.0,
+      "volume_strength": 1.38
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 9.95,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +9.9 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.63,
+        "rsi": 12.37
+      },
+      "momentum_speed": "NORMAL",
+      "price": 21.54,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "ALKLC.IS",
+      "volume": 17592370.0,
+      "volume_strength": 1.63
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 9.92,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +9.9 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.64,
+        "rsi": 24.07
+      },
+      "momentum_speed": "NORMAL",
+      "price": 6.87,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "ANELE.IS",
+      "volume": 34465860.0,
+      "volume_strength": 1.64
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 9.98,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +10.0 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.45,
+        "rsi": 47.1
+      },
+      "momentum_speed": "NORMAL",
+      "price": 58.4,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "ARDYZ.IS",
+      "volume": 8153400.0,
+      "volume_strength": 1.45
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 8.17,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +8.2 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.49,
+        "rsi": 48.71
+      },
+      "momentum_speed": "NORMAL",
+      "price": 161.5,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "ASTOR.IS",
+      "volume": 47859089.0,
+      "volume_strength": 1.49
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 7.28,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +7.3 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.76,
+        "rsi": 52.53
+      },
+      "momentum_speed": "NORMAL",
+      "price": 221.1,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "ATATP.IS",
+      "volume": 1009668.0,
+      "volume_strength": 1.76
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 9.93,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +9.9 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 2.0,
+        "rsi": 29.48
+      },
+      "momentum_speed": "NORMAL",
+      "price": 4.65,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "BARMA.IS",
+      "volume": 1975055.0,
+      "volume_strength": 2.0
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 9.96,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +10.0 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.94,
+        "rsi": 35.16
+      },
+      "momentum_speed": "NORMAL",
+      "price": 34.22,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "BRKVY.IS",
+      "volume": 419677.0,
+      "volume_strength": 1.94
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 9.89,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +9.9 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.47,
+        "rsi": 43.05
+      },
+      "momentum_speed": "NORMAL",
+      "price": 6.0,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "BRMEN.IS",
+      "volume": 532144.0,
+      "volume_strength": 1.47
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 9.88,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +9.9 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.36,
+        "rsi": 46.56
+      },
+      "momentum_speed": "NORMAL",
+      "price": 5.34,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "BSOKE.IS",
+      "volume": 25692224.0,
+      "volume_strength": 1.36
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 6.12,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +6.1 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 2.4,
+        "rsi": 52.81
+      },
+      "momentum_speed": "NORMAL",
+      "price": 19.95,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "CUSAN.IS",
+      "volume": 1707211.0,
+      "volume_strength": 2.4
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 7.62,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +7.6 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Piyasa NÖTR; doğrulanmış trend oluşana kadar nakit korunuyor"
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": 1,
+      "metrics": {
+        "atr_pct": 5.82,
+        "close_price": 14.54,
+        "relative_volume": 1.69,
+        "resistance_level": 13.96,
+        "rsi": 64.7
+      },
+      "price": 14.54,
+      "reasons": [
+        "Yakın direnci aştı",
+        "Bollinger üst bandını kırdı",
+        "Güçlü hacim desteği",
+        "Tepeden kapanış (güçlü alıcılar)"
+      ],
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "CONFIRMED_BREAKOUT",
+      "symbol": "CVKMD.IS",
+      "volume": 56824687.0,
+      "volume_strength": 1.69
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 9.96,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +10.0 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Piyasa NÖTR; doğrulanmış trend oluşana kadar nakit korunuyor"
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": 1,
+      "metrics": {
+        "atr_pct": 9.44,
+        "close_price": 5.41,
+        "relative_volume": 1.38,
+        "resistance_level": 5.28,
+        "rsi": 66.3
+      },
+      "price": 5.41,
+      "reasons": [
+        "Yakın direnci aştı",
+        "Bollinger üst bandını kırdı",
+        "Güçlü hacim desteği",
+        "Tepeden kapanış (güçlü alıcılar)"
+      ],
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "CONFIRMED_BREAKOUT",
+      "symbol": "DGNMO.IS",
+      "volume": 14625558.0,
+      "volume_strength": 1.38
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 9.47,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +9.5 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.6,
+        "rsi": 71.1
+      },
+      "momentum_speed": "NORMAL",
+      "price": 25.9,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "DOGUB.IS",
+      "volume": 1100264.0,
+      "volume_strength": 1.6
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 9.94,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +9.9 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 2.01,
+        "rsi": 61.62
+      },
+      "momentum_speed": "NORMAL",
+      "price": 15.92,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "DOKTA.IS",
+      "volume": 273286.0,
+      "volume_strength": 2.01
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 9.83,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +9.8 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.28,
+        "rsi": 32.48
+      },
+      "momentum_speed": "NORMAL",
+      "price": 3.24,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "EDATA.IS",
+      "volume": 16683209.0,
+      "volume_strength": 1.28
+    },
+    {
+      "breakout_score": 65.0,
+      "change_pct": 2.26,
+      "entry_reasons": [
+        "Piyasa NÖTR; doğrulanmış trend oluşana kadar nakit korunuyor"
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": 1,
+      "metrics": {
+        "atr_pct": 4.1,
+        "close_price": 122.0,
+        "relative_volume": 1.15,
+        "resistance_level": 120.0,
+        "rsi": 64.9
+      },
+      "price": 122.0,
+      "reasons": [
+        "Yakın direnci aştı",
+        "Tepeden kapanış (güçlü alıcılar)"
+      ],
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "CONFIRMED_BREAKOUT",
+      "symbol": "ENJSA.IS",
+      "volume": 4561698.0,
+      "volume_strength": 1.15
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 7.81,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +7.8 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 2.15,
+        "rsi": 56.99
+      },
+      "momentum_speed": "NORMAL",
+      "price": 73.15,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "FROTO.IS",
+      "volume": 43150655.0,
+      "volume_strength": 2.15
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 7.11,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +7.1 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 2.1,
+        "rsi": 48.04
+      },
+      "momentum_speed": "NORMAL",
+      "price": 26.2,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "GIPTA.IS",
+      "volume": 4271040.0,
+      "volume_strength": 2.1
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 8.33,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +8.3 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.69,
+        "rsi": 55.26
+      },
+      "momentum_speed": "NORMAL",
+      "price": 25.76,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "HATSN.IS",
+      "volume": 4958563.0,
+      "volume_strength": 1.69
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 9.65,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +9.7 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.57,
+        "rsi": 41.03
+      },
+      "momentum_speed": "NORMAL",
+      "price": 1.25,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "HDFGS.IS",
+      "volume": 105453065.0,
+      "volume_strength": 1.57
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 9.87,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +9.9 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 2.5,
+        "rsi": 7.61
+      },
+      "momentum_speed": "NORMAL",
+      "price": 7.57,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "HEDEF.IS",
+      "volume": 151111938.0,
+      "volume_strength": 2.5
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 6.1,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +6.1 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 2.28,
+        "rsi": 38.38
+      },
+      "momentum_speed": "NORMAL",
+      "price": 4.0,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "HURGZ.IS",
+      "volume": 5564412.0,
+      "volume_strength": 2.28
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 9.95,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +9.9 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.47,
+        "rsi": 45.21
+      },
+      "momentum_speed": "NORMAL",
+      "price": 13.7,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "IHAAS.IS",
+      "volume": 2055829.0,
+      "volume_strength": 1.47
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 9.95,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +9.9 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 2.15,
+        "rsi": 38.7
+      },
+      "momentum_speed": "NORMAL",
+      "price": 4.86,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "KTLEV.IS",
+      "volume": 944502748.0,
+      "volume_strength": 2.15
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 9.94,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +9.9 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.4,
+        "rsi": 62.37
+      },
+      "momentum_speed": "NORMAL",
+      "price": 3.65,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "MEGMT.IS",
+      "volume": 48814317.0,
+      "volume_strength": 1.4
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 6.21,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +6.2 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 3.02,
+        "rsi": 43.04
+      },
+      "momentum_speed": "NORMAL",
+      "price": 1.71,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "MEKAG.IS",
+      "volume": 21361063.0,
+      "volume_strength": 3.02
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 6.51,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +6.5 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 2.2,
+        "rsi": 49.27
+      },
+      "momentum_speed": "NORMAL",
+      "price": 71.2,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "NETAS.IS",
+      "volume": 1033831.0,
+      "volume_strength": 2.2
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 9.07,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +9.1 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.5,
+        "rsi": 38.89
+      },
+      "momentum_speed": "NORMAL",
+      "price": 19.6,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "ORGE.IS",
+      "volume": 9112941.0,
+      "volume_strength": 1.5
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 9.86,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +9.9 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.31,
+        "rsi": 51.39
+      },
+      "momentum_speed": "NORMAL",
+      "price": 30.52,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "OYAYO.IS",
+      "volume": 86313.0,
+      "volume_strength": 1.31
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 10.0,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +10.0 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 0.99,
+        "rsi": 31.98
+      },
+      "momentum_speed": "NORMAL",
+      "price": 9.13,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "OZRDN.IS",
+      "volume": 288390.0,
+      "volume_strength": 0.99
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 5.33,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +5.3 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 2.49,
+        "rsi": 26.98
+      },
+      "momentum_speed": "NORMAL",
+      "price": 1.58,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "SASA.IS",
+      "volume": 1677935811.0,
+      "volume_strength": 2.49
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 9.89,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +9.9 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 2.02,
+        "rsi": 62.34
+      },
+      "momentum_speed": "NORMAL",
+      "price": 6.22,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "SODSN.IS",
+      "volume": 74696.0,
+      "volume_strength": 2.02
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 9.91,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +9.9 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.78,
+        "rsi": 26.08
+      },
+      "momentum_speed": "NORMAL",
+      "price": 4.88,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "TDGYO.IS",
+      "volume": 2159898.0,
+      "volume_strength": 1.78
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 5.14,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +5.1 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 2.49,
+        "rsi": 7.16
+      },
+      "momentum_speed": "NORMAL",
+      "price": 57.25,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "TMPOL.IS",
+      "volume": 5929772.0,
+      "volume_strength": 2.49
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 9.12,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +9.1 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 2.5,
+        "rsi": 49.35
+      },
+      "momentum_speed": "NORMAL",
+      "price": 243.0,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "TOASO.IS",
+      "volume": 11272808.0,
+      "volume_strength": 2.5
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 9.96,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +10.0 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.07,
+        "rsi": 7.65
+      },
+      "momentum_speed": "NORMAL",
+      "price": 99.95,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "UFUK.IS",
+      "volume": 15940001.0,
+      "volume_strength": 1.07
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 9.94,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +9.9 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 0.58,
+        "rsi": 47.34
+      },
+      "momentum_speed": "NORMAL",
+      "price": 12.61,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "YAYLA.IS",
+      "volume": 2670854.0,
+      "volume_strength": 0.58
+    },
+    {
+      "breakout_score": 65.0,
+      "change_pct": 3.23,
+      "entry_reasons": [
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "WAIT",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 3.13,
+        "rsi": 52.51
+      },
+      "momentum_speed": "NORMAL",
+      "price": 6.07,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "YUNSA.IS",
+      "volume": 81674822.0,
+      "volume_strength": 3.13
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 5.97,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +6.0 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 2.34,
+        "rsi": 32.98
+      },
+      "momentum_speed": "NORMAL",
+      "price": 1.42,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "ZOREN.IS",
+      "volume": 173558095.0,
+      "volume_strength": 2.34
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 9.99,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +10.0 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.11,
+        "rsi": 46.75
+      },
+      "momentum_speed": "NORMAL",
+      "price": 15.97,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "ISVEA.IS",
+      "volume": 16205564.0,
+      "volume_strength": 1.11
+    },
+    {
+      "breakout_score": 65.0,
+      "ceiling_risk": true,
+      "change_pct": 9.67,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +9.7 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.2,
+        "rsi": 57.45
+      },
+      "momentum_speed": "NORMAL",
+      "price": 66.9,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "ORZAX.IS",
+      "volume": 1973852.0,
+      "volume_strength": 1.2
+    },
+    {
+      "breakout_score": 64.3,
+      "ceiling_risk": true,
+      "change_pct": 6.67,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +6.7 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.59,
+        "rsi": 49.65
+      },
+      "momentum_speed": "NORMAL",
+      "price": 4.16,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "SANFM.IS",
+      "volume": 10553682.0,
+      "volume_strength": 1.59
+    },
+    {
+      "breakout_score": 64.2,
+      "ceiling_risk": true,
+      "change_pct": 9.95,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +9.9 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 0.27,
+        "rsi": 12.06
+      },
+      "momentum_speed": "NORMAL",
+      "price": 6.19,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "BIGEN.IS",
+      "volume": 7475211.0,
+      "volume_strength": 0.27
+    },
+    {
+      "breakout_score": 63.8,
+      "ceiling_risk": true,
+      "change_pct": 9.85,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +9.8 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 0.21,
+        "rsi": 17.42
+      },
+      "momentum_speed": "NORMAL",
+      "price": 2.23,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "MANAS.IS",
+      "volume": 6313788.0,
+      "volume_strength": 0.21
+    },
+    {
+      "breakout_score": 63.8,
+      "ceiling_risk": true,
+      "change_pct": 6.62,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +6.6 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.52,
+        "rsi": 46.2
+      },
+      "momentum_speed": "NORMAL",
+      "price": 4.67,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "ZEDUR.IS",
+      "volume": 6858305.0,
+      "volume_strength": 1.52
+    },
+    {
+      "breakout_score": 63.7,
+      "ceiling_risk": true,
+      "change_pct": 7.06,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +7.1 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.32,
+        "rsi": 57.2
+      },
+      "momentum_speed": "NORMAL",
+      "price": 36.4,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "OZSUB.IS",
+      "volume": 1143511.0,
+      "volume_strength": 1.32
+    },
+    {
+      "breakout_score": 63.4,
+      "ceiling_risk": true,
+      "change_pct": 6.11,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +6.1 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.63,
+        "rsi": 48.83
+      },
+      "momentum_speed": "NORMAL",
+      "price": 6.6,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "CEMZY.IS",
+      "volume": 19045060.0,
+      "volume_strength": 1.63
+    },
+    {
+      "breakout_score": 62.7,
+      "change_pct": 3.82,
+      "entry_reasons": [
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "WAIT",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 2.41,
+        "rsi": 1.47
+      },
+      "momentum_speed": "NORMAL",
+      "price": 70.6,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "DSTKF.IS",
+      "volume": 4056613.0,
+      "volume_strength": 2.41
+    },
+    {
+      "breakout_score": 62.7,
+      "ceiling_risk": true,
+      "change_pct": 8.95,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +8.9 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 0.36,
+        "rsi": 51.25
+      },
+      "momentum_speed": "NORMAL",
+      "price": 7.06,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "EUHOL.IS",
+      "volume": 196781.0,
+      "volume_strength": 0.36
+    },
+    {
+      "breakout_score": 62.6,
+      "change_pct": 4.68,
+      "entry_reasons": [
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "WAIT",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 2.05,
+        "rsi": 51.94
+      },
+      "momentum_speed": "NORMAL",
+      "price": 28.16,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "BLUME.IS",
+      "volume": 5698572.0,
+      "volume_strength": 2.05
+    },
+    {
+      "breakout_score": 62.4,
+      "ceiling_risk": true,
+      "change_pct": 7.02,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +7.0 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.08,
+        "rsi": 37.16
+      },
+      "momentum_speed": "NORMAL",
+      "price": 2.44,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "DAPGM.IS",
+      "volume": 38600735.0,
+      "volume_strength": 1.08
+    },
+    {
+      "breakout_score": 61.6,
+      "ceiling_risk": true,
+      "change_pct": 5.06,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +5.1 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.69,
+        "rsi": 55.42
+      },
+      "momentum_speed": "NORMAL",
+      "price": 80.0,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "ATSYH.IS",
+      "volume": 40505.0,
+      "volume_strength": 1.69
+    },
+    {
+      "breakout_score": 61.6,
+      "ceiling_risk": true,
+      "change_pct": 9.09,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +9.1 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 0.09,
+        "rsi": 31.25
+      },
+      "momentum_speed": "NORMAL",
+      "price": 0.96,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "PEKGY.IS",
+      "volume": 19407880.0,
+      "volume_strength": 0.09
+    },
+    {
+      "breakout_score": 61.5,
+      "ceiling_risk": true,
+      "change_pct": 6.49,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +6.5 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.1,
+        "rsi": 51.79
+      },
+      "momentum_speed": "NORMAL",
+      "price": 7.22,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "HATEK.IS",
+      "volume": 308772.0,
+      "volume_strength": 1.1
+    },
+    {
+      "breakout_score": 61.3,
+      "ceiling_risk": true,
+      "change_pct": 6.74,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +6.7 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 0.97,
+        "rsi": 62.07
+      },
+      "momentum_speed": "NORMAL",
+      "price": 1.9,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "RNPOL.IS",
+      "volume": 3023156.0,
+      "volume_strength": 0.97
+    },
+    {
+      "breakout_score": 60.7,
+      "ceiling_risk": true,
+      "change_pct": 7.1,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +7.1 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 0.69,
+        "rsi": 67.7
+      },
+      "momentum_speed": "NORMAL",
+      "price": 60.3,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "KRDMB.IS",
+      "volume": 4401890.0,
+      "volume_strength": 0.69
+    },
+    {
+      "breakout_score": 60.7,
+      "ceiling_risk": true,
+      "change_pct": 6.26,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +6.3 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.03,
+        "rsi": 40.07
+      },
+      "momentum_speed": "NORMAL",
+      "price": 4.75,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "OSMEN.IS",
+      "volume": 1229614.0,
+      "volume_strength": 1.03
+    },
+    {
+      "breakout_score": 60.5,
+      "ceiling_risk": true,
+      "change_pct": 5.38,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +5.4 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.35,
+        "rsi": 37.03
+      },
+      "momentum_speed": "NORMAL",
+      "price": 28.58,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "BINBN.IS",
+      "volume": 2308056.0,
+      "volume_strength": 1.35
+    },
+    {
+      "breakout_score": 60.5,
+      "change_pct": 3.15,
+      "entry_reasons": [
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "WAIT",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 2.24,
+        "rsi": 43.87
+      },
+      "momentum_speed": "NORMAL",
+      "price": 17.02,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "KRONT.IS",
+      "volume": 1130750.0,
+      "volume_strength": 2.24
+    },
+    {
+      "breakout_score": 60.2,
+      "ceiling_risk": true,
+      "change_pct": 5.08,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +5.1 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.41,
+        "rsi": 53.54
+      },
+      "momentum_speed": "NORMAL",
+      "price": 682.0,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "BRSAN.IS",
+      "volume": 2378312.0,
+      "volume_strength": 1.41
+    },
+    {
+      "breakout_score": 60.2,
+      "ceiling_risk": true,
+      "change_pct": 5.23,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +5.2 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.35,
+        "rsi": 54.33
+      },
+      "momentum_speed": "NORMAL",
+      "price": 765.0,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "MAALT.IS",
+      "volume": 45994.0,
+      "volume_strength": 1.35
+    },
+    {
+      "breakout_score": 60.1,
+      "change_pct": 4.73,
+      "entry_reasons": [
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "WAIT",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.53,
+        "rsi": 30.9
+      },
+      "momentum_speed": "NORMAL",
+      "price": 58.65,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "VANGD.IS",
+      "volume": 8390316.0,
+      "volume_strength": 1.53
+    },
+    {
+      "breakout_score": 60.0,
+      "change_pct": 4.27,
+      "entry_reasons": [
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "WAIT",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.7,
+        "rsi": 42.07
+      },
+      "momentum_speed": "NORMAL",
+      "price": 73.25,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "CCOLA.IS",
+      "volume": 11221389.0,
+      "volume_strength": 1.7
+    },
+    {
+      "breakout_score": 60.0,
+      "ceiling_risk": true,
+      "change_pct": 5.26,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +5.3 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.29,
+        "rsi": 51.63
+      },
+      "momentum_speed": "NORMAL",
+      "price": 11.0,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "MMCAS.IS",
+      "volume": 101392.0,
+      "volume_strength": 1.29
+    },
+    {
+      "breakout_score": 59.7,
+      "change_pct": 4.58,
+      "entry_reasons": [
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "WAIT",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.51,
+        "rsi": 51.41
+      },
+      "momentum_speed": "NORMAL",
+      "price": 7.3,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "AKENR.IS",
+      "volume": 5676291.0,
+      "volume_strength": 1.51
+    },
+    {
+      "breakout_score": 59.6,
+      "ceiling_risk": true,
+      "change_pct": 6.58,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +6.6 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 0.69,
+        "rsi": 31.35
+      },
+      "momentum_speed": "NORMAL",
+      "price": 7.45,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "HRKET.IS",
+      "volume": 19779580.0,
+      "volume_strength": 0.69
+    },
+    {
+      "breakout_score": 59.5,
+      "ceiling_risk": true,
+      "change_pct": 5.6,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +5.6 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.06,
+        "rsi": 57.64
+      },
+      "momentum_speed": "NORMAL",
+      "price": 29.06,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "CELHA.IS",
+      "volume": 2480734.0,
+      "volume_strength": 1.06
+    },
+    {
+      "breakout_score": 59.5,
+      "ceiling_risk": true,
+      "change_pct": 5.09,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +5.1 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.27,
+        "rsi": 61.81
+      },
+      "momentum_speed": "NORMAL",
+      "price": 18.18,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "CWENE.IS",
+      "volume": 28857458.0,
+      "volume_strength": 1.27
+    },
+    {
+      "breakout_score": 59.5,
+      "ceiling_risk": true,
+      "change_pct": 5.47,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +5.5 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.12,
+        "rsi": 61.48
+      },
+      "momentum_speed": "NORMAL",
+      "price": 10.79,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "KBORU.IS",
+      "volume": 10312025.0,
+      "volume_strength": 1.12
+    },
+    {
+      "breakout_score": 59.3,
+      "change_pct": 4.69,
+      "entry_reasons": [
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "WAIT",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.39,
+        "rsi": 47.93
+      },
+      "momentum_speed": "NORMAL",
+      "price": 2.23,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "FRIGO.IS",
+      "volume": 30655249.0,
+      "volume_strength": 1.39
+    },
+    {
+      "breakout_score": 59.1,
+      "ceiling_risk": true,
+      "change_pct": 6.19,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +6.2 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 0.75,
+        "rsi": 40.43
+      },
+      "momentum_speed": "NORMAL",
+      "price": 103.0,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "SONME.IS",
+      "volume": 14083.0,
+      "volume_strength": 0.75
+    },
+    {
+      "breakout_score": 59.0,
+      "change_pct": 4.15,
+      "entry_reasons": [
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "WAIT",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.55,
+        "rsi": 44.4
+      },
+      "momentum_speed": "NORMAL",
+      "price": 25.1,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "ALFAS.IS",
+      "volume": 2090469.0,
+      "volume_strength": 1.55
+    },
+    {
+      "breakout_score": 59.0,
+      "ceiling_risk": true,
+      "change_pct": 6.06,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +6.1 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 0.77,
+        "rsi": 33.64
+      },
+      "momentum_speed": "NORMAL",
+      "price": 2.45,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "ISKPL.IS",
+      "volume": 31498805.0,
+      "volume_strength": 0.77
+    },
+    {
+      "breakout_score": 59.0,
+      "ceiling_risk": true,
+      "change_pct": 5.41,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +5.4 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.03,
+        "rsi": 48.74
+      },
+      "momentum_speed": "NORMAL",
+      "price": 7.9,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "LIDER.IS",
+      "volume": 16031513.0,
+      "volume_strength": 1.03
+    },
+    {
+      "breakout_score": 59.0,
+      "change_pct": 3.59,
+      "entry_reasons": [
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "WAIT",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.76,
+        "rsi": 56.3
+      },
+      "momentum_speed": "NORMAL",
+      "price": 468.75,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "MGROS.IS",
+      "volume": 4133506.0,
+      "volume_strength": 1.76
+    },
+    {
+      "breakout_score": 59.0,
+      "ceiling_risk": true,
+      "change_pct": 5.11,
+      "entry_reasons": [
+        "[TAVAN RİSKİ] +5.1 ile kovalama bölgesinde; tavan sonrası teyit beklenmeli",
+        "Günlük tarama adayı; V8 kırılım teyidi bekleniyor."
+      ],
+      "entry_status": "NO_ENTRY",
+      "fakeout_risk": 0.0,
+      "is_breakout": false,
+      "metrics": {
+        "relative_volume": 1.15,
+        "rsi": 42.77
+      },
+      "momentum_speed": "NORMAL",
+      "price": 3.7,
+      "scan_timestamp": 1793998378.1171913,
+      "scenario": {
+        "icon": "🚀",
+        "label": "GÜÇLÜ BOĞA (RALLİ)",
+        "posture": "Hücum: kazananları koştur, hedefleri genişlet",
+        "risk_pct": 2.0,
+        "stop_mult": 1.0,
+        "tp1_mult": 1.25,
+        "tp2_mult": 1.6
+      },
+      "status": "DISCOVERY_WATCH",
+      "symbol": "RUZYE.IS",
+      "volume": 5800893.0,
+      "volume_strength": 1.15
+    }
+  ],
+  "status": "success"
+}

@@ -2270,6 +2270,15 @@ def api_system_sync_verdent():
                     pass
                 results['dip_breakout'] = {'status': 'ok', 'rows': len(dip_data.get('rows', []))}
 
+        # 4. V8 Radar Breakout
+        r_v8 = s.get('https://varantradar-pro-8.verdent.app/api/v8/radar/breakout', timeout=20)
+        if r_v8.status_code == 200:
+            v8_data = r_v8.json()
+            if isinstance(v8_data, dict) and v8_data.get('data'):
+                with open('v8_breakout_cache.json', 'w', encoding='utf-8') as f:
+                    json.dump(v8_data, f, ensure_ascii=False, indent=2)
+                results['v8_breakout'] = {'status': 'ok', 'items': len(v8_data.get('data', []))}
+
         for wsgi_path in ["/var/www/varantradarpro_pythonanywhere_com_wsgi.py", "/var/www/varantradar_pythonanywhere_com_wsgi.py"]:
             if os.path.exists(wsgi_path):
                 try:
@@ -4124,6 +4133,16 @@ def _v8_live_price(data: dict) -> float:
 
 @app.route('/api/v8/radar/breakout', methods=['GET'])
 def api_v8_radar_breakout():
+    v8_cache_file = "v8_breakout_cache.json"
+    if os.path.exists(v8_cache_file):
+        try:
+            with open(v8_cache_file, "r", encoding="utf-8") as _vf:
+                _vdata = json.load(_vf)
+                if _vdata and _vdata.get("status") == "success" and _vdata.get("data"):
+                    return jsonify(_vdata)
+        except Exception:
+            pass
+
     all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
     if not all_stats:
         try:
@@ -4283,11 +4302,11 @@ def api_v8_radar_breakout():
             chg = float(row.get("change_pct") or row.get("intraday_change_pct") or 0)
         except (TypeError, ValueError):
             chg = 0.0
-        if chg >= 9.2:
+        if chg >= 5.0:
             row["entry_status"] = "NO_ENTRY"
             row["ceiling_risk"] = True
             row["entry_reasons"] = [
-                f"[TAVAN RİSKİ] +{chg:.1f} ile tavana kilitli/kovalama bölgesinde"
+                f"[TAVAN RİSKİ] +{chg:.1f} ile kovalama bölgesinde; tavan sonrası teyit beklenmeli"
             ] + list(row.get("entry_reasons") or [])
 
     return jsonify({"status": "success", "data": breakout_list})
