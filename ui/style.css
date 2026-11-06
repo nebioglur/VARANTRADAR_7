@@ -2108,4 +2108,5 @@ body.light-mode .mobile-slide-menu a.menu-item.active {
 
 @media (max-width: 768px) {
     .mobile-hamburger { display: inline-flex !important; }
+    .nav-actions .nav-btn { display: none !important; }
 }

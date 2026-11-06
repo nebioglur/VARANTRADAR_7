@@ -706,7 +706,30 @@ def _background_scanner_impl():
                             from services.simulation_engine import SimulationEngine
                             from datetime import datetime
                             d_str = datetime.now().strftime("%Y-%m-%d")
-                            MarketDataManager.record_signals(d_str, tavan_candidates)
+                            all_sim_cands = list(tavan_candidates or [])
+                            sim_seen = {c.get('symbol') or c.get('Symbol') for c in all_sim_cands if (c.get('symbol') or c.get('Symbol'))}
+                            for opp in (GLOBAL_DASHBOARD_CACHE.get('opportunities_1h', []) + GLOBAL_DASHBOARD_CACHE.get('opportunities', [])):
+                                osym = opp.get('symbol') or opp.get('Symbol')
+                                if osym and osym not in sim_seen:
+                                    all_sim_cands.append(opp)
+                                    sim_seen.add(osym)
+                            for sym, d in (daily_stats or {}).items():
+                                if not isinstance(d, dict) or sym in sim_seen:
+                                    continue
+                                price = float(d.get('Price') or d.get('Daily_Close') or 0)
+                                ch = float(d.get('Change_Pct') or 0)
+                                vol = float(d.get('Vol_Multiplier') or d.get('Volume_Ratio') or 0)
+                                vol_tl = float(d.get('Volume_TL') or (float(d.get('Volume', 0)) * price) or 0)
+                                if price >= 4.0 and 0.5 <= ch < 5.2 and vol >= 1.2 and vol_tl >= 25_000_000:
+                                    cand = dict(d)
+                                    cand['symbol'] = sym
+                                    cand['score'] = float(d.get('Score') or 92.0)
+                                    cand['morning_price'] = price
+                                    cand['ceiling_target'] = price * 1.10
+                                    cand['morning_phase'] = 'Phase 1 (10:15)'
+                                    all_sim_cands.append(cand)
+                                    sim_seen.add(sym)
+                            MarketDataManager.record_signals(d_str, all_sim_cands)
                             MarketDataManager.fetch_and_store_intraday(d_str)
                             
                             # Günlük simülasyon tek koşturucuda çalışır: simulation_loop (her 2 dk).

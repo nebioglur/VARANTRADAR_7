@@ -87,21 +87,17 @@ class MarketDataManager:
                     continue
                 if data is None or data.empty:
                     continue
-                if len(chunk) == 1:
-                    data = {chunk[0]: data}
-
                 for sym in chunk:
                     try:
-                        if len(chunk) == 1:
-                            df = data[sym]
-                        else:
-                            if hasattr(data.columns, 'levels') and sym in data.columns.levels[0]:
+                        if isinstance(data.columns, pd.MultiIndex):
+                            if sym in data.columns.get_level_values(0):
                                 df = data[sym]
                             else:
                                 continue
+                        else:
+                            df = data
                     except Exception:
                         continue
-
                     df = df.dropna(how='all')
                     if df.empty:
                         continue

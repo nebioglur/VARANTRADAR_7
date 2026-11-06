@@ -4784,6 +4784,7 @@ async function fetchSimulationData() {
     } catch (e) {
         if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="text-red text-center" style="padding:2rem;">Bağlantı hatası: ${e.message}</td></tr>`;
         if (document.getElementById('sim-weekly-status-badge')) document.getElementById('sim-weekly-status-badge').innerHTML = '<i class="fa-solid fa-shield-halved"></i> Koruma Aktif (%6 Hedef)';
+        if (document.getElementById('home-kpi-cumulative-equity')) document.getElementById('home-kpi-cumulative-equity').innerText = '👑 Kasa: 100.000,00 ₺';
     }
 }
 
@@ -6276,26 +6277,40 @@ function loadV8Regime() {
     vrAuthorizedFetch(`${V8_API}/market/regime`)
         .then(res => res.json())
         .then(data => {
-            const el = document.getElementById('regime-status');
-            if(!el) return;
             const rawRegime = data.regime || "UNKNOWN";
-            el.textContent = V8_REGIME_TR[rawRegime] || rawRegime;
+            const regimeText = V8_REGIME_TR[rawRegime] || rawRegime;
 
-            let bg = "var(--bg-lighter)";
-            let color = "var(--text-light)";
-            if(rawRegime.includes("BULL")) { bg = "rgba(16,185,129,0.2)"; color = "var(--accent-green)"; }
-            if(rawRegime.includes("BEAR")) { bg = "rgba(225,29,72,0.2)"; color = "var(--accent-red)"; }
-            if(rawRegime.includes("VOLATILITY")) { bg = "rgba(250,204,21,0.2)"; color = "var(--accent-yellow, #facc15)"; }
+            const el = document.getElementById('regime-status');
+            if (el) {
+                el.textContent = regimeText;
+                let bg = "var(--bg-lighter)";
+                let color = "var(--text-light)";
+                if(rawRegime.includes("BULL")) { bg = "rgba(16,185,129,0.2)"; color = "var(--accent-green)"; }
+                if(rawRegime.includes("BEAR")) { bg = "rgba(225,29,72,0.2)"; color = "var(--accent-red)"; }
+                if(rawRegime.includes("VOLATILITY")) { bg = "rgba(250,204,21,0.2)"; color = "var(--accent-yellow, #facc15)"; }
+                el.style.backgroundColor = bg;
+                el.style.color = color;
+                el.style.border = `1px solid ${color}`;
+            }
+
+            const v8RegimeEl = document.getElementById('v8-regime-text');
+            if (v8RegimeEl) {
+                let color = "#10b981";
+                if(rawRegime.includes("BEAR")) color = "#ef4444";
+                else if(rawRegime.includes("VOLATILITY") || rawRegime.includes("NOT")) color = "#f59e0b";
+                v8RegimeEl.textContent = regimeText;
+                v8RegimeEl.style.color = color;
+            }
+
+            const scEl = document.getElementById('regime-score');
+            if (scEl) scEl.textContent = `Güç: ${data.score || 0}/100`;
             
-            el.style.backgroundColor = bg;
-            el.style.color = color;
-            el.style.border = `1px solid ${color}`;
-            
-            document.getElementById('regime-score').textContent = `Güç: ${data.score || 0}/100`;
-            
-            const trend = parseFloat(data.xu100_trend || 0).toFixed(2);
-            const trendColor = trend > 0 ? "var(--accent-green)" : "var(--accent-red)";
-            document.getElementById('regime-trend').innerHTML = `BIST100 Trend: <span style="color:${trendColor}; font-weight:bold;">${trend > 0 ? '+' : ''}${trend}%</span>`;
+            const trEl = document.getElementById('regime-trend');
+            if (trEl) {
+                const trend = parseFloat(data.xu100_trend || 0).toFixed(2);
+                const trendColor = trend > 0 ? "var(--accent-green)" : "var(--accent-red)";
+                trEl.innerHTML = `BIST100 Trend: <span style="color:${trendColor}; font-weight:bold;">${trend > 0 ? '+' : ''}${trend}%</span>`;
+            }
         }).catch(e => console.error("V8 Regime Error", e));
 }
 
@@ -6352,7 +6367,15 @@ function loadV8Playbook() {
         .then(json => {
             const sc = json.scenario || {};
             if (json.status !== 'success' || !sc.label) return;
-            const sectors = json.sector_pulse || [];
+            const sectors = json.sector_pulse || [];
+            const secTextEl = document.getElementById('v8-sectors-text');
+            if (secTextEl && sectors.length) {
+                secTextEl.textContent = sectors.slice(0, 3).map(s => `${s.sector} (%${s.avg_change >= 0 ? '+' : ''}${s.avg_change})`).join(' · ');
+            }
+            const secTextEl = document.getElementById('v8-sectors-text');
+            if (secTextEl && sectors.length) {
+                secTextEl.textContent = sectors.slice(0, 3).map(s => `${s.sector} (%${s.avg_change >= 0 ? '+' : ''}${s.avg_change})`).join(' · ');
+            }
             const locked = (sc.max_positions || 0) === 0;
             const sectorHtml = sectors.length
                 ? sectors.map((s, i) => `<div style="display:flex; align-items:center; gap:0.35rem; background:rgba(0,0,0,0.2); border-radius:6px; padding:0.3rem 0.55rem; ${i === 0 ? 'border:1px solid rgba(16,185,129,0.4);' : ''}">

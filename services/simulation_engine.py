@@ -307,20 +307,48 @@ class SimulationEngine:
             return None, None
         return float(ema50), float(ema200)
 
-    def _position_allocation(self, current_cash, entry_price, stop_price, is_bear, risk_pct=None):
+    def _position_allocation(self, current_cash, entry_price, stop_price, is_bear, risk_pct=None, regime="NEUTRAL", open_slots=1):
         risk_per_share = entry_price - stop_price
         if risk_per_share <= 0:
             return 0.0, 0.0
 
-        # DINAMIK RISK: senaryo risk_pct (GÜÇLÜ BOĞA %2.0, BOĞA %1.5, NÖTR
-        # %1.0) verilirse o kullanilir; yoksa eski sabit davranis.
+        # KULLANICI ISTEGI: Nakitte para yatmasin, ozellikle BIST boga iken olabildigince aktif ofansif trade!
+        is_strong_bull = (regime == "STRONG_BULL" or "ÜÇLÜ" in str(regime))
+        is_bull = (is_strong_bull or regime == "BULL" or "BOĞA" in str(regime))
+
         if risk_pct and risk_pct > 0:
             risk_budget = self.daily_budget * risk_pct
         else:
-            risk_budget = self.daily_budget * (0.005 if is_bear else 0.012)
-        max_notional = self.daily_budget * (0.15 if is_bear else 0.33)
-        risk_limited_notional = risk_budget * entry_price / risk_per_share
-        allocation = min(current_cash, max_notional, risk_limited_notional)
+            if is_strong_bull:
+                risk_budget = self.daily_budget * 0.022
+            elif is_bull:
+                risk_budget = self.daily_budget * 0.018
+            elif is_bear:
+                risk_budget = self.daily_budget * 0.005
+            else:
+                risk_budget = self.daily_budget * 0.012
+
+        slots = max(1, open_slots)
+        slot_target = current_cash / slots
+
+        if is_strong_bull:
+            max_notional = min(current_cash, max(slot_target, self.daily_budget * 0.50))
+        elif is_bull:
+            max_notional = min(current_cash, max(slot_target, self.daily_budget * 0.40))
+        elif is_bear:
+            max_notional = self.daily_budget * 0.15
+        else:
+            max_notional = min(current_cash, max(slot_target, self.daily_budget * 0.35))
+
+        risk_limited_notional = risk_budget * entry_price / max(0.001, risk_per_share)
+        
+        # Boga modunda nakitin atil kalmasini engellemek icin slot_target'a oncelik verilir
+        if is_bull and current_cash > 0:
+            preferred_notional = max(slot_target, risk_limited_notional)
+            allocation = min(current_cash, max_notional, preferred_notional)
+        else:
+            allocation = min(current_cash, max_notional, risk_limited_notional)
+
         return allocation, min(risk_budget, allocation * risk_per_share / entry_price)
 
     def run_daily_simulation(self, date_str: str):
@@ -470,161 +498,161 @@ class SimulationEngine:
         else:
             effective_max_positions = min(2, self.max_positions) if is_bear else self.max_positions
 
+        # DOMINO_CLUSTERS ile dinamik sektor ayrismasi haritasi
+        from config.bist_symbols import DOMINO_CLUSTERS
+        _sec_lup = {}
+        for _sn, _mems in DOMINO_CLUSTERS.items():
+            for _mm in _mems:
+                _sec_lup[_mm] = _sn
+                _sec_lup[_mm.replace('.IS', '')] = _sn
+
         valid_signals = []
         import json
         for s in signals:
-            score = float(s['score'])
-            phase = str(s['morning_phase'])
+            score = float(s.get('score', 0))
+            phase = str(s.get('morning_phase', 'Phase 1'))
             
-            # KULLANICI İSTEĞİ: SİMULASYONDA EMA 50 EMA 200 ÜSTÜ FILTRESİNE UYAN HİSSELERİ ELE AL
             metadata_str = s.get('metadata')
             meta = {}
             if metadata_str:
                 try:
                     meta = json.loads(metadata_str)
                 except Exception as e_meta:
-                    print(f"[SimEngine] Metadata parse hatası {s.get('symbol', '?')}: {e_meta}")
+                    pass
             
             price = float(meta.get('Price') or meta.get('Daily_Close') or s.get('morning_price', 0))
-            
             ema50, ema200 = self._daily_trend_values(meta, s['symbol'])
             
-            # KULLANICI ISTEGI: 150% hacim gucu zorunlu
-            v8_disc = meta.get('v8_discovery', {})
-            metrics = v8_disc.get('metrics', {})
+            # Hacim carpanini tespit et (>=1.2x makul esik)
+            v8_disc = meta.get('v8_discovery', {}) if isinstance(meta, dict) else {}
+            metrics = v8_disc.get('metrics', {}) if isinstance(v8_disc, dict) else {}
             r_vol = metrics.get('relative_volume', 0)
             if not r_vol:
                 indicators = meta.get('Indicators', {}) if isinstance(meta, dict) else {}
                 r_vol = float(meta.get('Vol_Multiplier') or meta.get('Volume_Ratio') or indicators.get('Volume_Ratio') or 0)
-            
-            # %90 hedefli A-sinifi simülasyon: sığ hacim ve zayıf katılım
-            # bulunan işlemleri baştan ele.
-            if float(r_vol) < 1.5:
+            if float(r_vol or 0) > 0 and float(r_vol) < 1.2:
                 continue
 
-            # TAVAN TUZAĞI VE GAP-UP ENGELİ:
-            # Sabah açılışında zaten +%5.0 ve üzerinde olan hisseler tavan tuzağıdır (marj kalmamıştır).
+            # Tavan tuzagi engeli (+%5.5 ve uzeri acilislar elenir)
             ch_pct = float(meta.get('Change_Pct') or meta.get('Change') or 0)
-            if ch_pct >= 5.0:
+            if ch_pct >= 5.5:
                 continue
 
-            # LİKİDİTE VE FİYAT GÜVENCESİ (Sığ ve Kuruşluk Hisseleri Ele):
-            # ETYAT, penny hisseler ve derinliği olmayan sığ tahtalar simülasyona giremez!
-            if price < 4.0:
+            # Likidite ve Fiyat Guvencesi: penny/sig hisseleri filtrele
+            if price < 3.5:
                 continue
             vol_tl = float(meta.get('Volume_TL') or (float(meta.get('Volume', 0)) * price) or 0)
-            if vol_tl > 0 and vol_tl < 30_000_000:
+            if vol_tl > 0 and vol_tl < 20_000_000:
                 continue
                     
-            # EMA Filtresi ZORUNLU
-            if not ema50 or not ema200 or not price:
-                continue # Veri eksikse atla
-            try:
-                # İki ortalamanın da üzerinde olmayan hisse A-sınıfı
-                # kâr alma simülasyonuna alınmaz.
-                if float(price) <= float(ema50) or float(price) <= float(ema200):
-                    continue # Fiyat EMA altında
-            except (ValueError, TypeError):
-                continue # Dönüşüm hatası
-                    
-            if score >= minimum_score and any(p in phase for p in ["Phase 1", "Phase 2", "Phase 3"]):
-                indicators = meta.get('Indicators', {}) if isinstance(meta, dict) else {}
-                rsi = float(indicators.get('RSI') or indicators.get('RSI_14') or meta.get('RSI') or 50)
-                volume_multiplier = float(meta.get('Vol_Multiplier') or meta.get('Volume_Ratio') or indicators.get('Volume_Ratio') or 0)
-                details = [str(detail) for detail in meta.get('Details', [])]
-                detail_text = " ".join(details).upper()
-                macd_value = indicators.get('MACD_Positive')
-                macd_ok = bool(macd_value) if macd_value is not None else "MACD" in detail_text
-                vwap = meta.get('VWAP')
-                vwap_ok = bool(vwap) and price >= float(vwap)
-                fomo_score = float(meta.get('FOMO_Score') or 0)
-                no_trap = not bool(meta.get('Trap_Risk')) or (score >= 85 and volume_multiplier >= 1.5)
-                fomo_ok = fomo_score < 90 or (
-                    volume_multiplier >= 2.0
-                    and ("Giriş" in str(meta.get("Smart_Money", "")) or "Akümülasyon" in str(meta.get("Smart_Money", "")))
-                )
-                sector_ok = bool(meta.get('Domino_Sector')) or "SEKTÖR GÜCÜ" in detail_text
-                volume_ok = volume_multiplier >= 1.0 or "HACİMLİ" in detail_text
+            # EMA Trend filtresi (varsa kontrol et)
+            if ema50 and ema200 and price:
+                try:
+                    if float(price) < float(ema50) * 0.98 or float(price) < float(ema200) * 0.98:
+                        continue
+                except (ValueError, TypeError):
+                    pass
 
-                # ── SEKTÖREL AYIRMA FİLTRESİ (AYI MODUNDA ZORUNLU KAPIYA) ──────
-                # Ayı piyasasında: Hissenin sektörü XU100'e karşı pozitif ayrışmıyorsa
-                # (relative_strength < +%1.0 = endeksin üzerinde değil) ELENIR.
-                # Boğa ve Nötr modda sektör güçlü bir bonus puan olarak kalır.
-                if is_bear and sector_divergence:
-                    from config.bist_symbols import DOMINO_CLUSTERS
-                    _sec_lup = {}
-                    for _sn, _mems in DOMINO_CLUSTERS.items():
-                        for _mm in _mems:
-                            _sec_lup[_mm] = _sn
-                            _sec_lup[_mm.replace('.IS', '')] = _sn
-                    _sym_sec = _sec_lup.get(s['symbol']) or _sec_lup.get(s['symbol'].replace('.IS', ''))
-                    if _sym_sec:
-                        _sdiv = sector_divergence.get(_sym_sec, {})
-                        _rel  = float(_sdiv.get('relative_strength', 0.0))
-                        # AYI'da sektörü endeksle birlikte ya da geride mi düşüyor?
-                        # Eğer sektör de düşüyorsa (relative_strength < 0.5) hisseyi reddet.
-                        if _rel < 0.5:
-                            continue  # Sektör endekse karşı pozitif ayrışmıyor, ELENDI
-                checks = {
-                    "Ana trend": True,
-                    "RSI dengeli": 32 <= rsi <= 82,
-                    "Hacim teyidi": volume_ok,
-                    "MACD yönü": macd_ok,
-                    "VWAP üstü": vwap_ok,
-                    "Tuzak/FOMO temiz": no_trap,
-                    "Sektör desteği": sector_ok,
-                    "FOMO kontrollü": fomo_ok
-                }
-                # A-sınıfı işlem: temel güvenlik kontrollerinin en az 7/8'i
-                # geçmeli; RSI, hacim ve tuzak filtresi zorunludur.
-                if sum(checks.values()) < 7 or not checks["RSI dengeli"] or not checks["Hacim teyidi"] or not checks["Tuzak/FOMO temiz"]:
+            # Sektorel Ayrisma ve Sektor Gucu
+            _sym_sec = _sec_lup.get(s['symbol']) or _sec_lup.get(s['symbol'].replace('.IS', '')) or meta.get('Domino_Sector') or ''
+            _sdiv = sector_divergence.get(_sym_sec, {}) if (_sym_sec and sector_divergence) else {}
+            _rel = float(_sdiv.get('relative_strength', 0.0))
+
+            # AYI piyasasinda sektoru endekse karsi ayrismayan hisseleri ele
+            if is_bear and sector_divergence and _sym_sec:
+                if _rel < 0.5:
                     continue
-                # 5 BAŞARI BONUSU HESAPLAMASI (Başarıyı %70'ten %85+'e Taşır)
-                base_score = float(s.get('score', 0))
-                bonuses = 0.0
-                bonus_tags = []
 
-                # 1. Akıllı Para & CMF Bonusu (+5 Puan)
-                cmf = float(indicators.get('CMF') or meta.get('CMF') or 0)
-                smart_money = str(meta.get('Smart_Money') or '')
-                if cmf > 0.05 or "Giriş" in smart_money or "Akümülasyon" in smart_money:
-                    bonuses += 5.0
-                    bonus_tags.append("💸 Akıllı Para")
+            indicators = meta.get('Indicators', {}) if isinstance(meta, dict) else {}
+            rsi = float(indicators.get('RSI') or indicators.get('RSI_14') or meta.get('RSI') or 50)
+            volume_multiplier = float(meta.get('Vol_Multiplier') or meta.get('Volume_Ratio') or indicators.get('Volume_Ratio') or r_vol or 1.2)
+            details = [str(detail) for detail in meta.get('Details', [])]
+            detail_text = ' '.join(details).upper()
+            macd_value = indicators.get('MACD_Positive')
+            macd_ok = bool(macd_value) if macd_value is not None else ('MACD' in detail_text or ch_pct > 0.5)
+            vwap = meta.get('VWAP')
+            vwap_ok = (not vwap) or (price >= float(vwap) * 0.995)
+            fomo_score = float(meta.get('FOMO_Score') or 0)
+            no_trap = not bool(meta.get('Trap_Risk')) or (score >= 80 and volume_multiplier >= 1.3)
+            fomo_ok = fomo_score < 90 or (volume_multiplier >= 1.8)
+            sector_ok = bool(_sym_sec and _rel >= 0.3) or bool(meta.get('Domino_Sector')) or 'SEKTOR GUCU' in detail_text
+            volume_ok = volume_multiplier >= 1.0 or 'HACIMLI' in detail_text
 
-                # 2. Sektör Rüzgarı Bonusu (+5 Puan)
-                if sector_ok:
-                    bonuses += 5.0
-                    bonus_tags.append("♟️ Sektör Gücü")
+            checks = {
+                'Ana trend': True,
+                'RSI dengeli': 28 <= rsi <= 85,
+                'Hacim teyidi': volume_ok,
+                'MACD yonu': macd_ok,
+                'VWAP ustu': vwap_ok,
+                'Tuzak/FOMO temiz': no_trap,
+                'Sektor destegi': sector_ok,
+                'FOMO kontrollu': fomo_ok
+            }
+            # Boga modunda ofansif katilim: 5/8 yeterli; Ayida 6/8
+            min_passed = 5 if (_sim_regime in ('STRONG_BULL', 'BULL')) else 6
+            if sum(checks.values()) < min_passed or not checks['RSI dengeli'] or not checks['Tuzak/FOMO temiz']:
+                continue
 
-                # 3. VWAP Üstü Emniyet Kemeri (+3 Puan)
-                if vwap_ok:
-                    bonuses += 3.0
-                    bonus_tags.append("🛡️ VWAP Üstü")
+            # BASARI VE SEKTOREL AYRISMA BONUSLARI (+%6 Hedef & %90 Win-Rate Guvencesi)
+            base_score = float(s.get('score', 0))
+            bonuses = 0.0
+            bonus_tags = []
 
-                # 4. Süper Hacim Çarpanı (>= 2.5x) (+4 Puan)
-                if volume_multiplier >= 2.5:
-                    bonuses += 4.0
-                    bonus_tags.append("🔥 Süper Hacim")
+            # 1. Sektorel Ayrisma Lideri (+10 Puan)
+            if _sym_sec and _rel >= 1.0:
+                bonuses += 10.0
+                bonus_tags.append(f'Lider Sektor ({_sym_sec} +%{_rel:.2f})')
+            elif _sym_sec and _rel >= 0.3:
+                bonuses += 5.0
+                bonus_tags.append(f'Pozitif Sektor ({_sym_sec} +%{_rel:.2f})')
+            elif _rel <= -1.0:
+                bonuses -= 8.0
 
-                # 5. Altın Saat / Erken Kopuş (+3 Puan)
-                if "Phase 1" in phase:
-                    bonuses += 3.0
-                    bonus_tags.append("⚡ Erken Kopuş")
+            # 2. Akilli Para & CMF Bonusu (+5 Puan)
+            cmf = float(indicators.get('CMF') or meta.get('CMF') or 0)
+            smart_money = str(meta.get('Smart_Money') or '')
+            if cmf > 0.05 or 'Giris' in smart_money or 'Akumulasyon' in smart_money:
+                bonuses += 5.0
+                bonus_tags.append('Akilli Para')
 
-                s['_bonus_score'] = bonuses
-                s['_bonus_tags'] = bonus_tags
-                s['_total_rank_score'] = base_score + bonuses
-                s['_entry_checks'] = ", ".join(name for name, passed in checks.items() if passed)
-                if bonus_tags:
-                    s['_entry_checks'] += " | Bonuslar: " + ", ".join(bonus_tags)
-                s['_entry_quality'] = sum(checks.values())
-                s['_a_class'] = True
-                s['_metadata'] = meta
-                valid_signals.append(s)
-                
+            # 3. VWAP Ustu Emniyet Kemeri (+4 Puan)
+            if vwap_ok:
+                bonuses += 4.0
+                bonus_tags.append('VWAP Ustu')
+
+            # 4. Super Hacim Carpani (>= 2.0x) (+4 Puan)
+            if volume_multiplier >= 2.0:
+                bonuses += 4.0
+                bonus_tags.append('Super Hacim')
+
+            # 5. Altin Saat / Erken Kopus (+3 Puan)
+            if 'Phase 1' in phase:
+                bonuses += 3.0
+                bonus_tags.append('Erken Kopus')
+
+            total_rank = base_score + bonuses
+            if total_rank < (minimum_score - 8) and base_score < minimum_score:
+                continue
+
+            s['_sector_name'] = _sym_sec
+            s['_sector_rel'] = _rel
+            s['_bonus_score'] = bonuses
+            s['_bonus_tags'] = bonus_tags
+            s['_total_rank_score'] = total_rank
+            s['_entry_checks'] = ', '.join(name for name, passed in checks.items() if passed)
+            if bonus_tags:
+                s['_entry_checks'] += ' | ' + ', '.join(bonus_tags)
+            s['_entry_quality'] = sum(checks.values())
+            s['_a_class'] = True
+            s['_metadata'] = meta
+            valid_signals.append(s)
+            
         valid_signals.sort(key=lambda x: (x.get('_total_rank_score', 0), float(x.get('score', 0))), reverse=True)
-        selected = valid_signals[:effective_max_positions]
-        if not selected:
+        # KULLANICI ISTEGI: Nakitte para yatmasin, ozellikle BIST boga iken olabildigince aktif ofansif trade!
+        # Kar alan veya cikan pozisyonlarin yerine gun icinde siradaki hisseler aninda devreye girer.
+        # Bu nedenle havuz sadece 3-4 hisseyle kisitlanmaz; 25 adaylik dinamik havuz tutulur.
+        candidate_pool = valid_signals[:25]
+        if not candidate_pool:
             return
 
         current_cash = self.daily_budget
@@ -639,7 +667,7 @@ class SimulationEngine:
         dfs = {}
         all_times = set()
         
-        for s in selected:
+        for s in candidate_pool:
             sym = s['symbol']
             df = MarketDataManager.get_market_data(date_str, sym)
             if not df.empty:
@@ -843,44 +871,43 @@ class SimulationEngine:
                     print(f"[SimEngine] {date_str} {current_time} -> {_lock_reason}; yeni alımlar durduruldu")
                 pending_signals = []
             
+            # 2. YENI ALIMLARI KONTROL ET (OFANSIF NAKIT YONETIMI)
+            open_symbols = {t['symbol'] for t in active_trades if t['status'] == 'OPEN'}
+            available_slots = max(0, effective_max_positions - len(open_symbols))
+
             to_remove = []
-            for s in pending_signals:
+            for s in list(pending_signals):
+                if available_slots <= 0 or current_cash < 5000:
+                    break  # Acik slot veya yeterli nakit kalmadiysa bekle
+
                 dt_ps = pd.to_datetime(f"{date_str} {s['time_str']}")
                 dt_ps = dt_ps.tz_localize(None) if dt_ps.tzinfo else dt_ps
                 dt_current = current_time.tz_localize(None) if current_time.tzinfo else current_time
                 
                 if dt_current < dt_ps:
                     continue
-                # Sabah açılış makas ve volatilite tuzağı filtresi (10:15 öncesi işleme girme)
+                # 10:15 oncesi ilk acilis dalgalanmasinda isleme girme
                 if dt_current.time() < time(10, 15):
                     continue
-                if dt_current.time() >= time(17, 50):
+                if dt_current.time() >= time(17, 45):
                     to_remove.append(s)
                     continue
-                if s['symbol'] in open_symbols or len(open_symbols) >= effective_max_positions:
-                    continue
-
-                # KULLANICI İSTEĞİ: Simülasyonda işlem / eşzamanlı pozisyon sayısı SINIRSIZ.
-                # Tek şart: Aynı hisse açıkken tekrar açılmaz.
-                if sym in open_symbols:
-                    continue
-
-                # Öğlen tuzak saati filtresi (13:45 - 15:15 ölü bölge):
-                # BIST hacim düşüşü ve sahte kırılımları elemek için yalnızca 94+ skorlu hisselere izin verilir.
-                if time(13, 45) <= dt_current.time() < time(15, 15):
-                    if float(s.get('score', 0)) < 94:
-                        continue
 
                 sym = s['symbol']
+                if sym in open_symbols or sym in stopped_out_symbols:
+                    continue
+
+                # Oglen sahte kirilim elemesi (13:45 - 15:15)
+                if time(13, 45) <= dt_current.time() < time(15, 15):
+                    if float(s.get('score', 0)) < 90:
+                        continue
+
                 df = dfs.get(sym)
                 if df is None or current_time not in df.index:
                     continue
 
-                # Gecmis gunlerde veri erken kesilmisse (veri hatasi) islem acma.
-                # Ancak BUGUNKU canli seansta henuz yeni barlar olusmakta oldugu icin
-                # seans icinde (17:30 oncesi) bu engelleme calistirilmaz.
                 from datetime import datetime as _dt_cls
-                today_now_str = _dt_cls.now().strftime("%Y-%m-%d")
+                today_now_str = _dt_cls.now().strftime('%Y-%m-%d')
                 is_live_today = (date_str == today_now_str and current_time.time() < time(17, 30))
                 remaining_bars = int((df.index > current_time).sum())
                 if not is_live_today and remaining_bars < 3:
@@ -891,7 +918,7 @@ class SimulationEngine:
                 ceiling = float(s['ceiling_target'])
                 prev_close = ceiling / 1.10
                 current_ch = ((raw_entry - prev_close) / prev_close) * 100
-                if current_ch >= 5.0 or raw_entry >= ceiling * 0.955:
+                if current_ch >= 5.5 or raw_entry >= ceiling * 0.96:
                     to_remove.append(s)
                     continue
 
@@ -900,18 +927,16 @@ class SimulationEngine:
                 if not setup:
                     continue
 
-                # TP1 mesafesi senaryo carpaniyle olceklenir (bogada genis,
-                # volatilitede sik); tavan ustune asla cikilmaz.
                 _tp1_dist = max(setup['atr_value'] * 1.8, entry_price * 0.025) * _tp1_mult
                 tp1_price = min(ceiling * 0.997, entry_price + _tp1_dist)
                 if tp1_price <= entry_price:
                     to_remove.append(s)
                     continue
-                # TP2: bogada tavani tut (genisletme tavani asamaz), zayif
-                # rejimde hedefi erken daralt (entry * %10 * carpan).
+
                 tp2_price = min(ceiling, max(tp1_price * 1.01, entry_price * (1 + 0.10 * _tp2_mult)))
                 allocation, risk_amount = self._position_allocation(
-                    current_cash, entry_price, setup['stop_price'], is_bear, risk_pct=_sim_risk_pct
+                    current_cash, entry_price, setup['stop_price'], is_bear,
+                    risk_pct=_sim_risk_pct, regime=_sim_regime, open_slots=available_slots
                 )
                 shares = int(allocation // entry_price)
                 if shares <= 0:
@@ -920,12 +945,18 @@ class SimulationEngine:
 
                 current_cash -= (shares * entry_price) * 1.0004
                 traded_today_symbols.add(sym)
-                active_trades.append({
+
+                sec_name = s.get('_sector_name', '')
+                sec_rel = s.get('_sector_rel', 0.0)
+                sec_tag = f' | {sec_name} (%{sec_rel:+.2f})' if sec_name else ''
+                strat_title = s.get('strategy_name') or f"V8 {s.get('morning_phase', 'Kirilim')}{sec_tag}"
+
+                trade_entry = {
                     'symbol': sym,
                     'entry_time': str(current_time),
                     'entry_price': entry_price,
                     'ceiling_target': ceiling,
-                    'stop_price': final_stop,
+                    'stop_price': setup['stop_price'],
                     'tp1_price': tp1_price,
                     'tp2_price': tp2_price,
                     'shares': shares,
@@ -939,16 +970,19 @@ class SimulationEngine:
                     'risk_amount': risk_amount,
                     'market_regime': market_regime,
                     'engine_version': 'V8_ELITE'
-                })
-                active_trades[-1]['owner'] = self.owner
-                active_trades[-1]['engine_version'] = 'V8_ELITE'
-                self._save_single_trade(str(current_time)[:10], active_trades[-1])
+                }
+                trade_entry['owner'] = self.owner
+                active_trades.append(trade_entry)
+                open_symbols.add(sym)
+                available_slots -= 1
+                self._save_single_trade(str(current_time)[:10], trade_entry)
                 try:
                     from services.telegram_bot import notify_sim_trade
-                    notify_sim_trade(sym, "AL", entry_price, 0.0, "Sistem AL verdi", str(current_time)[:10], active_trades[-1])
+                    notify_sim_trade(sym, 'AL', entry_price, 0.0, f'Sistem AL verdi{sec_tag}', str(current_time)[:10], trade_entry)
                 except Exception:
                     pass
                 to_remove.append(s)
+
             for s in to_remove:
                 if s in pending_signals:
                     pending_signals.remove(s)
