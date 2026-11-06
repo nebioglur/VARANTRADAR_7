@@ -486,19 +486,8 @@
             });
         })();
 
-        // Eski tarayici / modul yukleme hatasi yakalayici:
-        // app-auth.js modulu hic calismadiysa kullaniciya gorunur mesaj ver.
-        // (CLASSIC_ONLY modunda klasik form zaten acik, uyari gereksiz)
-        setTimeout(function () {
-            if (!window.__vrAuthBooted && window.VR_CLASSIC_ONLY !== 1) {
-                var box = document.getElementById('auth-error-box');
-                if (box && box.style.display === 'none') {
-                    box.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' +
-                        'Giriş sistemi yüklenemedi. Tarayıcınız eski olabilir; güncel Chrome veya Safari kullanıp sayfayı yenileyin ya da aşağıdaki kullanıcı adı/şifre girişini kullanın.';
-                    box.style.display = 'block';
-                }
-            }
-        }, 8000);
+        // Klasik kullanici adi ve sifre girisi dogrudan etkindir;
+        // gereksiz / yaniltici otomatik yukleme hatasi gostermeyiz.
     </script>
 </body>
 </html>
