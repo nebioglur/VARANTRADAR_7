@@ -1531,6 +1531,7 @@ def index():
     return response
 
 @app.route('/apk/<path:filename>')
+@app.route('/ui/apk/<path:filename>')
 def serve_apk(filename):
     for d in ['ui/apk', 'apk']:
         target = os.path.join(d, filename)
@@ -3130,6 +3131,12 @@ def api_simulation_daily_pnl():
                 pass
             return jsonify({
                 "status": "success",
+                "initial_balance": base_starting_capital,
+                "current_balance": cumulative_equity,
+                "cumulative_balance": cumulative_equity,
+                "net_pnl": cumulative_net_pnl,
+                "win_rate": performance.get("win_rate", 0.0) if performance else 0.0,
+                "total_trades": len(trades),
                 "equity_curve": sanitize_for_json(equity_curve),
                 "trades": sanitize_for_json(trades),
                 "performance": sanitize_for_json(performance),
@@ -3288,7 +3295,7 @@ def api_telegram_send_morning_compass():
     """Gunun Pusulasi bultenini Telegram'a gonderir."""
     try:
         from services.telegram_bot import send_morning_compass_bulletin
-        ok = send_morning_compass_bulletin()
+        ok = send_morning_compass_bulletin(force=True)
         if ok:
             return jsonify({"status": "success", "message": "Günün Pusulası bülteni Telegram'a iletildi."})
         return jsonify({"status": "error", "message": "Telegram gönderimi başarısız oldu."}), 500

@@ -125,6 +125,16 @@ def is_authorized_telegram_sender() -> tuple:
     return False, "Ikincil/yerel ortam (yalnizca PythonAnywhere ana sunucusu Telegram bildirimi gonderebilir)"
 
 
+def _get_telegram_proxies():
+    """PythonAnywhere ortaminda dis baglanti icin Squid proxy destegi saglar."""
+    if os.environ.get("https_proxy") or os.environ.get("HTTPS_PROXY") or os.environ.get("http_proxy") or os.environ.get("HTTP_PROXY"):
+        return None
+    if os.path.exists("/home/varantradarpro") or "pythonanywhere" in os.environ.get("PYTHONANYWHERE_DOMAIN", "").lower() or os.path.exists("/etc/pythonanywhere"):
+        p = "http://proxy.server:3128"
+        return {"http": p, "https": p}
+    return None
+
+
 def send_telegram_message(text: str, parse_mode: str = "HTML", force: bool = False) -> bool:
     if not force:
         allowed, reason = is_authorized_telegram_sender()
@@ -133,36 +143,45 @@ def send_telegram_message(text: str, parse_mode: str = "HTML", force: bool = Fal
             return False
     """
     Belirlenen Chat ID'ye Telegram uzerinden mesaj gonderir.
+    Coklu chat ID destegi (virgulle ayrilmis) ve proxy destegi mevcuttur.
     """
-
-
-    bot_token, chat_id = get_telegram_credentials()
-    if not bot_token or not chat_id:
+    bot_token, raw_chat_id = get_telegram_credentials()
+    if not bot_token or not raw_chat_id:
         logger.error("Telegram ayarlari eksik (env + veritabani bos). Bildirim gonderilemedi! "
                      "Uygulamadan Telegram ayarlarini kaydedin.")
         return False
 
-    try:
-        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-        payload = {
-            "chat_id": chat_id,
-            "text": text,
-            "parse_mode": parse_mode
-        }
-
-        response = requests.post(url, json=payload, timeout=10)
-        response_data = response.json()
-
-        if response.status_code == 200 and response_data.get("ok"):
-            logger.info(f"Telegram mesaji basariyla gonderildi: {text[:50]}...")
-            return True
-        else:
-            logger.error(f"Telegram mesaji gonderilemedi! Hata: {response_data}")
-            return False
-
-    except Exception as e:
-        logger.error(f"Telegram API cagrisi sirasinda hata olustu: {str(e)}")
+    chat_ids = [cid.strip() for cid in str(raw_chat_id).split(",") if cid.strip()]
+    if not chat_ids:
         return False
+
+    proxies = _get_telegram_proxies()
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    any_success = False
+
+    for cid in chat_ids:
+        try:
+            payload = {
+                "chat_id": cid,
+                "text": text,
+                "parse_mode": parse_mode
+            }
+            kwargs = {"json": payload, "timeout": 15}
+            if proxies:
+                kwargs["proxies"] = proxies
+
+            response = requests.post(url, **kwargs)
+            response_data = response.json()
+
+            if response.status_code == 200 and response_data.get("ok"):
+                logger.info(f"Telegram mesaji basariyla gonderildi ({cid}): {text[:50]}...")
+                any_success = True
+            else:
+                logger.error(f"Telegram mesaji gonderilemedi ({cid})! Hata: {response_data}")
+        except Exception as e:
+            logger.error(f"Telegram API cagrisi sirasinda hata olustu ({cid}): {str(e)}")
+
+    return any_success
 
 
 def send_vip_signal(stock_data: dict) -> bool:
@@ -466,13 +485,16 @@ def send_voice_alert(alert_type: str, caption: str, force: bool = False) -> bool
 
     try:
         url = f"https://api.telegram.org/bot{bot_token}/sendAudio"
+        proxies = _get_telegram_proxies()
         with open(path, "rb") as f:
-            response = requests.post(
-                url,
-                data={"chat_id": chat_id, "caption": caption, "parse_mode": "HTML"},
-                files={"audio": (_os.path.basename(path), f, "audio/mpeg")},
-                timeout=20,
-            )
+            kwargs = {
+                "data": {"chat_id": chat_id, "caption": caption, "parse_mode": "HTML"},
+                "files": {"audio": (_os.path.basename(path), f, "audio/mpeg")},
+                "timeout": 20,
+            }
+            if proxies:
+                kwargs["proxies"] = proxies
+            response = requests.post(url, **kwargs)
         data = response.json()
         if response.status_code == 200 and data.get("ok"):
             logger.info(f"Telegram sesli uyari gonderildi ({alert_type}): {caption[:50]}")
@@ -1080,7 +1102,11 @@ def send_telegram_photo(photo_path: str, caption: str = "", force: bool = False)
                     "caption": caption[:1020], # Telegram caption max 1024 karakter
                     "parse_mode": "HTML"
                 }
-                resp = requests.post(url, data=data, files=files, timeout=25)
+                kwargs = {"data": data, "files": files, "timeout": 25}
+                proxies = _get_telegram_proxies()
+                if proxies:
+                    kwargs["proxies"] = proxies
+                resp = requests.post(url, **kwargs)
                 res_json = resp.json()
                 if resp.status_code == 200 and res_json.get("ok"):
                     any_success = True
@@ -1602,7 +1628,7 @@ def send_special_ranking_alert(candidates: list) -> bool:
 
 
 
-def send_morning_compass_bulletin() -> bool:
+def send_morning_compass_bulletin(force: bool = False) -> bool:
     """
     Hergün 09:50'de Telegram kanalına gönderilen 'Günün Pusulası & Seans Öncesi Taktik Bülteni'.
     """
@@ -1624,7 +1650,7 @@ def send_morning_compass_bulletin() -> bool:
 
     text += "💡 <i>Özel Sıralama (Aksiyon Planlı) ve Dağ Kekliği sinyalleri 10:15'ten itibaren anlık olarak kanala iletilecektir. Bol kazançlar dileriz!</i> 🚀"
 
-    return send_telegram_message(text)
+    return send_telegram_message(text, force=force)
 
 
 
