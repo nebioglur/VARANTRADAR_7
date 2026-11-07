@@ -4146,6 +4146,16 @@ def api_v8_radar_breakout():
     breakout_list = []
     cache_ts = GLOBAL_DASHBOARD_CACHE.get("cache_timestamp")
     regime_data = GLOBAL_DASHBOARD_CACHE.get("v8_market_regime", {}) or {}
+    # Refresh XU100 regime here as well: entry approval must use the same
+    # current regime that the UI displays, not a stale worker cache.
+    try:
+        from v8_engine.regime import V8RegimeEngine
+        fresh_regime = V8RegimeEngine().determine_regime()
+        if isinstance(fresh_regime, dict) and fresh_regime.get("data_available"):
+            regime_data = fresh_regime
+            GLOBAL_DASHBOARD_CACHE["v8_market_regime"] = fresh_regime
+    except Exception as e:
+        print(f"[V8 RADAR] Fresh regime calculation error: {e}")
 
     # Final deterministic gate: breakout + XU100 regime + RSI/MFI/ATR/volume
     # + fakeout. Risk/warrant gates are added only when those real objects exist.
@@ -4402,8 +4412,26 @@ def api_v8_entry_approval():
 
 @app.route('/api/v8/market/regime', methods=['GET'])
 def api_v8_market_regime():
-    regime_data = GLOBAL_DASHBOARD_CACHE.get("v8_market_regime", {"regime": "UNKNOWN", "score": 50.0, "xu100_trend": 0.0})
-    return jsonify(regime_data)
+    """Return a fresh XU100 daily regime for the V8 UI.
+    
+    PythonAnywhere workers may keep GLOBAL_DASHBOARD_CACHE alive for a long
+    time, so the UI must not rely on a stale cached xu100_trend value.
+    """
+    global GLOBAL_DASHBOARD_CACHE
+    try:
+        from v8_engine.regime import V8RegimeEngine
+        fresh = V8RegimeEngine().determine_regime()
+        if isinstance(fresh, dict) and fresh.get("data_available"):
+            GLOBAL_DASHBOARD_CACHE["v8_market_regime"] = fresh
+            return jsonify(fresh)
+    except Exception as e:
+        print(f"[V8 REGIME API] Fresh calculation error: {e}")
+    return jsonify(
+        GLOBAL_DASHBOARD_CACHE.get(
+            "v8_market_regime",
+            {"regime": "UNKNOWN", "score": 50.0, "xu100_trend": 0.0},
+        )
+    )
 
 @app.route('/api/v8/playbook', methods=['GET'])
 def api_v8_playbook():
