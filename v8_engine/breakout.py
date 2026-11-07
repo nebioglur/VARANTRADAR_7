@@ -141,18 +141,40 @@ class BreakoutEngine:
             breakout_score = min(100.0, float(breakout_score))
             fakeout_risk = min(100.0, float(fakeout_risk))
 
-            # ATR (stop/hedef kaliciligi icin V8 geneline sunulur)
+            # ATR(14) + MFI(14): final V8 approval gate için ham metrikleri üret.
+            atr_val = 0.0
+            atr_pct = 0.0
             try:
                 tr1 = high - low
                 tr2 = (high - close.shift()).abs()
                 tr3 = (low - close.shift()).abs()
                 tr_atr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
-                atr_val = float(tr_atr.rolling(14).mean().iloc[-1])
+                atr_series = tr_atr.ewm(alpha=1 / 14, adjust=False, min_periods=14).mean()
+                atr_val = float(atr_series.iloc[-1])
                 atr_pct = (atr_val / c * 100.0) if c > 0 else 0.0
                 if pd.isna(atr_pct) or atr_pct < 0:
-                    atr_pct = 0.0
+                    atr_val, atr_pct = 0.0, 0.0
             except Exception:
-                atr_pct = 0.0
+                atr_val, atr_pct = 0.0, 0.0
+
+            # Money Flow Index (Wilder-compatible rolling calculation).
+            mfi_14 = 50.0
+            try:
+                typical = (high + low + close) / 3.0
+                raw_flow = typical * vol
+                direction = typical.diff()
+                pos_flow = raw_flow.where(direction > 0, 0.0)
+                neg_flow = raw_flow.where(direction < 0, 0.0).abs()
+                pos_sum = pos_flow.rolling(14).sum()
+                neg_sum = neg_flow.rolling(14).sum()
+                money_ratio = pos_sum / neg_sum.replace(0, np.nan)
+                mfi_series = 100.0 - (100.0 / (1.0 + money_ratio))
+                mfi_14 = float(mfi_series.iloc[-1])
+                if pd.isna(mfi_14):
+                    mfi_14 = 100.0 if float(pos_sum.iloc[-1] or 0) > 0 else 50.0
+                mfi_14 = max(0.0, min(100.0, mfi_14))
+            except Exception:
+                mfi_14 = 50.0
 
             status = "CONFIRMED_BREAKOUT"
             if breakout_score < 50 or fakeout_risk >= 40:
@@ -172,6 +194,8 @@ class BreakoutEngine:
                     "close_price": round(c, 2),
                     "relative_volume": round(rel_vol, 2),
                     "rsi": round(current_rsi, 1),
+                    "mfi_14": round(mfi_14, 1),
+                    "atr_14": round(atr_val, 4),
                     "atr_pct": round(atr_pct, 2)
                 }
             }

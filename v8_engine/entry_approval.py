@@ -52,7 +52,7 @@ def evaluate_entry_approval(
     if not isinstance(regime, dict) or not isinstance(breakout, dict):
         return _blocked("V8 rejimi veya kırılım verisi yok.")
 
-    regime_code = str(regime.get("regime_code") or "").upper()
+    regime_code = str(regime.get("regime_code") or regime.get("regime") or "").upper()
     data_status = str(regime.get("data_status") or "OK").upper()
     stale = bool(regime.get("stale", False))
     regime_score = regime.get("score")

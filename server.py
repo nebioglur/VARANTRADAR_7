@@ -4133,16 +4133,8 @@ def _v8_live_price(data: dict) -> float:
 
 @app.route('/api/v8/radar/breakout', methods=['GET'])
 def api_v8_radar_breakout():
-    v8_cache_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "v8_breakout_cache.json")
-    if os.path.exists(v8_cache_file):
-        try:
-            with open(v8_cache_file, "r", encoding="utf-8") as _vf:
-                _vdata = json.load(_vf)
-                if _vdata and _vdata.get("status") == "success" and _vdata.get("data"):
-                    return jsonify(_vdata)
-        except Exception:
-            pass
-
+    # Never serve the old v8_breakout_cache.json as the primary response.
+    # The UI must receive the current decision chain after the final V8 gate.
     all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
     if not all_stats:
         try:
@@ -4153,6 +4145,33 @@ def api_v8_radar_breakout():
             pass
     breakout_list = []
     cache_ts = GLOBAL_DASHBOARD_CACHE.get("cache_timestamp")
+    regime_data = GLOBAL_DASHBOARD_CACHE.get("v8_market_regime", {}) or {}
+
+    # Final deterministic gate: breakout + XU100 regime + RSI/MFI/ATR/volume
+    # + fakeout. Risk/warrant gates are added only when those real objects exist.
+    try:
+        from v8_engine.entry_approval import evaluate_entry_approval
+    except Exception:
+        evaluate_entry_approval = None
+
+    def _apply_v8_final_gate(row):
+        if (row.get("entry_status") or "").upper() != "ENTER":
+            return row
+        if evaluate_entry_approval is None:
+            row["entry_status"] = "WAIT_CONFIRMATION"
+            row["entry_reasons"] = ["V8 nihai onay motoru yüklenemedi"] + list(row.get("entry_reasons") or [])
+            return row
+        approval = evaluate_entry_approval(
+            regime=regime_data,
+            breakout=row,
+            risk=None,
+            warrant=None,
+        )
+        row["entry_approval"] = approval
+        if not approval.get("approved"):
+            row["entry_status"] = "WAIT_CONFIRMATION"
+            row["entry_reasons"] = list(approval.get("reasons") or ["V8 nihai giriş onayı başarısız"]) + list(row.get("entry_reasons") or [])
+        return row
 
     for sym, data in all_stats.items():
         # BAYAT FIYAT KORUMASI: bugun taze fiyat gelmemis semboller
@@ -4170,7 +4189,9 @@ def api_v8_radar_breakout():
             row["scan_timestamp"] = cache_ts
             row["entry_status"] = data.get("v8_execution", {}).get("entry_status", "UNKNOWN")
             row["entry_reasons"] = data.get("v8_execution", {}).get("reasons", [])
-            breakout_list.append(_v8_gate_enter_row(row, sym, data))
+            row = _v8_gate_enter_row(row, sym, data)
+            row = _apply_v8_final_gate(row)
+            breakout_list.append(row)
             continue
 
         # Gunluk kirilim yoksa 1 saatlik kirilim teyidine bak (daha erken sinyal):
@@ -4191,7 +4212,9 @@ def api_v8_radar_breakout():
                 row["intraday_signal"] = True
                 row["momentum_speed"] = intra.get("momentum_speed", "NORMAL")
                 row["timeframe_quality"] = intra.get("timeframe_quality", 0)
-                breakout_list.append(_v8_gate_enter_row(row, sym, data))
+                row = _v8_gate_enter_row(row, sym, data)
+                row = _apply_v8_final_gate(row)
+                breakout_list.append(row)
                 continue
 
         # Kırılım yokken endpoint'in boş dönmesi V8'in 600+ hisseyi
