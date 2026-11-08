@@ -30858,3 +30858,9 @@ elisted
 1 Failed download:
 [2026-11-08 20:40:47] [ERROR] ['XU100.IS']: possibly delisted; no price data found  (period=3mo)
 [2026-11-08 20:41:16] [WARNING] [KAP] Bulten servisi erisilemiyor, filtre pasif: KAP erisilemedi: The read operation timed out
+[2026-11-08 21:31:59] [INFO] [TG-GUARD] Telegram gonderimi engellendi (Ikincil/yerel ortam (yalnizca PythonAnywhere ana sunucusu Telegram bildirimi gonderebilir)): 🎯 <b>V8 İŞLEM SİNYALİ</b>
+━━━━━━━━━━━━━━━━
+💎 <b>Hi...
+[2026-11-08 21:33:39] [INFO] [TG-GUARD] Telegram gonderimi engellendi (Ikincil/yerel ortam (yalnizca PythonAnywhere ana sunucusu Telegram bildirimi gonderebilir)): 🎯 <b>V8 İŞLEM SİNYALİ</b>
+━━━━━━━━━━━━━━━━
+💎 <b>Hi...

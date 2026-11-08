@@ -306,8 +306,11 @@ def start_live_data_collector():
                     except Exception as coll_err:
                         print(f"[LIVE DATA] toplama hatasi: {coll_err}")
 
-                    # Telegram'a V8 aday listesi otomatik yollanmaz; kanal sadece
-                    # seans açılışı, gerçek simülasyon AL/SAT olayları ve gün sonu özeti alır.
+                    # V8 GİRİŞ ONAYLI YENİ HİSSELERİ TELEGRAM'A BİLDİR (Günde en fazla 1 kez / hisse)
+                    try:
+                        auto_send_v8_signals()
+                    except Exception as _tg_v8_err:
+                        print(f"[V8-TG] Tarama döngüsü telegram hatası: {_tg_v8_err}")
 
                         
                     # FAST PRICE UPDATE
@@ -3975,7 +3978,7 @@ def _v8_gate_enter_row(row: dict, sym: str, data: dict) -> dict:
         row["entry_reasons"] = [f"[TEYİT] {cmsg}"] + list(row.get("entry_reasons") or [])
     return row
 
-def auto_send_v8_signals():
+def auto_send_v8_signals(candidates=None):
     """GERCEK giris onayli V8 sinyallerini (erken adaylar haric) otomatik olarak
     Telegram kanalina TEK GRUPLU OZET olarak gonderir.
     - Hisse basina gunde EN FAZLA 1 sinyal (gunluk oncelikli, saatlik ikame).
@@ -3991,8 +3994,7 @@ def auto_send_v8_signals():
         if len(_V8_TG_SENT) > 500:
             _V8_TG_SENT.clear()
 
-        # Kalici tekrar engeli: bugun gonderilenleri DB'den oku (bellek +
-        # DB birlesik set; restart sonrasi tekrar mesaj gitmez).
+        # Kalici tekrar engeli: bugun gonderilenleri DB'den oku
         try:
             conn = _V8DB.get_connection()
             cur = conn.cursor()
@@ -4016,63 +4018,105 @@ def auto_send_v8_signals():
             scan_time = ""
 
         pending = []
-        for sym, data in all_stats.items():
-            # TEK SINYAL KURALI: hisse basina gunde 1. Gunluk kirilim varsa
-            # o kullanilir; yoksa saatlik. Ikisi birden ASLA gonderilmez.
-            key = (_today, sym)
-            if key in _V8_TG_SENT:
-                continue
-            if regime_locked:
-                continue
-            bo = data.get("v8_breakout")
-            intra = data.get("v8_breakout_1h") or {}
-            daily_ok = bool(bo and bo.get("is_breakout") and (data.get("v8_execution") or {}).get("entry_status") == "ENTER")
-            intra_ok = bool(intra.get("breakout", {}).get("is_breakout") and intra.get("entry_status") == "ENTER")
-            if daily_ok:
-                bo_row, reasons = bo, list((data.get("v8_execution") or {}).get("reasons") or [])
-            elif intra_ok:
-                bo_row, reasons = intra.get("breakout") or {}, ["1 saatlik barda kırılım teyidi (gün içi sinyal)"] + list(intra.get("reasons") or [])
-            else:
-                continue
-            entry = float(data.get("Price") or data.get("Daily_Close") or 0)
-            if entry <= 0:
-                continue
-            # KAP HABER FILTRESI: onemli olay duyurusu varsa sinyal gitmez.
-            try:
-                from services.kap_news import check_symbol as _kap_check
-                if _kap_check(sym).get("blocked"):
+
+        if candidates is not None:
+            # Doğrudan breakout radarından onaylanmış adaylar geldiğinde:
+            for item in candidates:
+                sym = item.get("symbol")
+                if not sym:
                     continue
-            except Exception:
-                pass
-            # A SINIFI KALITE KAPISI: secici giris yoksa kanala sinyal gitmez.
-            if not _v8_a_class_gate({}, sym, data)[0]:
-                continue
-            # T+3 DAKIKA TEYIDI: teyit gecmeden telegrama sinyal gitmez.
-            cstate, _cmsg = _v8_entry_confirmation(sym, data.get("Price") or entry)
-            if cstate != "CONFIRMED":
-                continue
-            try:
-                atr_pct = float((bo_row.get("metrics") or {}).get("atr_pct") or 0)
-            except (TypeError, ValueError):
-                atr_pct = 0.0
-            if atr_pct > 0:
-                stop_d = max(2.0, min(8.0, atr_pct * 1.5))
-                t1_d = max(2.0, min(10.0, atr_pct * 1.5))
-                t2_d = max(3.0, min(15.0, atr_pct * 2.5))
-            else:
-                stop_d, t1_d, t2_d = 5.0, 3.0, 5.0
-            pending.append({
-                "symbol": sym,
-                "entry_price": entry,
-                "stop_price": entry * (1 - stop_d / 100.0),
-                "target1": entry * (1 + t1_d / 100.0),
-                "target2": entry * (1 + t2_d / 100.0),
-                "breakout_score": bo_row.get("breakout_score", 0),
-                "fakeout_risk": bo_row.get("fakeout_risk", 0),
-                "reason": (reasons or [""])[0],
-                "market_regime": _V8_REGIME_TR_MAP.get(regime_raw, regime_raw),
-                "scan_time": scan_time,
-            })
+                key = (_today, sym)
+                if key in _V8_TG_SENT:
+                    continue
+                if regime_locked:
+                    continue
+                if (item.get("entry_status") or "").upper() != "ENTER":
+                    continue
+                entry = float(item.get("price") or item.get("Daily_Close") or 0)
+                if entry <= 0:
+                    continue
+                # Tavan riski olanlar gitmez
+                if item.get("ceiling_risk") or float(item.get("change_pct") or 0) >= 9.2:
+                    continue
+
+                metrics = item.get("metrics") or {}
+                try:
+                    atr_pct = float(metrics.get("atr_pct") or 0)
+                except (TypeError, ValueError):
+                    atr_pct = 0.0
+                if atr_pct > 0:
+                    stop_d = max(2.0, min(8.0, atr_pct * 1.5))
+                    t1_d = max(2.0, min(10.0, atr_pct * 1.5))
+                    t2_d = max(3.0, min(15.0, atr_pct * 2.5))
+                else:
+                    stop_d, t1_d, t2_d = 5.0, 3.0, 5.0
+
+                reasons = item.get("entry_reasons") or []
+                pending.append({
+                    "symbol": sym,
+                    "entry_price": entry,
+                    "stop_price": entry * (1 - stop_d / 100.0),
+                    "target1": entry * (1 + t1_d / 100.0),
+                    "target2": entry * (1 + t2_d / 100.0),
+                    "breakout_score": item.get("breakout_score", 0),
+                    "fakeout_risk": item.get("fakeout_risk", 0),
+                    "reason": reasons[0] if reasons else "V8 Kırılım Giriş Onayı",
+                    "market_regime": _V8_REGIME_TR_MAP.get(regime_raw, regime_raw),
+                    "scan_time": scan_time,
+                })
+        else:
+            for sym, data in all_stats.items():
+                key = (_today, sym)
+                if key in _V8_TG_SENT:
+                    continue
+                if regime_locked:
+                    continue
+                bo = data.get("v8_breakout")
+                intra = data.get("v8_breakout_1h") or {}
+                daily_ok = bool(bo and bo.get("is_breakout") and (data.get("v8_execution") or {}).get("entry_status") == "ENTER")
+                intra_ok = bool(intra.get("breakout", {}).get("is_breakout") and intra.get("entry_status") == "ENTER")
+                if daily_ok:
+                    bo_row, reasons = bo, list((data.get("v8_execution") or {}).get("reasons") or [])
+                elif intra_ok:
+                    bo_row, reasons = intra.get("breakout") or {}, ["1 saatlik barda kırılım teyidi (gün içi sinyal)"] + list(intra.get("reasons") or [])
+                else:
+                    continue
+                entry = float(data.get("Price") or data.get("Daily_Close") or 0)
+                if entry <= 0:
+                    continue
+                try:
+                    from services.kap_news import check_symbol as _kap_check
+                    if _kap_check(sym).get("blocked"):
+                        continue
+                except Exception:
+                    pass
+                if not _v8_a_class_gate({}, sym, data)[0]:
+                    continue
+                cstate, _cmsg = _v8_entry_confirmation(sym, data.get("Price") or entry)
+                if cstate != "CONFIRMED":
+                    continue
+                try:
+                    atr_pct = float((bo_row.get("metrics") or {}).get("atr_pct") or 0)
+                except (TypeError, ValueError):
+                    atr_pct = 0.0
+                if atr_pct > 0:
+                    stop_d = max(2.0, min(8.0, atr_pct * 1.5))
+                    t1_d = max(2.0, min(10.0, atr_pct * 1.5))
+                    t2_d = max(3.0, min(15.0, atr_pct * 2.5))
+                else:
+                    stop_d, t1_d, t2_d = 5.0, 3.0, 5.0
+                pending.append({
+                    "symbol": sym,
+                    "entry_price": entry,
+                    "stop_price": entry * (1 - stop_d / 100.0),
+                    "target1": entry * (1 + t1_d / 100.0),
+                    "target2": entry * (1 + t2_d / 100.0),
+                    "breakout_score": bo_row.get("breakout_score", 0),
+                    "fakeout_risk": bo_row.get("fakeout_risk", 0),
+                    "reason": (reasons or [""])[0],
+                    "market_regime": _V8_REGIME_TR_MAP.get(regime_raw, regime_raw),
+                    "scan_time": scan_time,
+                })
 
         if not pending:
             return
@@ -4359,6 +4403,14 @@ def api_v8_radar_breakout():
             row["entry_reasons"] = [
                 f"[TAVAN RİSKİ] +{chg:.1f} ile kovalama bölgesinde; tavan sonrası teyit beklenmeli"
             ] + list(row.get("entry_reasons") or [])
+
+        # YENI GIRIS ONAYLI V8 HISSELERINI TELEGRAM'A OTOMATIK GONDER (Gunde en fazla 1 kez / hisse)
+    try:
+        _al_cands = [x for x in breakout_list if (x.get("entry_status") or "").upper() == "ENTER"]
+        if _al_cands:
+            auto_send_v8_signals(_al_cands)
+    except Exception as _v8_bo_tg_e:
+        print(f"[V8 BREAKOUT TG] Otomatik bildirim hatasi: {_v8_bo_tg_e}")
 
     return jsonify({"status": "success", "data": breakout_list})
 
