@@ -9,6 +9,19 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 from typing import Dict, Any
+
+def _get_pa_proxy_session():
+    """PythonAnywhere free tier dis internet erisimi icin proxy oturumu dondurur."""
+    import requests, os
+    if os.path.exists("/home/varantradarpro") or "pythonanywhere" in os.environ.get("PYTHONANYWHERE_DOMAIN", "").lower() or os.path.exists("/etc/pythonanywhere"):
+        session = requests.Session()
+        session.proxies = {
+            "http": "http://proxy.server:3128",
+            "https": "http://proxy.server:3128"
+        }
+        return session
+    return None
+
 from zoneinfo import ZoneInfo
 
 
@@ -17,6 +30,7 @@ class MarketRegimeEngine:
 
     def __init__(self):
         self.index_symbol = "XU100.IS"
+        self._pa_session = _get_pa_proxy_session()
 
     def determine_regime(self) -> Dict[str, Any]:
         try:
@@ -171,7 +185,7 @@ class MarketRegimeEngine:
 
     def _fetch_live_price(self):
         try:
-            data = yf.download(self.index_symbol, period="5d", interval="1h", progress=False)
+            data = yf.download(self.index_symbol, period="5d", interval="1h", progress=False, **({"session": self._pa_session} if self._pa_session else {}))
             if data is not None and not data.empty:
                 if hasattr(data.columns, "nlevels") and data.columns.nlevels > 1:
                     data.columns = data.columns.droplevel(1)
@@ -181,7 +195,7 @@ class MarketRegimeEngine:
         except Exception:
             pass
         try:
-            hist = yf.Ticker(self.index_symbol).history(period="5d", interval="1h")
+            hist = yf.Ticker(self.index_symbol, **({"session": self._pa_session} if self._pa_session else {})).history(period="5d", interval="1h")
             if hist is not None and not hist.empty:
                 val = float(hist["Close"].iloc[-1])
                 return val if val > 0 else None
@@ -191,13 +205,13 @@ class MarketRegimeEngine:
 
     def _fetch_index_df(self):
         try:
-            data = yf.download(self.index_symbol, period="3mo", interval="1d", progress=False)
+            data = yf.download(self.index_symbol, period="3mo", interval="1d", progress=False, **({"session": self._pa_session} if self._pa_session else {}))
             if data is not None and not data.empty:
                 return data.copy()
         except Exception:
             pass
         try:
-            hist = yf.Ticker(self.index_symbol).history(period="3mo", interval="1d")
+            hist = yf.Ticker(self.index_symbol, **({"session": self._pa_session} if self._pa_session else {})).history(period="3mo", interval="1d")
             if hist is not None and not hist.empty:
                 return hist.copy()
         except Exception:

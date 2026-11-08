@@ -30850,3 +30850,11 @@ elisted
 [2026-11-06 10:00:10] [INFO] [TG-TRADE] Bildirim hazirlaniyor: 2026-11-05 AFYON.IS SAT (GUN SONU) @ 12.24
 [2026-11-06 10:00:10] [INFO] [TG-GUARD] Telegram gonderimi engellendi (Ikincil/yerel ortam (yalnizca PythonAnywhere ana sunucusu Telegram bildirimi gonderebilir)): 🏁 <b>SİMÜLASYON SEANS SONU KAPANIŞ</b> 🏁
 ⏰ <b>Kapa...
+[2026-11-08 19:17:56] [WARNING] [KAP] Bulten servisi erisilemiyor, filtre pasif: KAP erisilemedi: The read operation timed out
+[2026-11-08 19:23:54] [WARNING] [KAP] Bulten servisi erisilemiyor, filtre pasif: KAP erisilemedi: The read operation timed out
+[2026-11-08 20:28:25] [WARNING] [KAP] Bulten servisi erisilemiyor, filtre pasif: KAP erisilemedi: The read operation timed out
+[2026-11-08 20:40:47] [ERROR] $XU100.IS: possibly delisted; no price data found  (period=3mo)
+[2026-11-08 20:40:47] [ERROR] 
+1 Failed download:
+[2026-11-08 20:40:47] [ERROR] ['XU100.IS']: possibly delisted; no price data found  (period=3mo)
+[2026-11-08 20:41:16] [WARNING] [KAP] Bulten servisi erisilemiyor, filtre pasif: KAP erisilemedi: The read operation timed out

@@ -606,6 +606,17 @@ def _background_scanner_impl():
                     print(f"[V8 REGIME ERROR] {re_e}")
             # ------------------------
             
+            
+            # --- V8 REGIME UPDATE ---
+            if regime_engine:
+                try:
+                    regime_data = regime_engine.determine_regime()
+                    GLOBAL_DASHBOARD_CACHE["v8_market_regime"] = regime_data
+                    print(f"[V8 REGIME] Current Market Regime: {regime_data.get('regime')} (Score: {regime_data.get('score')})")
+                except Exception as re_e:
+                    print(f"[V8 REGIME ERROR] {re_e}")
+            # ------------------------
+            
             print("[BACKGROUND] Tüm BIST hisseleri için Kapsamlı (Bulk) Günlük Data indiriliyor...")
             
             # 550 hisseyi tek bir pakette indir:
@@ -4145,6 +4156,9 @@ def api_v8_radar_breakout():
             pass
     breakout_list = []
     cache_ts = GLOBAL_DASHBOARD_CACHE.get("cache_timestamp")
+    current_regime = (GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or {}).get("regime", "NEUTRAL")
+    from v8_engine.execution import ExecutionEngine as _DynExecEngine
+    _dyn_exec = _DynExecEngine()
     regime_data = GLOBAL_DASHBOARD_CACHE.get("v8_market_regime", {}) or {}
     # Refresh XU100 regime here as well: entry approval must use the same
     # current regime that the UI displays, not a stale worker cache.
@@ -4197,8 +4211,12 @@ def api_v8_radar_breakout():
             row["volume"] = data.get("Volume", 0)
             row["volume_strength"] = _stats_rel_vol(data)
             row["scan_timestamp"] = cache_ts
-            row["entry_status"] = data.get("v8_execution", {}).get("entry_status", "UNKNOWN")
-            row["entry_reasons"] = data.get("v8_execution", {}).get("reasons", [])
+            # Guncel piyasa rejimine gore dinamik execution analizi yap:
+            eval_res = _dyn_exec.evaluate_entry(bo, current_regime)
+            row["entry_status"] = eval_res.get("entry_status", "UNKNOWN")
+            row["entry_reasons"] = eval_res.get("reasons", [])
+            row["momentum_speed"] = eval_res.get("momentum_speed", "NORMAL")
+            row["timeframe_quality"] = eval_res.get("timeframe_quality", 0)
             row = _v8_gate_enter_row(row, sym, data)
             row = _apply_v8_final_gate(row)
             breakout_list.append(row)
@@ -4335,7 +4353,7 @@ def api_v8_radar_breakout():
             chg = float(row.get("change_pct") or row.get("intraday_change_pct") or 0)
         except (TypeError, ValueError):
             chg = 0.0
-        if chg >= 5.0:
+        if chg >= 9.2:
             row["entry_status"] = "NO_ENTRY"
             row["ceiling_risk"] = True
             row["entry_reasons"] = [

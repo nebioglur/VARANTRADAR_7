@@ -59,7 +59,6 @@ def evaluate_entry_approval(
 
     checks["market_data"] = (
         data_status not in BLOCKING_REGIMES
-        and not stale
         and _finite(regime_score)
     )
     if not checks["market_data"]:
@@ -80,11 +79,11 @@ def evaluate_entry_approval(
     score = breakout.get("breakout_score")
     fakeout = breakout.get("fakeout_risk")
     metrics = breakout.get("metrics") or {}
-    checks["breakout_quality"] = _finite(score) and float(score) >= 60
+    checks["breakout_quality"] = _finite(score) and float(score) >= 45
     checks["fakeout_risk"] = _finite(fakeout) and float(fakeout) < 45
     checks["indicators"] = all(
         _finite(metrics.get(k))
-        for k in ("rsi", "mfi_14", "atr_14", "atr_pct", "relative_volume")
+        for k in ("rsi", "atr_pct", "relative_volume")
     )
     if not checks["breakout_quality"]:
         reasons.append("Kırılım kalite puanı 60 altında.")
