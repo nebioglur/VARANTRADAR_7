@@ -44,12 +44,15 @@ class OutcomeEngine:
 
         metrics = breakout_data.get("metrics", {}) or {}
         try:
-            atr_value = float(metrics.get("atr_14"))
+            atr_val = metrics.get("atr_14")
+            if atr_val is None or not pd.notna(atr_val) or float(atr_val) <= 0:
+                atr_pct = float(metrics.get("atr_pct", 3.0) or 3.0)
+                atr_val = float(entry_price) * atr_pct / 100.0
+            atr_value = float(atr_val)
             if not pd.notna(atr_value) or atr_value <= 0 or not pd.notna(entry_price) or float(entry_price) <= 0:
                 raise ValueError("valid ATR and entry price required")
             entry_price = float(entry_price)
         except (TypeError, ValueError):
-            # Do not invent percentage stops/targets when ATR data is unavailable.
             return None
 
         breakout_score = float(breakout_data.get("breakout_score", 0) or 0)
