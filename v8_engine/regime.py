@@ -23,6 +23,10 @@ def _get_pa_proxy_session():
     return None
 
 from zoneinfo import ZoneInfo
+import time
+
+_REGIME_CACHE = {'data': None, 'last_fetched': 0.0}
+_REGIME_CACHE_TTL = 300  # 5 dk cache (anti-ban)
 
 
 class MarketRegimeEngine:
@@ -32,7 +36,11 @@ class MarketRegimeEngine:
         self.index_symbol = "XU100.IS"
         self._pa_session = _get_pa_proxy_session()
 
-    def determine_regime(self) -> Dict[str, Any]:
+    def determine_regime(self, force: bool = False) -> Dict[str, Any]:
+        global _REGIME_CACHE
+        now_ts = time.time()
+        if not force and _REGIME_CACHE['data'] is not None and (now_ts - _REGIME_CACHE['last_fetched']) < _REGIME_CACHE_TTL:
+            return _REGIME_CACHE['data']
         try:
             df = self._fetch_index_df()
             if df is None or df.empty or len(df) < 30:
@@ -78,18 +86,23 @@ class MarketRegimeEngine:
             daily_close = float(close.iloc[-1])
             previous_close = float(close.iloc[-2])
 
-            # IMPORTANT: BIST100 Trend = daily close-to-close.
-            # Do not substitute the latest 1h/intraday price here.
             daily_change_pct = (
                 (daily_close - previous_close) / previous_close * 100.0
                 if previous_close > 0 else 0.0
             )
 
-            # Intraday quote is informational only.
+            # Intraday quote (seans ici canli fiyat)
             live_price = self._fetch_live_price()
             intraday_change_pct = (
                 (live_price - previous_close) / previous_close * 100.0
                 if live_price is not None and previous_close > 0 else None
+            )
+
+            # Efektif Trend: Seans acikken intraday canli degisim esas alinir
+            effective_trend = (
+                intraday_change_pct
+                if (intraday_change_pct is not None and abs(intraday_change_pct) > 0.001)
+                else daily_change_pct
             )
 
             ema5 = close.ewm(span=5, adjust=False).mean()
@@ -121,18 +134,18 @@ class MarketRegimeEngine:
                 score += 15
             else:
                 score -= 15
-            if daily_change_pct > 1.0:
+            if effective_trend > 1.0:
                 score += 10
-            elif daily_change_pct < -1.0:
+            elif effective_trend < -1.0:
                 score -= 10
-            elif daily_change_pct > 0:
+            elif effective_trend > 0:
                 score += 5
-            elif daily_change_pct < 0:
+            elif effective_trend < 0:
                 score -= 5
 
-            if daily_change_pct > 2.0:
+            if effective_trend > 2.0:
                 score += 10
-            elif daily_change_pct < -2.0:
+            elif effective_trend < -2.0:
                 score -= 10
 
             score = max(0.0, min(100.0, score))
@@ -146,9 +159,9 @@ class MarketRegimeEngine:
             elif score <= 40:
                 regime = "BEAR"
 
-            if daily_change_pct >= 2.5 and regime in ("BEAR", "STRONG_BEAR"):
+            if effective_trend >= 2.5 and regime in ("BEAR", "STRONG_BEAR"):
                 regime = "NEUTRAL"
-            if daily_change_pct <= -2.5 and regime in ("BULL", "STRONG_BULL"):
+            if effective_trend <= -2.5 and regime in ("BULL", "STRONG_BULL"):
                 regime = "NEUTRAL"
             if volatility_state == "HIGH" and regime in ("NEUTRAL", "BEAR"):
                 regime = "HIGH_VOLATILITY"
@@ -157,7 +170,8 @@ class MarketRegimeEngine:
                 "regime": regime,
                 "regime_code": regime,
                 "score": round(score, 1),
-                "xu100_trend": round(daily_change_pct, 2),
+                "xu100_trend": round(effective_trend, 2),
+                "daily_change_pct": round(daily_change_pct, 2),
                 "intraday_change_pct": round(intraday_change_pct, 2) if intraday_change_pct is not None else None,
                 "volatility_state": volatility_state,
                 "atr_14": round(current_atr, 4),
@@ -176,6 +190,8 @@ class MarketRegimeEngine:
                 "daily_close": round(daily_close, 2),
                 "previous_close": round(previous_close, 2),
             }
+            _REGIME_CACHE['data'] = result
+            _REGIME_CACHE['last_fetched'] = now_ts
             self._save_regime_to_db(result)
             return result
 
@@ -220,6 +236,15 @@ class MarketRegimeEngine:
 
     def _last_known_regime(self, status="NEUTRAL"):
         try:
+            try:
+                import server
+                g_cache = getattr(server, "GLOBAL_DASHBOARD_CACHE", None)
+                if isinstance(g_cache, dict):
+                    v8_reg = g_cache.get("v8_market_regime")
+                    if isinstance(v8_reg, dict) and v8_reg.get("data_available") and v8_reg.get("xu100_trend") is not None:
+                        return v8_reg
+            except Exception:
+                pass
             from v8_engine.database import V8Database
             conn = V8Database.get_connection()
             c = conn.cursor()

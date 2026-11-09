@@ -2441,6 +2441,12 @@ def api_system_git_pull():
         fresh = load_dashboard_cache()
         if fresh:
             GLOBAL_DASHBOARD_CACHE = fresh
+            if isinstance(fresh, dict) and "v8_market_regime" in fresh:
+                try:
+                    from v8_engine.regime import V8RegimeEngine
+                    V8RegimeEngine()._save_regime_to_db(fresh["v8_market_regime"])
+                except Exception as _e_seed:
+                    print(f"[GIT PULL SEED ERROR] {_e_seed}")
         for wsgi_path in ["/var/www/varantradarpro_pythonanywhere_com_wsgi.py", "/var/www/varantradar_pythonanywhere_com_wsgi.py"]:
             if os.path.exists(wsgi_path):
                 try:
@@ -3564,7 +3570,12 @@ def get_xu100_change():
             global XU100_CACHE, _xu100_refreshing
             try:
                 import yfinance as yf
-                hist = yf.Ticker('XU100.IS').history(period='5d')
+                _pa_sess = None
+                if os.environ.get("http_proxy") or os.path.exists("/var/www"):
+                    import requests as _req
+                    _pa_sess = _req.Session()
+                    _pa_sess.proxies = {"http": "http://proxy.server:3128", "https": "http://proxy.server:3128"}
+                hist = yf.Ticker('XU100.IS', session=_pa_sess).history(period='5d')
                 if len(hist) >= 2:
                     c1 = hist['Close'].iloc[-2]
                     c2 = hist['Close'].iloc[-1]
@@ -3577,6 +3588,13 @@ def get_xu100_change():
                 _xu100_refreshing = False
 
         threading.Thread(target=_refresh, daemon=True).start()
+
+    # Fallback to GLOBAL_DASHBOARD_CACHE if change is 0.0
+    if (XU100_CACHE.get('change') == 0.0 or abs(XU100_CACHE.get('change', 0.0)) < 0.001) and isinstance(GLOBAL_DASHBOARD_CACHE, dict):
+        reg_trend = (GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or {}).get("xu100_trend")
+        if reg_trend is not None and abs(float(reg_trend)) > 0.001:
+            return round(float(reg_trend), 2)
+
     return XU100_CACHE['change']
 
 
@@ -4318,8 +4336,11 @@ def api_v8_radar_breakout():
         from v8_engine.regime import V8RegimeEngine
         fresh_regime = V8RegimeEngine().determine_regime()
         if isinstance(fresh_regime, dict) and fresh_regime.get("data_available"):
-            regime_data = fresh_regime
-            GLOBAL_DASHBOARD_CACHE["v8_market_regime"] = fresh_regime
+            if not fresh_regime.get("stale") or not GLOBAL_DASHBOARD_CACHE.get("v8_market_regime"):
+                regime_data = fresh_regime
+                GLOBAL_DASHBOARD_CACHE["v8_market_regime"] = fresh_regime
+            else:
+                regime_data = GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or fresh_regime
     except Exception as e:
         print(f"[V8 RADAR] Fresh regime calculation error: {e}")
 
@@ -4614,11 +4635,14 @@ def api_v8_market_regime():
     try:
         from v8_engine.regime import V8RegimeEngine
         fresh = V8RegimeEngine().determine_regime()
-        if isinstance(fresh, dict) and fresh.get("data_available"):
+        if isinstance(fresh, dict) and fresh.get("data_available") and not fresh.get("stale"):
             GLOBAL_DASHBOARD_CACHE["v8_market_regime"] = fresh
             return jsonify(fresh)
     except Exception as e:
         print(f"[V8 REGIME API] Fresh calculation error: {e}")
+    cached = GLOBAL_DASHBOARD_CACHE.get("v8_market_regime")
+    if cached and isinstance(cached, dict) and cached.get("data_available"):
+        return jsonify(cached)
     return jsonify(
         GLOBAL_DASHBOARD_CACHE.get(
             "v8_market_regime",
