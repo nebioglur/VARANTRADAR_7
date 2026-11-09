@@ -3181,6 +3181,11 @@ def api_tavan_tracker():
 @app.route('/api/simulation/daily_pnl', methods=['GET'])
 def api_simulation_daily_pnl():
     try:
+        from datetime import datetime, time, timedelta
+        try:
+            from zoneinfo import ZoneInfo
+        except Exception:
+            ZoneInfo = None
         from services.trade_database import get_connection
         import sqlite3
         with get_connection() as conn:
@@ -3191,11 +3196,7 @@ def api_simulation_daily_pnl():
             
             # Seans sonu (17:50+) otomatik nakde geçiş kontrolü:
             # Saat 17:50 ve sonrasında açıkta kalan tüm pozisyonlar kesin olarak kapatılıp %100 nakde geçirilir.
-            try:
-                from zoneinfo import ZoneInfo
-                _now_ist = datetime.now(ZoneInfo("Europe/Istanbul"))
-            except Exception:
-                _now_ist = datetime.now()
+            _now_ist = datetime.now(ZoneInfo("Europe/Istanbul")) if ZoneInfo else datetime.now()
             _today_ist = _now_ist.strftime("%Y-%m-%d")
             if _now_ist.time() >= time(17, 50):
                 c.execute('''
