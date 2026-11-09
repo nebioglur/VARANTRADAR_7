@@ -4279,15 +4279,17 @@ def api_v8_kap_status():
         return jsonify({"ok": False, "filter_active": False, "error": str(e)})
 
 def _v8_live_price(data: dict) -> float:
-    """Kartlarda gosterilecek fiyat: once CANLI Price (bayat degilse),
-    yoksa Daily_Close. OZATD vakasi: cache'teki eski kapanis 4650 TL
-    gorunuyordu; canli fiyat geldiginde o kullanilir."""
+    """Kartlarda gosterilecek fiyat: once CANLI Price, yoksa intraday_strength current_price, yoksa Daily_Close."""
     try:
-        if not data.get("Price_Stale"):
-            p = float(data.get("Price") or 0)
-            if p > 0:
-                return p
-        return float(data.get("Price") or data.get("Daily_Close") or 0)
+        p = float(data.get("Price") or 0)
+        if p > 0:
+            return round(p, 2)
+        intra = data.get("intraday_strength")
+        if isinstance(intra, dict):
+            cp = float(intra.get("current_price") or 0)
+            if cp > 0:
+                return round(cp, 2)
+        return round(float(data.get("Daily_Close") or 0), 2)
     except (TypeError, ValueError):
         return 0.0
 
