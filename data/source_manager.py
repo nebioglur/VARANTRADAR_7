@@ -87,10 +87,12 @@ class DataSourceManager:
         is_bist = str(symbol).upper().endswith('.IS')
         is_daily = interval in ('1d', '1day', 'D')
 
-        if is_bist and is_daily:
+        import os, sys
+        is_pa = os.path.exists("/var/www") or os.path.exists("/home/varantradarpro") or bool(os.environ.get("http_proxy"))
+        if is_bist and is_daily and not is_pa:
             order = ['IsYatirim API', 'YFinance API', 'TwelveData API', 'Finnhub API']
         else:
-            order = ['YFinance API', 'TwelveData API', 'Finnhub API']
+            order = ['YFinance API', 'TwelveData API', 'Finnhub API', 'IsYatirim API']
         return [by_name[n] for n in order if n in by_name]
 
     def fetch_validated(self, symbol: str, period: str = "6mo", interval: str = "1d") -> ValidatedDataResult:

@@ -13,6 +13,19 @@ if hasattr(time, 'tzset'):
     os.environ['TZ'] = 'Europe/Istanbul'
     time.tzset()
 
+# PythonAnywhere Proxy Configuration (Giden baglantilar icin zorunlu)
+if (
+    os.path.exists('/var/www') or
+    os.path.exists('/home/varantradarpro') or
+    'pythonanywhere' in os.environ.get('PYTHONANYWHERE_DOMAIN', '').lower() or
+    any('pythonanywhere' in str(p).lower() for p in sys.path)
+):
+    os.environ.setdefault('http_proxy', 'http://proxy.server:3128')
+    os.environ.setdefault('https_proxy', 'http://proxy.server:3128')
+    os.environ.setdefault('HTTP_PROXY', 'http://proxy.server:3128')
+    os.environ.setdefault('HTTPS_PROXY', 'http://proxy.server:3128')
+
+
 import numpy as np
 import pandas as pd
 
@@ -323,9 +336,13 @@ def start_live_data_collector():
 
                             syms_to_fetch = [s + ".IS" if not s.endswith(".IS") else s for s in BIST_SYMBOLS]
                             # Hızlı 1 günlük indirme
-                            fast_data = _yf.download(syms_to_fetch, period="1d", interval="5m", threads=True, progress=False)
-                            # Onceki gun resmi kapanisi (degisim capasi)
-                            daily_data = _yf.download(syms_to_fetch, period="5d", interval="1d", threads=True, progress=False)
+                            _pa_sess = None
+                            if os.environ.get("http_proxy") or os.path.exists("/var/www"):
+                                import requests as _req
+                                _pa_sess = _req.Session()
+                                _pa_sess.proxies = {"http": "http://proxy.server:3128", "https": "http://proxy.server:3128"}
+                            fast_data = _yf.download(syms_to_fetch, period="1d", interval="5m", threads=False, progress=False, session=_pa_sess)
+                            daily_data = _yf.download(syms_to_fetch, period="5d", interval="1d", threads=False, progress=False, session=_pa_sess)
 
                             from datetime import datetime as _dt_cls
                             today_str = _dt_cls.now().strftime("%Y-%m-%d")

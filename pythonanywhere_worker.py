@@ -13,6 +13,13 @@ from pathlib import Path
 
 PROJECT_HOME = Path(__file__).resolve().parent
 os.chdir(PROJECT_HOME)
+
+# PythonAnywhere Proxy: Outbound connections require proxy.server:3128
+os.environ["http_proxy"] = "http://proxy.server:3128"
+os.environ["https_proxy"] = "http://proxy.server:3128"
+os.environ["HTTP_PROXY"] = "http://proxy.server:3128"
+os.environ["HTTPS_PROXY"] = "http://proxy.server:3128"
+
 os.environ.setdefault("ENVIRONMENT", "production")
 os.environ["ENABLE_BACKGROUND_SERVICES"] = "true"
 os.environ.setdefault("TELEGRAM_PRIMARY_HOST", "pythonanywhere")

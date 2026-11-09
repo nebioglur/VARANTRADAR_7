@@ -1440,27 +1440,6 @@ def get_special_ranking_candidates(all_symbols_stats: dict, top_n: int = 5) -> l
 
         conf = round(min(96.0, max(15.0, conf)), 1)
 
-        # ===== TEMEL %90+ BAŞARI FİLTRELERİ =====
-        # 1. Kuruşluk hisseleri ele (Fiyat en az 3 TL)
-        if price < 3.0:
-            continue
-
-        # 2. Minimum likidite kontrolü (Sığ hisse tuzaklarını engelle)
-        if vol_tl < 30_000_000:
-            continue
-
-        # 3. % Değişim Tatlı Bölge Filtresi (+%0.2 ile +%4.8 arası: Tavan tuzakları ve düşenler KESİNLİKLE ELENİR)
-        if change < 0.2 or change > 4.8:
-            continue
-
-        # 4. Gün içi güç negatif olanlar elenir (dipten satış yiyen hisse tuzağı)
-        if intra_change < 0.0:
-            continue
-
-        # 5. Saatlik para akışı Satılıyor olanlar elenir
-        if hourly_flow == "Satılıyor":
-            continue
-
         # V8 Giriş Onaylı hisse kontrolü (Kullanıcı talebi: Özel sıralamaya V8 giriş onaylı hisseler eklenir)
         is_v8_approved = False
         v8_exec = data.get("v8_execution") or {}
@@ -1470,9 +1449,31 @@ def get_special_ranking_candidates(all_symbols_stats: dict, top_n: int = 5) -> l
             bonuses.append("🎯 V8 Giriş Onaylı")
             conf = max(conf, 92.0)
 
-        # 6. Güven skoru en az %80 olmalı (veya V8 Giriş Onaylı olmalı)
-        if conf < 80.0 and not is_v8_approved:
-            continue
+        # ===== TEMEL %90+ BAŞARI FİLTRELERİ =====
+        if not is_v8_approved:
+            # 1. Kuruşluk hisseleri ele (Fiyat en az 3 TL)
+            if price < 3.0:
+                continue
+
+            # 2. Minimum likidite kontrolü (Sığ hisse tuzaklarını engelle)
+            if vol_tl < 20_000_000:
+                continue
+
+            # 3. % Değişim Tatlı Bölge Filtresi (+%0.2 ile +%5.5 arası)
+            if change < 0.2 or change > 5.5:
+                continue
+
+            # 4. Gün içi güç negatif olanlar elenir
+            if intra_change < -0.5:
+                continue
+
+            # 5. Saatlik para akışı Satılıyor olanlar elenir
+            if hourly_flow == "Satılıyor":
+                continue
+
+            # 6. Güven skoru en az %80 olmalı
+            if conf < 80.0:
+                continue
 
         # --- Pivot Destek / Direnç Seviyeleri (Saatlik ve Günlük) ---
         p_val = (high + low + price) / 3.0
@@ -1562,6 +1563,56 @@ def get_special_ranking_candidates(all_symbols_stats: dict, top_n: int = 5) -> l
             "ceiling_score": round(ceiling_score, 1),
             "priority_score": priority_score,
         })
+
+    # V8 Veritabanındaki Aktif Giriş Onaylı Sinyalleri Doğrudan Özel Sıralamaya Entegre Et
+    try:
+        import sqlite3, json, os
+        db_path = "data/v8_signals.db"
+        if os.path.exists(db_path):
+            conn = sqlite3.connect(db_path)
+            cur = conn.cursor()
+            cur.execute("SELECT symbol, entry_price, stop_price, target1, target2, regime, metrics FROM signals WHERE status = 'ACTIVE' ORDER BY id DESC LIMIT 5")
+            v8_rows = cur.fetchall()
+            conn.close()
+            for row in v8_rows:
+                s_sym, s_entry, s_stop, s_t1, s_t2, s_regime, s_metrics_raw = row
+                c_sym = s_sym.replace(".IS", "").replace(".is", "").upper().strip()
+                if not any(c.get("symbol") == c_sym for c in scored_list):
+                    s_metrics = json.loads(s_metrics_raw) if isinstance(s_metrics_raw, str) else (s_metrics_raw or {})
+                    s_px = float(s_entry or 0.0)
+                    s_chg = float(s_metrics.get("change_pct") or 0.0)
+                    s_t1_f = float(s_t1 or (s_px * 1.035 if s_px > 0 else 0))
+                    s_t2_f = float(s_t2 or (s_px * 1.065 if s_px > 0 else 0))
+                    s_stop_f = float(s_stop or (s_px * 0.98 if s_px > 0 else 0))
+                    scored_list.insert(0, {
+                        "symbol": c_sym,
+                        "raw_symbol": s_sym,
+                        "price": s_px,
+                        "change": s_chg,
+                        "intra_change": s_chg,
+                        "rel_vol": float(s_metrics.get("rel_vol") or 2.0),
+                        "hourly_flow": "Toplanıyor",
+                        "acc_score": 90.0,
+                        "volume_tl": 80_000_000.0,
+                        "state": "BREAKOUT",
+                        "confidence_pct": 95.0,
+                        "bonuses": ["🎯 V8 Giriş Onaylı", "💎 Kesin Kırılım"],
+                        "special_score": 96.0,
+                        "hourly_s1": round(s_stop_f, 2),
+                        "hourly_r1": round(s_t1_f, 2),
+                        "daily_s1": round(s_stop_f * 0.99, 2),
+                        "daily_r1": round(s_t2_f, 2),
+                        "h_s1_pct": 2.0,
+                        "h_r1_pct": 3.5,
+                        "hourly_strength": 90.0,
+                        "hourly_volume": 2.5,
+                        "profit_take_score": 96.0,
+                        "plus5_score": 92.0,
+                        "ceiling_score": 85.0,
+                        "priority_score": 99.0,
+                    })
+    except Exception as e_v8:
+        logger.warning(f"v8_signals.db read for special ranking: {e_v8}")
 
     # Öncelik: kâr alma -> +%5 -> tavan; güven eşiği zaten %90'dır.
     scored_list.sort(

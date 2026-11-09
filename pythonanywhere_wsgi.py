@@ -5,6 +5,12 @@ Bu dosyanın içeriğini PythonAnywhere Web sekmesindeki WSGI configuration file
 import sys
 import os
 
+# 0. PythonAnywhere Free Tier Proxy (Giden baglantilar icin zorunlu)
+os.environ["http_proxy"] = "http://proxy.server:3128"
+os.environ["https_proxy"] = "http://proxy.server:3128"
+os.environ["HTTP_PROXY"] = "http://proxy.server:3128"
+os.environ["HTTPS_PROXY"] = "http://proxy.server:3128"
+
 # 1. Proje yolunu dinamik olarak sys.path'e ekle
 username = os.environ.get("USER", "varantradarpro")
 project_home = f"/home/{username}/VARANTRADAR_7"

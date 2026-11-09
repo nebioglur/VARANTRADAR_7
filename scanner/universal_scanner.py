@@ -1,3 +1,17 @@
+def _get_pa_session():
+    import requests, os, sys
+    if (
+        os.path.exists('/var/www') or
+        os.path.exists('/home/varantradarpro') or
+        'pythonanywhere' in os.environ.get('PYTHONANYWHERE_DOMAIN', '').lower() or
+        any('pythonanywhere' in str(p).lower() for p in sys.path) or
+        os.environ.get('http_proxy')
+    ):
+        s = requests.Session()
+        s.proxies = {'http': 'http://proxy.server:3128', 'https': 'http://proxy.server:3128'}
+        return s
+    return None
+
 import concurrent.futures
 import time
 from typing import List, Dict, Any
@@ -82,8 +96,10 @@ class UniversalScanner:
             data = None
             for attempt in range(1, 4):
                 try:
+                    _pa_s = _get_pa_session()
                     data = yf.download(chunk, period=period, interval=interval,
-                                       group_by='ticker', threads=False, progress=False)
+                                       group_by='ticker', threads=False, progress=False,
+                                       session=_pa_s)
                     if data is not None and not data.empty:
                         break
                 except Exception as e:
@@ -693,3 +709,40 @@ class UniversalScanner:
                         json.dump(sent_data, f)
         except Exception as e:
             print(f"[VIP BATCH SİNYAL HATA] {str(e)}")
+
+    def scan_pool_bulk_5m(self, symbols: List[str]) -> List[Dict[str, Any]]:
+        if not symbols:
+            return []
+        print(f'[SCANNER 5M] {len(symbols)} hisse 5 dakikalik periyotta indiriliyor (RSI 5m)...')
+        bulk_data = self._bulk_download_chunked(symbols, period='5d', interval='5m')
+        signals = []
+        for sym, df_raw in bulk_data.items():
+            if df_raw is None:
+                continue
+            df = df_raw.dropna(how='all').copy()
+            if df.empty or len(df) < 20:
+                continue
+            df.columns = [str(c).lower() for c in df.columns]
+            required_cols = ['open', 'high', 'low', 'close', 'volume']
+            if not all(c in df.columns for c in required_cols):
+                continue
+            df['close'] = df['close'].ffill()
+            df = df[required_cols]
+            try:
+                res_5m = self.tech_engine.analyze_5m_rsi_strategy(sym, df)
+                if res_5m:
+                    sig_dir = res_5m.get('Signal', 'AL')
+                    is_match, bars_ago, _ = self.tech_engine.check_custom_strict_strategy(df, direction=sig_dir)
+                    if is_match:
+                        res_5m['Time_Label'] = 'ŞİMDİ (Sıcak)' if bars_ago == 0 else f'{bars_ago} Bar Önce'
+                        res_5m['Bars_Ago'] = bars_ago
+                        signals.append(res_5m)
+            except Exception:
+                pass
+        signals = sorted(
+            signals,
+            key=lambda x: (0 if x.get('Signal') == 'AL' else 1, x.get('Time', '')),
+            reverse=True
+        )
+        print(f'[SCANNER 5M] Tarama tamamlandi: {len(signals)} sinyal.')
+        return signals

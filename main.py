@@ -1,7 +1,13 @@
 
 def _get_pa_session():
-    import requests, os
-    if os.path.exists("/home/varantradarpro") or "pythonanywhere" in os.environ.get("PYTHONANYWHERE_DOMAIN", "").lower() or os.path.exists("/etc/pythonanywhere"):
+    import requests, os, sys
+    if (
+        os.path.exists("/var/www") or
+        os.path.exists("/home/varantradarpro") or
+        "pythonanywhere" in os.environ.get("PYTHONANYWHERE_DOMAIN", "").lower() or
+        any("pythonanywhere" in str(p).lower() for p in sys.path) or
+        bool(os.environ.get("http_proxy"))
+    ):
         s = requests.Session()
         s.proxies = {"http": "http://proxy.server:3128", "https": "http://proxy.server:3128"}
         return s
