@@ -21,7 +21,7 @@ os.chdir(project_home)
 # 2. Ortam değişkenlerini ayarla
 # PythonAnywhere web workers do not support long-lived background threads.
 # The separate pythonanywhere_worker.py Always-on task owns those services.
-os.environ["ENABLE_BACKGROUND_SERVICES"] = "false"
+os.environ["ENABLE_BACKGROUND_SERVICES"] = "true"
 os.environ["ENVIRONMENT"] = "production"
 os.environ["SECRET_KEY"] = "varantradar_secret_key_2026_prod_secure"
 os.environ["TELEGRAM_PRIMARY_HOST"] = "pythonanywhere"

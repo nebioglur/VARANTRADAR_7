@@ -5,7 +5,17 @@ import time
 import json
 from services.trade_database import get_connection
 
+
+def _get_pa_session():
+    import requests, os
+    if os.path.exists("/home/varantradarpro") or "pythonanywhere" in os.environ.get("PYTHONANYWHERE_DOMAIN", "").lower() or os.path.exists("/etc/pythonanywhere"):
+        s = requests.Session()
+        s.proxies = {"http": "http://proxy.server:3128", "https": "http://proxy.server:3128"}
+        return s
+    return None
+
 class MarketDataManager:
+
     
     @staticmethod
     def record_signals(date_str: str, candidates: list):
@@ -82,7 +92,8 @@ class MarketDataManager:
             for ci in range(0, len(symbols), chunk_size):
                 chunk = symbols[ci:ci + chunk_size]
                 try:
-                    data = yf.download(chunk, period=period, interval="5m", group_by='ticker', threads=True, progress=False)
+                    _pa_s = _get_pa_session()
+                    data = yf.download(chunk, period=period, interval="5m", group_by='ticker', threads=False, progress=False, session=_pa_s) if _pa_s else yf.download(chunk, period=period, interval="5m", group_by='ticker', threads=True, progress=False)
                 except Exception:
                     continue
                 if data is None or data.empty:
