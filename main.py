@@ -1,3 +1,12 @@
+
+def _get_pa_session():
+    import requests, os
+    if os.path.exists("/home/varantradarpro") or "pythonanywhere" in os.environ.get("PYTHONANYWHERE_DOMAIN", "").lower() or os.path.exists("/etc/pythonanywhere"):
+        s = requests.Session()
+        s.proxies = {"http": "http://proxy.server:3128", "https": "http://proxy.server:3128"}
+        return s
+    return None
+
 import json
 import pandas as pd
 
@@ -102,7 +111,8 @@ def run_simulation_api(symbol: str) -> dict:
             clean_s = symbol.replace(".IS", "").strip()
             for cand in [symbol, f"{clean_s}.IS", clean_s]:
                 try:
-                    t = yf.Ticker(cand)
+                    _pa_s = _get_pa_session()
+                    t = yf.Ticker(cand, session=_pa_s) if _pa_s else yf.Ticker(cand)
                     raw = t.history(period="1y", interval="1d")
                     if raw is not None and not raw.empty:
                         df = raw
@@ -112,7 +122,8 @@ def run_simulation_api(symbol: str) -> dict:
             if (df is None or df.empty):
                 for cand in [symbol, f"{clean_s}.IS", clean_s]:
                     try:
-                        raw = yf.download(cand, period="1y", interval="1d", threads=False, progress=False)
+                        _pa_s = _get_pa_session()
+                        raw = yf.download(cand, period="1y", interval="1d", threads=False, progress=False, session=_pa_s) if _pa_s else yf.download(cand, period="1y", interval="1d", threads=False, progress=False)
                         if raw is not None and not raw.empty:
                             df = raw
                             break

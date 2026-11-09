@@ -1,3 +1,12 @@
+
+def _get_pa_session():
+    import requests, os
+    if os.path.exists("/home/varantradarpro") or "pythonanywhere" in os.environ.get("PYTHONANYWHERE_DOMAIN", "").lower() or os.path.exists("/etc/pythonanywhere"):
+        s = requests.Session()
+        s.proxies = {"http": "http://proxy.server:3128", "https": "http://proxy.server:3128"}
+        return s
+    return None
+
 import yfinance as yf
 import pandas as pd
 import time
@@ -24,7 +33,8 @@ class YFinanceProvider(BaseDataProvider):
         for attempt in range(retries):
             try:
                 start_time = time.time()
-                ticker = yf.Ticker(symbol)
+                _pa_s = _get_pa_session()
+                ticker = yf.Ticker(symbol, session=_pa_s) if _pa_s else yf.Ticker(symbol)
                 df = ticker.history(period=period, interval=interval, repair=True)
                 latency = (time.time() - start_time) * 1000  # ms
                 

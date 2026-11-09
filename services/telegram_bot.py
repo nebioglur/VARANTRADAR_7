@@ -1454,8 +1454,17 @@ def get_special_ranking_candidates(all_symbols_stats: dict, top_n: int = 5) -> l
         if hourly_flow == "Satılıyor":
             continue
 
-        # 6. Güven skoru en az %82 olmalı (yüksek başarı standardı)
-        if conf < 90.0:
+        # V8 Giriş Onaylı hisse kontrolü (Kullanıcı talebi: Özel sıralamaya V8 giriş onaylı hisseler eklenir)
+        is_v8_approved = False
+        v8_exec = data.get("v8_execution") or {}
+        v8_bo = data.get("v8_breakout") or {}
+        if (v8_exec.get("entry_status") == "ENTER") or (v8_bo.get("is_breakout") and float(v8_bo.get("breakout_score") or 0) >= 45):
+            is_v8_approved = True
+            bonuses.append("🎯 V8 Giriş Onaylı")
+            conf = max(conf, 92.0)
+
+        # 6. Güven skoru en az %80 olmalı (veya V8 Giriş Onaylı olmalı)
+        if conf < 80.0 and not is_v8_approved:
             continue
 
         # --- Pivot Destek / Direnç Seviyeleri (Saatlik ve Günlük) ---
