@@ -307,47 +307,70 @@ class SimulationEngine:
             return None, None
         return float(ema50), float(ema200)
 
-    def _position_allocation(self, current_cash, entry_price, stop_price, is_bear, risk_pct=None, regime="NEUTRAL", open_slots=1):
+    def _position_allocation(self, current_cash, entry_price, stop_price, is_bear, risk_pct=None, regime="NEUTRAL", open_slots=1, total_score=90.0, bonus_tags=None):
         risk_per_share = entry_price - stop_price
         if risk_per_share <= 0:
             return 0.0, 0.0
 
-        # KULLANICI ISTEGI: Nakitte para yatmasin, ozellikle BIST boga iken olabildigince aktif ofansif trade!
+        # KULLANICI ISTEGI: Her hisseye potansiyeline gore bagimsiz islem butcesi!
+        # Nakit yatmasin, ozellikle BIST boga iken aktif ofansif pozisyon alinir.
         is_strong_bull = (regime == "STRONG_BULL" or "ÜÇLÜ" in str(regime))
         is_bull = (is_strong_bull or regime == "BULL" or "BOĞA" in str(regime))
+
+        # Taban bagimsiz islem buyuklugu (100.000 TL kasa icin taban ~25.000 TL)
+        base_notional = self.daily_budget * 0.25
+
+        # 1. Rejim Carsani: Boga rejiminde parayi aktif kullan (+%30 - +%50 daha buyuk pozisyon)
+        if is_strong_bull:
+            regime_mult = 1.50
+        elif is_bull:
+            regime_mult = 1.30
+        elif is_bear:
+            regime_mult = 0.50
+        else:
+            regime_mult = 1.00
+
+        # 2. Hisse Potansiyel Carsani (Skor, Sektor Gucu, Akilli Para, Hacim)
+        potential_mult = 1.0
+        bonus_tags = bonus_tags or []
+        tag_str = " ".join(str(t) for t in bonus_tags).lower()
+
+        if total_score >= 100 or "lider sektor" in tag_str:
+            potential_mult += 0.25
+        elif total_score >= 95:
+            potential_mult += 0.15
+
+        if "akilli para" in tag_str:
+            potential_mult += 0.10
+        if "super hacim" in tag_str:
+            potential_mult += 0.10
+        if "erken kopus" in tag_str:
+            potential_mult += 0.05
+
+        target_notional = base_notional * regime_mult * potential_mult
 
         if risk_pct and risk_pct > 0:
             risk_budget = self.daily_budget * risk_pct
         else:
             if is_strong_bull:
-                risk_budget = self.daily_budget * 0.022
+                risk_budget = self.daily_budget * 0.025
             elif is_bull:
-                risk_budget = self.daily_budget * 0.018
+                risk_budget = self.daily_budget * 0.020
             elif is_bear:
-                risk_budget = self.daily_budget * 0.005
+                risk_budget = self.daily_budget * 0.008
             else:
-                risk_budget = self.daily_budget * 0.012
-
-        slots = max(1, open_slots)
-        slot_target = current_cash / slots
-
-        if is_strong_bull:
-            max_notional = min(current_cash, max(slot_target, self.daily_budget * 0.50))
-        elif is_bull:
-            max_notional = min(current_cash, max(slot_target, self.daily_budget * 0.40))
-        elif is_bear:
-            max_notional = self.daily_budget * 0.15
-        else:
-            max_notional = min(current_cash, max(slot_target, self.daily_budget * 0.35))
+                risk_budget = self.daily_budget * 0.015
 
         risk_limited_notional = risk_budget * entry_price / max(0.001, risk_per_share)
         
-        # Boga modunda nakitin atil kalmasini engellemek icin slot_target'a oncelik verilir
-        if is_bull and current_cash > 0:
-            preferred_notional = max(slot_target, risk_limited_notional)
-            allocation = min(current_cash, max_notional, preferred_notional)
+        # Boga modunda nakitin atil kalmasini onle, potansiyel buyuklugune oncelik ver
+        if is_bull:
+            allocation = max(target_notional, min(target_notional * 1.30, risk_limited_notional))
         else:
-            allocation = min(current_cash, max_notional, risk_limited_notional)
+            allocation = min(target_notional, risk_limited_notional)
+
+        # Taban guvencesi: hisse basina en az 10.000 TL
+        allocation = max(10000.0, allocation)
 
         return allocation, min(risk_budget, allocation * risk_per_share / entry_price)
 
@@ -492,11 +515,10 @@ class SimulationEngine:
         elif _weekly_target_reached:
             effective_max_positions = 0
             print(f"[SimEngine] {date_str} -> Haftalık %6 hedefi doldu: KÂR KORUMA MODU (yeni giriş yok, açık pozisyonlar izleniyor)")
-        elif _sim_scenario.get("max_positions") is not None:
-            # Bogada genisler, notrde standart, volatilitede daralir.
-            effective_max_positions = min(self.max_positions, max(1, int(_sim_scenario["max_positions"])))
         else:
-            effective_max_positions = min(2, self.max_positions) if is_bear else self.max_positions
+            # KULLANICI ISTEGI: Pozisyon sayisi sinirsiz, her hisseye potansiyeline gore bagimsiz butce ayrilir!
+            # Eski pozisyonlarin kapanmasi beklenmez, ozellikle boga rejiminde tum firsatlar aninda alinir.
+            effective_max_positions = self.max_positions  # 999 (sinirsiz)
 
         # DOMINO_CLUSTERS ile dinamik sektor ayrismasi haritasi
         from config.bist_symbols import DOMINO_CLUSTERS
@@ -890,8 +912,8 @@ class SimulationEngine:
 
             to_remove = []
             for s in list(pending_signals):
-                if available_slots <= 0 or current_cash < 5000:
-                    break  # Acik slot veya yeterli nakit kalmadiysa bekle
+                if effective_max_positions <= 0:
+                    break  # Yalnizca rejim/zarar kilidi aktifse durdur
 
                 dt_ps = pd.to_datetime(f"{date_str} {s['time_str']}")
                 dt_ps = dt_ps.tz_localize(None) if dt_ps.tzinfo else dt_ps
@@ -949,7 +971,9 @@ class SimulationEngine:
                 tp2_price = min(ceiling, max(tp1_price * 1.01, entry_price * (1 + 0.10 * _tp2_mult)))
                 allocation, risk_amount = self._position_allocation(
                     current_cash, entry_price, setup['stop_price'], is_bear,
-                    risk_pct=_sim_risk_pct, regime=_sim_regime, open_slots=available_slots
+                    risk_pct=_sim_risk_pct, regime=_sim_regime, open_slots=available_slots,
+                    total_score=float(s.get('_total_rank_score') or s.get('score', 90.0)),
+                    bonus_tags=s.get('_bonus_tags', [])
                 )
                 shares = int(allocation // entry_price)
                 if shares <= 0:
