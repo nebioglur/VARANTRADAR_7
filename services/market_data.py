@@ -36,7 +36,7 @@ class MarketDataManager:
                 
             score = float(cand.get('Score', 0) or cand.get('score', 0))
             morning_price = float(cand.get('morning_price', 0) or cand.get('Price', 0) or cand.get('Daily_Close', 0))
-            ceiling_target = float(cand.get('ceiling_target', 0) or cand.get('Ceiling_Price', 0))
+            ceiling_target = float(cand.get('ceiling_target', 0) or cand.get('Ceiling_Price', 0) or (morning_price * 1.10 if morning_price > 0 else 0.0))
             morning_phase = cand.get('morning_phase', '') or cand.get('Phase', '') or cand.get('Phase_Badge', '')
             metadata = json.dumps(cand, ensure_ascii=False)
             

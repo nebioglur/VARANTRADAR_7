@@ -797,7 +797,7 @@ class SimulationEngine:
                             'exit_time': str(current_time),
                             'exit_price': scale_out_price,
                             'pnl_val': net_profit,
-                            'pnl_pct': (net_profit / buy_vol) * 100,
+                            'pnl_pct': (net_profit / buy_vol * 100) if buy_vol > 0 else 0.0,
                             'exit_reason': f"⚖️ KADEMELİ TP1 (%{_tp1_pct} SATILDI, STOP MALİYETE ÇEKİLDİ)",
                             'strategy_name': trade.get('strategy_name'),
                             'entry_score': trade.get('entry_score'),
@@ -815,7 +815,7 @@ class SimulationEngine:
                         try:
                             from services.telegram_bot import notify_sim_trade
                             notify_sim_trade(sym, "SAT (TP1)", scale_out_price,
-                                         (net_profit / buy_vol) * 100,
+                                         (net_profit / buy_vol * 100) if buy_vol > 0 else 0.0,
                                          "⚖️ TP1: Yarısı kâr alındı, stop maliyete çekildi (risk-free)",
                                          str(current_time)[:10], completed_trades[-1])
                         except Exception:
@@ -832,7 +832,7 @@ class SimulationEngine:
                     sell_commission = sell_volume * 0.0004
                     gross_pnl = trade['shares'] * (sell_price - trade['entry_price'])
                     trade['pnl_val'] = gross_pnl - buy_commission - sell_commission
-                    trade['pnl_pct'] = (trade['pnl_val'] / buy_volume) * 100
+                    trade['pnl_pct'] = (trade['pnl_val'] / buy_volume * 100) if buy_volume > 0 else 0.0
                     
                     if "🔄" not in trade.get('exit_reason', '') and trade.get('is_reentry', False):
                         reason = "🔄 " + reason
@@ -950,10 +950,13 @@ class SimulationEngine:
                     continue
 
                 raw_entry = float(df.loc[current_time, 'Close'])
-                ceiling = float(s['ceiling_target'])
-                prev_close = ceiling / 1.10
-                current_ch = ((raw_entry - prev_close) / prev_close) * 100
-                if current_ch >= 5.5 or raw_entry >= ceiling * 0.96:
+                ceiling = float(s.get('ceiling_target') or 0.0)
+                if ceiling <= 0:
+                    morning_p = float(s.get('morning_price') or s.get('Price') or raw_entry)
+                    ceiling = morning_p * 1.10 if morning_p > 0 else raw_entry * 1.10
+                prev_close = (ceiling / 1.10) if ceiling > 0 else raw_entry
+                current_ch = ((raw_entry - prev_close) / prev_close * 100.0) if prev_close > 0 else 0.0
+                if current_ch >= 5.5 or (ceiling > 0 and raw_entry >= ceiling * 0.96):
                     to_remove.append(s)
                     continue
 
@@ -1103,7 +1106,7 @@ class SimulationEngine:
                     gross_pnl = trade['shares'] * (eod_sell_price - trade['entry_price'])
                     trade['pnl_val'] = gross_pnl - buy_commission - sell_commission
                     current_cash += sell_volume - sell_commission
-                    trade['pnl_pct'] = (trade['pnl_val'] / buy_volume) * 100
+                    trade['pnl_pct'] = (trade['pnl_val'] / buy_volume * 100) if buy_volume > 0 else 0.0
                     trade['exit_reason'] = 'SEANS SONU NAKITE GECIS (17:50)'
                     trade['owner'] = self.owner
                     trade['engine_version'] = trade.get('engine_version', 'V8_ELITE')
@@ -1119,7 +1122,7 @@ class SimulationEngine:
                     buy_volume = trade['shares'] * trade['entry_price']
                     gross_pnl = trade['shares'] * (close - trade['entry_price'])
                     trade['pnl_val'] = gross_pnl
-                    trade['pnl_pct'] = (gross_pnl / buy_volume) * 100
+                    trade['pnl_pct'] = (gross_pnl / buy_volume * 100) if buy_volume > 0 else 0.0
                     trade['exit_reason'] = "⏳ ACIK POZISYON"
                 completed_trades.append(trade)
             else:
