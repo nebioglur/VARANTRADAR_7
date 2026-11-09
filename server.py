@@ -1228,6 +1228,12 @@ def api_auth_session():
 
 @app.before_request
 def require_auth():
+    global _BACKGROUND_SERVICES_STARTED
+    if not _BACKGROUND_SERVICES_STARTED:
+        try:
+            start_background_services()
+        except Exception:
+            pass
     if request.method == 'OPTIONS': return
     
     allowed = ['/login', '/logout', '/api/ping', '/api/auth_config', '/api/auth/session', '/api/system/git_pull', '/api/system/deploy', '/api/system/sync_verdent', '/api/system/network_test', '/api/system/fast_scan']
