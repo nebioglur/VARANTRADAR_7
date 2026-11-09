@@ -1339,7 +1339,14 @@ def get_special_ranking_candidates(all_symbols_stats: dict, top_n: int = 5) -> l
     # GUCCLU AYI'da ozel siralama bildirimi tamamen susar (yalniz nakit dogru).
     try:
         from v8_engine.playbook import get_scenario
-        from server import GLOBAL_DASHBOARD_CACHE as _GDC
+        _GDC = {}
+        try:
+            import json, os
+            if os.path.exists("dashboard_cache.json"):
+                with open("dashboard_cache.json", "r", encoding="utf-8") as _cf:
+                    _GDC = json.load(_cf)
+        except Exception:
+            _GDC = {}
         _regime = (_GDC.get("v8_market_regime") or {}).get("regime", "NEUTRAL")
         _scenario = get_scenario(_regime)
         _rw = _scenario.get("rank_weights") or {"profit_take": 0.55, "plus5": 0.30, "ceiling": 0.15}
