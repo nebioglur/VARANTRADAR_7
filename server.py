@@ -4967,11 +4967,33 @@ def api_telegram_test_suite():
             results['sim_eod'] = ok
 
         if test_type in ('all', 'report'):
-            from services.telegram_bot import get_telegram_credentials, _get_telegram_proxies
+            from services.telegram_bot import get_telegram_credentials, _get_telegram_proxies, format_simulation_report, send_telegram_message
             tok, cid = get_telegram_credentials()
             prox = _get_telegram_proxies()
             results['debug_cred'] = {'has_token': bool(tok), 'has_cid': bool(cid), 'has_prox': bool(prox)}
             results['direct_msg'] = send_telegram_message("🧪 <b>Test Gün Sonu Mesajı</b>", force=True)
+            
+            # Debug what trades and caption send_simulation_report generates
+            from services.trade_database import get_connection as _dbg_conn
+            with _dbg_conn() as _dc:
+                _cur = _dc.cursor()
+                _cur.execute("SELECT * FROM trades WHERE date_str=? AND owner=? AND exit_time IS NOT NULL", (today_s, 'local:nebioglur'))
+                _dbg_trades = [dict(r) for r in _cur.fetchall()]
+            results['trades_found'] = len(_dbg_trades)
+            _dbg_caption = format_simulation_report(today_s, 100000.0, 102075.44, 2075.44, 2.08, 3, 4, _dbg_trades)
+            results['caption_sample'] = _dbg_caption[:150]
+            
+            # Test sending this exact caption
+            import requests
+            url = f"https://api.telegram.org/bot{tok}/sendMessage"
+            chat_ids = [c.strip() for c in str(cid).split(",") if c.strip()]
+            tg_err = None
+            for c in chat_ids:
+                resp = requests.post(url, json={"chat_id": c, "text": _dbg_caption, "parse_mode": "HTML"}, proxies=prox, timeout=15)
+                if resp.status_code != 200 or not resp.json().get("ok"):
+                    tg_err = resp.text
+            results['caption_tg_err'] = tg_err
+            
             ok = send_simulation_report(date_str=today_s, force=True)
             results['simulation_report'] = ok
 
