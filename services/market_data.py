@@ -15,7 +15,8 @@ def _get_pa_session():
     return None
 
 class MarketDataManager:
-
+    _last_fetch_ts = 0
+    _rate_limit_until = 0
     
     @staticmethod
     def record_signals(date_str: str, candidates: list):
@@ -56,26 +57,41 @@ class MarketDataManager:
         conn.commit()
         conn.close()
 
-    @staticmethod
-    def fetch_and_store_intraday(date_str: str, period: str = "1mo"):
+    @classmethod
+    def fetch_and_store_intraday(cls, date_str: str, period: str = "5d"):
         """
-        O gün sinyal üretilen tüm hisseler için yfinance'den 5 dakikalık veya 1 saatlik
-        geçmişi indirir ve market_data tablosuna yazar.
-        Simülasyon motoru buradan okuyacaktır.
-        period: "1mo" tam tarama; "5d" sadece son gunler (canli toplayici icin hafif).
+        O gün sinyal üretilen hisseler için yfinance'den 5 dakikalık geçmişi indirir.
+        BAN KORUMASI: 429 cooldown, 5dk aralik, max 25 oncelikli sembol.
         """
+        now_ts = time.time()
+        # 1. 429 Rate limit soguma kontrolu
+        if now_ts < cls._rate_limit_until:
+            wait_rem = int(cls._rate_limit_until - now_ts)
+            print(f"[MarketData] Ban korumasi: Yahoo 429 bekleme modunda ({wait_rem} sn). Mevcut onbellek kullaniliyor.")
+            return
+
+        # 2. Cooldown kontrolu (en az 5 dakika / 300 saniye)
+        if now_ts - cls._last_fetch_ts < 300:
+            return
+
         conn = get_connection()
         cursor = conn.cursor()
 
-        cursor.execute("SELECT symbol FROM signals WHERE date_str = ?", (date_str,))
-        rows = cursor.fetchall()
-        symbols = [r["symbol"] for r in rows]
+        # BAN KORUMASI 3: 100+ hisse yerine SADECE acik pozisyonlar + ilk 15 aday
+        cursor.execute("SELECT DISTINCT symbol FROM trades WHERE exit_time IS NULL")
+        open_syms = [r["symbol"] for r in cursor.fetchall()]
+        
+        cursor.execute("SELECT symbol FROM signals WHERE date_str = ? ORDER BY score DESC LIMIT 15", (date_str,))
+        cand_syms = [r["symbol"] for r in cursor.fetchall()]
+
+        symbols = list(dict.fromkeys(open_syms + cand_syms))[:25]
 
         if not symbols:
             conn.close()
             return
 
-        print(f"[MarketData] {date_str} için {len(symbols)} hissenin 5m verisi indiriliyor (period={period})...")
+        cls._last_fetch_ts = now_ts
+        print(f"[MarketData] {date_str} için {len(symbols)} hissenin 5m verisi indiriliyor (period={period}, ban-guvenli)...")
 
         # Yahoo Finance bazen 5m vermeyebilir eski tarihler için, 1mo içinde verir.
         try:
@@ -94,8 +110,13 @@ class MarketDataManager:
                 try:
                     _pa_s = _get_pa_session()
                     data = yf.download(chunk, period=period, interval="5m", group_by='ticker', threads=False, progress=False, session=_pa_s) if _pa_s else yf.download(chunk, period=period, interval="5m", group_by='ticker', threads=True, progress=False)
-                except Exception:
+                except Exception as _dl_err:
+                    if "429" in str(_dl_err) or "Too Many Requests" in str(_dl_err):
+                        cls._rate_limit_until = time.time() + 900
+                        print(f"[MarketData] 429 tespit edildi, 15 dakika soguma moduna gecildi.")
+                        break
                     continue
+                time.sleep(1.5)  # Istekler arasi insani bekleme (ban korumasi)
                 if data is None or data.empty:
                     continue
                 for sym in chunk:

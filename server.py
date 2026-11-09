@@ -332,10 +332,20 @@ def start_live_data_collector():
                         if isinstance(GLOBAL_DASHBOARD_CACHE, dict) and "all_symbols_stats" in GLOBAL_DASHBOARD_CACHE:
                             print("[LIVE DATA] Hızlı fiyat güncellemesi başlatılıyor...")
                             import yfinance as _yf
-                            from config.bist_symbols import BIST_SYMBOLS
+                            # BAN KORUMASI: 600 hisseyi surekli indirmek Yahoo 429 banina yol acar.
+                            # BIST30 + acik pozisyonlar (~35 sembol) odakli ve guvenli indirilir.
+                            from config.bist_symbols import BIST30_SYMBOLS
+                            from services.trade_database import get_connection as _td_conn
+                            _active_syms = []
+                            try:
+                                with _td_conn() as _c_db:
+                                    _r_db = _c_db.cursor().execute("SELECT DISTINCT symbol FROM trades WHERE exit_time IS NULL").fetchall()
+                                    _active_syms = [r["symbol"] for r in _r_db]
+                            except Exception:
+                                pass
+                            _target_syms = list(dict.fromkeys(BIST30_SYMBOLS + _active_syms))[:40]
+                            syms_to_fetch = [s if s.endswith(".IS") else s + ".IS" for s in _target_syms]
 
-                            syms_to_fetch = [s + ".IS" if not s.endswith(".IS") else s for s in BIST_SYMBOLS]
-                            # Hızlı 1 günlük indirme
                             _pa_sess = None
                             if os.environ.get("http_proxy") or os.path.exists("/var/www"):
                                 import requests as _req
@@ -347,7 +357,7 @@ def start_live_data_collector():
                             from datetime import datetime as _dt_cls
                             today_str = _dt_cls.now().strftime("%Y-%m-%d")
                             updates = 0
-                            for sym in BIST_SYMBOLS:
+                            for sym in _target_syms:
                                 sym_is = sym + ".IS" if not sym.endswith(".IS") else sym
                                 if sym in GLOBAL_DASHBOARD_CACHE["all_symbols_stats"]:
                                     try:
