@@ -175,7 +175,12 @@ def run_simulation_api(symbol: str) -> dict:
         
     high_low = df['high'] - df['low']
     atr = high_low.rolling(14).mean().iloc[-1]
-    bist_df = pipeline.get_clean_data("^GSPC", period="2y", interval="1d")
+    try:
+        bist_df = pipeline.get_clean_data("^GSPC", period="1mo", interval="1d")
+        if bist_df is None or bist_df.empty:
+            bist_df = df
+    except Exception:
+        bist_df = df
     
     tech_res = tech_engine.analyze(symbol, df)
     fund_res = fund_engine.analyze(symbol, df) 

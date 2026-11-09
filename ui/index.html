@@ -1814,7 +1814,7 @@
                 <div style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem; flex-wrap:wrap; margin-bottom:1.5rem;">
                     <h3 class="card-title" style="margin:0; font-size:1.2rem;"><i class="fa-solid fa-clock-rotate-left text-green"></i> İşlem Geçmişi (Trade Log)</h3>
                     <div class="sim-toolbar">
-                        <span id="sim-notify-status" class="sim-notify-badge">Bildirimler kapalı</span>
+                        <span id="sim-notify-status" class="sim-notify-badge" onclick="enableTradeNotifications()" style="cursor:pointer;" title="Sesli ve masaüstü bildirimlerini açmak için tıklayın">Bildirimler kapalı</span>
                         <button type="button" id="sim-notify-btn" class="sim-pill" onclick="enableTradeNotifications()">
                             <i class="fa-solid fa-bell"></i> Sesli Bildirimler
                         </button>
@@ -2581,7 +2581,7 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="app.js?v=20261106_v37"></script>
+    <script src="app.js?v=20261109_v38"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js?v=20260916_v13"></script>
     <script>
