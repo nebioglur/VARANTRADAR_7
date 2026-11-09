@@ -4979,6 +4979,11 @@ def api_telegram_test_suite():
                 _cur = _dc.cursor()
                 _cur.execute("SELECT * FROM trades WHERE date_str=? AND owner=? AND exit_time IS NOT NULL", (today_s, 'local:nebioglur'))
                 _dbg_trades = [dict(r) for r in _cur.fetchall()]
+            # Check all owners and counts in trades table
+            with _dbg_conn() as _dc2:
+                _cur2 = _dc2.cursor()
+                _cur2.execute("SELECT DISTINCT owner, date_str, COUNT(*) c FROM trades GROUP BY owner, date_str")
+                results['all_trade_owners'] = [dict(r) for r in _cur2.fetchall()]
             results['trades_found'] = len(_dbg_trades)
             _dbg_caption = format_simulation_report(today_s, 100000.0, 102075.44, 2075.44, 2.08, 3, 4, _dbg_trades)
             results['caption_sample'] = _dbg_caption[:150]
