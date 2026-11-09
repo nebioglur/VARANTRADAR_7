@@ -329,19 +329,19 @@ def send_simulation_report(total_trades: int = 0, total_profit: float = 0.0, ret
     # 4. Performans Grafik Kartını Üret
     photo_path = generate_daily_report_chart(date_str, start_equity, end_equity, daily_pnl, pnl_pct, trades_list)
 
-    # 5. Gönder (Fotoğraf + Başlık metni, hata olursa sadece metin)
-    sent = False
+    # 5. Gönder: Görsel Performans Kartı + Ayrıntılı Kâr/Zarar ve Hisse Tablosu
+    photo_sent = False
     if photo_path and os.path.exists(photo_path):
         try:
-            sent = send_telegram_photo(photo_path, caption, force=force)
+            sign = "+" if daily_pnl >= 0 else ""
+            short_caption = f"📊 <b>GÜN SONU PERFORMANS KARTI</b>\n💰 Net: <b>{sign}₺{daily_pnl:,.2f} ({sign}%{pnl_pct:.2f})</b> | 🛡️ %100 Nakit"
+            photo_sent = send_telegram_photo(photo_path, short_caption, force=force)
         except Exception as _ph_e:
-            logger.warning(f"[TG-REPORT] Fotoğraf gönderim hatası, metne geçiliyor: {_ph_e}")
-            sent = False
-        
-    if not sent:
-        sent = send_telegram_message(caption, force=force)
-        
-    return sent
+            logger.warning(f"[TG-REPORT] Fotoğraf gönderim hatası: {_ph_e}")
+
+    # Ayrıntılı hisse ve kâr/zarar dökümü her durumda eksiksiz gönderilir
+    msg_sent = send_telegram_message(caption, force=force)
+    return photo_sent or msg_sent
 
 
 # ========== SESLI AL/SAT UYARILARI ==========
