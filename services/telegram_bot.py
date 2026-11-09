@@ -301,8 +301,33 @@ def send_simulation_report(total_trades: int = 0, total_profit: float = 0.0, ret
         from services.trade_database import get_connection
         with get_connection() as conn:
             cur = conn.cursor()
+            # 17:50 Seans Sonu Nakde Geçiş: Eğer seans kapandıysa (17:50+) açıkta kalan tüm pozisyonlar kapatılır
+            try:
+                from datetime import datetime as _dt_eod, time as _tm_eod
+                from zoneinfo import ZoneInfo
+                _now_eod = _dt_eod.now(ZoneInfo("Europe/Istanbul"))
+            except Exception:
+                _now_eod = _dt_eod.now()
+            _is_today_rep = (date_str == _now_eod.strftime("%Y-%m-%d"))
+            if (not _is_today_rep) or _now_eod.time() >= _tm_eod(17, 50):
+                cur.execute('''
+                    UPDATE trades SET
+                        exit_time = date_str || ' 17:50:00',
+                        exit_price = CASE WHEN exit_price IS NOT NULL THEN exit_price WHEN shares > 0 THEN entry_price + (pnl_val / shares) ELSE entry_price END,
+                        realized_pnl = pnl_val,
+                        exit_reason = CASE
+                            WHEN exit_reason LIKE '%TP1%' THEN '⚖️ KADEMELİ TP1 (%50 SATILDI, STOP MALİYETE ÇEKİLDİ) + SEANS SONU NAKITE GECIS (17:50)'
+                            ELSE 'SEANS SONU NAKITE GECIS (17:50)'
+                        END
+                    WHERE date_str=? AND exit_time IS NULL
+                ''', (date_str,))
+                conn.commit()
+
             cur.execute("SELECT * FROM equity_log WHERE date_str=? AND owner=?", (date_str, owner))
             eq = cur.fetchone()
+            if not eq:
+                cur.execute("SELECT * FROM equity_log WHERE date_str=?", (date_str,))
+                eq = cur.fetchone()
             if eq:
                 start_equity = float(eq['start_equity']) if eq['start_equity'] else 100000.0
                 end_equity = float(eq['end_equity']) if eq['end_equity'] else (start_equity + daily_pnl)
@@ -313,7 +338,11 @@ def send_simulation_report(total_trades: int = 0, total_profit: float = 0.0, ret
 
             cur.execute("SELECT * FROM trades WHERE date_str=? AND owner=? AND exit_time IS NOT NULL ORDER BY pnl_val DESC", (date_str, owner))
             trades_list = [dict(r) for r in cur.fetchall()]
-            cur.execute("SELECT COALESCE(SUM(realized_pnl),0) p FROM trades WHERE date_str=? AND owner=?", (date_str, owner))
+            if not trades_list:
+                cur.execute("SELECT * FROM trades WHERE date_str=? AND exit_time IS NOT NULL ORDER BY pnl_val DESC", (date_str,))
+                trades_list = [dict(r) for r in cur.fetchall()]
+            
+            cur.execute("SELECT COALESCE(SUM(realized_pnl),0) p FROM trades WHERE date_str=? AND exit_time IS NOT NULL", (date_str,))
             realized_row = cur.fetchone()
             daily_pnl = float(realized_row["p"] or 0) if realized_row else 0.0
             t_count = len(trades_list)
