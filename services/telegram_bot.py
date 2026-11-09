@@ -332,10 +332,14 @@ def send_simulation_report(total_trades: int = 0, total_profit: float = 0.0, ret
     # 5. Gönder (Fotoğraf + Başlık metni, hata olursa sadece metin)
     sent = False
     if photo_path and os.path.exists(photo_path):
-        sent = send_telegram_photo(photo_path, caption)
+        try:
+            sent = send_telegram_photo(photo_path, caption, force=force)
+        except Exception as _ph_e:
+            logger.warning(f"[TG-REPORT] Fotoğraf gönderim hatası, metne geçiliyor: {_ph_e}")
+            sent = False
         
     if not sent:
-        sent = send_telegram_message(caption)
+        sent = send_telegram_message(caption, force=force)
         
     return sent
 
