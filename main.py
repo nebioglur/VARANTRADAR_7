@@ -137,8 +137,11 @@ def run_simulation_api(symbol: str) -> dict:
         if df is None or df.empty:
         # 3. YEDEK KATMAN: GLOBAL_DASHBOARD_CACHE ve Disk Cache
         try:
-            from server import GLOBAL_DASHBOARD_CACHE
-            all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
+            import json, os
+            all_stats = {}
+            if os.path.exists("dashboard_cache.json"):
+                with open("dashboard_cache.json", "r", encoding="utf-8") as _cf:
+                    all_stats = json.load(_cf).get("all_symbols_stats", {})
             stat_data = all_stats.get(symbol) or all_stats.get(clean_s) or all_stats.get(f"{clean_s}.IS")
             if stat_data:
                 p = float(stat_data.get("Price") or stat_data.get("Daily_Close") or 0.0)
