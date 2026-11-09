@@ -1223,7 +1223,7 @@ def api_auth_session():
 def require_auth():
     if request.method == 'OPTIONS': return
     
-    allowed = ['/login', '/logout', '/api/ping', '/api/auth_config', '/api/auth/session', '/api/system/git_pull', '/api/system/deploy']
+    allowed = ['/login', '/logout', '/api/ping', '/api/auth_config', '/api/auth/session', '/api/system/git_pull', '/api/system/deploy', '/api/system/sync_verdent', '/api/system/network_test', '/api/system/fast_scan']
     if request.path in allowed: return
     
     # Allow static assets for login page
@@ -2321,6 +2321,93 @@ def api_system_sync_verdent():
         return jsonify({"status": "success", "results": results})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/system/network_test', methods=['GET'])
+def api_system_network_test():
+    import requests, os
+    res = {}
+    proxies = {"http": "http://proxy.server:3128", "https": "http://proxy.server:3128"} if (os.environ.get("http_proxy") or os.path.exists("/var/www")) else None
+    
+    # 1. Test Yahoo
+    try:
+        r_yf = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/THYAO.IS?range=1d&interval=5m", proxies=proxies, timeout=10)
+        res["yahoo"] = {"status": r_yf.status_code, "len": len(r_yf.text)}
+    except Exception as e_yf:
+        res["yahoo"] = {"error": str(e_yf)}
+        
+    # 2. Test Verdent App
+    try:
+        r_vd = requests.get("https://varantradar-pro-8.verdent.app/api/ping", proxies=proxies, timeout=10)
+        res["verdent"] = {"status": r_vd.status_code, "text": r_vd.text[:100]}
+    except Exception as e_vd:
+        res["verdent"] = {"error": str(e_vd)}
+        
+    # 3. Cache info
+    global GLOBAL_DASHBOARD_CACHE
+    res["cache_date"] = GLOBAL_DASHBOARD_CACHE.get("cache_date") if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else None
+    res["symbols_count"] = len(GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})) if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else 0
+    return jsonify(res)
+
+@app.route('/api/system/fast_scan', methods=['GET', 'POST'])
+def api_system_fast_scan():
+    """Hizli sekilde BIST50 hisselerinin guncel fiyatlarini ceker ve cache_date'i bugune alir."""
+    token = request.args.get('token') or request.form.get('token')
+    if token != 'pro8_sync' and not session.get('logged_in'):
+        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+    global GLOBAL_DASHBOARD_CACHE
+    from datetime import datetime
+    import yfinance as yf
+    from scanner.universal_scanner import _get_pa_session
+    
+    _pa_s = _get_pa_session()
+    syms = [s + ".IS" if not s.endswith(".IS") else s for s in BIST50_SYMBOLS]
+    data = yf.download(syms, period="5d", interval="1d", group_by='ticker', threads=False, progress=False, session=_pa_s)
+    
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    if not isinstance(GLOBAL_DASHBOARD_CACHE, dict):
+        GLOBAL_DASHBOARD_CACHE = {}
+    if "all_symbols_stats" not in GLOBAL_DASHBOARD_CACHE:
+        GLOBAL_DASHBOARD_CACHE["all_symbols_stats"] = {}
+        
+    updated = 0
+    for sym_is in syms:
+        clean = sym_is.replace(".IS", "")
+        df = None
+        if hasattr(data.columns, 'levels') and sym_is in data.columns.levels[0]:
+            df = data[sym_is]
+        elif len(syms) == 1:
+            df = data
+        if df is not None and not df.empty:
+            df = df.dropna(how='all')
+            if not df.empty:
+                last_row = df.iloc[-1]
+                prev_row = df.iloc[-2] if len(df) > 1 else last_row
+                close_px = float(last_row.get("Close") or 0.0)
+                prev_close = float(prev_row.get("Close") or close_px)
+                chg = round(((close_px - prev_close) / prev_close) * 100, 2) if prev_close > 0 else 0.0
+                vol = float(last_row.get("Volume") or 0.0)
+                
+                stat = GLOBAL_DASHBOARD_CACHE["all_symbols_stats"].get(clean, {})
+                stat["Symbol"] = clean
+                stat["Price"] = round(close_px, 2)
+                stat["Daily_Close"] = round(close_px, 2)
+                stat["Change_Pct"] = chg
+                stat["Volume"] = vol
+                stat["Price_Stale"] = False
+                stat["Last_Price_Update"] = today_str
+                GLOBAL_DASHBOARD_CACHE["all_symbols_stats"][clean] = stat
+                updated += 1
+                
+    GLOBAL_DASHBOARD_CACHE["cache_date"] = today_str
+    GLOBAL_DASHBOARD_CACHE["price_updated_at"] = time.time()
+    save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
+    
+    return jsonify({
+        "status": "success",
+        "updated": updated,
+        "cache_date": today_str,
+        "total_cached": len(GLOBAL_DASHBOARD_CACHE["all_symbols_stats"])
+    })
 
 @app.route('/api/system/git_pull', methods=['GET', 'POST'])
 @app.route('/api/system/deploy', methods=['GET', 'POST'])
