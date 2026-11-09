@@ -4730,27 +4730,38 @@ async function fetchSimulationData() {
                 } else {
                     trades.forEach(t => {
                         const tr = document.createElement('tr');
+                        const hasExitPrice = (t.exit_price !== null && t.exit_price !== undefined && !isNaN(Number(t.exit_price)));
+                        const hasExitTime = Boolean(t.exit_time);
+                        const isFullyClosed = hasExitTime && hasExitPrice;
                         const isTP1 = String(t.entry_time || '').includes('[TP1]') || String(t.exit_reason || '').includes('TP1');
-                        const isClosed = (t.exit_time && t.exit_price) || isTP1;
-                        const pnlColor = t.pnl_pct >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-                        const pnlSign = t.pnl_pct >= 0 ? '+' : '';
                         
-                        const exitTimeStr = isClosed ? t.exit_time : '<span style="color:var(--accent-yellow)">İşlemde</span>';
-                        const exitPriceStr = isClosed ? `₺${t.exit_price.toFixed(2)}` : '<span style="color:var(--text-muted)">-</span>';
-                        // Acik pozisyonlarda da anlik K/Z goster (sim motoru hesaplar)
-                        const pnlValStr = `${pnlSign}₺${(t.pnl_val || 0).toFixed(2)}`;
+                        const pnlVal = Number(t.pnl_val || 0);
+                        const pnlPct = Number(t.pnl_pct || 0);
+                        const entryPx = Number(t.entry_price || 0);
+                        const pnlColor = pnlPct >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+                        const pnlSign = pnlPct >= 0 ? '+' : '';
+                        
+                        const exitPriceStr = hasExitPrice
+                            ? `₺${Number(t.exit_price).toFixed(2)}`
+                            : '<span style="color:var(--text-muted)">-</span>';
+                            
+                        const pnlValStr = `${pnlSign}₺${pnlVal.toFixed(2)}`;
                         const realizedPnlVal = Number(t.realized_pnl || 0);
-                        const realizedPnlStr = !isClosed && realizedPnlVal !== 0
+                        const realizedPnlStr = (!isFullyClosed && realizedPnlVal !== 0)
                             ? `<div style="font-size:.68rem;color:var(--text-muted);margin-top:3px;">Gerçekleşen: ₺${realizedPnlVal.toFixed(2)}</div>`
                             : '';
-                        const pnlPctStr = `${pnlSign}${(t.pnl_pct || 0).toFixed(2)}%`;
+                        const pnlPctStr = `${pnlSign}${pnlPct.toFixed(2)}%`;
                         const strategyStr = t.strategy_name
                             ? `<div style="margin-top:0.25rem; color:var(--accent-blue); font-size:0.7rem;" title="${t.entry_checks || ''}">${t.strategy_name}${t.risk_amount ? ` · Risk: ₺${Number(t.risk_amount).toFixed(0)}` : ''}</div>`
                             : '';
                         const tp1Badge = '<span style="background:rgba(16,185,129,0.18); color:#34d399; border:1px solid rgba(16,185,129,0.35); padding:2px 8px; border-radius:12px; font-weight:800; font-size:0.75rem;"><i class="fa-solid fa-scale-balanced"></i> TP1 KÂR ALINDI (%50)</span>';
-                        let exitLabel = isClosed ? (t.exit_reason || 'Kapandı') : '<span style="color:var(--accent-yellow); font-weight:bold;"><i class="fa-solid fa-spinner fa-spin"></i> AÇIK POZİSYON</span>';
-                        if (isTP1) {
+                        let exitLabel = '';
+                        if (isFullyClosed) {
+                            exitLabel = t.exit_reason || 'Kapandı';
+                        } else if (isTP1) {
                             exitLabel = tp1Badge + (t.exit_reason ? ` <span style="font-size:0.75rem; color:#cbd5e1;">${t.exit_reason}</span>` : '');
+                        } else {
+                            exitLabel = '<span style="color:var(--accent-yellow); font-weight:bold;"><i class="fa-solid fa-spinner fa-spin"></i> AÇIK POZİSYON</span>';
                         }
                         const statusStr = exitLabel + strategyStr;
 
@@ -4764,14 +4775,14 @@ async function fetchSimulationData() {
                             } catch(e) { return cleanIso; }
                         };
                         const entryTimeFmt = formatDt(t.entry_time);
-                        const exitTimeFmt = isClosed ? formatDt(t.exit_time) : '<span style="color:var(--accent-yellow)">İşlemde</span>';
+                        const exitTimeFmt = hasExitTime ? formatDt(t.exit_time) : '<span style="color:var(--accent-yellow)">İşlemde</span>';
 
                         tr.innerHTML = `
                             <td>${entryTimeFmt}</td>
                             <td>${exitTimeFmt}</td>
                             <td style="font-weight:bold; color:var(--text-light);">${t.symbol}</td>
                             <td>${t.shares || '-'}</td>
-                            <td>₺${(t.entry_price || 0).toFixed(2)}</td>
+                            <td>₺${entryPx.toFixed(2)}</td>
                             <td>${exitPriceStr}</td>
                             <td style="color:${pnlColor}; font-weight:bold;">${pnlValStr}${realizedPnlStr}</td>
                             <td style="color:${pnlColor}; font-weight:bold;">${pnlPctStr}</td>
