@@ -1083,7 +1083,12 @@ class SimulationEngine:
         # frontend "Islemde" olarak gostersin. GECMIS tarihler icin son bar
         # (seans sonu ~18:00) uzerinden kapanis zorunlu — aksi halde eski
         # gunlerin pozisyonlari sonsuza kadar "ACIK POZISYON" kalirdi.
-        now = datetime.now()
+        # Europe/Istanbul saat dilimi baz alınır (PythonAnywhere UTC olsa bile 17:50'de kesin nakde geçer).
+        try:
+            from zoneinfo import ZoneInfo
+            now = datetime.now(ZoneInfo("Europe/Istanbul"))
+        except Exception:
+            now = datetime.now()
         is_today = date_str == now.strftime("%Y-%m-%d")
         close_open_now = (not is_today) or now.time() >= time(17, 50)
 
@@ -1105,6 +1110,7 @@ class SimulationEngine:
                     sell_commission = sell_volume * 0.0004
                     gross_pnl = trade['shares'] * (eod_sell_price - trade['entry_price'])
                     trade['pnl_val'] = gross_pnl - buy_commission - sell_commission
+                    trade['realized_pnl'] = trade['pnl_val']
                     current_cash += sell_volume - sell_commission
                     trade['pnl_pct'] = (trade['pnl_val'] / buy_volume * 100) if buy_volume > 0 else 0.0
                     trade['exit_reason'] = 'SEANS SONU NAKITE GECIS (17:50)'
@@ -1126,12 +1132,32 @@ class SimulationEngine:
                     trade['exit_reason'] = "⏳ ACIK POZISYON"
                 completed_trades.append(trade)
             else:
-                trade['exit_time'] = None
-                trade['exit_price'] = None
-                trade['pnl_val'] = 0.0
-                trade['pnl_pct'] = 0.0
-                trade['exit_reason'] = "⏳ ACIK POZISYON (Veri Bekleniyor)"
+                if close_open_now:
+                    trade['status'] = 'CLOSED'
+                    trade['exit_time'] = f"{date_str} 18:00:00"
+                    trade['exit_price'] = trade['entry_price']
+                    trade['pnl_val'] = 0.0
+                    trade['realized_pnl'] = 0.0
+                    trade['pnl_pct'] = 0.0
+                    trade['exit_reason'] = 'SEANS SONU NAKITE GECIS (17:50)'
+                    trade['owner'] = self.owner
+                    trade['engine_version'] = trade.get('engine_version', 'V8_ELITE')
+                    self._save_single_trade(date_str, trade)
+                else:
+                    trade['exit_time'] = None
+                    trade['exit_price'] = None
+                    trade['pnl_val'] = 0.0
+                    trade['pnl_pct'] = 0.0
+                    trade['exit_reason'] = "⏳ ACIK POZISYON (Veri Bekleniyor)"
                 completed_trades.append(trade)
 
         self._save_trades(date_str, completed_trades)
         print(f"[SimEngine] {date_str} için ÇELİK SİSTEM tamamlandı. İşlem Sayısı: {len(completed_trades)}")
+
+        # Seans sonu: Nakde geçiş tamamlandıktan sonra gün sonu detaylı kâr/zarar tablosu ve hisseler Telegram'a otomatik gönderilir
+        if close_open_now and completed_trades:
+            try:
+                from services.telegram_bot import send_simulation_report
+                send_simulation_report(date_str=date_str, owner=self.owner)
+            except Exception as _e_rep:
+                print(f"[SimEngine] Gün sonu rapor gönderim hatası: {_e_rep}")

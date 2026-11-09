@@ -3542,24 +3542,27 @@ def api_simulation_send_telegram():
         data = request.get_json(silent=True) or {}
         date_str = data.get('date')
         if not date_str:
-            return jsonify({"status": "error", "message": "Tarih gerekli."}), 400
+            try:
+                from zoneinfo import ZoneInfo
+                date_str = datetime.now(ZoneInfo("Europe/Istanbul")).strftime("%Y-%m-%d")
+            except Exception:
+                date_str = datetime.now().strftime("%Y-%m-%d")
         owner = get_owner_key()
+        force = bool(data.get('force', True))
         from services.trade_database import get_connection
         with get_connection() as conn:
             cur = conn.cursor()
             cur.execute("SELECT start_equity FROM equity_log WHERE owner=? AND date_str=?", (owner, date_str))
             equity = cur.fetchone()
-            if not equity:
-                return jsonify({"status": "error", "message": "Bu tarihe ait simülasyon özeti yok."}), 404
-            base = float(equity['start_equity'] or 0)
+            base = float(equity['start_equity']) if equity and equity['start_equity'] else 100000.0
             cur.execute("SELECT COUNT(*) c, COALESCE(SUM(realized_pnl),0) p FROM trades WHERE owner=? AND date_str=? AND exit_time IS NOT NULL", (owner, date_str))
             totals = cur.fetchone()
-        profit = float(totals['p'] or 0)
-        count = int(totals['c'] or 0)
+        profit = float(totals['p'] or 0) if totals else 0.0
+        count = int(totals['c'] or 0) if totals else 0
         pct = profit / base * 100 if base > 0 else 0.0
         from services.telegram_bot import send_simulation_report
-        if send_simulation_report(count, profit, pct, date_str, owner):
-            return jsonify({"status": "success", "message": "Standart simülasyon gün özeti gönderildi (aynı gün tekrarı engellenir)."})
+        if send_simulation_report(count, profit, pct, date_str, owner, force=force):
+            return jsonify({"status": "success", "message": "Gün sonu kâr/zarar raporu ve hisseler Telegram'a başarıyla gönderildi."})
         return jsonify({"status": "error", "message": "Telegram gönderilemedi; ayarları kontrol edin."}), 503
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500

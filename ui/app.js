@@ -4590,6 +4590,37 @@ async function sendMorningCompassTelegram(btnEl) {
     }
 }
 
+async function sendDailyReportTelegram(btnEl) {
+    const btn = btnEl || document.getElementById('tg-daily-report-btn');
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gönderiliyor...';
+    }
+    _tgShowMsg('Gün Sonu Raporu Telegram\'a gönderiliyor...', true);
+    try {
+        const todayStr = (window._currentSimDate || new Date().toISOString().slice(0, 10));
+        const res = await vrAuthorizedFetch('/api/telegram/send_daily_report', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ date: todayStr, force: true })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            _tgShowMsg('✅ ' + data.message, true);
+        } else {
+            _tgShowMsg('❌ Hata: ' + (data.message || 'Gönderilemedi.'), false);
+        }
+    } catch (e) {
+        _tgShowMsg('❌ Bağlantı hatası: ' + e.message, false);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+    }
+}
+
 async function sendTavanCandidatesTelegram(btnEl) {
     const btn = btnEl || document.getElementById('tg-tavan-btn');
     const origHtml = btn ? btn.innerHTML : '';

@@ -1859,6 +1859,9 @@
                         <button id="tg-compass-btn" type="button" class="sim-pill" onclick="sendMorningCompassTelegram(this)" style="border-color:rgba(56,189,248,0.4); color:#38bdf8;">
                             <i class="fa-solid fa-compass"></i> Günün Pusulasını Gönder
                         </button>
+                        <button id="tg-daily-report-btn" type="button" class="sim-pill" onclick="sendDailyReportTelegram(this)" style="border-color:rgba(168,85,247,0.4); color:#c084fc;">
+                            <i class="fa-solid fa-chart-line"></i> Gün Sonu Kâr/Zarar Raporunu Gönder
+                        </button>
                     </div>
                     <div id="tg-settings-msg" style="margin-top:0.6rem; font-size:0.82rem; display:none;"></div>
                 </div>
@@ -2581,7 +2584,7 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="app.js?v=20261109_v41"></script>
+    <script src="app.js?v=20261109_v42"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js?v=20260916_v13"></script>
     <script>

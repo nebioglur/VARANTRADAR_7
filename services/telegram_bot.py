@@ -267,20 +267,24 @@ def send_batch_vip_signals(vip_list: list, force: bool = False) -> bool:
     return send_telegram_message(text, force=force)
 
 
-def send_simulation_report(total_trades: int = 0, total_profit: float = 0.0, return_pct: float = 0.0, date_str: str = "", owner: str = None) -> bool:
+def send_simulation_report(total_trades: int = 0, total_profit: float = 0.0, return_pct: float = 0.0, date_str: str = "", owner: str = None, force: bool = False) -> bool:
     """
     Kapsamlı gün sonu simülasyon raporunu görsel grafik, başlangıç/bitiş parası ve
     işlem dökümüyle birlikte gönderir. Mükerrer gönderimi veritabanı kilidiyle kesin engeller.
     """
     from datetime import datetime
     if not date_str:
-        date_str = datetime.now().strftime("%Y-%m-%d")
+        try:
+            from zoneinfo import ZoneInfo
+            date_str = datetime.now(ZoneInfo("Europe/Istanbul")).strftime("%Y-%m-%d")
+        except Exception:
+            date_str = datetime.now().strftime("%Y-%m-%d")
     owner = owner or os.environ.get('ADMIN_OWNER', 'local:nebioglur')
     
     # 1. MÜKERRER MESAJ KİLİDİ (Atomik Veritabanı Engeli)
     # Server restartı, çoklu thread veya worker tekrarlarında ikinci kez gitmesini KESİN engeller!
     dedup_key = f"DAILY_REPORT_{date_str}_{owner}"
-    if not claim_telegram_alert(dedup_key):
+    if not force and not claim_telegram_alert(dedup_key):
         logger.info(f"[TG-REPORT] Gün sonu raporu bugün ({date_str}) zaten gönderilmiş, tekrar engellendi.")
         return True
 
@@ -1283,26 +1287,38 @@ def format_simulation_report(date_str: str, start_equity: float, end_equity: flo
     text += f"💵 <b>Başlangıç Parası:</b> ₺{start_equity:,.2f}\n"
     text += f"💎 <b>Bitiş Parası (Kasa):</b> ₺{end_equity:,.2f}\n"
     text += f"{pnl_emoji} <b>Günün Net Kârı:</b> {sign}₺{daily_pnl:,.2f} (<b>{sign}%{pnl_pct:.2f}</b>)\n"
-    text += f"🎯 <b>Başarı Karnesi:</b> {win_trades}/{total_trades} Kârlı İşlem (<b>%{win_rate:.0f} Başarı</b>)\n\n"
+    text += f"🎯 <b>Başarı Karnesi:</b> {win_trades}/{total_trades} Kârlı İşlem (<b>%{win_rate:.0f} Başarı</b>)\n"
+    text += f"🛡️ <b>Pozisyon Durumu:</b> %100 NAKİT (Açık Gece Riski Yok)\n\n"
     
     if trades:
-        text += f"📋 <b>GÜN İÇİ İŞLEM DÖKÜMÜ</b>\n"
+        text += f"📋 <b>GÜN İÇİ İŞLEM DÖKÜMÜ & HİSSELER</b>\n"
         text += f"━━━━━━━━━━━━━━━━━━━━\n"
-        for idx, t in enumerate(trades[:6], 1):
+        for idx, t in enumerate(trades[:12], 1):
             sym = str(t.get('symbol', '')).replace('.IS', '')
-            val = float(t.get('pnl_val', 0))
+            val = float(t.get('realized_pnl', t.get('pnl_val', 0)))
             pct = float(t.get('pnl_pct', 0))
+            entry = float(t.get('entry_price', 0))
+            exit_p = float(t.get('exit_price', 0))
             v_sign = "+" if val >= 0 else ""
             t_emoji = "🟢" if val >= 0 else "🔴"
             reason = str(t.get('exit_reason', ''))
-            tag = "⚖️ TP1" if "TP1" in reason else ("🏁 Kapanış" if "SEANS SONU" in reason else "🛡️ Kâr Koruma")
-            text += f"{idx}️⃣ <b>#{sym}</b>: {t_emoji} <b>{v_sign}₺{val:,.2f}</b> ({v_sign}%{pct:.2f}) | <i>{tag}</i>\n"
+            tag = "⚖️ TP1 + Kapanış" if ("TP1" in reason and "SEANS SONU" in reason) else (
+                "⚖️ TP1" if "TP1" in reason else (
+                    "🏁 17:50 Nakit" if "SEANS SONU" in reason else (
+                        "🛡️ Stop" if "STOP" in reason else "Satış"
+                    )
+                )
+            )
+            price_info = f" (₺{entry:.2f} ➔ ₺{exit_p:.2f})" if entry > 0 and exit_p > 0 else ""
+            text += f"{idx}️⃣ <b>#{sym}</b>: {t_emoji} <b>{v_sign}₺{val:,.2f}</b> ({v_sign}%{pct:.2f}){price_info} | <i>{tag}</i>\n"
         
-        if len(trades) > 6:
-            text += f"   <i>...ve {len(trades) - 6} işlem daha</i>\n"
+        if len(trades) > 12:
+            text += f"   <i>...ve {len(trades) - 12} işlem daha</i>\n"
         text += f"\n"
+    else:
+        text += f"ℹ️ <i>Bugün işlem açılmadı; sermaye %100 nakit olarak korundu.</i>\n\n"
         
-    text += "ℹ️ <i>Bu rapor simülasyon verisidir; gerçek emir veya gerçekleşmiş getiri değildir. Yatırım tavsiyesi değildir.</i>"
+    text += "ℹ️ <i>Bu rapor simülasyon verisidir; seans sonu (17:50) tüm pozisyonlar otomatik kapatılarak %100 nakde geçilmiştir.</i>"
     return text
 
 
