@@ -3189,6 +3189,28 @@ def api_simulation_daily_pnl():
             c = conn.cursor()
             owner = get_owner_key()
             
+            # Seans sonu (17:50+) otomatik nakde geçiş kontrolü:
+            # Saat 17:50 ve sonrasında açıkta kalan tüm pozisyonlar kesin olarak kapatılıp %100 nakde geçirilir.
+            try:
+                from zoneinfo import ZoneInfo
+                _now_ist = datetime.now(ZoneInfo("Europe/Istanbul"))
+            except Exception:
+                _now_ist = datetime.now()
+            _today_ist = _now_ist.strftime("%Y-%m-%d")
+            if _now_ist.time() >= time(17, 50):
+                c.execute('''
+                    UPDATE trades SET
+                        exit_time = date_str || ' 17:50:00',
+                        exit_price = CASE WHEN exit_price IS NOT NULL THEN exit_price WHEN shares > 0 THEN entry_price + (pnl_val / shares) ELSE entry_price END,
+                        realized_pnl = pnl_val,
+                        exit_reason = CASE
+                            WHEN exit_reason LIKE '%TP1%' THEN '⚖️ KADEMELİ TP1 (%50 SATILDI, STOP MALİYETE ÇEKİLDİ) + SEANS SONU NAKITE GECIS (17:50)'
+                            ELSE 'SEANS SONU NAKITE GECIS (17:50)'
+                        END
+                    WHERE exit_time IS NULL AND date_str <= ?
+                ''', (_today_ist,))
+                conn.commit()
+
             # Fetch daily equity log (hesaba ozel, tum gecmis aylar dahil)
             c.execute("SELECT * FROM equity_log WHERE owner=? ORDER BY date_str ASC", (owner,))
             equity_rows = c.fetchall()
@@ -3535,6 +3557,7 @@ def api_telegram_send_morning_compass():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@app.route('/api/telegram/send_daily_report', methods=['POST'])
 @app.route('/api/simulation/send_telegram', methods=['POST'])
 def api_simulation_send_telegram():
     """Tekil özel format üretmez; aynı tek-gün özeti ve dedup akışını kullanır."""

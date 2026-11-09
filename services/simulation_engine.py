@@ -149,6 +149,30 @@ class SimulationEngine:
             except Exception as e:
                 print(f"[SimEngine] Trade save err {t['symbol']}: {e}")
 
+        # Seans sonu (17:50+) guvencesi: trades tablosunda bugune veya gecmise ait
+        # acik kalmis (exit_time IS NULL) hicbir pozisyon birakilmaz; hepsi seans sonu nakde gecirilir.
+        try:
+            from zoneinfo import ZoneInfo
+            _now_eod = datetime.now(ZoneInfo("Europe/Istanbul"))
+        except Exception:
+            _now_eod = datetime.now()
+        _is_today_eod = (date_str == _now_eod.strftime("%Y-%m-%d"))
+        if (not _is_today_eod) or _now_eod.time() >= time(17, 50):
+            try:
+                cursor.execute('''
+                    UPDATE trades SET
+                        exit_time = date_str || ' 17:50:00',
+                        exit_price = CASE WHEN exit_price IS NOT NULL THEN exit_price WHEN shares > 0 THEN entry_price + (pnl_val / shares) ELSE entry_price END,
+                        realized_pnl = pnl_val,
+                        exit_reason = CASE
+                            WHEN exit_reason LIKE '%TP1%' THEN '⚖️ KADEMELİ TP1 (%50 SATILDI, STOP MALİYETE ÇEKİLDİ) + SEANS SONU NAKITE GECIS (17:50)'
+                            ELSE 'SEANS SONU NAKITE GECIS (17:50)'
+                        END
+                    WHERE owner=? AND date_str=? AND exit_time IS NULL
+                ''', (self.owner, date_str))
+            except Exception as _cl_e:
+                print(f"[SimEngine] Open trade closure sweep error: {_cl_e}")
+
         # Equity Log (hesap bazli) - birlestirilmis kayitlar uzerinden;
         # boylece equity_log ile trades tablosu SUM'u daima tutarli olur.
         cursor.execute(
