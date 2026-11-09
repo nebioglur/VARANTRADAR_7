@@ -4967,6 +4967,11 @@ def api_telegram_test_suite():
             results['sim_eod'] = ok
 
         if test_type in ('all', 'report'):
+            from services.telegram_bot import get_telegram_credentials, _get_telegram_proxies
+            tok, cid = get_telegram_credentials()
+            prox = _get_telegram_proxies()
+            results['debug_cred'] = {'has_token': bool(tok), 'has_cid': bool(cid), 'has_prox': bool(prox)}
+            results['direct_msg'] = send_telegram_message("🧪 <b>Test Gün Sonu Mesajı</b>", force=True)
             ok = send_simulation_report(date_str=today_s, force=True)
             results['simulation_report'] = ok
 
