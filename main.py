@@ -134,7 +134,7 @@ def run_simulation_api(symbol: str) -> dict:
         except Exception:
             pass
 
-        if df is None or df.empty:
+    if df is None or df.empty:
         # 3. YEDEK KATMAN: GLOBAL_DASHBOARD_CACHE ve Disk Cache
         try:
             import json, os
