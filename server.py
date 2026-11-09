@@ -4409,6 +4409,21 @@ def api_v8_radar_breakout():
         _al_cands = [x for x in breakout_list if (x.get("entry_status") or "").upper() == "ENTER"]
         if _al_cands:
             auto_send_v8_signals(_al_cands)
+            try:
+                from v8_engine.learning import OutcomeEngine
+                _oe = OutcomeEngine()
+                for c in _al_cands:
+                    p = float(c.get("price") or c.get("Daily_Close") or 0.0)
+                    if p > 0:
+                        _oe.register_signal(
+                            symbol=c["symbol"],
+                            entry_price=p,
+                            breakout_data=c,
+                            execution_data={"entry_status": "ENTER", "reasons": c.get("entry_reasons", [])},
+                            regime=(GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or {}).get("regime", "NEUTRAL")
+                        )
+            except Exception as _oe_err:
+                print(f"[V8 OUTCOME REGISTER ERROR] {_oe_err}")
     except Exception as _v8_bo_tg_e:
         print(f"[V8 BREAKOUT TG] Otomatik bildirim hatasi: {_v8_bo_tg_e}")
 

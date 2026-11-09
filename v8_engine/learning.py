@@ -7,7 +7,17 @@ import threading
 import time
 import json
 
+
+def _get_pa_session():
+    import requests, os
+    if os.path.exists("/home/varantradarpro") or "pythonanywhere" in os.environ.get("PYTHONANYWHERE_DOMAIN", "").lower() or os.path.exists("/etc/pythonanywhere"):
+        s = requests.Session()
+        s.proxies = {"http": "http://proxy.server:3128", "https": "http://proxy.server:3128"}
+        return s
+    return None
+
 class OutcomeEngine:
+
     """
     V8 Outcome & Learning Engine
     Üretilen sinyallerin gelecekteki (T+5m, T+15m, vb.) performansını takip eder
@@ -141,7 +151,8 @@ class OutcomeEngine:
                         
                     # İlgili hisselerin anlik fiyatlarini cek
                     symbols = list(set([s['symbol'] for s in active_signals]))
-                    data = yf.download(symbols, period="5d", interval="1m", group_by='ticker', progress=False)
+                    _pa_s = _get_pa_session()
+                    data = yf.download(symbols, period="5d", interval="1m", group_by='ticker', progress=False, session=_pa_s) if _pa_s else yf.download(symbols, period="5d", interval="1m", group_by='ticker', progress=False)
 
                     # 'now' zaten ustte Istanbul saatine gore ayarlandi (UTC ezmesin)
                     
@@ -168,7 +179,8 @@ class OutcomeEngine:
                                 else:
                                     # Bulk veri yoksa tek sembol fallback dene
                                     try:
-                                        df = yf.Ticker(sym).history(period="5d", interval="1m").dropna(how='all').copy()
+                                        _pa_s = _get_pa_session()
+                                        df = (yf.Ticker(sym, session=_pa_s) if _pa_s else yf.Ticker(sym)).history(period="5d", interval="1m").dropna(how='all').copy()
                                     except Exception:
                                         continue
 
