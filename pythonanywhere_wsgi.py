@@ -25,13 +25,16 @@ if project_home not in sys.path:
 os.chdir(project_home)
 
 # 2. Ortam değişkenlerini ayarla
-# PythonAnywhere web workers do not support long-lived background threads.
-# The separate pythonanywhere_worker.py Always-on task owns those services.
 os.environ["ENABLE_BACKGROUND_SERVICES"] = "true"
 os.environ["ENVIRONMENT"] = "production"
 os.environ["SECRET_KEY"] = "varantradar_secret_key_2026_prod_secure"
 os.environ["TELEGRAM_PRIMARY_HOST"] = "pythonanywhere"
 os.environ["IS_PRIMARY_TELEGRAM"] = "true"
 
-# 3. Flask uygulamasını 'application' olarak dışa aktar
-from server import app as application
+# 3. Flask uygulamasını 'application' olarak dışa aktar ve arka plan servislerini başlat
+from server import app as application, start_background_services
+
+try:
+    start_background_services()
+except Exception as _bg_err:
+    print(f"[WSGI] Arka plan servisleri baslatilirken hata: {_bg_err}")
