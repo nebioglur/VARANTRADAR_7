@@ -1847,16 +1847,16 @@
                         <button type="button" class="sim-pill sim-pill-accent" onclick="saveTelegramSettings()">
                             <i class="fa-solid fa-floppy-disk"></i> Kaydet
                         </button>
-                        <button type="button" class="sim-pill" onclick="testTelegramSettings()">
+                        <button id="tg-test-btn" type="button" class="sim-pill" onclick="testTelegramSettings(this)">
                             <i class="fa-solid fa-paper-plane"></i> Test Mesajı Gönder
                         </button>
-                        <button type="button" class="sim-pill" onclick="sendTavanCandidatesTelegram()" style="border-color:rgba(34,197,94,0.4); color:#4ade80;">
+                        <button id="tg-tavan-btn" type="button" class="sim-pill" onclick="sendTavanCandidatesTelegram(this)" style="border-color:rgba(34,197,94,0.4); color:#4ade80;">
                             <i class="fa-solid fa-feather-pointed"></i> Dağ Kekliğini Telegram'a Gönder
                         </button>
-                        <button type="button" class="sim-pill" onclick="sendSpecialRankingTelegram()" style="border-color:rgba(234,179,8,0.4); color:#facc15;">
+                        <button id="tg-special-ranking-btn" type="button" class="sim-pill" onclick="sendSpecialRankingTelegram(this)" style="border-color:rgba(234,179,8,0.4); color:#facc15;">
                             <i class="fa-solid fa-star"></i> Özel Sıralamayı Telegram'a Gönder
                         </button>
-                        <button type="button" class="sim-pill" onclick="sendMorningCompassTelegram()" style="border-color:rgba(56,189,248,0.4); color:#38bdf8;">
+                        <button id="tg-compass-btn" type="button" class="sim-pill" onclick="sendMorningCompassTelegram(this)" style="border-color:rgba(56,189,248,0.4); color:#38bdf8;">
                             <i class="fa-solid fa-compass"></i> Günün Pusulasını Gönder
                         </button>
                     </div>
@@ -2581,7 +2581,7 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="app.js?v=20261109_v40"></script>
+    <script src="app.js?v=20261109_v41"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js?v=20260916_v13"></script>
     <script>

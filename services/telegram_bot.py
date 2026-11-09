@@ -1571,7 +1571,7 @@ def get_special_ranking_candidates(all_symbols_stats: dict, top_n: int = 5) -> l
         if os.path.exists(db_path):
             conn = sqlite3.connect(db_path)
             cur = conn.cursor()
-            cur.execute("SELECT symbol, entry_price, stop_price, target1, target2, regime, metrics FROM signals WHERE status = 'ACTIVE' ORDER BY id DESC LIMIT 5")
+            cur.execute("SELECT symbol, entry_price, stop_price, target1, target2, market_regime, features_snapshot FROM v8_signals WHERE status = 'ACTIVE' ORDER BY timestamp DESC LIMIT 5")
             v8_rows = cur.fetchall()
             conn.close()
             for row in v8_rows:

@@ -3505,6 +3505,10 @@ def api_telegram_send_special_ranking():
     try:
         from services.telegram_bot import get_special_ranking_candidates, send_special_ranking_alert
         all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
+        if not all_stats:
+            persisted = load_dashboard_cache()
+            if persisted and isinstance(persisted, dict):
+                all_stats = persisted.get("all_symbols_stats", {})
         candidates = get_special_ranking_candidates(all_stats, top_n=5)
         if not candidates:
             return jsonify({"status": "warning", "message": "Filtrelere uyan özel sıralama adayı bulunamadı."}), 200

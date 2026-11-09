@@ -40,18 +40,20 @@ async function vrAuthorizedFetch(resource, options = {}) {
     try {
         const authKit = window.VerdentAuthKit;
         if (authKit) {
-            // Timeout: VerdentAuthKit Promise asılırsa 3 saniye sonra vazgeç
-            const kit = await Promise.race([
-                authKit,
-                new Promise((_, reject) => setTimeout(() => reject(new Error('AuthKit timeout')), 3000))
+            const tokenPromise = (async () => {
+                const kit = await authKit;
+                if (!kit?.supabase?.auth?.getSession) return null;
+                const { data } = await kit.supabase.auth.getSession();
+                return data?.session?.access_token;
+            })();
+            const token = await Promise.race([
+                tokenPromise,
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Auth timeout')), 1000))
             ]);
-            const { supabase } = kit;
-            const { data } = await supabase.auth.getSession();
-            const token = data?.session?.access_token;
             if (token) headers.set('Authorization', `Bearer ${token}`);
         }
     } catch (e) {
-        console.warn('[Auth] Token alınamadı (devam ediliyor):', e.message || e);
+        console.warn('[Auth] Token alinamadi (cookie ile devam ediliyor):', e.message || e);
     }
     return fetch(resource, { ...options, headers, credentials: 'include' });
 }
@@ -4510,20 +4512,31 @@ async function saveTelegramSettings() {
     }
 }
 
-async function testTelegramSettings() {
-    _tgShowMsg('Test mesajı gönderiliyor...', true);
+async function testTelegramSettings(btnEl) {
+    const btn = btnEl || document.getElementById('tg-test-btn');
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gönderiliyor...';
+    }
+    _tgShowMsg('Test mesajı Telegram\'a gönderiliyor...', true);
     try {
         const res = await vrAuthorizedFetch('/api/telegram/test', { method: 'POST' });
         const data = await res.json();
-        _tgShowMsg(data.message || (data.status === 'success' ? 'Gönderildi.' : 'Başarısız.'), data.status === 'success');
+        _tgShowMsg(data.message || (data.status === 'success' ? '✅ Gönderildi.' : '⚠️ Başarısız.'), data.status === 'success');
         if (data.status === 'success') refreshTelegramStatus();
     } catch (e) {
-        _tgShowMsg('Bağlantı hatası: ' + e.message, false);
+        _tgShowMsg('❌ Bağlantı hatası: ' + e.message, false);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
     }
 }
 
-async function sendSpecialRankingTelegram() {
-    const btn = document.getElementById('all-stocks-tg-send-btn');
+async function sendSpecialRankingTelegram(btnEl) {
+    const btn = btnEl || document.getElementById('tg-special-ranking-btn') || document.getElementById('all-stocks-tg-send-btn');
     const origHtml = btn ? btn.innerHTML : '';
     if (btn) {
         btn.disabled = true;
@@ -4536,17 +4549,13 @@ async function sendSpecialRankingTelegram() {
         const data = await res.json();
         if (data.status === 'success') {
             _tgShowMsg('✅ ' + data.message, true);
-            alert('✅ ' + data.message);
         } else if (data.status === 'warning') {
             _tgShowMsg('⚠️ ' + data.message, false);
-            alert('⚠️ ' + data.message);
         } else {
             _tgShowMsg('❌ Hata: ' + (data.message || 'Gönderilemedi.'), false);
-            alert('❌ ' + (data.message || 'Gönderilemedi.'));
         }
     } catch (e) {
         _tgShowMsg('❌ Bağlantı hatası: ' + e.message, false);
-        alert('❌ Bağlantı hatası: ' + e.message);
     } finally {
         if (btn) {
             btn.disabled = false;
@@ -4555,42 +4564,57 @@ async function sendSpecialRankingTelegram() {
     }
 }
 
-async function sendMorningCompassTelegram() {
+async function sendMorningCompassTelegram(btnEl) {
+    const btn = btnEl || document.getElementById('tg-compass-btn');
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gönderiliyor...';
+    }
     _tgShowMsg('Günün Pusulası Telegram\'a gönderiliyor...', true);
     try {
         const res = await vrAuthorizedFetch('/api/telegram/send_morning_compass', { method: 'POST' });
         const data = await res.json();
         if (data.status === 'success') {
             _tgShowMsg('✅ ' + data.message, true);
-            alert('✅ ' + data.message);
         } else {
             _tgShowMsg('❌ Hata: ' + (data.message || 'Gönderilemedi.'), false);
-            alert('❌ ' + (data.message || 'Gönderilemedi.'));
         }
     } catch (e) {
         _tgShowMsg('❌ Bağlantı hatası: ' + e.message, false);
-        alert('❌ Bağlantı hatası: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
     }
 }
 
-async function sendTavanCandidatesTelegram() {
+async function sendTavanCandidatesTelegram(btnEl) {
+    const btn = btnEl || document.getElementById('tg-tavan-btn');
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gönderiliyor...';
+    }
     _tgShowMsg('Dağ Kekliği & Tavan Sinyalleri Telegram\'a gönderiliyor...', true);
     try {
         const res = await vrAuthorizedFetch('/api/telegram/send_tavan_candidates', { method: 'POST' });
         const data = await res.json();
         if (data.status === 'success') {
             _tgShowMsg('✅ ' + data.message, true);
-            alert('✅ ' + data.message);
         } else if (data.status === 'warning') {
             _tgShowMsg('⚠️ ' + data.message, false);
-            alert('⚠️ ' + data.message);
         } else {
             _tgShowMsg('❌ Hata: ' + (data.message || 'Gönderilemedi.'), false);
-            alert('❌ ' + (data.message || 'Gönderilemedi.'));
         }
     } catch (e) {
         _tgShowMsg('❌ Bağlantı hatası: ' + e.message, false);
-        alert('❌ Bağlantı hatası: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
     }
 }
 
