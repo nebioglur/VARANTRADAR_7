@@ -3585,9 +3585,10 @@ def api_simulation_send_telegram():
         count = int(totals['c'] or 0) if totals else 0
         pct = profit / base * 100 if base > 0 else 0.0
         from services.telegram_bot import send_simulation_report
-        if send_simulation_report(count, profit, pct, date_str, owner, force=force):
+        ok = send_simulation_report(count, profit, pct, date_str, owner, force=force)
+        if ok:
             return jsonify({"status": "success", "message": "Gün sonu kâr/zarar raporu ve hisseler Telegram'a başarıyla gönderildi."})
-        return jsonify({"status": "error", "message": "Telegram gönderilemedi; ayarları kontrol edin."}), 503
+        return jsonify({"status": "error", "message": f"Telegram gönderilemedi (count={count}, profit={profit:.2f}, owner={owner})."}), 500
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -4964,6 +4965,10 @@ def api_telegram_test_suite():
         if test_type in ('all', 'eod'):
             ok = notify_sim_trade('THYAO.IS', 'SAT (GUN SONU)', 314.80, 3.38, '17:50 Seans Sonu Nakde Geçiş', today_s, dummy_trade)
             results['sim_eod'] = ok
+
+        if test_type in ('all', 'report'):
+            ok = send_simulation_report(date_str=today_s, force=True)
+            results['simulation_report'] = ok
 
         if test_type in ('all', 'ranking'):
             all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
