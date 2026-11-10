@@ -285,7 +285,7 @@ class OutcomeEngine:
             mfe = round(max(float(r["max_favorable_excursion"] or 0), mfe_calc), 2)
             mae = round(min(float(r["max_adverse_excursion"] or 0), mae_calc), 2)
 
-final_res = r["final_result"] or "PENDING"
+            final_res = r["final_result"] or "PENDING"
             if mfe >= 3.0:
                 final_res = "WIN"
             elif mae <= -2.0:

@@ -414,8 +414,16 @@ class SimulationEngine:
         signals = MarketDataManager.get_signals(date_str)
         # V8 Breakout 'ENTER' sinyallerini de doğrudan en başa ekle:
         try:
-            from server import get_v8_breakout_data
-            v8_bos = get_v8_breakout_data() or []
+            v8_bos = []
+            if os.path.exists("v8_breakout_cache.json"):
+                with open("v8_breakout_cache.json", "r", encoding="utf-8") as _v8f:
+                    v8_bos = json.load(_v8f).get("data", [])
+            if not v8_bos:
+                try:
+                    from server import get_v8_breakout_data
+                    v8_bos = get_v8_breakout_data() or []
+                except Exception:
+                    pass
             v8_al = [x for x in v8_bos if (x.get("entry_status") or "").upper() == "ENTER"]
             seen_syms = {s.get("symbol") for s in (signals or [])}
             v8_sig_list = []
