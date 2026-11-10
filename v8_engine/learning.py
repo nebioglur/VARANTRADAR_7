@@ -32,15 +32,29 @@ class OutcomeEngine:
         """
         from v8_engine.database import V8Database
 
-        signal_id = str(uuid.uuid4())
-
-        # Sunucu TZ'sinden bagimsiz olarak Istanbul naive zaman damgasi
-        # (Render UTC calisir; bar index'leri Istanbul oldugu icin tutarli olmali)
         try:
             from zoneinfo import ZoneInfo
             _now = datetime.now(ZoneInfo("Europe/Istanbul")).replace(tzinfo=None)
         except Exception:
             _now = datetime.now()
+
+        # DEDUP: Ayni hisse icin bugun zaten acik bir sinyal varsa tekrar olusturma, ilk sinyali koru
+        today_prefix = _now.strftime("%Y-%m-%d")
+        try:
+            conn_chk = V8Database.get_connection()
+            c_chk = conn_chk.cursor()
+            c_chk.execute(
+                "SELECT signal_id FROM v8_signals WHERE symbol=? AND timestamp LIKE ? ORDER BY timestamp ASC LIMIT 1",
+                (symbol, f"{today_prefix}%")
+            )
+            existing_row = c_chk.fetchone()
+            conn_chk.close()
+            if existing_row:
+                return existing_row["signal_id"]
+        except Exception as _dedup_e:
+            pass
+
+        signal_id = str(uuid.uuid4())
 
         metrics = breakout_data.get("metrics", {}) or {}
         try:
@@ -148,6 +162,22 @@ class OutcomeEngine:
         from v8_engine.database import V8Database
         conn = V8Database.get_connection()
         cursor = conn.cursor()
+
+        # Duplicate temizligi: ayni hisse ve ayni gun icin birden fazla kayit varsa ilk kaydi koru
+        try:
+            cursor.execute("""
+                DELETE FROM v8_signals 
+                WHERE rowid NOT IN (
+                    SELECT MIN(rowid) FROM v8_signals GROUP BY symbol, substr(timestamp, 1, 10)
+                )
+            """)
+            cursor.execute("""
+                DELETE FROM v8_outcomes 
+                WHERE signal_id NOT IN (SELECT signal_id FROM v8_signals)
+            """)
+            conn.commit()
+        except Exception:
+            pass
 
         try:
             from zoneinfo import ZoneInfo
