@@ -1249,6 +1249,25 @@ def require_auth():
     if request.path == '/apk/VarantRadarPro.apk' or request.path.startswith('/apk/') or request.path.startswith('/ios/') or request.path == '/download/ios':
         return
 
+    # Salt Okunur (GET) Simülasyon, V8 ve Piyasa Dedektifi istekleri misafirlere de açıktır (bağlantı hatası / 401 önlenir)
+    if request.method == 'GET' and (
+        request.path in (
+            '/api/simulation/daily_pnl',
+            '/api/simulation/summary',
+            '/api/simulation/trades',
+            '/api/simulation/live_orders',
+            '/api/v8/market/regime',
+            '/api/v8/radar/breakout',
+            '/api/v8/radar/discovery',
+            '/api/v8/playbook',
+            '/api/v8/weekly',
+            '/api/v8/learning/outcomes',
+            '/api/detective',
+            '/api/dashboard_init'
+        ) or request.path.startswith('/api/v8/')
+    ):
+        return
+
     if not session.get('logged_in'):
         # Dogrudan Bearer token ile gelen API istekleri (script/araclar icin)
         auth_header = request.headers.get('Authorization', '')
@@ -2482,6 +2501,14 @@ def api_system_push_market_data():
                     dash_data['v8_market_regime'] = fresh_reg
             except Exception as _e_reg:
                 print(f"[PUSH REGIME ERROR] {_e_reg}")
+            # Gelen verideki bayat/Eylul 2026 rejimlerini temizle
+            inc_reg = dash_data.get('v8_market_regime') or {}
+            if inc_reg.get('stale') or '2026-09' in str(inc_reg.get('timestamp') or ''):
+                try:
+                    from v8_engine.regime import V8RegimeEngine
+                    dash_data['v8_market_regime'] = V8RegimeEngine()._calculate_from_market_stats(all_stats=stats, xu100_val=xu100_val)
+                except Exception:
+                    pass
             save_dashboard_cache(dash_data)
             GLOBAL_DASHBOARD_CACHE = dash_data
 
@@ -3443,19 +3470,19 @@ def api_simulation_daily_pnl():
             # Saat 17:50 ve sonrasında açıkta kalan tüm pozisyonlar kesin olarak kapatılıp %100 nakde geçirilir.
             _now_ist = datetime.now(ZoneInfo("Europe/Istanbul")) if ZoneInfo else datetime.now()
             _today_ist = _now_ist.strftime("%Y-%m-%d")
-            if _now_ist.time() >= time(17, 50):
-                c.execute('''
-                    UPDATE trades SET
-                        exit_time = date_str || ' 17:50:00',
-                        exit_price = CASE WHEN exit_price IS NOT NULL THEN exit_price WHEN shares > 0 THEN entry_price + (pnl_val / shares) ELSE entry_price END,
-                        realized_pnl = pnl_val,
-                        exit_reason = CASE
-                            WHEN exit_reason LIKE '%TP1%' THEN '⚖️ KADEMELİ TP1 (%50 SATILDI, STOP MALİYETE ÇEKİLDİ) + SEANS SONU NAKITE GECIS (17:50)'
-                            ELSE 'SEANS SONU NAKITE GECIS (17:50)'
-                        END
-                    WHERE exit_time IS NULL AND date_str <= ?
-                ''', (_today_ist,))
-                conn.commit()
+            should_close_today = _now_ist.time() >= time(17, 50)
+            c.execute('''
+                UPDATE trades SET
+                    exit_time = date_str || ' 17:50:00',
+                    exit_price = CASE WHEN exit_price IS NOT NULL THEN exit_price WHEN shares > 0 THEN entry_price + (pnl_val / shares) ELSE entry_price END,
+                    realized_pnl = pnl_val,
+                    exit_reason = CASE
+                        WHEN exit_reason LIKE '%TP1%' THEN '⚖️ KADEMELİ TP1 (%50 SATILDI, STOP MALİYETE ÇEKİLDİ) + SEANS SONU NAKITE GECIS (17:50)'
+                        ELSE 'SEANS SONU NAKITE GECIS (17:50)'
+                    END
+                WHERE exit_time IS NULL AND (date_str < ? OR (? = 1 AND date_str = ?))
+            ''', (_today_ist, 1 if should_close_today else 0, _today_ist))
+            conn.commit()
 
             # Fetch daily equity log (hesaba ozel, tum gecmis aylar dahil)
             c.execute("SELECT * FROM equity_log WHERE owner=? ORDER BY date_str ASC", (owner,))

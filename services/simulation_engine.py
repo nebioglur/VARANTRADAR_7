@@ -644,6 +644,34 @@ class SimulationEngine:
                 if _rel < 0.5:
                     continue
 
+            # 🛡️ PARA AKIŞI VE SATIŞ BASKISI EMNİYET KİLİDİ (HUNER ve Benzeri Düşüş Tuzaklarını KESİNLİKLE Engeller)
+            intra_strength = meta.get('intraday_strength', {}) if isinstance(meta, dict) else {}
+            h_flow = str(intra_strength.get('hourly_flow') or meta.get('hourly_flow') or '')
+            m_flow = str(intra_strength.get('money_flow_status') or meta.get('money_flow_status') or '')
+            intra_chg = float(intra_strength.get('intraday_change_pct') or meta.get('intraday_change_pct') or 0.0)
+            v8_fakeout = float((meta.get('v8_breakout') or {}).get('fakeout_risk') or meta.get('fakeout_risk') or 0.0)
+            v8_exec_status = str((meta.get('v8_execution') or {}).get('entry_status') or meta.get('entry_status') or '')
+
+            # Kural A: Para çıkışında veya saatlik satış baskısında olan hisseye KESİNLİKLE girilmez!
+            if h_flow in ('Satılıyor', 'Outflow') or m_flow in ('Outflow', 'Strong Outflow'):
+                print(f"[SIM-GUARD] {s.get('symbol')} elendi: Para çıkışı / Satış baskısı ({h_flow}/{m_flow})")
+                continue
+
+            # Kural B: Gün içi sert düşüşte olan hisseye (-%1.0 altı) girilmez!
+            if intra_chg < -1.0:
+                print(f"[SIM-GUARD] {s.get('symbol')} elendi: Gün içi sert düşüş (-%{abs(intra_chg):.2f})")
+                continue
+
+            # Kural C: Yüksek tuzak riski (> %25) elenir!
+            if v8_fakeout > 25.0:
+                print(f"[SIM-GUARD] {s.get('symbol')} elendi: Yüksek tuzak riski (%{v8_fakeout:.1f})")
+                continue
+
+            # Kural D: V8 Motoru açıkça NO_ENTRY / AVOID vermişse girilmez!
+            if v8_exec_status in ('NO_ENTRY', 'AVOID'):
+                print(f"[SIM-GUARD] {s.get('symbol')} elendi: V8 Motoru NO_ENTRY verdi")
+                continue
+
             indicators = meta.get('Indicators', {}) if isinstance(meta, dict) else {}
             rsi = float(indicators.get('RSI') or indicators.get('RSI_14') or meta.get('RSI') or 50)
             volume_multiplier = float(meta.get('Vol_Multiplier') or meta.get('Volume_Ratio') or indicators.get('Volume_Ratio') or r_vol or 1.2)

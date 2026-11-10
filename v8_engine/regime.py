@@ -347,18 +347,30 @@ class MarketRegimeEngine:
             row = c.fetchone()
             conn.close()
             if row is not None:
-                regime = row["regime"]
-                return {
-                    "regime": regime,
-                    "regime_code": regime,
-                    "score": row["regime_score"],
-                    "xu100_trend": row["xu100_trend"],
-                    "volatility_state": row["volatility_state"],
-                    "timestamp": row["timestamp"],
-                    "data_status": "STALE_LAST_KNOWN",
-                    "data_available": True,
-                    "stale": True,
-                }
+                ts_str = str(row["timestamp"])
+                age_days = 999
+                try:
+                    ts_dt = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+                    now_ist = datetime.now(ZoneInfo("Europe/Istanbul"))
+                    if ts_dt.tzinfo is None:
+                        ts_dt = ts_dt.replace(tzinfo=ZoneInfo("Europe/Istanbul"))
+                    age_days = (now_ist.date() - ts_dt.date()).days
+                except Exception:
+                    pass
+                # Sadece son 3 gün içindeki ve Eylül 2026 olmayan gerçekçi verileri kabul et
+                if age_days <= 3 and "2026-09" not in ts_str:
+                    regime = row["regime"]
+                    return {
+                        "regime": regime,
+                        "regime_code": regime,
+                        "score": row["regime_score"],
+                        "xu100_trend": row["xu100_trend"],
+                        "volatility_state": row["volatility_state"],
+                        "timestamp": row["timestamp"],
+                        "data_status": "LAST_KNOWN",
+                        "data_available": True,
+                        "stale": False,
+                    }
         except Exception as e:
             print(f"[V8 Regime Engine] Last-known lookup error: {e}")
         return self._default_regime(status)

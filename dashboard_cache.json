@@ -79579,20 +79579,6 @@
       "advance_ratio": 0.31,
       "bist30_avg": -0.01
     },
-    "leading_sectors": [
-      {
-        "sector": "HAVACILIK",
-        "change": 2.95
-      },
-      {
-        "sector": "DEMIR_CELIK",
-        "change": 1.38
-      },
-      {
-        "sector": "HOLDING",
-        "change": 0.57
-      }
-    ],
     "description": "Ayı / Satış Baskılı Düzeltme Piyasası"
   },
   "xu100_change": -0.43,

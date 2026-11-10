@@ -70,6 +70,14 @@ def sync_once():
     except Exception:
         pass
 
+    # Verdent'ten gelen eski (Eylül 2026 / bayat) rejim verilerini temizle
+    if "v8_market_regime" in dash_data:
+        vmr = dash_data.get("v8_market_regime") or {}
+        if vmr.get("stale") or "2026-09" in str(vmr.get("timestamp") or ""):
+            print(f"[{t_str}] [TEMİZLİK] Verdent'ten gelen bayat rejim verisi ({vmr.get('regime')}, {vmr.get('xu100_trend')}%) temizlendi.")
+            dash_data.pop("v8_market_regime", None)
+            xu100_change = None
+
     # 4. PythonAnywhere'e Veri Enjekte Et (Push Market Data)
     payload = {
         "token": AUTH_TOKEN,

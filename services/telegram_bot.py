@@ -814,11 +814,33 @@ def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.
         local_now = datetime.now(ZoneInfo("Europe/Istanbul"))
         if event_dt.tzinfo is None:
             event_dt = event_dt.replace(tzinfo=ZoneInfo("Europe/Istanbul"))
-        # KULLANICI ISTEGI: gecmis gun kapanislari dahil TUM trade olaylari
-        # Telegram'a gider (eskisi gibi). Yalnizca gelecekteki bozuk/zaman
-        # tasmali olaylar engellenir; dedup zaten mukerrer mesaji onler.
+        today_str = local_now.strftime("%Y-%m-%d")
+
+        # 🛡️ GERÇEK PARA GÜVENLİK FİLTRESİ 1: Gelecek zamanlı bozuk sinyalleri engelle
         if event_dt > local_now + timedelta(minutes=5):
+            logger.info(f"[TG-FILTER] Gelecek zamanlı sinyal engellendi: {symbol} ({event_time})")
             return True
+
+        # 🛡️ GERÇEK PARA GÜVENLİK FİLTRESİ 2: Sadece BUGÜNÜN CANLI SEANS AL SİNYALLERİ GİDER!
+        # Kullanıcı simülasyon bildirimleriyle gerçek para pozisyonu aldığı için,
+        # geçmiş gün veya 15 dakikadan eski replay sinyalleri KESİNLİKLE Telegram'a gönderilmez.
+        if "AL" in action:
+            if date_str != today_str:
+                logger.info(f"[TG-FILTER] Geçmiş gün ({date_str} != {today_str}) AL sinyali engellendi: {symbol}")
+                return True
+            if event_dt < local_now - timedelta(minutes=15):
+                logger.info(f"[TG-FILTER] 15 dakikadan eski ({event_time}) geçmiş AL sinyali engellendi: {symbol}")
+                return True
+            # Seans saati kontrolü: 10:00 - 17:35 dışındaki AL sinyallerini engelle
+            ev_time_val = event_dt.time()
+            from datetime import time as _dt_time
+            if ev_time_val < _dt_time(10, 0) or ev_time_val > _dt_time(17, 35):
+                logger.info(f"[TG-FILTER] Seans dışı ({ev_time_val}) AL sinyali engellendi: {symbol}")
+                return True
+        elif "SAT" in action or "TP" in action or "STOP" in action:
+            if date_str != today_str and event_dt < local_now - timedelta(hours=2):
+                logger.info(f"[TG-FILTER] Eski tarihli çıkış bildirimi filtrelendi: {symbol} ({date_str})")
+                return True
     except (TypeError, ValueError):
         logger.warning("Simulasyon Telegram olayi icin zaman okunamadi: %s", event_time)
         return False
@@ -969,9 +991,12 @@ def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.
         
         text += "🎯 <b>HEDEFLER VE RİSK PLANI</b>\n"
         text += "━━━━━━━━━━━━━━━━━━━━\n"
-        text += f"💰 <b>1. Kâr Al (TP1):</b> ₺{tp1:.2f} (<b>+%2.2</b>) ➡️ <i>Yarısı satılır</i>\n"
-        text += f"🛑 <b>Zarar Kes (Stop):</b> ₺{sl:.2f} (<b>-%2.5</b>)\n"
-        text += f"🛡️ <b>Sıfır Risk:</b> +%1.8 kârda stop maliyet üstüne taşınır\n\n"
+        tp2 = trade.get('tp2_price', 0) or (round(price * 1.045, 2) if price else 0)
+        text += f"💰 <b>1. Kâr Al (TP1):</b> ₺{tp1:.2f} (<b>+%2.2</b>) ➡️ <i>Yarısı (%50) satılır, stop maliyete çekilir</i>\n"
+        text += f"🎯 <b>2. Kâr Al (TP2):</b> ₺{tp2:.2f} (<b>+%4.5</b>) ➡️ <i>Kalan pozisyon satılır</i>\n"
+        text += f"🛑 <b>Zarar Kes (Stop):</b> ₺{sl:.2f} (<b>-%2.5</b>) ➡️ <i>Kesin disiplin</i>\n"
+        text += f"🛡️ <b>Sıfır Risk:</b> +%1.8 kârda stop maliyet üstüne taşınır\n"
+        text += f"⏰ <b>17:50 Disiplini:</b> Gün sonu taşınmaz, 17:50'de %100 nakde geçilir!\n\n"
         
         sr_block = _sr_text_block(symbol)
         text += "📊 <b>TEKNİK VE SEVİYELER</b>\n"
