@@ -2463,12 +2463,19 @@ def api_system_push_market_data():
         except Exception as e_sim:
             sim_res = {'status': 'error', 'message': str(e_sim)}
 
+        v8_sent = False
+        try:
+            v8_sent = auto_send_v8_signals()
+        except Exception:
+            pass
+
         return jsonify({
             'status': 'success',
             'date': date_str,
             'symbols_count': len(stats),
             'candidates_count': len(all_cands),
-            'simulation': sim_res
+            'simulation': sim_res,
+            'v8_telegram_sent': v8_sent
         })
     except Exception as exc:
         import traceback
@@ -4280,23 +4287,211 @@ def _v8_gate_enter_row(row: dict, sym: str, data: dict) -> dict:
         row["entry_reasons"] = [f"[TEYİT] {cmsg}"] + list(row.get("entry_reasons") or [])
     return row
 
-def auto_send_v8_signals(candidates=None):
-    """GERCEK giris onayli V8 sinyallerini (erken adaylar haric) otomatik olarak
-    Telegram kanalina TEK GRUPLU OZET olarak gonderir.
-    - Hisse basina gunde EN FAZLA 1 sinyal (gunluk oncelikli, saatlik ikame).
-    - Gonderim kaydi veritabaninda kalici: yeniden baslamada tekrar yok.
-    - Ayi piyasasinda sinyal gitmez; Telegram ayarlari yoksa sessiz atlar."""
+def get_v8_breakout_data():
+    """V8 Kırılım Radarının tam listesini ve metriklerini deterministik olarak hesaplar.
+    Hem web arayüzü (/api/v8/radar/breakout) hem de Telegram bildirimleri
+    birebir bu fonksiyonun sonucunu kullanır; liste asla farklılaşamaz."""
+    all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
+    if not all_stats:
+        try:
+            with open(CACHE_FILE, "r", encoding="utf-8") as _f_cache:
+                _f_data = json.load(_f_cache)
+                all_stats = _f_data.get("all_symbols_stats", {})
+        except Exception:
+            pass
+    breakout_list = []
+    cache_ts = GLOBAL_DASHBOARD_CACHE.get("cache_timestamp")
+    current_regime = (GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or {}).get("regime", "NEUTRAL")
+    from v8_engine.execution import ExecutionEngine as _DynExecEngine
+    _dyn_exec = _DynExecEngine()
+    regime_data = GLOBAL_DASHBOARD_CACHE.get("v8_market_regime", {}) or {}
+    if not regime_data or not regime_data.get("data_available"):
+        try:
+            from v8_engine.regime import V8RegimeEngine
+            fresh_regime = V8RegimeEngine().determine_regime()
+            if isinstance(fresh_regime, dict) and fresh_regime.get("data_available"):
+                regime_data = fresh_regime
+                GLOBAL_DASHBOARD_CACHE["v8_market_regime"] = fresh_regime
+        except Exception as e:
+            print(f"[V8 RADAR] Fresh regime calculation error: {e}")
+
+    try:
+        from v8_engine.entry_approval import evaluate_entry_approval
+    except Exception:
+        evaluate_entry_approval = None
+
+    def _apply_v8_final_gate(row):
+        if (row.get("entry_status") or "").upper() != "ENTER":
+            return row
+        if evaluate_entry_approval is None:
+            row["entry_status"] = "WAIT_CONFIRMATION"
+            row["entry_reasons"] = ["V8 nihai onay motoru yüklenemedi"] + list(row.get("entry_reasons") or [])
+            return row
+        approval = evaluate_entry_approval(
+            regime=regime_data,
+            breakout=row,
+            risk=None,
+            warrant=None,
+        )
+        row["entry_approval"] = approval
+        if not approval.get("approved"):
+            row["entry_status"] = "WAIT_CONFIRMATION"
+            row["entry_reasons"] = list(approval.get("reasons") or ["V8 nihai giriş onayı başarısız"]) + list(row.get("entry_reasons") or [])
+        return row
+
+    for sym, data in all_stats.items():
+        if data.get("Price_Stale") and not data.get("v8_breakout", {}).get("is_breakout"):
+            continue
+        bo = data.get("v8_breakout")
+        if bo and bo.get("is_breakout"):
+            row = dict(bo)
+            row["symbol"] = sym
+            row["price"] = _v8_live_price(data)
+            row["change_pct"] = data.get("Change_Pct", 0.0)
+            row["volume"] = data.get("Volume", 0)
+            row["volume_strength"] = _stats_rel_vol(data)
+            row["scan_timestamp"] = cache_ts
+            eval_res = _dyn_exec.evaluate_entry(bo, current_regime)
+            row["entry_status"] = eval_res.get("entry_status", "UNKNOWN")
+            row["entry_reasons"] = eval_res.get("reasons", [])
+            row["momentum_speed"] = eval_res.get("momentum_speed", "NORMAL")
+            row["timeframe_quality"] = eval_res.get("timeframe_quality", 0)
+            row = _v8_gate_enter_row(row, sym, data)
+            row = _apply_v8_final_gate(row)
+            breakout_list.append(row)
+            continue
+
+        if not (bo and bo.get("is_breakout")):
+            intra = data.get("v8_breakout_1h") or {}
+            intra_bo = intra.get("breakout") or {}
+            if intra_bo.get("is_breakout") and intra.get("entry_status") == "ENTER":
+                row = dict(intra_bo)
+                row["symbol"] = sym
+                row["price"] = _v8_live_price(data)
+                row["change_pct"] = data.get("Change_Pct", 0.0)
+                row["volume"] = data.get("Volume", 0)
+                row["volume_strength"] = _stats_rel_vol(data)
+                row["scan_timestamp"] = cache_ts
+                row["entry_status"] = "ENTER"
+                row["entry_reasons"] = ["1 saatlik barda kırılım teyidi (gün içi sinyal)"] + list(intra.get("reasons") or [])
+                row["intraday_signal"] = True
+                row["momentum_speed"] = intra.get("momentum_speed", "NORMAL")
+                row["timeframe_quality"] = intra.get("timeframe_quality", 0)
+                row = _v8_gate_enter_row(row, sym, data)
+                row = _apply_v8_final_gate(row)
+                breakout_list.append(row)
+                continue
+
+        disc = data.get("v8_discovery") or {}
+        state = disc.get("state")
+        if state in ("READY", "PREPARING", "WATCH"):
+            metrics = disc.get("metrics") or {}
+            rel_vol = _stats_rel_vol(data)
+            breakout_list.append({
+                "symbol": sym,
+                "price": _v8_live_price(data),
+                "change_pct": data.get("Change_Pct", 0.0),
+                "volume": data.get("Volume", 0),
+                "is_breakout": False,
+                "status": "DISCOVERY_" + state,
+                "breakout_score": disc.get("preparation_score", 0.0),
+                "fakeout_risk": 0.0,
+                "metrics": {
+                    "relative_volume": rel_vol,
+                    "rsi": data.get("RSI", 50.0),
+                },
+                "volume_strength": rel_vol,
+                "scan_timestamp": cache_ts,
+                "entry_status": "WAIT",
+                "entry_reasons": disc.get("reasons") or [
+                    "Kırılım bekleniyor; hazırlık sinyali mevcut."
+                ],
+                "momentum_speed": "PREPARING",
+            })
+        elif data.get("Daily_Close") or data.get("Price"):
+            price = _v8_live_price(data)
+            change = float(data.get("Change_Pct") or 0)
+            rel_vol = _stats_rel_vol(data)
+            fallback_score = max(35.0, min(65.0, 48.0 + change * 2.0 + (rel_vol - 1.0) * 5.0))
+            breakout_list.append({
+                "symbol": sym,
+                "price": price,
+                "change_pct": change,
+                "volume": data.get("Volume", 0),
+                "is_breakout": False,
+                "status": "DISCOVERY_WATCH",
+                "breakout_score": round(fallback_score, 1),
+                "fakeout_risk": 0.0,
+                "metrics": {"relative_volume": rel_vol, "rsi": data.get("RSI", 50.0)},
+                "volume_strength": rel_vol,
+                "scan_timestamp": cache_ts,
+                "entry_status": "WAIT",
+                "entry_reasons": ["Günlük tarama adayı; V8 kırılım teyidi bekleniyor."],
+                "momentum_speed": "NORMAL",
+            })
+
+    breakout_list = sorted(
+        breakout_list,
+        key=lambda x: (
+            x.get("entry_status") == "ENTER",
+            x.get("breakout_score", 0) - x.get("fakeout_risk", 0),
+        ),
+        reverse=True,
+    )[:80]
+
+    try:
+        from v8_engine.playbook import get_scenario
+        _regime_now_pb = (GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or {}).get("regime", "NEUTRAL")
+        _scenario = get_scenario(_regime_now_pb)
+        for row in breakout_list:
+            row["scenario"] = {
+                "label": _scenario["label"],
+                "icon": _scenario["icon"],
+                "risk_pct": _scenario["risk_pct"],
+                "tp1_mult": _scenario["tp1_mult"],
+                "tp2_mult": _scenario["tp2_mult"],
+                "stop_mult": _scenario["stop_mult"],
+                "posture": _scenario["posture"],
+            }
+    except Exception:
+        pass
+
+    _def_rows = [r for r in breakout_list if r.get("defense_mode") and (r.get("entry_status") or "").upper() == "ENTER"]
+    if len(_def_rows) > 1:
+        _def_rows.sort(key=lambda r: r.get("breakout_score") or 0, reverse=True)
+        for r in _def_rows[1:]:
+            r["entry_status"] = "WAIT_CONFIRMATION"
+            r["defense_mode"] = False
+            r["entry_reasons"] = ["[SAVUNMA] Ayı gününde en fazla 1 savunma işlemi açılır; bu aday limite takıldı"] + list(r.get("entry_reasons") or [])
+
+    for row in breakout_list:
+        try:
+            chg = float(row.get("change_pct") or row.get("intraday_change_pct") or 0)
+        except (TypeError, ValueError):
+            chg = 0.0
+        if chg >= 9.2:
+            row["entry_status"] = "NO_ENTRY"
+            row["ceiling_risk"] = True
+            row["entry_reasons"] = [
+                f"[TAVAN RİSKİ] +{chg:.1f} ile kovalama bölgesinde; tavan sonrası teyit beklenmeli"
+            ] + list(row.get("entry_reasons") or [])
+
+    return breakout_list
+
+
+def auto_send_v8_signals(candidates=None, force=False):
+    """GERÇEK giriş onaylı V8 sinyallerini (erken adaylar hariç) otomatik olarak
+    Telegram kanalına TEK GRUPLU ÖZET olarak gönderir.
+    Web sayfasındaki 6 adet Giriş Onaylı hisse ile %100 BİREBİR AYNI LİSTEDİR."""
     try:
         from datetime import datetime as _dt
         from services.telegram_bot import send_v8_entry_signals_group as _send_group
         from v8_engine.database import V8Database as _V8DB
-        all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
-        cache_ts = GLOBAL_DASHBOARD_CACHE.get("cache_timestamp")
+
         _today = _dt.now().strftime("%Y-%m-%d")
         if len(_V8_TG_SENT) > 500:
             _V8_TG_SENT.clear()
 
-        # Kalici tekrar engeli: bugun gonderilenleri DB'den oku
         try:
             conn = _V8DB.get_connection()
             cur = conn.cursor()
@@ -4308,120 +4503,72 @@ def auto_send_v8_signals(candidates=None):
             pass
 
         regime_locked = _v8_regime_locked()
+        if regime_locked and not force:
+            logging.info("[V8-TG] Piyasa rejimi kilitli; sinyal gönderimi durduruldu.")
+            return False
+
         regime_raw = (GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or {}).get("regime", "")
         _V8_REGIME_TR_MAP = {
             "STRONG_BULL": "GÜÇLÜ BOĞA (RALLİ)", "BULL": "BOĞA (YÜKSELİŞ TRENDİ)",
             "NEUTRAL": "NÖTR (YATAY / DENGE)", "BEAR": "AYI (DÜŞÜŞ BASKISI)",
             "STRONG_BEAR": "GÜÇLÜ AYI (SERT SATIŞ)",
         }
+        cache_ts = GLOBAL_DASHBOARD_CACHE.get("cache_timestamp")
         try:
             scan_time = _dt.fromtimestamp(float(cache_ts)).strftime("%d.%m.%Y %H:%M") if cache_ts else ""
         except (TypeError, ValueError, OSError):
             scan_time = ""
 
+        # Adaylar verilmemişse V8 Breakout motorunun tam teyitli Giriş Onaylı listesini hesapla:
+        if candidates is None:
+            bo_list = get_v8_breakout_data()
+            candidates = [x for x in bo_list if (x.get("entry_status") or "").upper() == "ENTER"]
+
         pending = []
+        for item in candidates:
+            sym = item.get("symbol")
+            if not sym:
+                continue
+            key = (_today, sym)
+            if not force and key in _V8_TG_SENT:
+                continue
+            if (item.get("entry_status") or "").upper() != "ENTER":
+                continue
+            entry = float(item.get("price") or item.get("Daily_Close") or 0)
+            if entry <= 0:
+                continue
+            if item.get("ceiling_risk") or float(item.get("change_pct") or 0) >= 9.2:
+                continue
 
-        if candidates is not None:
-            # Doğrudan breakout radarından onaylanmış adaylar geldiğinde:
-            for item in candidates:
-                sym = item.get("symbol")
-                if not sym:
-                    continue
-                key = (_today, sym)
-                if key in _V8_TG_SENT:
-                    continue
-                if regime_locked:
-                    continue
-                if (item.get("entry_status") or "").upper() != "ENTER":
-                    continue
-                entry = float(item.get("price") or item.get("Daily_Close") or 0)
-                if entry <= 0:
-                    continue
-                # Tavan riski olanlar gitmez
-                if item.get("ceiling_risk") or float(item.get("change_pct") or 0) >= 9.2:
-                    continue
+            metrics = item.get("metrics") or {}
+            try:
+                atr_pct = float(metrics.get("atr_pct") or 0)
+            except (TypeError, ValueError):
+                atr_pct = 0.0
+            if atr_pct > 0:
+                stop_d = max(2.0, min(8.0, atr_pct * 1.5))
+                t1_d = max(2.0, min(10.0, atr_pct * 1.5))
+                t2_d = max(3.0, min(15.0, atr_pct * 2.5))
+            else:
+                stop_d, t1_d, t2_d = 5.0, 3.0, 5.0
 
-                metrics = item.get("metrics") or {}
-                try:
-                    atr_pct = float(metrics.get("atr_pct") or 0)
-                except (TypeError, ValueError):
-                    atr_pct = 0.0
-                if atr_pct > 0:
-                    stop_d = max(2.0, min(8.0, atr_pct * 1.5))
-                    t1_d = max(2.0, min(10.0, atr_pct * 1.5))
-                    t2_d = max(3.0, min(15.0, atr_pct * 2.5))
-                else:
-                    stop_d, t1_d, t2_d = 5.0, 3.0, 5.0
-
-                reasons = item.get("entry_reasons") or []
-                pending.append({
-                    "symbol": sym,
-                    "entry_price": entry,
-                    "stop_price": entry * (1 - stop_d / 100.0),
-                    "target1": entry * (1 + t1_d / 100.0),
-                    "target2": entry * (1 + t2_d / 100.0),
-                    "breakout_score": item.get("breakout_score", 0),
-                    "fakeout_risk": item.get("fakeout_risk", 0),
-                    "reason": reasons[0] if reasons else "V8 Kırılım Giriş Onayı",
-                    "market_regime": _V8_REGIME_TR_MAP.get(regime_raw, regime_raw),
-                    "scan_time": scan_time,
-                })
-        else:
-            for sym, data in all_stats.items():
-                key = (_today, sym)
-                if key in _V8_TG_SENT:
-                    continue
-                if regime_locked:
-                    continue
-                bo = data.get("v8_breakout")
-                intra = data.get("v8_breakout_1h") or {}
-                daily_ok = bool(bo and bo.get("is_breakout") and (data.get("v8_execution") or {}).get("entry_status") == "ENTER")
-                intra_ok = bool(intra.get("breakout", {}).get("is_breakout") and intra.get("entry_status") == "ENTER")
-                if daily_ok:
-                    bo_row, reasons = bo, list((data.get("v8_execution") or {}).get("reasons") or [])
-                elif intra_ok:
-                    bo_row, reasons = intra.get("breakout") or {}, ["1 saatlik barda kırılım teyidi (gün içi sinyal)"] + list(intra.get("reasons") or [])
-                else:
-                    continue
-                entry = float(data.get("Price") or data.get("Daily_Close") or 0)
-                if entry <= 0:
-                    continue
-                try:
-                    from services.kap_news import check_symbol as _kap_check
-                    if _kap_check(sym).get("blocked"):
-                        continue
-                except Exception:
-                    pass
-                if not _v8_a_class_gate({}, sym, data)[0]:
-                    continue
-                cstate, _cmsg = _v8_entry_confirmation(sym, data.get("Price") or entry)
-                if cstate != "CONFIRMED":
-                    continue
-                try:
-                    atr_pct = float((bo_row.get("metrics") or {}).get("atr_pct") or 0)
-                except (TypeError, ValueError):
-                    atr_pct = 0.0
-                if atr_pct > 0:
-                    stop_d = max(2.0, min(8.0, atr_pct * 1.5))
-                    t1_d = max(2.0, min(10.0, atr_pct * 1.5))
-                    t2_d = max(3.0, min(15.0, atr_pct * 2.5))
-                else:
-                    stop_d, t1_d, t2_d = 5.0, 3.0, 5.0
-                pending.append({
-                    "symbol": sym,
-                    "entry_price": entry,
-                    "stop_price": entry * (1 - stop_d / 100.0),
-                    "target1": entry * (1 + t1_d / 100.0),
-                    "target2": entry * (1 + t2_d / 100.0),
-                    "breakout_score": bo_row.get("breakout_score", 0),
-                    "fakeout_risk": bo_row.get("fakeout_risk", 0),
-                    "reason": (reasons or [""])[0],
-                    "market_regime": _V8_REGIME_TR_MAP.get(regime_raw, regime_raw),
-                    "scan_time": scan_time,
-                })
+            reasons = item.get("entry_reasons") or []
+            pending.append({
+                "symbol": sym,
+                "entry_price": entry,
+                "stop_price": entry * (1 - stop_d / 100.0),
+                "target1": entry * (1 + t1_d / 100.0),
+                "target2": entry * (1 + t2_d / 100.0),
+                "breakout_score": item.get("breakout_score", 0),
+                "fakeout_risk": item.get("fakeout_risk", 0),
+                "reason": reasons[0] if reasons else "V8 Kırılım Giriş Onayı",
+                "market_regime": _V8_REGIME_TR_MAP.get(regime_raw, regime_raw),
+                "scan_time": scan_time,
+            })
 
         if not pending:
-            return
+            return False
+
         ok = _send_group(pending)
         if ok:
             for s in pending:
@@ -4439,11 +4586,57 @@ def auto_send_v8_signals(candidates=None):
                 conn.close()
             except Exception:
                 pass
-            logger.info("[V8-TG] Gruplu sinyal ozeti gonderildi: %s hisse", len(pending))
+            logging.info("[V8-TG] Gruplu sinyal özeti gönderildi: %s hisse", len(pending))
+            return True
         else:
-            logger.info("[V8-TG] Gruplu sinyal gonderilemedi (telegram ayarlari?)")
+            logging.info("[V8-TG] Gruplu sinyal gönderilemedi (telegram ayarları?)")
+            return False
     except Exception as tg_err:
-        logger.error("[V8-TG] Otomatik telegram hatasi: %s", tg_err)
+        logging.error("[V8-TG] Otomatik telegram hatası: %s", tg_err)
+        return False
+
+
+@app.route('/api/v8/radar/breakout', methods=['GET'])
+def api_v8_radar_breakout():
+    # Never serve old v8_breakout_cache.json as the primary response.
+    # The UI receives the exact deterministic output of get_v8_breakout_data().
+    breakout_list = get_v8_breakout_data()
+    try:
+        _al_cands = [x for x in breakout_list if (x.get("entry_status") or "").upper() == "ENTER"]
+        if _al_cands:
+            auto_send_v8_signals(_al_cands)
+            try:
+                from v8_engine.learning import OutcomeEngine
+                _oe = OutcomeEngine()
+                for c in _al_cands:
+                    p = float(c.get("price") or c.get("Daily_Close") or 0.0)
+                    if p > 0:
+                        _oe.register_signal(
+                            symbol=c["symbol"],
+                            entry_price=p,
+                            breakout_data=c,
+                            execution_data={"entry_status": "ENTER", "reasons": c.get("entry_reasons", [])},
+                            regime=(GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or {}).get("regime", "NEUTRAL")
+                        )
+            except Exception as _oe_err:
+                print(f"[V8 OUTCOME REGISTER ERROR] {_oe_err}")
+    except Exception as _v8_bo_tg_e:
+        print(f"[V8 BREAKOUT TG] Otomatik bildirim hatası: {_v8_bo_tg_e}")
+
+    return jsonify({"status": "success", "data": breakout_list})
+
+
+@app.route('/api/telegram/send_v8_signals', methods=['POST'])
+def api_telegram_send_v8_signals():
+    """Giriş Onaylı V8 hisselerini anında Telegram kanalına gönderir."""
+    try:
+        ok = auto_send_v8_signals(force=True)
+        if ok:
+            return jsonify({"status": "success", "message": "V8 Giriş Onaylı hisseler Telegram'a iletildi."})
+        return jsonify({"status": "warning", "message": "Şu an giriş onayı almış V8 hissesi bulunamadı veya Telegram ayarları eksik."}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 
 @app.route('/api/v8/backtest/run', methods=['POST'])
 def api_v8_backtest_run():
@@ -4489,252 +4682,6 @@ def _v8_live_price(data: dict) -> float:
     except (TypeError, ValueError):
         return 0.0
 
-
-@app.route('/api/v8/radar/breakout', methods=['GET'])
-def api_v8_radar_breakout():
-    # Never serve the old v8_breakout_cache.json as the primary response.
-    # The UI must receive the current decision chain after the final V8 gate.
-    all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
-    if not all_stats:
-        try:
-            with open(CACHE_FILE, "r", encoding="utf-8") as _f_cache:
-                _f_data = json.load(_f_cache)
-                all_stats = _f_data.get("all_symbols_stats", {})
-        except Exception:
-            pass
-    breakout_list = []
-    cache_ts = GLOBAL_DASHBOARD_CACHE.get("cache_timestamp")
-    current_regime = (GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or {}).get("regime", "NEUTRAL")
-    from v8_engine.execution import ExecutionEngine as _DynExecEngine
-    _dyn_exec = _DynExecEngine()
-    regime_data = GLOBAL_DASHBOARD_CACHE.get("v8_market_regime", {}) or {}
-    # Refresh XU100 regime here as well: entry approval must use the same
-    # current regime that the UI displays, not a stale worker cache.
-    try:
-        from v8_engine.regime import V8RegimeEngine
-        fresh_regime = V8RegimeEngine().determine_regime()
-        if isinstance(fresh_regime, dict) and fresh_regime.get("data_available"):
-            if not fresh_regime.get("stale") or not GLOBAL_DASHBOARD_CACHE.get("v8_market_regime"):
-                regime_data = fresh_regime
-                GLOBAL_DASHBOARD_CACHE["v8_market_regime"] = fresh_regime
-            else:
-                regime_data = GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or fresh_regime
-    except Exception as e:
-        print(f"[V8 RADAR] Fresh regime calculation error: {e}")
-
-    # Final deterministic gate: breakout + XU100 regime + RSI/MFI/ATR/volume
-    # + fakeout. Risk/warrant gates are added only when those real objects exist.
-    try:
-        from v8_engine.entry_approval import evaluate_entry_approval
-    except Exception:
-        evaluate_entry_approval = None
-
-    def _apply_v8_final_gate(row):
-        if (row.get("entry_status") or "").upper() != "ENTER":
-            return row
-        if evaluate_entry_approval is None:
-            row["entry_status"] = "WAIT_CONFIRMATION"
-            row["entry_reasons"] = ["V8 nihai onay motoru yüklenemedi"] + list(row.get("entry_reasons") or [])
-            return row
-        approval = evaluate_entry_approval(
-            regime=regime_data,
-            breakout=row,
-            risk=None,
-            warrant=None,
-        )
-        row["entry_approval"] = approval
-        if not approval.get("approved"):
-            row["entry_status"] = "WAIT_CONFIRMATION"
-            row["entry_reasons"] = list(approval.get("reasons") or ["V8 nihai giriş onayı başarısız"]) + list(row.get("entry_reasons") or [])
-        return row
-
-    for sym, data in all_stats.items():
-        # BAYAT FIYAT KORUMASI: bugun taze fiyat gelmemis semboller
-        # (OZATD gibi cok dusuk likiditeliler) eski fiyatiyla kart uretmez.
-        if data.get("Price_Stale") and not data.get("v8_breakout", {}).get("is_breakout"):
-            continue
-        bo = data.get("v8_breakout")
-        if bo and bo.get("is_breakout"):
-            row = dict(bo)
-            row["symbol"] = sym
-            row["price"] = _v8_live_price(data)
-            row["change_pct"] = data.get("Change_Pct", 0.0)
-            row["volume"] = data.get("Volume", 0)
-            row["volume_strength"] = _stats_rel_vol(data)
-            row["scan_timestamp"] = cache_ts
-            # Guncel piyasa rejimine gore dinamik execution analizi yap:
-            eval_res = _dyn_exec.evaluate_entry(bo, current_regime)
-            row["entry_status"] = eval_res.get("entry_status", "UNKNOWN")
-            row["entry_reasons"] = eval_res.get("reasons", [])
-            row["momentum_speed"] = eval_res.get("momentum_speed", "NORMAL")
-            row["timeframe_quality"] = eval_res.get("timeframe_quality", 0)
-            row = _v8_gate_enter_row(row, sym, data)
-            row = _apply_v8_final_gate(row)
-            breakout_list.append(row)
-            continue
-
-        # Gunluk kirilim yoksa 1 saatlik kirilim teyidine bak (daha erken sinyal):
-        # 1h barda gercek kirilim + ENTER karari varsa gun ici AL adayi olarak ekle.
-        if not (bo and bo.get("is_breakout")):
-            intra = data.get("v8_breakout_1h") or {}
-            intra_bo = intra.get("breakout") or {}
-            if intra_bo.get("is_breakout") and intra.get("entry_status") == "ENTER":
-                row = dict(intra_bo)
-                row["symbol"] = sym
-                row["price"] = _v8_live_price(data)
-                row["change_pct"] = data.get("Change_Pct", 0.0)
-                row["volume"] = data.get("Volume", 0)
-                row["volume_strength"] = _stats_rel_vol(data)
-                row["scan_timestamp"] = cache_ts
-                row["entry_status"] = "ENTER"
-                row["entry_reasons"] = ["1 saatlik barda kırılım teyidi (gün içi sinyal)"] + list(intra.get("reasons") or [])
-                row["intraday_signal"] = True
-                row["momentum_speed"] = intra.get("momentum_speed", "NORMAL")
-                row["timeframe_quality"] = intra.get("timeframe_quality", 0)
-                row = _v8_gate_enter_row(row, sym, data)
-                row = _apply_v8_final_gate(row)
-                breakout_list.append(row)
-                continue
-
-        # Kırılım yokken endpoint'in boş dönmesi V8'in 600+ hisseyi
-        # taramadığı izlenimini veriyordu. Discovery sonuçlarını da bekleme
-        # listesine ekle; gerçek kırılım oluştuğunda yukarıdaki karar yolu
-        # yine önceliklidir.
-        disc = data.get("v8_discovery") or {}
-        state = disc.get("state")
-        if state in ("READY", "PREPARING", "WATCH"):
-            metrics = disc.get("metrics") or {}
-            rel_vol = _stats_rel_vol(data)
-            breakout_list.append({
-                "symbol": sym,
-                "price": _v8_live_price(data),
-                "change_pct": data.get("Change_Pct", 0.0),
-                "volume": data.get("Volume", 0),
-                "is_breakout": False,
-                "status": "DISCOVERY_" + state,
-                "breakout_score": disc.get("preparation_score", 0.0),
-                "fakeout_risk": 0.0,
-                "metrics": {
-                    "relative_volume": rel_vol,
-                    "rsi": data.get("RSI", 50.0),
-                },
-                "volume_strength": rel_vol,
-                "scan_timestamp": cache_ts,
-                "entry_status": "WAIT",
-                "entry_reasons": disc.get("reasons") or [
-                    "Kırılım bekleniyor; hazırlık sinyali mevcut."
-                ],
-                "momentum_speed": "PREPARING",
-            })
-        elif data.get("Daily_Close") or data.get("Price"):
-            # V8 verisi geçici olarak boşsa günlük taramayı da tamamen
-            # kaybetme; bunları AL değil, düşük öncelikli BEKLE adayı yap.
-            price = _v8_live_price(data)
-            change = float(data.get("Change_Pct") or 0)
-            rel_vol = _stats_rel_vol(data)
-            fallback_score = max(35.0, min(65.0, 48.0 + change * 2.0 + (rel_vol - 1.0) * 5.0))
-            breakout_list.append({
-                "symbol": sym,
-                "price": price,
-                "change_pct": change,
-                "volume": data.get("Volume", 0),
-                "is_breakout": False,
-                "status": "DISCOVERY_WATCH",
-                "breakout_score": round(fallback_score, 1),
-                "fakeout_risk": 0.0,
-                "metrics": {"relative_volume": rel_vol, "rsi": data.get("RSI", 50.0)},
-                "volume_strength": rel_vol,
-                "scan_timestamp": cache_ts,
-                "entry_status": "WAIT",
-                "entry_reasons": ["Günlük tarama adayı; V8 kırılım teyidi bekleniyor."],
-                "momentum_speed": "NORMAL",
-            })
-            
-    # Siralama: Oncelikle kaliteli kirilimlar
-    breakout_list = sorted(
-        breakout_list,
-        key=lambda x: (
-            x.get("entry_status") == "ENTER",
-            x.get("breakout_score", 0) - x.get("fakeout_risk", 0),
-        ),
-        reverse=True,
-    )[:80]
-
-    # Hazırlık adayları gerçek kırılım ve teyit olmadan ENTER yapılmaz.
-    # Böylece gösterge yalnızca motordan gelen gerçek ENTER durumunu sayar.
-    # V8 sinyalleri uygulama içinde kalır; Telegram'a yalnızca simülasyon olayları gider.
-
-
-    # SENARYO PLANI: guncel rejime gore islem parametreleri kartlara islenir.
-    # Bogada hedefler genisler, notrde standart, volatilitede daralir,
-    # ayida kilit zaten uygulanir.
-    try:
-        from v8_engine.playbook import get_scenario
-        _regime_now_pb = (GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or {}).get("regime", "NEUTRAL")
-        _scenario = get_scenario(_regime_now_pb)
-        for row in breakout_list:
-            row["scenario"] = {
-                "label": _scenario["label"],
-                "icon": _scenario["icon"],
-                "risk_pct": _scenario["risk_pct"],
-                "tp1_mult": _scenario["tp1_mult"],
-                "tp2_mult": _scenario["tp2_mult"],
-                "stop_mult": _scenario["stop_mult"],
-                "posture": _scenario["posture"],
-            }
-    except Exception:
-        pass
-
-    # SAVUNMA MODU gunluk limiti: AYI gununde en fazla 1 savunma islemi.
-    # En yuksek kirilim skorlu aday kazanir, digerleri tekrar kilitlenir.
-    _def_rows = [r for r in breakout_list if r.get("defense_mode") and (r.get("entry_status") or "").upper() == "ENTER"]
-    if len(_def_rows) > 1:
-        _def_rows.sort(key=lambda r: r.get("breakout_score") or 0, reverse=True)
-        for r in _def_rows[1:]:
-            r["entry_status"] = "WAIT_CONFIRMATION"
-            r["defense_mode"] = False
-            r["entry_reasons"] = ["[SAVUNMA] Ayı gününde en fazla 1 savunma işlemi açılır; bu aday limite takıldı"] + list(r.get("entry_reasons") or [])
-
-    # TAVAN RİSKİ KAPISI: gun ici +%9.2 ve uzerinde olan hisseler "tavan
-    # kovalama" bolgesindedir; BIST tavan kilit (%10) riski tasir.
-    # Acikca UZAK DUR (NO_ENTRY) olarak isaretlenir; UI izleme kartlarina
-    # almaz, erken aday promosyonu zaten uygulanamaz.
-    for row in breakout_list:
-        try:
-            chg = float(row.get("change_pct") or row.get("intraday_change_pct") or 0)
-        except (TypeError, ValueError):
-            chg = 0.0
-        if chg >= 9.2:
-            row["entry_status"] = "NO_ENTRY"
-            row["ceiling_risk"] = True
-            row["entry_reasons"] = [
-                f"[TAVAN RİSKİ] +{chg:.1f} ile kovalama bölgesinde; tavan sonrası teyit beklenmeli"
-            ] + list(row.get("entry_reasons") or [])
-
-        # YENI GIRIS ONAYLI V8 HISSELERINI TELEGRAM'A OTOMATIK GONDER (Gunde en fazla 1 kez / hisse)
-    try:
-        _al_cands = [x for x in breakout_list if (x.get("entry_status") or "").upper() == "ENTER"]
-        if _al_cands:
-            auto_send_v8_signals(_al_cands)
-            try:
-                from v8_engine.learning import OutcomeEngine
-                _oe = OutcomeEngine()
-                for c in _al_cands:
-                    p = float(c.get("price") or c.get("Daily_Close") or 0.0)
-                    if p > 0:
-                        _oe.register_signal(
-                            symbol=c["symbol"],
-                            entry_price=p,
-                            breakout_data=c,
-                            execution_data={"entry_status": "ENTER", "reasons": c.get("entry_reasons", [])},
-                            regime=(GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or {}).get("regime", "NEUTRAL")
-                        )
-            except Exception as _oe_err:
-                print(f"[V8 OUTCOME REGISTER ERROR] {_oe_err}")
-    except Exception as _v8_bo_tg_e:
-        print(f"[V8 BREAKOUT TG] Otomatik bildirim hatasi: {_v8_bo_tg_e}")
-
-    return jsonify({"status": "success", "data": breakout_list})
 
 @app.route('/api/v8/radar/discovery', methods=['GET'])
 def api_v8_radar_discovery():

@@ -4564,6 +4564,35 @@ async function sendSpecialRankingTelegram(btnEl) {
     }
 }
 
+async function sendV8SignalsTelegram(btnEl) {
+    const btn = btnEl || document.getElementById('tg-v8-btn');
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gönderiliyor...';
+    }
+    _tgShowMsg('V8 Giriş Onaylı hisseler Telegram\'a gönderiliyor...', true);
+
+    try {
+        const res = await vrAuthorizedFetch('/api/telegram/send_v8_signals', { method: 'POST' });
+        const data = await res.json();
+        if (data.status === 'success') {
+            _tgShowMsg('✅ ' + data.message, true);
+        } else if (data.status === 'warning') {
+            _tgShowMsg('⚠️ ' + data.message, false);
+        } else {
+            _tgShowMsg('❌ Hata: ' + (data.message || 'Gönderilemedi.'), false);
+        }
+    } catch (e) {
+        _tgShowMsg('❌ Bağlantı hatası: ' + e.message, false);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+    }
+}
+
 async function sendMorningCompassTelegram(btnEl) {
     const btn = btnEl || document.getElementById('tg-compass-btn');
     const origHtml = btn ? btn.innerHTML : '';

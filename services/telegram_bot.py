@@ -457,7 +457,7 @@ def send_v8_entry_signals_group(signals: list) -> bool:
     regime = str(signals[0].get("market_regime") or "")
     scan_time = str(signals[0].get("scan_time") or "")
 
-    text = f"🎯 <b>V8 GİRİŞ SİNYALLERİ</b> · {len(signals)} hisse\n"
+    text = f"🎯 <b>V8 ENGINE GİRİŞ ONAYLI HİSSELER</b> · {len(signals)} hisse\n"
     if scan_time:
         text += f"🕒 {scan_time}"
         if regime:
@@ -1689,7 +1689,7 @@ def send_special_ranking_alert(candidates: list, force: bool = False) -> bool:
 
     medals = ["🥇", "🥈", "🥉", "🎖️", "🏅", "🔹", "🔹", "🔹"]
 
-    text = "🛡️ <b>%90+ BAŞARI SEÇKİN HİSSELER (V8 RADAR)</b> 🛡️\n"
+    text = "⭐ <b>%90+ BAŞARI ÖZEL SIRALAMA AKILLI SEÇİMLER</b> ⭐\n"
     text += "🎯 <i>Tatlı Bölge Kopuşu & Akıllı Kurumsal Para Onaylı Hisseler</i>\n\n"
 
     for idx, item in enumerate(candidates):

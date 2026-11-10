@@ -720,15 +720,43 @@ class SimulationEngine:
                 p = float(s.get('morning_price') or s.get('Price') or 0.0)
                 if p > 0:
                     ch = float(s.get('Change_Pct') or 1.5)
-                    high_p = p * (1.0 + max(0.015, ch / 100.0))
-                    low_p = p * 0.985
-                    cur_p = p * (1.0 + (ch / 100.0))
-                    t_idx = pd.to_datetime(f"{date_str} 10:15:00")
-                    t_idx2 = pd.to_datetime(f"{date_str} 10:20:00")
-                    df = pd.DataFrame([
-                        {'Open': p, 'High': high_p, 'Low': low_p, 'Close': cur_p, 'Volume': 50000},
-                        {'Open': cur_p, 'High': high_p * 1.01, 'Low': cur_p * 0.99, 'Close': cur_p, 'Volume': 50000}
-                    ], index=[t_idx, t_idx2])
+                    try:
+                        from zoneinfo import ZoneInfo
+                        _now_ist = datetime.now(ZoneInfo('Europe/Istanbul'))
+                    except Exception:
+                        _now_ist = datetime.now()
+                    _now_t = _now_ist.time() if date_str == _now_ist.strftime('%Y-%m-%d') else time(18, 0)
+                    end_h = min(18, max(11, _now_t.hour))
+                    end_m = min(55, max(30, (_now_t.minute // 5) * 5)) if end_h == _now_t.hour else 55
+                    
+                    _times = []
+                    _h, _m = 10, 0
+                    while True:
+                        _times.append(f'{_h:02d}:{_m:02d}:00')
+                        if _h > end_h or (_h == end_h and _m >= end_m):
+                            break
+                        _m += 5
+                        if _m >= 60:
+                            _h += 1
+                            _m = 0
+                            
+                    _n = len(_times)
+                    _cur_p = p * (1.0 + ch / 100.0)
+                    _bars = []
+                    for _i, _t_str in enumerate(_times):
+                        _pct = (_i + 1) / _n
+                        _step_c = p + (_cur_p - p) * _pct
+                        _step_o = p if _i == 0 else _bars[-1]['Close']
+                        _step_h = max(_step_o, _step_c) * 1.004
+                        _step_l = min(_step_o, _step_c) * 0.996
+                        _bars.append({
+                            'Open': _step_o,
+                            'High': _step_h,
+                            'Low': _step_l,
+                            'Close': _step_c,
+                            'Volume': 50000 + int(_i * 1000)
+                        })
+                    df = pd.DataFrame(_bars, index=[pd.to_datetime(f'{date_str} {t}') for t in _times])
             if not df.empty:
                 # Karma tz verisi: Postgres timestamp'leri tz-aware, yfinance
                 # verisi naive geliyor; sorted() bu karisimda patliyor.
