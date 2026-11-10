@@ -3803,6 +3803,12 @@ def get_xu100_change():
 @app.route('/api/v8/learning/outcomes', methods=['GET'])
 def api_v8_learning_outcomes():
     try:
+        try:
+            from v8_engine.learning import OutcomeEngine
+            OutcomeEngine().update_active_outcomes(all_stats=GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats"))
+        except Exception as _oe_upd_e:
+            print(f"[V8 OUTCOMES UPDATE ERROR] {_oe_upd_e}")
+
         from v8_engine.database import V8Database
         try:
             V8Database.init_db()

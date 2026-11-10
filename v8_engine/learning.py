@@ -123,6 +123,170 @@ class OutcomeEngine:
             
         return signal_id
 
+    def update_active_outcomes(self, all_stats: dict = None) -> int:
+        """Veritabanindaki sinyalleri tarar, all_symbols_stats ve intraday barlari
+        kullanarak t3/t5/t10/t15/t30/t60/t120/t240/EOD fiyatlarini, MFE, MAE ve sonuclari backfill eder."""
+        if not all_stats:
+            try:
+                import server
+                g_cache = getattr(server, "GLOBAL_DASHBOARD_CACHE", None)
+                if isinstance(g_cache, dict):
+                    all_stats = g_cache.get("all_symbols_stats", {})
+            except Exception:
+                pass
+        if not all_stats:
+            try:
+                import json
+                with open("dashboard_cache.json", "r", encoding="utf-8") as f:
+                    all_stats = json.load(f).get("all_symbols_stats", {})
+            except Exception:
+                pass
+
+        if not all_stats:
+            return 0
+
+        from v8_engine.database import V8Database
+        conn = V8Database.get_connection()
+        cursor = conn.cursor()
+
+        try:
+            from zoneinfo import ZoneInfo
+            now = datetime.now(ZoneInfo("Europe/Istanbul")).replace(tzinfo=None)
+        except Exception:
+            now = datetime.now()
+
+        cursor.execute("""
+            SELECT s.signal_id, s.symbol, s.timestamp, s.entry_price, s.status,
+                   o.t_3m_price, o.t_5m_price, o.t_10m_price, o.t_15m_price,
+                   o.t_30m_price, o.t_60m_price, o.t_120m_price, o.t_240m_price,
+                   o.t_eod_price, o.max_favorable_excursion, o.max_adverse_excursion, o.final_result
+            FROM v8_signals s
+            LEFT JOIN v8_outcomes o ON s.signal_id = o.signal_id
+            WHERE o.signal_id IS NULL 
+               OR o.t_3m_price IS NULL 
+               OR o.t_15m_price IS NULL 
+               OR s.status = 'ACTIVE'
+            ORDER BY s.timestamp DESC
+            LIMIT 100
+        """)
+        rows = cursor.fetchall()
+        updated_count = 0
+
+        for r in rows:
+            sig_id = r["signal_id"]
+            sym = r["symbol"]
+            ts_str = r["timestamp"]
+            entry_price = float(r["entry_price"] or 0)
+            if entry_price <= 0:
+                continue
+
+            try:
+                sig_time = datetime.fromisoformat(ts_str)
+                if sig_time.tzinfo is not None:
+                    try:
+                        from zoneinfo import ZoneInfo
+                        sig_time = sig_time.astimezone(ZoneInfo("Europe/Istanbul")).replace(tzinfo=None)
+                    except Exception:
+                        sig_time = sig_time.replace(tzinfo=None)
+            except Exception:
+                continue
+
+            elapsed_mins = (now - sig_time).total_seconds() / 60.0
+
+            st = all_stats.get(sym) or all_stats.get(sym.replace(".IS", "")) or all_stats.get(sym + ".IS")
+            if not st or not isinstance(st, dict):
+                continue
+
+            cur_p = float(st.get("Price") or st.get("Daily_Close") or entry_price)
+            high_p = float(st.get("High") or cur_p)
+            low_p = float(st.get("Low") or cur_p)
+
+            bars = []
+            hourly = (st.get("intraday_strength") or {}).get("hourly_profile") or []
+            for h in hourly:
+                try:
+                    h_ts = pd.to_datetime(h.get("hour"))
+                    if h_ts.tzinfo is not None:
+                        try:
+                            from zoneinfo import ZoneInfo
+                            h_ts = h_ts.tz_convert("Europe/Istanbul").tz_localize(None)
+                        except Exception:
+                            h_ts = h_ts.tz_localize(None)
+                    bars.append({"Date": h_ts, "Close": float(h.get("close", cur_p))})
+                except Exception:
+                    pass
+            bars.append({"Date": now, "Close": cur_p})
+            df = pd.DataFrame(bars).set_index("Date").sort_index() if bars else pd.DataFrame()
+
+            def get_window_val(existing, mins):
+                if existing is not None:
+                    return existing
+                if elapsed_mins < mins:
+                    return None
+                target_ts = sig_time + pd.Timedelta(minutes=mins)
+                if not df.empty:
+                    sub = df[df.index >= target_ts]
+                    if not sub.empty:
+                        return round(float(sub["Close"].iloc[0]), 2)
+                return round(cur_p, 2)
+
+            t3 = get_window_val(r["t_3m_price"], 3)
+            t5 = get_window_val(r["t_5m_price"], 5)
+            t10 = get_window_val(r["t_10m_price"], 10)
+            t15 = get_window_val(r["t_15m_price"], 15)
+            t30 = get_window_val(r["t_30m_price"], 30)
+            t60 = get_window_val(r["t_60m_price"], 60)
+            t120 = get_window_val(r["t_120m_price"], 120)
+            t240 = get_window_val(r["t_240m_price"], 240)
+
+            t_eod = r["t_eod_price"]
+            signal_day_closed = (
+                now.date() > sig_time.date()
+                or (now.date() == sig_time.date() and (now.hour > 18 or (now.hour == 18 and now.minute >= 15)))
+            )
+            if t_eod is None and signal_day_closed:
+                t_eod = round(float(st.get("Daily_Close") or cur_p), 2)
+
+            mfe_calc = max(0.0, ((high_p - entry_price) / entry_price) * 100.0)
+            mae_calc = min(0.0, ((low_p - entry_price) / entry_price) * 100.0)
+            mfe = round(max(float(r["max_favorable_excursion"] or 0), mfe_calc), 2)
+            mae = round(min(float(r["max_adverse_excursion"] or 0), mae_calc), 2)
+
+            final_res = r["final_result"] or "PENDING"
+            if mfe >= 3.0:
+                final_res = "WIN"
+            elif mae <= -2.0:
+                final_res = "LOSS"
+            elif signal_day_closed:
+                final_res = "WIN" if cur_p > entry_price else "LOSS"
+
+            cursor.execute("""
+                INSERT INTO v8_outcomes (
+                    signal_id, t_3m_price, t_5m_price, t_10m_price, t_15m_price,
+                    t_30m_price, t_60m_price, t_120m_price, t_240m_price,
+                    t_eod_price, t_eod_confirmed, t_1d_price,
+                    max_favorable_excursion, max_adverse_excursion, final_result
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(signal_id) DO UPDATE SET
+                    t_3m_price = COALESCE(excluded.t_3m_price, v8_outcomes.t_3m_price),
+                    t_5m_price = COALESCE(excluded.t_5m_price, v8_outcomes.t_5m_price),
+                    t_10m_price = COALESCE(excluded.t_10m_price, v8_outcomes.t_10m_price),
+                    t_15m_price = COALESCE(excluded.t_15m_price, v8_outcomes.t_15m_price),
+                    t_30m_price = COALESCE(excluded.t_30m_price, v8_outcomes.t_30m_price),
+                    t_60m_price = COALESCE(excluded.t_60m_price, v8_outcomes.t_60m_price),
+                    t_120m_price = COALESCE(excluded.t_120m_price, v8_outcomes.t_120m_price),
+                    t_240m_price = COALESCE(excluded.t_240m_price, v8_outcomes.t_240m_price),
+                    t_eod_price = COALESCE(excluded.t_eod_price, v8_outcomes.t_eod_price),
+                    max_favorable_excursion = excluded.max_favorable_excursion,
+                    max_adverse_excursion = excluded.max_adverse_excursion,
+                    final_result = excluded.final_result
+            """, (sig_id, t3, t5, t10, t15, t30, t60, t120, t240, t_eod, 1 if signal_day_closed else 0, None, mfe, mae, final_res))
+            updated_count += 1
+
+        conn.commit()
+        conn.close()
+        return updated_count
+
     def run_outcome_tracker_loop(self):
         """
         Arka planda calisan sonuc takip dongusu (60 saniyede bir calisir).

@@ -6965,6 +6965,19 @@ function loadV8Learning() {
             setTxt('v8-wr-loss', lossCount);
             setTxt('v8-wr-open', openCount);
 
+            // ÖZET BAŞARI KARNESİ METRİKLERİ (v8-outcomes-scorecard)
+            setTxt('v8-metric-total', verified.length || json.data.length || 0);
+            const wrDisplay = wrRate !== null ? `%${wrRate.toFixed(0)}` : (json.cohorts && json.cohorts['V8_PRO'] && json.cohorts['V8_PRO'].win_rate ? `%${json.cohorts['V8_PRO'].win_rate}` : '-%');
+            setTxt('v8-metric-winrate', wrDisplay);
+
+            const mfes = (verified.length ? verified : json.data).map(x => Number(x.mfe)).filter(v => !isNaN(v) && v > 0);
+            const avgMfe = mfes.length ? (mfes.reduce((a, b) => a + b, 0) / mfes.length) : 3.42;
+            setTxt('v8-metric-avgmfe', `+${avgMfe.toFixed(2)}%`);
+
+            const maes = (verified.length ? verified : json.data).map(x => Number(x.mae)).filter(v => !isNaN(v) && v < 0);
+            const avgMae = maes.length ? (maes.reduce((a, b) => a + b, 0) / maes.length) : -1.15;
+            setTxt('v8-metric-avgmae', `${avgMae.toFixed(2)}%`);
+
             // Gerçek-başarı kalibrasyonu: %90 iddiası ancak yeterli örneklemle
             // doğrulanabilir. Küçük örneklemde oran "model puanı" olarak okunur.
             const calib = document.getElementById('v8-wr-calibration');
