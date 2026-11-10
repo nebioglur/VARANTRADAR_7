@@ -2113,3 +2113,147 @@ body.light-mode .mobile-slide-menu a.menu-item.active {
 .nav-actions .nav-btn {
     display: inline-flex !important;
 }
+
+
+/* ==========================================================================
+   SIMULATION & STRATEGY SCORECARD MOBILE/RESPONSIVE OPTIMIZATION
+   ========================================================================== */
+.sim-strat-card-wrapper {
+    box-sizing: border-box;
+    max-width: 100%;
+    overflow: hidden;
+}
+.sim-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(85px, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.4rem;
+    margin-bottom: 0.9rem;
+}
+.sim-metric-box {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    padding: 0.5rem 0.6rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.sim-metric-lbl {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+.sim-metric-val {
+    font-size: 0.95rem;
+    font-weight: 800;
+}
+.sim-strat-item {
+    box-sizing: border-box;
+    max-width: 100%;
+    padding: 0.75rem 0.65rem;
+    border-top: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.015);
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    transition: background 0.15s ease;
+}
+.sim-strat-item:hover {
+    background: rgba(255, 255, 255, 0.035);
+}
+.sim-strat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.6rem;
+    margin-bottom: 0.45rem;
+}
+.sim-strat-title {
+    font-weight: 700;
+    font-size: 0.83rem;
+    color: var(--text-light);
+    line-height: 1.4;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    flex: 1;
+}
+.sim-strat-net-pnl {
+    font-weight: 800;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    text-align: right;
+}
+.sim-strat-details {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.6rem;
+    font-size: 0.74rem;
+    color: var(--text-muted);
+    border-top: 1px dashed rgba(255, 255, 255, 0.06);
+    padding-top: 0.4rem;
+}
+.sim-badge {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.sim-strat-sample {
+    font-size: 0.72rem;
+    font-weight: 600;
+    margin-left: auto;
+    white-space: nowrap;
+}
+
+/* 850px uzerinde genis masaustu tablo dizilimi */
+@media (min-width: 850px) {
+    .sim-strat-item {
+        display: grid;
+        grid-template-columns: minmax(220px, 2.5fr) 95px 115px 85px minmax(190px, 1.5fr);
+        gap: 0.8rem;
+        align-items: center;
+        background: transparent;
+        border-radius: 0;
+        margin-bottom: 0;
+        padding: 0.65rem 0.25rem;
+    }
+    .sim-strat-header {
+        display: contents;
+    }
+    .sim-strat-details {
+        display: contents;
+        border-top: none;
+        padding-top: 0;
+    }
+    .sim-strat-net-pnl {
+        order: 5;
+        text-align: right;
+    }
+    .sim-strat-sample {
+        margin-left: 0;
+        text-align: right;
+        display: block;
+        font-size: 0.75rem;
+    }
+}
+
+/* Mobil Trade Log ve Kasa Emniyet Kurallari */
+#sim-performance-summary {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+}
+.table-scroll-wrapper {
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+}
+.table-scroll-wrapper table.data-table {
+    min-width: 760px;
+}

@@ -4900,16 +4900,53 @@ function renderSimulationPerformance(performance, targetId = 'sim-performance-su
         container.innerHTML = '<span style="color:var(--text-muted); font-size:.85rem;">Strateji performansı, kapatılmış ilk işlemlerden sonra burada oluşur.</span>';
         return;
     }
-    const metric = (label, value, color) => `<div style="min-width:120px;"><div style="font-size:.7rem; color:var(--text-muted); text-transform:uppercase;">${label}</div><strong style="font-size:1rem; color:${color};">${value}</strong></div>`;
+    const metric = (label, value, color) => `
+        <div class="sim-metric-box">
+            <span class="sim-metric-lbl">${label}</span>
+            <span class="sim-metric-val" style="color:${color};">${value}</span>
+        </div>`;
     const pf = performance.profit_factor === null || performance.profit_factor === undefined ? '—' : performance.profit_factor.toFixed(2);
     const rows = (performance.strategies || []).map(item => {
         const state = item.ready ? 'Ölçümlü' : `Yetersiz örnek (${item.trades}/${performance.minimum_samples})`;
         const color = item.net_pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
         const itemPf = item.profit_factor === null || item.profit_factor === undefined ? '—' : item.profit_factor.toFixed(2);
-        return `<div style="display:grid; grid-template-columns:minmax(150px,2fr) repeat(4,minmax(76px,1fr)); gap:.55rem; padding:.65rem 0; border-top:1px solid var(--border-color); font-size:.82rem; align-items:center;"><strong>${item.strategy_name}</strong><span>${item.trades} işlem</span><span>%${item.win_rate.toFixed(1)} başarı</span><span>PF ${itemPf}</span><span style="color:${color}; font-weight:700;">${item.net_pnl >= 0 ? '+' : ''}₺${item.net_pnl.toFixed(2)} · ${state}</span></div>`;
+        const pnlSign = item.net_pnl >= 0 ? '+' : '';
+        const pnlFormatted = `${pnlSign}₺${Number(item.net_pnl || 0).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        const wrFormatted = `%${Number(item.win_rate || 0).toFixed(1)}`;
+        
+        return `
+        <div class="sim-strat-item">
+            <div class="sim-strat-header">
+                <div class="sim-strat-title" title="${item.strategy_name}">
+                    <i class="fa-solid fa-code-branch" style="color:var(--accent-blue); font-size:0.75rem; margin-right:4px;"></i>
+                    ${item.strategy_name}
+                </div>
+                <div class="sim-strat-net-pnl" style="color:${color};">
+                    ${pnlFormatted}
+                </div>
+            </div>
+            <div class="sim-strat-details">
+                <span class="sim-badge"><i class="fa-solid fa-arrow-right-arrow-left"></i> ${item.trades} işlem</span>
+                <span class="sim-badge" style="color:var(--accent-green);"><i class="fa-solid fa-bullseye"></i> ${wrFormatted} başarı</span>
+                <span class="sim-badge"><i class="fa-solid fa-scale-balanced"></i> PF ${itemPf}</span>
+                <span class="sim-strat-sample" style="color:${color};">${state}</span>
+            </div>
+        </div>`;
     }).join('');
     container.style.display = 'block';
-    container.innerHTML = `<div style="display:flex; gap:1.25rem; justify-content:space-between; flex-wrap:wrap; margin-bottom:.8rem;"><h3 class="card-title" style="margin:0; font-size:1rem;"><i class="fa-solid fa-chart-simple text-green"></i> Strateji Karnesi</h3><div style="display:flex; gap:1.25rem; flex-wrap:wrap;">${metric('Kazanma oranı', '%' + Number(performance.win_rate || 0).toFixed(1), 'var(--accent-green)')}${metric('Net PnL', (performance.net_pnl >= 0 ? '+' : '') + '₺' + Number(performance.net_pnl || 0).toFixed(2), performance.net_pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)')}${metric('Profit factor', pf, 'var(--accent-blue)')}${metric('Maks. düşüş', '₺' + Number(performance.max_drawdown_tl || 0).toFixed(2), 'var(--accent-yellow)')}</div></div>${rows}`;
+    container.innerHTML = `
+        <div class="sim-strat-card-wrapper">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.5rem;">
+                <h3 class="card-title" style="margin:0; font-size:1.05rem;"><i class="fa-solid fa-chart-simple text-green"></i> Strateji Karnesi</h3>
+            </div>
+            <div class="sim-metrics-grid">
+                ${metric('Kazanma', '%' + Number(performance.win_rate || 0).toFixed(1), 'var(--accent-green)')}
+                ${metric('Net PnL', (performance.net_pnl >= 0 ? '+' : '') + '₺' + Number(performance.net_pnl || 0).toLocaleString('tr-TR', {minimumFractionDigits:2, maximumFractionDigits:2}), performance.net_pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)')}
+                ${metric('PF', pf, 'var(--accent-blue)')}
+                ${metric('Maks. Düşüş', '₺' + Number(performance.max_drawdown_tl || 0).toLocaleString('tr-TR', {minimumFractionDigits:2, maximumFractionDigits:2}), 'var(--accent-yellow)')}
+            </div>
+            ${rows}
+        </div>`;
 }
 
 let _knownTradeEvents = new Set();
