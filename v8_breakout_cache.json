@@ -1201,7 +1201,7 @@
       "fakeout_risk": 0.0,
       "is_breakout": false,
       "metrics": {
-        "relative_volume": 0.51,
+        "relative_volume": -0.43,
         "rsi": 57.1
       },
       "momentum_speed": "NORMAL",
@@ -1219,7 +1219,7 @@
       "status": "DISCOVERY_WATCH",
       "symbol": "BSOKE.IS",
       "volume": 8574947.0,
-      "volume_strength": 0.51
+      "volume_strength": -0.43
     },
     {
       "breakout_score": 55.6,
