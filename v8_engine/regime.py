@@ -44,6 +44,11 @@ class MarketRegimeEngine:
         try:
             df = self._fetch_index_df()
             if df is None or df.empty or len(df) < 30:
+                calc = self._calculate_from_market_stats()
+                if calc:
+                    _REGIME_CACHE['data'] = calc
+                    _REGIME_CACHE['last_fetched'] = now_ts
+                    return calc
                 return self._last_known_regime("DATA_INSUFFICIENT")
 
             if hasattr(df.columns, "nlevels") and df.columns.nlevels > 1:
@@ -234,7 +239,94 @@ class MarketRegimeEngine:
             pass
         return None
 
+    def _calculate_from_market_stats(self, all_stats: dict = None, xu100_val: float = None):
+        """Yahoo Finance erisilemediginde canli 609 BIST hissesinin
+        agirlikli hareketi ve piyasa genisliginden (Advance/Decline)
+        gercek zamanli XU100 trendi ve piyasa rejimini hesaplar."""
+        if not all_stats:
+            try:
+                import server
+                g_cache = getattr(server, "GLOBAL_DASHBOARD_CACHE", None)
+                if isinstance(g_cache, dict):
+                    all_stats = g_cache.get("all_symbols_stats", {})
+                    if xu100_val is None:
+                        xu100_val = g_cache.get("xu100_change")
+            except Exception:
+                pass
+
+        if not all_stats or len(all_stats) < 10:
+            return None
+
+        # BIST 30 agirlikli trend
+        bist30 = [
+            'AKBNK.IS', 'ARCLK.IS', 'ASELS.IS', 'BIMAS.IS', 'EKGYO.IS', 'ENKAI.IS',
+            'EREGL.IS', 'FROTO.IS', 'GARAN.IS', 'GUBRF.IS', 'HEKTS.IS', 'ISCTR.IS',
+            'KCHOL.IS', 'KOZAA.IS', 'KOZAL.IS', 'KRDMD.IS', 'MGROS.IS', 'OYAKC.IS',
+            'PETKM.IS', 'PGSUS.IS', 'SAHOL.IS', 'SASA.IS', 'SISE.IS', 'TCELL.IS',
+            'THYAO.IS', 'TOASO.IS', 'TUPRS.IS', 'VAKBN.IS', 'YKBNK.IS'
+        ]
+        b30_chgs = [
+            float(all_stats[s].get('Change_Pct', 0))
+            for s in bist30 if s in all_stats and all_stats[s].get('Change_Pct') is not None
+        ]
+        b30_avg = sum(b30_chgs) / len(b30_chgs) if b30_chgs else 0.0
+
+        if xu100_val is not None and abs(float(xu100_val)) > 0.001:
+            effective_trend = round(float(xu100_val), 2)
+        else:
+            effective_trend = round(b30_avg, 2)
+
+        # Piyasa Genisligi (Advance / Decline)
+        all_chgs = [
+            float(d.get('Change_Pct', 0))
+            for d in all_stats.values() if isinstance(d, dict) and d.get('Change_Pct') is not None
+        ]
+        total_syms = len(all_chgs)
+        adv = sum(1 for c in all_chgs if c > 0)
+        dec = sum(1 for c in all_chgs if c < 0)
+        adv_ratio = (adv / total_syms) if total_syms > 0 else 0.5
+
+        if adv_ratio >= 0.65 and effective_trend >= 1.0:
+            regime = 'STRONG_BULL'
+            score = round(75.0 + min(20.0, adv_ratio * 25.0), 1)
+        elif adv_ratio >= 0.52 or effective_trend >= 0.30:
+            regime = 'BULL'
+            score = round(60.0 + min(15.0, (adv_ratio - 0.5) * 50.0), 1)
+        elif adv_ratio <= 0.35 and effective_trend <= -1.0:
+            regime = 'STRONG_BEAR'
+            score = round(max(10.0, 25.0 - (0.35 - adv_ratio) * 50.0), 1)
+        elif adv_ratio <= 0.45 or effective_trend <= -0.30:
+            regime = 'BEAR'
+            score = round(max(25.0, 40.0 - (0.45 - adv_ratio) * 50.0), 1)
+        else:
+            regime = 'NEUTRAL'
+            score = round(45.0 + (adv_ratio - 0.45) * 50.0, 1)
+
+        result = {
+            'regime': regime,
+            'regime_code': regime,
+            'score': score,
+            'xu100_trend': effective_trend,
+            'volatility_state': 'NORMAL',
+            'timestamp': datetime.now(ZoneInfo('Europe/Istanbul')).isoformat(),
+            'data_status': 'LIVE_CALCULATED',
+            'data_available': True,
+            'stale': False,
+            'breadth': {
+                'advancing': adv,
+                'declining': dec,
+                'total': total_syms,
+                'advance_ratio': round(adv_ratio, 3),
+                'bist30_avg': round(b30_avg, 2)
+            }
+        }
+        self._save_regime_to_db(result)
+        return result
+
     def _last_known_regime(self, status="NEUTRAL"):
+        calc = self._calculate_from_market_stats()
+        if calc:
+            return calc
         try:
             try:
                 import server

@@ -52,6 +52,7 @@ def sync_once():
             return False
         dash_json = r_dash.json()
         dash_data = dash_json.get("dashboard_data", {})
+        xu100_change = dash_json.get("xu100_change")
         symbols_count = len(dash_data.get("all_symbols_stats", {}))
         if symbols_count == 0:
             print(f"[{t_str}] [UYARI] Verdent hisse listesi bos!")
@@ -73,7 +74,8 @@ def sync_once():
     payload = {
         "token": AUTH_TOKEN,
         "dashboard_data": dash_data,
-        "v8_breakout_data": v8_bo_data
+        "v8_breakout_data": v8_bo_data,
+        "xu100_change": xu100_change
     }
 
     try:

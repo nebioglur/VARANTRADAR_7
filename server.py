@@ -2401,7 +2401,22 @@ def api_system_push_market_data():
 
         global GLOBAL_DASHBOARD_CACHE
         stats = dash_data.get('all_symbols_stats', {})
+        xu100_val = payload.get('xu100_change') or dash_data.get('xu100_change')
+        if xu100_val is not None:
+            try:
+                XU100_CACHE['change'] = float(xu100_val)
+                XU100_CACHE['last_updated'] = time.time()
+                dash_data['xu100_change'] = float(xu100_val)
+            except Exception:
+                pass
         if stats:
+            try:
+                from v8_engine.regime import V8RegimeEngine
+                fresh_reg = V8RegimeEngine()._calculate_from_market_stats(all_stats=stats, xu100_val=xu100_val)
+                if fresh_reg:
+                    dash_data['v8_market_regime'] = fresh_reg
+            except Exception as _e_reg:
+                print(f"[PUSH REGIME ERROR] {_e_reg}")
             save_dashboard_cache(dash_data)
             GLOBAL_DASHBOARD_CACHE = dash_data
 
@@ -4623,7 +4638,19 @@ def api_v8_radar_breakout():
     except Exception as _v8_bo_tg_e:
         print(f"[V8 BREAKOUT TG] Otomatik bildirim hatası: {_v8_bo_tg_e}")
 
-    return jsonify({"status": "success", "data": breakout_list})
+    total_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
+    total_symbols = len(total_stats) if total_stats else len(breakout_list)
+    al_count = len(_al_cands)
+    avoid_count = sum(1 for sym, s in total_stats.items() if isinstance(s, dict) and (float(s.get("Change_Pct") or 0) < -1.5 or (s.get("v8_breakout") or {}).get("fakeout_risk", 0) > 60))
+    wait_count = max(0, total_symbols - al_count - avoid_count)
+
+    summary = {
+        "enter": al_count,
+        "wait": wait_count,
+        "avoid": avoid_count,
+        "total": total_symbols
+    }
+    return jsonify({"status": "success", "data": breakout_list, "total": total_symbols, "summary": summary})
 
 
 @app.route('/api/telegram/send_v8_signals', methods=['POST'])
@@ -4751,11 +4778,7 @@ def api_v8_entry_approval():
 
 @app.route('/api/v8/market/regime', methods=['GET'])
 def api_v8_market_regime():
-    """Return a fresh XU100 daily regime for the V8 UI.
-    
-    PythonAnywhere workers may keep GLOBAL_DASHBOARD_CACHE alive for a long
-    time, so the UI must not rely on a stale cached xu100_trend value.
-    """
+    """Return a fresh XU100 daily regime for the V8 UI."""
     global GLOBAL_DASHBOARD_CACHE
     try:
         from v8_engine.regime import V8RegimeEngine
@@ -4765,13 +4788,27 @@ def api_v8_market_regime():
             return jsonify(fresh)
     except Exception as e:
         print(f"[V8 REGIME API] Fresh calculation error: {e}")
+
     cached = GLOBAL_DASHBOARD_CACHE.get("v8_market_regime")
-    if cached and isinstance(cached, dict) and cached.get("data_available"):
+    if cached and isinstance(cached, dict) and cached.get("data_available") and not cached.get("stale"):
         return jsonify(cached)
+
+    try:
+        from v8_engine.regime import V8RegimeEngine
+        calc = V8RegimeEngine()._calculate_from_market_stats(
+            all_stats=GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats"),
+            xu100_val=GLOBAL_DASHBOARD_CACHE.get("xu100_change") or XU100_CACHE.get("change")
+        )
+        if calc:
+            GLOBAL_DASHBOARD_CACHE["v8_market_regime"] = calc
+            return jsonify(calc)
+    except Exception as _calc_e:
+        print(f"[V8 REGIME API] Fallback calculation error: {_calc_e}")
+
     return jsonify(
         GLOBAL_DASHBOARD_CACHE.get(
             "v8_market_regime",
-            {"regime": "UNKNOWN", "score": 50.0, "xu100_trend": 0.0},
+            {"regime": "NEUTRAL", "score": 50.0, "xu100_trend": 0.0, "data_available": True},
         )
     )
 

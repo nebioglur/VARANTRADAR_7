@@ -30864,3 +30864,12 @@ elisted
 [2026-11-08 21:33:39] [INFO] [TG-GUARD] Telegram gonderimi engellendi (Ikincil/yerel ortam (yalnizca PythonAnywhere ana sunucusu Telegram bildirimi gonderebilir)): 🎯 <b>V8 İŞLEM SİNYALİ</b>
 ━━━━━━━━━━━━━━━━
 💎 <b>Hi...
+[2026-11-10 12:26:22] [INFO] [TG-TRADE] Bildirim hazirlaniyor: 2026-11-10 CVKMD.IS AL @ 14.74
+[2026-11-10 12:27:03] [INFO] [TG-GUARD] Telegram gonderimi engellendi (Ikincil/yerel ortam (yalnizca PythonAnywhere ana sunucusu Telegram bildirimi gonderebilir)): 🟢 <b>SİMÜLASYON AL EMRİ</b> 🟢
+⏰ <b>Alış Saati:</b>...
+[2026-11-10 12:27:04] [INFO] [TG-TRADE] Bildirim hazirlaniyor: 2026-11-10 HUNER.IS AL @ 4.01
+[2026-11-10 12:27:04] [INFO] [TG-GUARD] Telegram gonderimi engellendi (Ikincil/yerel ortam (yalnizca PythonAnywhere ana sunucusu Telegram bildirimi gonderebilir)): 🟢 <b>SİMÜLASYON AL EMRİ</b> 🟢
+⏰ <b>Alış Saati:</b>...
+[2026-11-10 12:37:22] [WARNING] [KAP] Bulten servisi erisilemiyor, filtre pasif: KAP erisilemedi: The read operation timed out
+[2026-11-10 12:39:09] [WARNING] [KAP] Bulten servisi erisilemiyor, filtre pasif: KAP erisilemedi: The read operation timed out
+[2026-11-10 12:39:09] [INFO] [V8-TG] Gruplu sinyal özeti gönderildi: 2 hisse

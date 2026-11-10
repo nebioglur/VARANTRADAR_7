@@ -6617,10 +6617,10 @@ function loadV8Breakout() {
                 else avoidList.push(d);
             });
 
-            if (countEnter) countEnter.textContent = enterList.length;
-            if (countWait)  countWait.textContent = waitList.length;
-            if (countAvoid) countAvoid.textContent = avoidList.length;
-            if (countTotal) countTotal.textContent = (typeof globalDashboardData !== 'undefined' && globalDashboardData.all_symbols_stats) ? Object.keys(globalDashboardData.all_symbols_stats).length : 550;
+            if (countEnter) countEnter.textContent = (json.summary && json.summary.enter !== undefined) ? json.summary.enter : enterList.length;
+            if (countWait)  countWait.textContent = (json.summary && json.summary.wait !== undefined) ? json.summary.wait : waitList.length;
+            if (countAvoid) countAvoid.textContent = (json.summary && json.summary.avoid !== undefined) ? json.summary.avoid : avoidList.length;
+            if (countTotal) countTotal.textContent = (json.summary && json.summary.total !== undefined) ? json.summary.total : ((typeof globalDashboardData !== 'undefined' && globalDashboardData.all_symbols_stats) ? Object.keys(globalDashboardData.all_symbols_stats).length : 550);
 
             if (!cardsContainer) return;
 
