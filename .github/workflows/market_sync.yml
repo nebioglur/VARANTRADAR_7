@@ -1,0 +1,27 @@
+name: BIST Market Sync & Auto Ping
+
+on:
+  schedule:
+    # Pazartesi - Cuma, 06:50 - 15:20 UTC (09:50 - 18:20 Turkiye Saati)
+    # Her 5 dakikada bir otomatik calisir
+    - cron: '*/5 7-15 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  sync_and_ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run Verdent to PythonAnywhere Sync
+        run: python vr_live_bridge.py --once
