@@ -5,7 +5,7 @@ echo ================================================================
 echo   VARANTRADAR PRO - CANLI VERI & ARKA PLAN OTO-PING KOPRUSU
 echo ================================================================
 echo.
-echo   * Verdent Cloud'dan anlik 609 hisse verisi cekilir.
+echo   * Her 8 dakikada bir Verdent Cloud'dan anlik 609 hisse verisi cekilir.
 echo   * PythonAnywhere sunucusuna taze veriler basilir.
 echo   * V8 Analiz ve Simulasyon motoru aninda calisir.
 echo   * Sunucu asla uykuya gecmez, 7/24 uyanik kalir.

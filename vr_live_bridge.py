@@ -107,7 +107,7 @@ def main():
         ok = sync_once()
         sys.exit(0 if ok else 1)
 
-    print("\n-> Surekli arka plan modu aktif (Piyasa saatlerinde her 60 sn).")
+    print("\n-> Surekli arka plan modu aktif (Piyasa saatlerinde her 8 dakikada bir).")
     print("   Durdurmak icin Ctrl+C tusuna basin.\n")
 
     while True:
@@ -120,7 +120,8 @@ def main():
             # Seans araligi: 09:50 - 18:15 (Pzt - Cuma)
             in_session = weekday and ((hour == 9 and minute >= 50) or (10 <= hour < 18) or (hour == 18 and minute <= 15))
 
-            interval = 60 if in_session else 180
+            # Seans ve seans disi: 8 dakikada bir (480 saniye)
+            interval = 480
 
             if in_session:
                 print(f"[SEANS AKTIF] Veri senkronizasyonu yapiliyor ({now.strftime('%H:%M:%S')})...")

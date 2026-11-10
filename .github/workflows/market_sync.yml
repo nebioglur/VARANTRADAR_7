@@ -3,8 +3,8 @@ name: BIST Market Sync & Auto Ping
 on:
   schedule:
     # Pazartesi - Cuma, 06:50 - 15:20 UTC (09:50 - 18:20 Turkiye Saati)
-    # Her 5 dakikada bir otomatik calisir
-    - cron: '*/5 7-15 * * 1-5'
+    # Her 8 dakikada bir otomatik calisir
+    - cron: '*/8 7-15 * * 1-5'
   workflow_dispatch:
 
 jobs:
