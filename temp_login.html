@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head><link rel="icon" data-verdent-injected="1" href="https://verdent-image.s3.us-east-1.amazonaws.com/deployment-icons/2026/10/02/5d66ecbb-bc89-4d99-9902-d5d1593aa84b.svg">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-verdent-injected="1">app</title>
+    <meta name="description" content="VarantRadar Pro, BIST hisselerini hacim gücü, gün içi akış ve teknik kırılımlara göre tarayan varant radarı ve fintech terminalidir. Simülasyon portföyüyle risksiz strateji testi yapın.">
+    <meta name="keywords" content="varant, varantradar, varant radar, bist, hisse tarayıcı, hacim gücü, borsa terminali, fintech, simülasyon portföy, hisse tarama">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://varantradar-pro-8.verdent.app/">
+    <meta property="og:site_name" content="VARANTRADAR PRO">
+    <meta property="og:title" content="VARANTRADAR PRO — Varant Radar, BIST Hisse Tarayıcı">
+    <meta property="og:description" content="BIST hisselerini hacim gücü ve teknik sinyallere göre tarayan varant radarı ve fintech terminali.">
+    <meta property="og:url" content="https://varantradar-pro-8.verdent.app/">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <meta name="theme-color" content="#131314">
+    <link rel="manifest" href="/manifest.json">
+    
+    
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "VARANTRADAR PRO",
+      "alternateName": "Varant Radar",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Web",
+      "url": "https://varantradar-pro-8.verdent.app/",
+      "description": "BIST hisselerini hacim gücü, gün içi akış ve teknik kırılımlara göre tarayan varant radarı ve fintech terminali.",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "TRY" }
+    }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-base: #131314;
+            --bg-card: #1E1E1E;
+            --accent-blue: #3b82f6;
+            --accent-purple: #a855f7;
+            --accent-green: #10b981;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.08), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.08), transparent 25%);
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 2rem;
+        }
+
+        .login-card {
+            background: linear-gradient(145deg, rgba(30, 30, 30, 0.9) 0%, rgba(20, 20, 20, 0.9) 100%);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.02) inset, 0 0 30px rgba(59, 130, 246, 0.1);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-blue), var(--accent-purple), transparent);
+        }
+
+        .logo-area {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo-area i {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        .logo-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: #fff;
+        }
+        
+        .logo-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 0.2rem;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.8rem 1rem 0.8rem 2.8rem;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+            background: rgba(0,0,0,0.4);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 0.9rem;
+            background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            width: 100%;
+            padding: 0.8rem;
+            background: rgba(59, 130, 246, 0.08);
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            border-radius: 8px;
+            color: var(--accent-blue);
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.8rem;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(59, 130, 246, 0.15);
+            border-color: var(--accent-blue);
+        }
+
+        .btn-google {
+            width: 100%;
+            padding: 0.8rem;
+            background: #ffffff;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            color: #1f2937;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-google:hover {
+            background: #f3f4f6;
+            transform: translateY(-1px);
+        }
+
+        .btn-recovery {
+            width: 100%;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            cursor: pointer;
+            margin-top: 1.2rem;
+            transition: color 0.2s ease;
+        }
+
+        .btn-recovery:hover {
+            color: var(--accent-blue);
+        }
+
+        .auth-note {
+            text-align: center;
+            font-size: 0.72rem;
+            color: rgba(148, 163, 184, 0.6);
+            margin-top: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+
+        .error-msg {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+            padding: 0.8rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+
+        .footer-text {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.75rem;
+            color: rgba(148, 163, 184, 0.5);
+        }
+        
+        .glow-orb {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            background: var(--accent-purple);
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.15;
+            top: -50px;
+            right: -50px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <div class="login-card" id="auth-login-card">
+            <div class="glow-orb"></div>
+
+            <div class="logo-area">
+                <i class="fa-solid fa-layer-group"></i>
+                <div class="logo-title">VARANTRADAR PRO</div>
+                <div class="logo-subtitle">FİNTECH TERMİNALİ</div>
+            </div>
+
+            <!-- Hata kutusu (JS tarafindan doldurulur) -->
+            <div class="error-msg" id="auth-error-box" style="display:none;"></div>
+
+            <!-- Klasik giris: VARSAYILAN ACIK (telefonlarda Supabase modali yerine garantili yol) -->
+            <form id="classic-login" style="display:block; margin-bottom:0.5rem;" autocomplete="on" method="POST" action="/login">
+                <div class="form-group">
+                    <label for="classic-user">Kullanıcı Adı</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-user"></i>
+                        <input type="text" id="classic-user" name="username" class="form-control"
+                               autocomplete="username" placeholder="Kullanıcı adınız" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="classic-pass">Şifre</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" id="classic-pass" name="password" class="form-control"
+                               autocomplete="current-password" placeholder="Şifreniz" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-login" style="margin-top:0.4rem;">
+                    GİRİŞ YAP <i class="fa-solid fa-right-to-bracket"></i>
+                </button>
+            </form>
+
+            <a href="/apk/VarantRadarPro.apk" download
+               style="display:flex; align-items:center; justify-content:center; gap:0.5rem; margin-top:0.9rem; padding:0.55rem 1rem; border:1px solid rgba(34,197,94,0.45); border-radius:8px; color:#22c55e; font-size:0.82rem; font-weight:700; text-decoration:none; background:rgba(34,197,94,0.08);">
+                <i class="fa-brands fa-android"></i> Android Uygulamasını İndir (APK)
+            </a>
+
+            <div style="display:flex; align-items:center; gap:0.8rem; margin-top:1.4rem;">
+                <div style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></div>
+                <span style="font-size:0.68rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px;">veya e-posta / Google ile</span>
+                <div style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></div>
+            </div>
+
+            <button type="button" id="btn-open-signin" class="btn-secondary" style="margin-top:1rem;">
+                E-POSTA İLE GİRİŞ <i class="fa-solid fa-arrow-right-to-bracket"></i>
+            </button>
+
+            <button type="button" id="btn-google-direct" class="btn-google" style="margin-top:0.6rem;">
+                <svg style="width:18px;height:18px;margin-right:10px;vertical-align:middle;" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Google ile Giriş Yap
+            </button>
+
+            <div class="separator" style="display:flex; align-items:center; gap:12px; margin:1.4rem 0; color:var(--text-muted); font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:1px;">
+                <span style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></span>
+                Veya e-posta ile devam et
+                <span style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></span>
+            </div>
+
+            <form id="email-login-form" class="verdent-inline-form" autocomplete="on">
+                <div class="form-group" style="margin-bottom:1rem;">
+                    <label for="login-email">E-posta Adresi</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-envelope"></i>
+                        <input type="email" id="login-email" class="form-control" placeholder="ornek@mail.com" required autocomplete="email">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom:1rem;">
+                    <label for="login-password">Şifre</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" id="login-password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+                    </div>
+                </div>
+                <div id="login-error" class="error-msg" style="display:none; margin-bottom:1rem;"></div>
+                <button type="submit" id="btn-email-login" class="btn-login" style="margin-top:0.5rem;">
+                    <i class="fa-solid fa-envelope"></i> E-POSTA İLE GİRİŞ YAP
+                </button>
+            </form>
+
+            <button type="button" id="btn-open-signup" class="btn-secondary">
+                <i class="fa-solid fa-user-plus"></i> Hesap Oluştur
+            </button>
+
+            <button type="button" id="btn-open-forgot" class="btn-recovery">
+                Şifremi unuttum
+            </button>
+
+            <button type="button" id="btn-classic-toggle" class="btn-recovery" style="margin-top:1rem;">
+                <i class="fa-solid fa-user-shield"></i> Kullanıcı adı / şifre formunu gizle
+            </button>
+
+            <div class="auth-note">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span>Kullanıcı adı ve şifrenizle girin; alternatif olarak e-posta/Google girişi kullanılabilir</span>
+            </div>
+        </div>
+
+        <div class="footer-text">
+            &copy; 2026 VarantRadar Pro. Tüm hakları gizlidir.<br>
+            Yetkisiz erişim kayıt altına alınmaktadır.
+        </div>
+    </div>
+
+    <script>
+        // BAGIMSIZ YEDEK MODU (CLASSIC_ONLY=1): sadece kullanici adi/sifre girisi.
+        // Supabase (e-posta/Google) butun tum giris yollari gizlenir/iptal edilir.
+        if (window.VR_CLASSIC_ONLY === 1) {
+            document.addEventListener('DOMContentLoaded', function () {
+                ['btn-open-signin', 'btn-open-signup', 'btn-open-forgot', 'btn-classic-toggle'].forEach(function (id) {
+                    var el = document.getElementById(id);
+                    if (el) el.style.display = 'none';
+                });
+                // "veya e-posta / Google ile" ayiriciyi da gizle (div'in ardindaki ilk ayirici)
+                var divs = document.querySelectorAll('.login-card > div[style*="height:1px"]');
+                if (divs.length >= 2) {
+                    var sep = divs[0].parentElement;
+                    if (sep) sep.style.display = 'none';
+                }
+                var note = document.querySelector('.auth-note');
+                if (note) note.innerHTML = '<i class="fa-solid fa-lock"></i> <span>Bu panel yalnızca kullanıcı adı ve şifre ile çalışır</span>';
+            });
+        }
+    </script>
+    <script src="/vendor/supabase.umd.js"></script>
+    <script type="module" src="/app-auth-v2.js"></script>
+    <script>
+        // Klasik kullanici adi / sifre girisi (modul JS gerekmez, her tarayicida calisir)
+        (function () {
+            function showClassicError(msg) {
+                var box = document.getElementById('auth-error-box');
+                if (box) {
+                    box.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + msg;
+                    box.style.display = 'block';
+                }
+            }
+
+            var toggle = document.getElementById('btn-classic-toggle');
+            var form = document.getElementById('classic-login');
+            if (!toggle || !form) return;
+
+            toggle.addEventListener('click', function () {
+                form.style.display = (form.style.display === 'none') ? 'block' : 'none';
+                if (form.style.display === 'block') {
+                    var u = document.getElementById('classic-user');
+                    if (u) u.focus();
+                }
+            });
+
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                var btn = form.querySelector('button[type=submit]');
+                var original = btn.innerHTML;
+                var username = document.getElementById('classic-user').value;
+                var password = document.getElementById('classic-pass').value;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Kontrol ediliyor...';
+                fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username, password: password })
+                }).then(function (res) {
+                    return res.json().then(function (j) { return { ok: res.ok, body: j }; });
+                }).then(function (r) {
+                    if (r.ok && r.body.status === 'success') {
+                        window.location.replace('/');
+                    } else {
+                        showClassicError((r.body && r.body.message) || 'Giriş başarısız. Tekrar deneyin.');
+                        btn.disabled = false;
+                        btn.innerHTML = original;
+                    }
+                }).catch(function () {
+                    showClassicError('Sunucuya ulaşılamadı. Bağlantınızı kontrol edip tekrar deneyin.');
+                    btn.disabled = false;
+                    btn.innerHTML = original;
+                });
+            });
+        })();
+
+        // Eski tarayici / modul yukleme hatasi yakalayici:
+        // app-auth.js modulu hic calismadiysa kullaniciya gorunur mesaj ver.
+        // (CLASSIC_ONLY modunda klasik form zaten acik, uyari gereksiz)
+        setTimeout(function () {
+            if (!window.__vrAuthBooted && window.VR_CLASSIC_ONLY !== 1) {
+                var box = document.getElementById('auth-error-box');
+                if (box && box.style.display === 'none') {
+                    box.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' +
+                        'Giriş sistemi yüklenemedi. Tarayıcınız eski olabilir; güncel Chrome veya Safari kullanıp sayfayı yenileyin ya da aşağıdaki kullanıcı adı/şifre girişini kullanın.';
+                    box.style.display = 'block';
+                }
+            }
+        }, 8000);
+    </script>
+
+<script src="/__verdent/deploy-badge.js?pid=1&tn=2664324be6fb013fe4d8b37cc6e29971&wpid=716133d6-012d-4d5a-9092-8597ff695faa" async></script>
+</body>
+</html>

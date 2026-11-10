@@ -1,0 +1,86 @@
+{
+  "equity_curve": [
+    {
+      "daily_pnl": 0.0,
+      "date_str": "2026-09-12",
+      "end_equity": 100000.0,
+      "owner": "local:nebioglur",
+      "start_equity": 100000.0,
+      "total_trades": 0,
+      "win_trades": 0
+    },
+    {
+      "daily_pnl": 950.6619452697114,
+      "date_str": "2026-11-06",
+      "end_equity": 100950.6619452697,
+      "owner": "local:nebioglur",
+      "start_equity": 100000.0,
+      "total_trades": 1,
+      "win_trades": 1
+    }
+  ],
+  "performance": {
+    "max_drawdown_tl": 0.0,
+    "minimum_samples": 5,
+    "net_pnl": 950.66,
+    "profit_factor": null,
+    "ready": 0,
+    "strategies": [
+      {
+        "avg_loss": 0.0,
+        "avg_win": 950.66,
+        "net_pnl": 950.66,
+        "profit_factor": null,
+        "ready": 0,
+        "strategy_name": "V8 ELITE GÜÇLÜ POZİTİF A-SINIFI (İvmelenme (Phase 2)) + 💸 Akıllı Para, ♟️ Sektör Gücü, 🛡️ VWAP Üstü, 🔥 Süper Hacim",
+        "trades": 1,
+        "win_rate": 100.0
+      }
+    ],
+    "total_trades": 1,
+    "win_rate": 100.0
+  },
+  "status": "success",
+  "trades": [
+    {
+      "atr_value": 0.34963642364241393,
+      "date_str": "2026-11-06",
+      "engine_version": "V8_ELITE",
+      "entry_checks": "Ana trend, RSI dengeli, Hacim teyidi, VWAP üstü, Tuzak/FOMO temiz, Sektör desteği, FOMO kontrollü | Bonuslar: 💸 Akıllı Para, ♟️ Sektör Gücü, 🛡️ VWAP Üstü, 🔥 Süper Hacim",
+      "entry_price": 70.80604694366455,
+      "entry_score": 100.0,
+      "entry_time": "2026-11-06 10:15:00",
+      "exit_price": 73.33982195281983,
+      "exit_reason": "⚖️ KADEMELİ TP1 (%50 SATILDI, STOP MALİYETE ÇEKİLDİ) + SEANS SONU NAKITE GECIS (17:50)",
+      "exit_time": "2026-11-06 17:55:00",
+      "id": 1,
+      "market_regime": "GÜÇLÜ POZİTİF",
+      "owner": "local:nebioglur",
+      "pnl_pct": 2.881176369691393,
+      "pnl_val": 950.6619452697114,
+      "realized_pnl": 950.6619452697114,
+      "risk_amount": 792.0000000000027,
+      "shares": 466,
+      "strategy_name": "V8 ELITE GÜÇLÜ POZİTİF A-SINIFI (İvmelenme (Phase 2)) + 💸 Akıllı Para, ♟️ Sektör Gücü, 🛡️ VWAP Üstü, 🔥 Süper Hacim",
+      "symbol": "FROTO.IS"
+    }
+  ],
+  "weekly_target": {
+    "actual_pct": 0.95,
+    "gap_pct": 5.05,
+    "guard": {
+      "entries_paused": 0,
+      "lock_reason": "",
+      "loss_limit_pct": 2.5,
+      "loss_limit_reached": 0,
+      "target_pct": 6.0,
+      "target_reached": 0,
+      "week_pct": 0.95,
+      "week_pnl": 950.66
+    },
+    "label": "Haftalık %6 hedef takibi (garanti değildir)",
+    "reached": false,
+    "sessions": 1,
+    "target_pct": 6.0
+  }
+}
