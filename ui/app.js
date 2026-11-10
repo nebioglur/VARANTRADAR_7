@@ -8561,3 +8561,40 @@ function injectMiniChartButtons() {
 })();
 
 
+
+
+// ==================== APP DOWNLOAD MODAL ====================
+function openDownloadModal(prefTab) {
+    const modal = document.getElementById('appDownloadModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        if (prefTab) switchDownloadTab(prefTab);
+        else if (isIOS) switchDownloadTab('ios');
+        else switchDownloadTab('android');
+    }
+}
+function closeDownloadModal() {
+    const modal = document.getElementById('appDownloadModal');
+    if (modal) modal.style.display = 'none';
+}
+function switchDownloadTab(tab) {
+    const iosContent = document.getElementById('dl-content-ios');
+    const androidContent = document.getElementById('dl-content-android');
+    const tabIos = document.getElementById('dl-tab-ios');
+    const tabAndroid = document.getElementById('dl-tab-android');
+    if (tab === 'ios') {
+        if (iosContent) iosContent.style.display = 'block';
+        if (androidContent) androidContent.style.display = 'none';
+        if (tabIos) { tabIos.style.background = '#2563eb'; tabIos.style.color = '#fff'; }
+        if (tabAndroid) { tabAndroid.style.background = 'transparent'; tabAndroid.style.color = 'var(--text-muted, #94a3b8)'; }
+    } else {
+        if (iosContent) iosContent.style.display = 'none';
+        if (androidContent) androidContent.style.display = 'block';
+        if (tabAndroid) { tabAndroid.style.background = '#16a34a'; tabAndroid.style.color = '#fff'; }
+        if (tabIos) { tabIos.style.background = 'transparent'; tabIos.style.color = 'var(--text-muted, #94a3b8)'; }
+    }
+}
+window.openDownloadModal = openDownloadModal;
+window.closeDownloadModal = closeDownloadModal;
+window.switchDownloadTab = switchDownloadTab;

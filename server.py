@@ -1246,7 +1246,7 @@ def require_auth():
     # Arama motorlari + PWA dosyalari + APK indirme oturum kapisi disinda
     if request.path in ('/robots.txt', '/sitemap.xml', '/manifest.json', '/sw.js', '/icons/icon-192.png', '/icons/icon-512.png'):
         return
-    if request.path == '/apk/VarantRadarPro.apk' or request.path.startswith('/apk/'):
+    if request.path == '/apk/VarantRadarPro.apk' or request.path.startswith('/apk/') or request.path.startswith('/ios/') or request.path == '/download/ios':
         return
 
     if not session.get('logged_in'):
@@ -1589,6 +1589,71 @@ def serve_apk(filename):
             response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
             return response
     return "APK Bulunamadı", 404
+
+@app.route('/ios/VarantRadarPro.mobileconfig')
+@app.route('/download/ios')
+def serve_ios_profile():
+    import base64
+    icon_b64 = ""
+    icon_path = os.path.join(os.path.dirname(__file__), "ui", "icons", "icon-192.png")
+    if os.path.exists(icon_path):
+        with open(icon_path, "rb") as f:
+            icon_b64 = base64.b64encode(f.read()).decode("utf-8")
+    
+    base_url = _base_url()
+    
+    mobileconfig = f"""<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>PayloadContent</key>
+    <array>
+        <dict>
+            <key>FullScreen</key>
+            <true/>
+            <key>Icon</key>
+            <data>{icon_b64}</data>
+            <key>IsRemovable</key>
+            <true/>
+            <key>Label</key>
+            <string>VarantRadar Pro</string>
+            <key>PayloadDescription</key>
+            <string>VarantRadar Pro iOS WebClip Uygulamasi</string>
+            <key>PayloadDisplayName</key>
+            <string>VarantRadar Pro</string>
+            <key>PayloadIdentifier</key>
+            <string>com.varantradarpro.ios.webclip</string>
+            <key>PayloadType</key>
+            <string>com.apple.webClip.managed</string>
+            <key>PayloadUUID</key>
+            <string>c38ef801-b21a-4d45-8854-911d04499120</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+            <key>Precomposed</key>
+            <true/>
+            <key>URL</key>
+            <string>{base_url}/</string>
+        </dict>
+    </array>
+    <key>PayloadDisplayName</key>
+    <string>VarantRadar Pro</string>
+    <key>PayloadIdentifier</key>
+    <string>com.varantradarpro.ios.profile</string>
+    <key>PayloadRemovalDisallowed</key>
+    <false/>
+    <key>PayloadType</key>
+    <string>Configuration</string>
+    <key>PayloadUUID</key>
+    <string>a78ef902-b21a-4d45-8854-911d04499121</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+</dict>
+</plist>"""
+    response = make_response(mobileconfig)
+    response.headers['Content-Type'] = 'application/x-apple-aspen-config; charset=utf-8'
+    response.headers['Content-Disposition'] = 'attachment; filename="VarantRadarPro.mobileconfig"'
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return response
 
 @app.route("/<path:filename>")
 def static_files(filename):
