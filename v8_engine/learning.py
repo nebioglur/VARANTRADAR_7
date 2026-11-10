@@ -163,21 +163,24 @@ class OutcomeEngine:
         conn = V8Database.get_connection()
         cursor = conn.cursor()
 
-        # Duplicate temizligi: ayni hisse ve ayni gun icin birden fazla kayit varsa ilk kaydi koru
-        try:
-            cursor.execute("""
-                DELETE FROM v8_signals 
-                WHERE rowid NOT IN (
-                    SELECT MIN(rowid) FROM v8_signals GROUP BY symbol, substr(timestamp, 1, 10)
-                )
-            """)
-            cursor.execute("""
-                DELETE FROM v8_outcomes 
-                WHERE signal_id NOT IN (SELECT signal_id FROM v8_signals)
-            """)
-            conn.commit()
-        except Exception:
-            pass
+        # Duplicate temizligi: ayni hisse ve ayni gun icin birden fazla kayit varsa ilk kaydi koru (en fazla 5 dk'da 1 kez)
+        now_ts = time.time()
+        if now_ts - getattr(self, "_last_dedup_ts", 0) > 300:
+            try:
+                cursor.execute("""
+                    DELETE FROM v8_signals 
+                    WHERE rowid NOT IN (
+                        SELECT MIN(rowid) FROM v8_signals GROUP BY symbol, substr(timestamp, 1, 10)
+                    )
+                """)
+                cursor.execute("""
+                    DELETE FROM v8_outcomes 
+                    WHERE signal_id NOT IN (SELECT signal_id FROM v8_signals)
+                """)
+                conn.commit()
+                self._last_dedup_ts = now_ts
+            except Exception:
+                pass
 
         try:
             from zoneinfo import ZoneInfo
@@ -282,13 +285,15 @@ class OutcomeEngine:
             mfe = round(max(float(r["max_favorable_excursion"] or 0), mfe_calc), 2)
             mae = round(min(float(r["max_adverse_excursion"] or 0), mae_calc), 2)
 
-            final_res = r["final_result"] or "PENDING"
+final_res = r["final_result"] or "PENDING"
             if mfe >= 3.0:
                 final_res = "WIN"
             elif mae <= -2.0:
                 final_res = "LOSS"
             elif signal_day_closed:
                 final_res = "WIN" if cur_p > entry_price else "LOSS"
+            else:
+                final_res = "PENDING"
 
             cursor.execute("""
                 INSERT INTO v8_outcomes (

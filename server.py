@@ -2440,6 +2440,24 @@ def api_system_push_market_data():
 
         all_cands = list(dash_data.get('tavan_adaylari', []) or [])
         sim_seen = {c.get('symbol') or c.get('Symbol') for c in all_cands if (c.get('symbol') or c.get('Symbol'))}
+        # V8 Giriş Onaylı (ENTER) hisseleri en yüksek öncelikle simülasyon havuzuna ekle
+        try:
+            v8_al_cands = [x for x in (get_v8_breakout_data() or []) if (x.get("entry_status") or "").upper() == "ENTER"]
+            for vc in reversed(v8_al_cands):
+                vsym = vc.get("symbol")
+                if vsym and vsym not in sim_seen:
+                    vp = float(vc.get("price") or vc.get("Daily_Close") or 0.0)
+                    all_cands.insert(0, {
+                        "symbol": vsym,
+                        "score": float(vc.get("breakout_score") or 99.0),
+                        "morning_price": vp,
+                        "ceiling_target": float(vc.get("target1") or (vp * 1.05)),
+                        "morning_phase": "Phase 1 (10:15)",
+                        "metadata": json.dumps(vc, ensure_ascii=False)
+                    })
+                    sim_seen.add(vsym)
+        except Exception as _e_v8_c:
+            print(f"[PUSH V8 CANDIDATES ERROR] {_e_v8_c}")
         for opp in (dash_data.get('opportunities_1h', []) + dash_data.get('opportunities', [])):
             osym = opp.get('symbol') or opp.get('Symbol')
             if osym and osym not in sim_seen:

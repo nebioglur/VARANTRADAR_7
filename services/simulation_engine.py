@@ -412,6 +412,33 @@ class SimulationEngine:
 
     def _run_daily_simulation_inner(self, date_str: str):
         signals = MarketDataManager.get_signals(date_str)
+        # V8 Breakout 'ENTER' sinyallerini de doğrudan en başa ekle:
+        try:
+            from server import get_v8_breakout_data
+            v8_bos = get_v8_breakout_data() or []
+            v8_al = [x for x in v8_bos if (x.get("entry_status") or "").upper() == "ENTER"]
+            seen_syms = {s.get("symbol") for s in (signals or [])}
+            v8_sig_list = []
+            for item in v8_al:
+                sym = item.get("symbol")
+                if sym and sym not in seen_syms:
+                    p = float(item.get("price") or item.get("Daily_Close") or 0.0)
+                    t1 = float(item.get("target1") or (p * 1.05))
+                    v8_sig_list.append({
+                        "date_str": date_str,
+                        "symbol": sym,
+                        "score": float(item.get("breakout_score") or 99.0),
+                        "morning_price": p,
+                        "ceiling_target": t1,
+                        "morning_phase": "Phase 1 (10:15)",
+                        "metadata": json.dumps(item, ensure_ascii=False)
+                    })
+                    seen_syms.add(sym)
+            if v8_sig_list:
+                signals = v8_sig_list + (signals or [])
+        except Exception as _e_v8_s:
+            print(f"[SimEngine] V8 sinyalleri eklenirken hata: {_e_v8_s}")
+
         if not signals:
             return
 
@@ -634,9 +661,15 @@ class SimulationEngine:
                 'Sektor destegi': sector_ok,
                 'FOMO kontrollu': fomo_ok
             }
+            is_v8_approved = (meta.get('entry_status') == 'ENTER') or (meta.get('v8_breakout', {}).get('entry_status') == 'ENTER')
+            if is_v8_approved:
+                checks['Tuzak/FOMO temiz'] = True
+                checks['Ana trend'] = True
+                checks['RSI dengeli'] = True
+
             # Boga modunda ofansif katilim: 5/8 yeterli; Ayida 6/8
             min_passed = 5 if (_sim_regime in ('STRONG_BULL', 'BULL')) else 6
-            if sum(checks.values()) < min_passed or not checks['RSI dengeli'] or not checks['Tuzak/FOMO temiz']:
+            if not is_v8_approved and (sum(checks.values()) < min_passed or not checks['RSI dengeli'] or not checks['Tuzak/FOMO temiz']):
                 continue
 
             # BASARI VE SEKTOREL AYRISMA BONUSLARI (+%6 Hedef & %90 Win-Rate Guvencesi)
@@ -703,6 +736,21 @@ class SimulationEngine:
 
         current_cash = self.daily_budget
         
+        # Mevcut islemleri veritabanindan oku: Ayni gun ayni hisseye tek islem kurali
+        existing_today_trades = {}
+        try:
+            conn_chk = get_connection()
+            cur_chk = conn_chk.cursor()
+            cur_chk.execute(
+                "SELECT symbol, entry_time, entry_price, shares, exit_time FROM trades WHERE owner=? AND date_str=?",
+                (self.owner, date_str)
+            )
+            for er in cur_chk.fetchall():
+                existing_today_trades[er['symbol']] = dict(er)
+            conn_chk.close()
+        except Exception:
+            pass
+
         active_trades = []
         completed_trades = []
         stopped_out_symbols = set()
@@ -1043,10 +1091,16 @@ class SimulationEngine:
                 sec_tag = f' | {sec_name} (%{sec_rel:+.2f})' if sec_name else ''
                 strat_title = s.get('strategy_name') or f"V8 {s.get('morning_phase', 'Kirilim')}{sec_tag}"
 
+                orig_entry_time = str(current_time)
+                orig_entry_price = entry_price
+                if sym in existing_today_trades:
+                    orig_entry_time = existing_today_trades[sym].get('entry_time') or orig_entry_time
+                    orig_entry_price = float(existing_today_trades[sym].get('entry_price') or orig_entry_price)
+
                 trade_entry = {
                     'symbol': sym,
-                    'entry_time': str(current_time),
-                    'entry_price': entry_price,
+                    'entry_time': orig_entry_time,
+                    'entry_price': orig_entry_price,
                     'ceiling_target': ceiling,
                     'stop_price': setup['stop_price'],
                     'tp1_price': tp1_price,
@@ -1204,6 +1258,19 @@ class SimulationEngine:
                 completed_trades.append(trade)
 
         self._save_trades(date_str, completed_trades)
+        try:
+            conn_cln = get_connection()
+            cur_cln = conn_cln.cursor()
+            cur_cln.execute("""
+                DELETE FROM trades 
+                WHERE owner = ? AND date_str = ? AND rowid NOT IN (
+                    SELECT MIN(rowid) FROM trades WHERE owner = ? AND date_str = ? GROUP BY symbol
+                )
+            """, (self.owner, date_str, self.owner, date_str))
+            conn_cln.commit()
+            conn_cln.close()
+        except Exception:
+            pass
         print(f"[SimEngine] {date_str} için ÇELİK SİSTEM tamamlandı. İşlem Sayısı: {len(completed_trades)}")
 
         # Seans sonu: Nakde geçiş tamamlandıktan sonra gün sonu detaylı kâr/zarar tablosu ve hisseler Telegram'a otomatik gönderilir
