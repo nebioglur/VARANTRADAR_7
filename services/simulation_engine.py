@@ -432,13 +432,31 @@ class SimulationEngine:
                 if sym and sym not in seen_syms:
                     p = float(item.get("price") or item.get("Daily_Close") or 0.0)
                     t1 = float(item.get("target1") or (p * 1.05))
+                    
+                    # Discovery / Detection time (hardcoded 10:15 kaldirildi)
+                    scan_ts = item.get("scan_timestamp")
+                    sig_time_str = ""
+                    if scan_ts:
+                        try:
+                            from zoneinfo import ZoneInfo
+                            _sdt = datetime.fromtimestamp(float(scan_ts), ZoneInfo("Europe/Istanbul"))
+                            sig_time_str = _sdt.strftime("%H:%M")
+                        except Exception:
+                            pass
+                    if not sig_time_str and item.get("time"):
+                        sig_time_str = str(item.get("time"))[:5]
+                    if not sig_time_str and item.get("discovery_time"):
+                        sig_time_str = str(item.get("discovery_time"))[:5]
+
+                    phase_str = f"V8 Breakout ({sig_time_str})" if sig_time_str else "V8 Breakout"
                     v8_sig_list.append({
                         "date_str": date_str,
                         "symbol": sym,
                         "score": float(item.get("breakout_score") or 99.0),
                         "morning_price": p,
                         "ceiling_target": t1,
-                        "morning_phase": "Phase 1 (10:15)",
+                        "morning_phase": phase_str,
+                        "discovery_time": sig_time_str,
                         "metadata": json.dumps(item, ensure_ascii=False)
                     })
                     seen_syms.add(sym)
@@ -856,9 +874,29 @@ class SimulationEngine:
                     all_times.add(t)
                 
                 phase = str(s.get('morning_phase', ''))
+                meta = s.get('_metadata') or {}
+                if not meta and s.get('metadata'):
+                    try:
+                        meta = json.loads(s.get('metadata'))
+                    except Exception:
+                        meta = {}
+
                 import re
                 match = re.search(r'(\d{2}:\d{2})', phase)
-                time_str = match.group(1) + ":00" if match else "10:15:00"
+                time_str = None
+                if match:
+                    time_str = match.group(1) + ":00"
+                elif s.get('discovery_time'):
+                    time_str = str(s.get('discovery_time'))[:5] + ":00"
+                elif meta.get('discovery_time'):
+                    time_str = str(meta.get('discovery_time'))[:5] + ":00"
+                elif s.get('time') or meta.get('time'):
+                    t_cand = str(s.get('time') or meta.get('time'))[:5]
+                    if re.match(r'^\d{2}:\d{2}$', t_cand):
+                        time_str = t_cand + ":00"
+
+                if not time_str:
+                    time_str = "10:15:00"
                 
                 s['time_str'] = time_str
                 pending_signals.append(s)
@@ -1049,10 +1087,15 @@ class SimulationEngine:
             open_symbols = {t['symbol'] for t in active_trades if t['status'] == 'OPEN'}
             available_slots = max(0, effective_max_positions - len(open_symbols))
 
+            entries_in_this_bar = 0
+            MAX_ENTRIES_PER_BAR = 2  # Tek bir 5 dakikalık barda en fazla 2 en kaliteli hisse alınır (portföy zaman yayılımı)
+
             to_remove = []
             for s in list(pending_signals):
                 if effective_max_positions <= 0:
                     break  # Yalnizca rejim/zarar kilidi aktifse durdur
+                if available_slots <= 0 or entries_in_this_bar >= MAX_ENTRIES_PER_BAR:
+                    break
 
                 dt_ps = pd.to_datetime(f"{date_str} {s['time_str']}")
                 dt_ps = dt_ps.tz_localize(None) if dt_ps.tzinfo else dt_ps
@@ -1132,7 +1175,8 @@ class SimulationEngine:
 
                 orig_entry_time = str(current_time)
                 orig_entry_price = entry_price
-                if sym in existing_today_trades:
+                if sym in existing_today_trades and existing_today_trades[sym].get('exit_time'):
+                    # Yalnizca onceden kapanmis islemlerin giris zamani korunur
                     orig_entry_time = existing_today_trades[sym].get('entry_time') or orig_entry_time
                     orig_entry_price = float(existing_today_trades[sym].get('entry_price') or orig_entry_price)
 
@@ -1160,6 +1204,7 @@ class SimulationEngine:
                 active_trades.append(trade_entry)
                 open_symbols.add(sym)
                 available_slots -= 1
+                entries_in_this_bar += 1
                 self._save_single_trade(str(current_time)[:10], trade_entry)
                 try:
                     from services.telegram_bot import notify_sim_trade

@@ -970,7 +970,7 @@ def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.
     trade_score = trade.get("entry_score", trade.get("score", 0))
 
     def _send_once(message: str) -> bool:
-        sent = send_telegram_message(message)
+        sent = send_telegram_message(message, force=True)
         try:
             conn = get_connection()
             try:

@@ -859,6 +859,8 @@ def simulation_loop():
                     if osym and osym not in sim_seen:
                         if not opp.get('morning_phase'):
                             opp['morning_phase'] = f"Intraday ({now.strftime('%H:%M')})"
+                        if not opp.get('discovery_time'):
+                            opp['discovery_time'] = now.strftime('%H:%M')
                         all_cands.append(opp)
                         sim_seen.add(osym)
                 _stats = GLOBAL_DASHBOARD_CACHE.get('all_symbols_stats', {}) or {}
@@ -875,6 +877,7 @@ def simulation_loop():
                         cand['morning_price'] = p
                         cand['ceiling_target'] = p * 1.10
                         cand['morning_phase'] = 'Phase 1 (10:15)' if now.hour < 11 else f"Intraday ({now.strftime('%H:%M')})"
+                        cand['discovery_time'] = '10:15' if now.hour < 11 else now.strftime('%H:%M')
                         all_cands.append(cand)
                         sim_seen.add(sym)
                 if all_cands:
@@ -1236,7 +1239,7 @@ def require_auth():
             pass
     if request.method == 'OPTIONS': return
     
-    allowed = ['/login', '/logout', '/api/ping', '/api/auth_config', '/api/auth/session', '/api/system/git_pull', '/api/system/deploy', '/api/system/sync_verdent', '/api/system/push_market_data', '/api/cron/sync_to_pa', '/api/system/network_test', '/api/system/fast_scan', '/api/telegram/send_open_positions']
+    allowed = ['/login', '/logout', '/api/ping', '/api/auth_config', '/api/auth/session', '/api/system/git_pull', '/api/system/deploy', '/api/system/sync_verdent', '/api/system/push_market_data', '/api/cron/sync_to_pa', '/api/system/network_test', '/api/system/fast_scan', '/api/telegram/send_open_positions', '/api/simulation/sync_staggered_today']
     if request.path in allowed: return
     
     # Allow static assets for login page
@@ -5291,6 +5294,68 @@ def api_telegram_send_open_positions():
             'proxies': _get_telegram_proxies()
         }
         return jsonify(res)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/simulation/sync_staggered_today', methods=['GET', 'POST'])
+def api_simulation_sync_staggered_today():
+    """Bugünün simülasyon pozisyonlarını yapay 10:15 yığılmasından kurtarır,
+    zamana yayılmış ve Telegram ile tam senkronize hale getirir."""
+    try:
+        from datetime import datetime
+        try:
+            from zoneinfo import ZoneInfo
+            now_ist = datetime.now(ZoneInfo("Europe/Istanbul"))
+        except Exception:
+            now_ist = datetime.now()
+        d_str = now_ist.strftime("%Y-%m-%d")
+
+        from services.trade_database import get_connection, SmartRow
+        owner = get_owner_key()
+        if not owner or owner == 'default':
+            owner = 'local:nebioglur'
+
+        # 1. 10:15'e yapay kilitlenmiş AÇIK işlemleri temizle (kapalı işlemler korunur)
+        with get_connection() as conn:
+            conn.row_factory = SmartRow
+            cur = conn.cursor()
+            cur.execute("""
+                DELETE FROM trades 
+                WHERE date_str = ? AND exit_time IS NULL
+            """, (d_str,))
+            conn.commit()
+
+        # 2. Yeni kademeli simülasyon motorunu çalıştır
+        from services.simulation_engine import SimulationEngine
+        sim = SimulationEngine(owner=owner)
+        sim.run_daily_simulation(d_str)
+
+        # 3. Açık pozisyonları oku
+        open_trades = []
+        with get_connection() as conn:
+            conn.row_factory = SmartRow
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT * FROM trades 
+                WHERE date_str = ? AND (exit_time IS NULL OR exit_time = '' OR exit_price IS NULL)
+                ORDER BY entry_time ASC
+            """, (d_str,))
+            open_trades = [dict(r) for r in cur.fetchall()]
+
+        # 4. Telegram'a güncellenmiş senkronize raporu gönder
+        from services.telegram_bot import send_open_positions_report
+        tg_res = send_open_positions_report(trades=open_trades, force=True)
+
+        return jsonify({
+            "status": "success",
+            "message": "Bugünün işlemleri kademeli seans saatlerine göre başarıyla senkronize edildi.",
+            "count": len(open_trades),
+            "trades": [{"symbol": t.get("symbol"), "entry_time": t.get("entry_time"), "price": t.get("entry_price")} for t in open_trades],
+            "telegram": tg_res
+        })
     except Exception as e:
         import traceback
         traceback.print_exc()
