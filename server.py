@@ -1236,7 +1236,7 @@ def require_auth():
             pass
     if request.method == 'OPTIONS': return
     
-    allowed = ['/login', '/logout', '/api/ping', '/api/auth_config', '/api/auth/session', '/api/system/git_pull', '/api/system/deploy', '/api/system/sync_verdent', '/api/system/push_market_data', '/api/cron/sync_to_pa', '/api/system/network_test', '/api/system/fast_scan']
+    allowed = ['/login', '/logout', '/api/ping', '/api/auth_config', '/api/auth/session', '/api/system/git_pull', '/api/system/deploy', '/api/system/sync_verdent', '/api/system/push_market_data', '/api/cron/sync_to_pa', '/api/system/network_test', '/api/system/fast_scan', '/api/telegram/send_open_positions']
     if request.path in allowed: return
     
     # Allow static assets for login page
@@ -5267,12 +5267,22 @@ def api_telegram_send_open_positions():
             with get_connection() as conn:
                 conn.row_factory = SmartRow
                 cur = conn.cursor()
-                cur.execute("SELECT * FROM trades WHERE exit_time IS NULL ORDER BY entry_time DESC")
-                open_trades = [dict(r) for r in cur.fetchall()]
+                cur.execute("""
+                    SELECT * FROM trades 
+                    WHERE (exit_time IS NULL OR exit_time = '' OR exit_price IS NULL OR exit_reason LIKE '%AÇIK POZİSYON%')
+                    ORDER BY entry_time DESC
+                """)
+                rows = cur.fetchall()
+                seen = set()
+                for r in rows:
+                    sym = (r.get('symbol') or '').upper()
+                    if sym and sym not in seen:
+                        seen.add(sym)
+                        open_trades.append(dict(r))
         except Exception as e_db:
             print(f"[API OPEN POS] DB okuma hatası: {e_db}")
 
-        res = send_open_positions_report(trades=open_trades if open_trades else None, force=True)
+        res = send_open_positions_report(trades=open_trades, force=True)
         return jsonify(res)
     except Exception as e:
         import traceback

@@ -1849,15 +1849,25 @@ def send_open_positions_report(trades: list = None, force: bool = True) -> dict:
     equity_info = {}
 
     if trades is not None:
-        open_trades = [t for t in trades if not t.get("exit_time")]
+        open_trades = [t for t in trades if (not t.get("exit_time") or not t.get("exit_price") or "AÇIK POZİSYON" in str(t.get("exit_reason") or ""))]
     else:
         try:
             with get_connection() as conn:
                 conn.row_factory = SmartRow
                 cur = conn.cursor()
-                cur.execute("SELECT * FROM trades WHERE exit_time IS NULL ORDER BY entry_time DESC")
+                cur.execute("""
+                    SELECT * FROM trades 
+                    WHERE (exit_time IS NULL OR exit_time = '' OR exit_price IS NULL OR exit_reason LIKE '%AÇIK POZİSYON%')
+                    ORDER BY entry_time DESC
+                """)
                 rows = cur.fetchall()
-                open_trades = [dict(r) for r in rows]
+                seen = set()
+                open_trades = []
+                for r in rows:
+                    sym = (r.get("symbol") or "").upper()
+                    if sym and sym not in seen:
+                        seen.add(sym)
+                        open_trades.append(dict(r))
 
                 cur.execute("SELECT * FROM equity_log ORDER BY date_str DESC LIMIT 1")
                 eq_row = cur.fetchone()
