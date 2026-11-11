@@ -826,37 +826,40 @@ class SimulationEngine:
         dfs = {}
         all_times = set()
         
+        try:
+            from zoneinfo import ZoneInfo
+            _now_ist = datetime.now(ZoneInfo('Europe/Istanbul'))
+        except Exception:
+            _now_ist = datetime.now()
+        _is_today = date_str == _now_ist.strftime('%Y-%m-%d')
+        _now_t = _now_ist.time() if _is_today else time(18, 0)
+        end_h = min(18, max(11, _now_t.hour))
+        end_m = min(55, max(30, (_now_t.minute // 5) * 5)) if end_h == _now_t.hour else 55
+        
+        # Gün içi tam seans zaman ızgarasını (10:00'dan güncel seans saatine kadar) oluştur
+        _all_day_times = []
+        _h, _m = 10, 0
+        while True:
+            _all_day_times.append(f'{_h:02d}:{_m:02d}:00')
+            if _h > end_h or (_h == end_h and _m >= end_m):
+                break
+            _m += 5
+            if _m >= 60:
+                _h += 1
+                _m = 0
+
         for s in candidate_pool:
             sym = s['symbol']
             df = MarketDataManager.get_market_data(date_str, sym)
+            p = float(s.get('morning_price') or s.get('Price') or 0.0)
+            ch = float(s.get('Change_Pct') or 1.5)
+            _cur_p = p * (1.0 + ch / 100.0) if p > 0 else 10.0
+
             if df.empty:
-                p = float(s.get('morning_price') or s.get('Price') or 0.0)
                 if p > 0:
-                    ch = float(s.get('Change_Pct') or 1.5)
-                    try:
-                        from zoneinfo import ZoneInfo
-                        _now_ist = datetime.now(ZoneInfo('Europe/Istanbul'))
-                    except Exception:
-                        _now_ist = datetime.now()
-                    _now_t = _now_ist.time() if date_str == _now_ist.strftime('%Y-%m-%d') else time(18, 0)
-                    end_h = min(18, max(11, _now_t.hour))
-                    end_m = min(55, max(30, (_now_t.minute // 5) * 5)) if end_h == _now_t.hour else 55
-                    
-                    _times = []
-                    _h, _m = 10, 0
-                    while True:
-                        _times.append(f'{_h:02d}:{_m:02d}:00')
-                        if _h > end_h or (_h == end_h and _m >= end_m):
-                            break
-                        _m += 5
-                        if _m >= 60:
-                            _h += 1
-                            _m = 0
-                            
-                    _n = len(_times)
-                    _cur_p = p * (1.0 + ch / 100.0)
+                    _n = len(_all_day_times)
                     _bars = []
-                    for _i, _t_str in enumerate(_times):
+                    for _i, _t_str in enumerate(_all_day_times):
                         _pct = (_i + 1) / _n
                         _step_c = p + (_cur_p - p) * _pct
                         _step_o = p if _i == 0 else _bars[-1]['Close']
@@ -869,7 +872,32 @@ class SimulationEngine:
                             'Close': _step_c,
                             'Volume': 50000 + int(_i * 1000)
                         })
-                    df = pd.DataFrame(_bars, index=[pd.to_datetime(f'{date_str} {t}') for t in _times])
+                    df = pd.DataFrame(_bars, index=[pd.to_datetime(f'{date_str} {t}') for t in _all_day_times])
+            elif _is_today and getattr(df.index, '__len__', lambda: 0)() > 0:
+                # Eğer indirilen barlar gün ortasında (örn 10:20'de) kesilmişse, seans saatine kadar uzat
+                last_dt = df.index[-1]
+                last_time_str = last_dt.strftime('%H:%M:00')
+                missing_times = [t for t in _all_day_times if t > last_time_str]
+                if missing_times:
+                    last_c = float(df['Close'].iloc[-1])
+                    _mn = len(missing_times)
+                    _ext_bars = []
+                    for _mi, _mt in enumerate(missing_times):
+                        _pct = (_mi + 1) / _mn
+                        _ext_c = last_c + (_cur_p - last_c) * _pct
+                        _ext_o = last_c if _mi == 0 else _ext_bars[-1]['Close']
+                        _ext_h = max(_ext_o, _ext_c) * 1.003
+                        _ext_l = min(_ext_o, _ext_c) * 0.997
+                        _ext_bars.append({
+                            'Open': _ext_o,
+                            'High': _ext_h,
+                            'Low': _ext_l,
+                            'Close': _ext_c,
+                            'Volume': 50000 + int(_mi * 1000)
+                        })
+                    ext_df = pd.DataFrame(_ext_bars, index=[pd.to_datetime(f'{date_str} {t}') for t in missing_times])
+                    df = pd.concat([df, ext_df])
+
             if not df.empty:
                 # Karma tz verisi: Postgres timestamp'leri tz-aware, yfinance
                 # verisi naive geliyor; sorted() bu karisimda patliyor.

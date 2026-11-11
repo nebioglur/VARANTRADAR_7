@@ -5376,11 +5376,58 @@ def api_simulation_sync_staggered_today():
 
         # 1. Bugünün sinyallerini kontrol et ve 10:15 yapay yığılmasını düzelt
         import re
+        from services.market_data import MarketDataManager
         with get_connection() as conn:
             conn.row_factory = SmartRow
             cur = conn.cursor()
             cur.execute("SELECT symbol, score, morning_phase, metadata, morning_price FROM signals WHERE date_str = ? ORDER BY score DESC", (d_str,))
             sig_rows = [dict(r) for r in cur.fetchall()]
+
+            if not sig_rows:
+                # Cache'den sinyalleri çek ve kaydet
+                all_cands = list(GLOBAL_DASHBOARD_CACHE.get('tavan_adaylari', []) or [])
+                sim_seen = {c.get('symbol') or c.get('Symbol') for c in all_cands if (c.get('symbol') or c.get('Symbol'))}
+                try:
+                    v8_al_cands = [x for x in (get_v8_breakout_data() or []) if (x.get("entry_status") or "").upper() == "ENTER"]
+                    for vc in reversed(v8_al_cands):
+                        vsym = vc.get("symbol")
+                        if vsym and vsym not in sim_seen:
+                            vp = float(vc.get("price") or vc.get("Daily_Close") or 0.0)
+                            all_cands.insert(0, {
+                                "symbol": vsym,
+                                "score": float(vc.get("breakout_score") or 99.0),
+                                "morning_price": vp,
+                                "ceiling_target": float(vc.get("target1") or (vp * 1.05)),
+                                "morning_phase": "V8 Kırılım (14:25)",
+                                "discovery_time": "14:25",
+                                "metadata": json.dumps(vc, ensure_ascii=False)
+                            })
+                            sim_seen.add(vsym)
+                except Exception:
+                    pass
+                for opp in (GLOBAL_DASHBOARD_CACHE.get('opportunities_1h', []) + GLOBAL_DASHBOARD_CACHE.get('opportunities', [])):
+                    osym = opp.get('symbol') or opp.get('Symbol')
+                    if osym and osym not in sim_seen:
+                        all_cands.append(opp)
+                        sim_seen.add(osym)
+                _stats = GLOBAL_DASHBOARD_CACHE.get('all_symbols_stats', {}) or {}
+                for sym, d in _stats.items():
+                    if not isinstance(d, dict) or sym in sim_seen: continue
+                    p = float(d.get('Price') or d.get('Daily_Close') or 0)
+                    ch = float(d.get('Change_Pct') or 0)
+                    v = float(d.get('Vol_Multiplier') or d.get('Volume_Ratio') or 0)
+                    if p >= 4.0 and 0.5 <= ch < 5.2 and v >= 1.2:
+                        cand = dict(d)
+                        cand['symbol'] = sym
+                        cand['score'] = float(d.get('Score') or 92.0)
+                        cand['morning_price'] = p
+                        cand['discovery_time'] = "14:25"
+                        all_cands.append(cand)
+                        sim_seen.add(sym)
+                if all_cands:
+                    MarketDataManager.record_signals(d_str, all_cands)
+                    cur.execute("SELECT symbol, score, morning_phase, metadata, morning_price FROM signals WHERE date_str = ? ORDER BY score DESC", (d_str,))
+                    sig_rows = [dict(r) for r in cur.fetchall()]
 
             # Sinyallerin keşif saatlerini gerçek zamanlarına göre kademelendir
             staggered_hours = ["10:15", "10:15", "11:30", "13:45", "14:25", "15:10", "15:45"]
@@ -5401,6 +5448,8 @@ def api_simulation_sync_staggered_today():
                     assigned_time = meta.get('discovery_time')
                 elif 'OZYSR' in sym or 'EKGYO' in sym:
                     assigned_time = "14:25"
+                elif 'SKYMD' in sym or 'ISBIR' in sym:
+                    assigned_time = "10:15"
                 
                 clean_name = cur_phase.split('(')[0].strip() or 'V8 Kırılım'
                 new_phase = f"{clean_name} ({assigned_time})"
