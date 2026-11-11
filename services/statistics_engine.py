@@ -132,8 +132,30 @@ class StatisticsEngine:
         peak_equity = 0.0
         running_equity = 0.0
         max_drawdown = 0.0
+        def _clean_strategy_label(raw: str) -> str:
+            if not raw or not str(raw).strip():
+                return "V8 Kırılım Stratejisi"
+            raw_s = str(raw).strip()
+            if raw_s in ("V8", "V8 "):
+                return "V8 Kırılım Stratejisi"
+            u = raw_s.upper()
+            if "PHASE 1" in u or "ERKEN KOPUŞ" in u or "ERKEN KOPUS" in u:
+                return "V8 Erken Kopuş (Phase 1)"
+            if "PHASE 2" in u or "İVMELENME" in u or "IVMELENME" in u:
+                return "V8 İvmelenme (Phase 2)"
+            if "PHASE 3" in u or "TREND" in u:
+                return "V8 Trend Takip (Phase 3)"
+            if "DEMIR" in u or "SEKTOR" in u or "SEKTÖR" in u or "|" in u:
+                if "|" in raw_s:
+                    sec = raw_s.split("|")[-1].split("(")[0].strip()
+                    return f"V8 Sektör Öncüsü ({sec})"
+                return "V8 Sektör Öncüsü"
+            base = raw_s.split("+")[0].strip()
+            return base if len(base) > 2 else "V8 Kırılım Stratejisi"
+
         for trade in trades:
-            name = trade.get("strategy_name") or "Önceki kayıt / Model bilgisi yok"
+            raw_name = trade.get("strategy_name") or ""
+            name = _clean_strategy_label(raw_name)
             bucket = buckets.setdefault(name, {"strategy_name": name, "trades": 0, "wins": 0, "losses": 0, "gross_profit": 0.0, "gross_loss": 0.0, "pnl_total": 0.0, "pnl_values": []})
             pnl = float(trade.get("pnl_val") or 0.0)
             bucket["trades"] += 1
