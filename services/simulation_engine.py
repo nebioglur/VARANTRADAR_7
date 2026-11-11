@@ -393,10 +393,13 @@ class SimulationEngine:
         else:
             allocation = min(target_notional, risk_limited_notional)
 
-        # Taban guvencesi: hisse basina en az 10.000 TL
-        allocation = max(10000.0, allocation)
+        # Taban ve Tavan guvencesi: hisse basina en az 10.000 TL, EN FAZLA 25.000 TL (Kasanin %25'i)
+        # Dunku HUNER gibi tek hisseye 56.000 TL baglanip tum haftalik kari eritmesi KESINLIKLE engellenir.
+        max_position_cap = min(25000.0, self.daily_budget * 0.25)
+        allocation = max(10000.0, min(allocation, max_position_cap))
+        max_trade_risk = min(1000.0, self.daily_budget * 0.010)
 
-        return allocation, min(risk_budget, allocation * risk_per_share / entry_price)
+        return allocation, min(max_trade_risk, allocation * risk_per_share / entry_price)
 
     def run_daily_simulation(self, date_str: str):
         # Aynı hesap için eşzamanlı replay önlenir: iki koşucu üst üste binince
@@ -984,10 +987,21 @@ class SimulationEngine:
                 tp2_price = trade['tp2_price']
                 prefix = trade.get('reason_prefix', '')
                 
+                # BARS HELD SAYACI (Zaman Stopu Icin)
+                bars_held = trade.get('bars_held', 0) + 1
+                trade['bars_held'] = bars_held
+
+                # ZAMAN STOPU: 7 bar (35 dakika) gecti, hisse kâra gecemedi (%0.2'den kucuk),
+                # momentum kaybi var; akşama kadar tasinmaz, hemen maliyet civarindan cikilir.
+                is_stagnant = (bars_held >= 7 and close <= entry * 1.002 and not trade.get('scaled_out', False))
+
                 # En kötü senaryo: Önce Stop Loss patlar varsayımı
                 if low <= stop_price:
                     sell_price = min(stop_price, bar_open) * 0.9985 # gap-aware stop fill + slippage
                     reason = f"{prefix}⛔ ÇELİK STOP KESİLDİ"
+                elif is_stagnant:
+                    sell_price = close * 0.9990
+                    reason = "⏳ ZAMAN STOPU (35 DK HAREKETSİZLİK / MOMENTUM KAYBI)"
                 elif high >= tp2_price:
                     sell_price = max(tp2_price, bar_open) * 0.9985
                     reason = f"🚀 TAVAN (TAM KÂR ALINDI)"
@@ -996,11 +1010,8 @@ class SimulationEngine:
                     # Boga/yuksek volatilitede erken ve buyuk kisim satilir (kasa guvenligi),
                     # guclu bogada runner payi buyur (tavan potansiyeli).
                     trade['scaled_out'] = True
-                    try:
-                        _tp1_pct = int(_exit_plan.get("tp1_sell_pct", 50))
-                    except Exception:
-                        _tp1_pct = 50
-                    _tp1_pct = max(10, min(90, _tp1_pct))
+                    # KATI ASİMETRİK KÂR KİLİDİ: TP1'de en az %60 satılarak kâr kilitlenir!
+                    _tp1_pct = 60
                     out_shares = max(1, int(round(trade['shares'] * _tp1_pct / 100.0)))
                     if out_shares >= trade['shares']:
                         out_shares = max(1, trade['shares'] - 1)
@@ -1013,8 +1024,8 @@ class SimulationEngine:
                         net_profit = (out_shares * (scale_out_price - entry)) - comm
                         current_cash += sell_vol - comm 
                         
-                        # Artık geride kalan lotlar için stop başa (maliyete) çekilir! (Risk Free)
-                        trade['stop_price'] = entry 
+                        # Artık geride kalan lotlar için stop maliyet + komisyona çekilir! (SIFIR RİSKLİ KASA)
+                        trade['stop_price'] = entry * 1.0010 
                         
                         completed_trades.append({
                             'symbol': sym,
@@ -1092,20 +1103,25 @@ class SimulationEngine:
                 entry_price_for_stop = float(open_trade['entry_price'])
                 old_stop = float(open_trade['stop_price'])
                 new_stop = old_stop
+                # DİNAMİK 2-BAR İZ SÜREN STOP & ERKEN MALİYET KİLİDİ
                 if not open_trade.get('scaled_out', False):
-                    if bar_high >= entry_price_for_stop * 1.030 and old_stop < entry_price_for_stop * 1.002:
-                        new_stop = entry_price_for_stop * 1.002
-                        open_trade['reason_prefix'] = "[ERKEN KÂR KORUMA] "
+                    # +%1.5 görüldüğü anda stop maliyete çekilir (+%3 beklenmez!)
+                    if bar_high >= entry_price_for_stop * 1.015 and old_stop < entry_price_for_stop * 1.001:
+                        new_stop = entry_price_for_stop * 1.001
+                        open_trade['reason_prefix'] = "[ERKEN MALİYET KORUMA] "
                 else:
-                    if bar_high >= entry_price_for_stop * 1.070:
-                        new_stop = max(old_stop, entry_price_for_stop * 1.045)
-                        open_trade['reason_prefix'] = "[%4.5 KÂR KİLİTLENDİ] "
-                    elif bar_high >= entry_price_for_stop * 1.050:
-                        new_stop = max(old_stop, entry_price_for_stop * 1.028)
-                        open_trade['reason_prefix'] = "[%2.8 KÂR KİLİTLENDİ] "
-                    elif bar_high >= entry_price_for_stop * 1.035:
-                        new_stop = max(old_stop, entry_price_for_stop * 1.015)
-                        open_trade['reason_prefix'] = "[%1.5 KÂR KİLİTLENDİ] "
+                    # Kalan lotlar için son 2 mumun en düşüğünün altına iz süren stop
+                    try:
+                        two_bar_min = float(open_df.loc[:current_time, 'Low'].tail(2).min())
+                        if two_bar_min > entry_price_for_stop:
+                            new_stop = max(old_stop, two_bar_min * 0.9985)
+                            open_trade['reason_prefix'] = "[2-BAR İZ SÜREN STOP] "
+                    except Exception:
+                        pass
+                    if bar_high >= entry_price_for_stop * 1.050:
+                        new_stop = max(new_stop, entry_price_for_stop * 1.035)
+                    elif bar_high >= entry_price_for_stop * 1.030:
+                        new_stop = max(new_stop, entry_price_for_stop * 1.018)
                 open_trade['stop_price'] = new_stop
 
             # 2. YENİ ALIMLARI KONTROL ET
@@ -1156,7 +1172,9 @@ class SimulationEngine:
                 # 10:15 oncesi ilk acilis dalgalanmasinda isleme girme
                 if dt_current.time() < time(10, 15):
                     continue
-                if dt_current.time() >= time(17, 45):
+                # KATI ZAMAN KALKANI: Saat 14:30'dan sonra ASLA yeni pozisyon acilmaz!
+                # 17:15 ve 17:25 gibi seans sonu pozisyon acip komisyon/kaymaya kurban gitmeyi KESINLIKLE engeller.
+                if dt_current.time() >= time(14, 30):
                     to_remove.append(s)
                     continue
 

@@ -116,13 +116,47 @@ class BreakoutEngine:
                 fakeout_risk += 40
                 reasons.append("Tuzak riski: hacimsiz kırılım")
                 
-            # 2. Üst Fitil (Satıcılar bastırdı)
+            # 2. Üst Fitil (Satıcılar bastırdı - Mikro Kırılım Filtresi)
+            upper_wick = 0.0
+            wick_ratio = 0.0
             if candle_range > 0:
                 upper_wick = h - max(c, o)
                 wick_ratio = upper_wick / candle_range
-                if wick_ratio > 0.4:
-                    fakeout_risk += 40
-                    reasons.append("Tuzak riski: uzun üst fitil (satıcı baskısı)")
+                if wick_ratio > 0.25:
+                    fakeout_risk += 45
+                    reasons.append(f"Tuzak riski: uzun üst fitil (%{wick_ratio*100:.0f} satıcı baskısı)")
+                if wick_ratio > 0.35:
+                    breakout_score = max(0.0, breakout_score - 30)
+
+            # 2.1 VWAP Uzaklık Kontrolü (Rubber-Band Mean Reversion Koruması)
+            dist_vwap_pct = 0.0
+            try:
+                cum_vol = vol.cumsum().replace(0, np.nan)
+                vwap_s = (close * vol).cumsum() / cum_vol
+                cur_vwap = float(vwap_s.iloc[-1])
+                dist_vwap_pct = ((c - cur_vwap) / cur_vwap * 100.0) if cur_vwap > 0 else 0.0
+            except Exception:
+                dist_vwap_pct = 0.0
+
+            if dist_vwap_pct > 3.5:
+                fakeout_risk += 35
+                reasons.append(f"Tuzak riski: VWAP'tan aşırı uzama (+%{dist_vwap_pct:.1f})")
+
+            # 2.2 Volatilite Sıkışması (Bollinger vs Keltner Squeeze Teyidi)
+            is_squeeze = False
+            try:
+                bb_w = (bb_upper - (bb_mean - (bb_std * 2))) / bb_mean * 100.0
+                # Keltner width: 2 * 1.5 * ATR(14)
+                tr_calc = pd.concat([high - low, (high - close.shift()).abs(), (low - close.shift()).abs()], axis=1).max(axis=1)
+                atr_s_quick = tr_calc.rolling(14).mean()
+                quick_atr = float(atr_s_quick.iloc[-1]) if not pd.isna(atr_s_quick.iloc[-1]) else 0.0
+                kc_w = (3.0 * quick_atr) / c * 100.0 if c > 0 else 1.0
+                is_squeeze = float(bb_w.iloc[-1]) <= float(kc_w)
+                if is_squeeze:
+                    breakout_score = min(100.0, breakout_score + 15)
+                    reasons.append("Enerji sıkışması (Squeeze) sonrası patlama teyitli")
+            except Exception:
+                is_squeeze = False
                     
             # 3. Market Regime Filtresi
             if market_regime in ["BEAR", "STRONG_BEAR"]:
@@ -177,9 +211,9 @@ class BreakoutEngine:
                 mfi_14 = 50.0
 
             status = "CONFIRMED_BREAKOUT"
-            if breakout_score < 50 or fakeout_risk >= 40:
+            if breakout_score < 60 or fakeout_risk >= 35 or wick_ratio > 0.30 or dist_vwap_pct > 4.0:
                 status = "SUSPICIOUS_BREAKOUT"
-            if fakeout_risk >= 70:
+            if fakeout_risk >= 65:
                 status = "LIKELY_FAKEOUT"
 
             return {
@@ -196,7 +230,10 @@ class BreakoutEngine:
                     "rsi": round(current_rsi, 1),
                     "mfi_14": round(mfi_14, 1),
                     "atr_14": round(atr_val, 4),
-                    "atr_pct": round(atr_pct, 2)
+                    "atr_pct": round(atr_pct, 2),
+                    "upper_wick_ratio": round(wick_ratio, 2),
+                    "dist_vwap_pct": round(dist_vwap_pct, 2),
+                    "is_squeeze": is_squeeze
                 }
             }
 

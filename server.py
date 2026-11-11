@@ -2547,8 +2547,11 @@ def api_system_push_market_data():
         dash_data['price_updated_at'] = time.time()
 
         # V8 Giriş Onaylı (ENTER) hisseleri en yüksek öncelikle simülasyon havuzuna ekle
+        # KATI SAAT SINIRI: 14:30'dan sonra gelen V8 sinyalleri simülasyona sokulmaz!
         try:
-            v8_al_cands = [x for x in (get_v8_breakout_data() or []) if (x.get("entry_status") or "").upper() == "ENTER"]
+            v8_al_cands = []
+            if _now_ist.hour < 14 or (_now_ist.hour == 14 and _now_ist.minute <= 30):
+                v8_al_cands = [x for x in (get_v8_breakout_data() or []) if (x.get("entry_status") or "").upper() == "ENTER"]
             for vc in reversed(v8_al_cands):
                 vsym = vc.get("symbol")
                 if vsym and vsym not in sim_seen:
@@ -5471,7 +5474,7 @@ def api_simulation_sync_staggered_today():
                     sig_rows = [dict(r) for r in cur.fetchall()]
 
             # Sinyallerin keşif saatlerini gerçek zamanlarına göre kademelendir
-            staggered_hours = ["10:15", "10:15", "11:30", "13:45", "14:25", "15:10", "15:45"]
+            staggered_hours = ["10:15", "10:20", "10:45", "11:15", "11:45", "13:30", "14:15"]
             for idx, sr in enumerate(sig_rows):
                 sym = sr['symbol']
                 cur_phase = sr.get('morning_phase') or ''

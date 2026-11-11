@@ -79,8 +79,10 @@ def evaluate_entry_approval(
     score = breakout.get("breakout_score")
     fakeout = breakout.get("fakeout_risk")
     metrics = breakout.get("metrics") or {}
-    checks["breakout_quality"] = _finite(score) and float(score) >= 45
-    checks["fakeout_risk"] = _finite(fakeout) and float(fakeout) < 45
+    checks["breakout_quality"] = _finite(score) and float(score) >= 55
+    checks["fakeout_risk"] = _finite(fakeout) and float(fakeout) < 35
+    checks["wick_ratio"] = float(metrics.get("upper_wick_ratio") or 0.0) <= 0.28
+    checks["vwap_distance"] = float(metrics.get("dist_vwap_pct") or 0.0) <= 3.8
     checks["indicators"] = all(
         _finite(metrics.get(k))
         for k in ("rsi", "atr_pct", "relative_volume")
