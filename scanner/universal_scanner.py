@@ -297,26 +297,61 @@ class UniversalScanner:
         for r in all_results:
             sym = r["Symbol"]
             if "Daily_EMA50" in r and "Daily_EMA200" in r:
-                # Günlük veriden gün içi güç metrikleri (1h taraması gelene kadar fallback)
+                # Günlük veriden gün içi güç metrikleri (1h taraması gelene kadar akıllı dinamik hesaplama)
                 try:
                     today_open = float(r.get("Daily_Open", 0))
                     today_close = float(r.get("Daily_Close", 0))
                     today_high = float(r.get("High", today_close))
                     today_low = float(r.get("Low", today_close))
-                    if today_open > 0:
+                    chg_pct = float(r.get("Change_Pct", 0.0))
+                    if today_open > 0 and abs(today_close - today_open) > 0.001:
                         intra_change_pct = ((today_close - today_open) / today_open) * 100
                     else:
-                        intra_change_pct = 0.0
+                        intra_change_pct = chg_pct
+                    if abs(intra_change_pct) < 0.01 and abs(chg_pct) > 0.01:
+                        intra_change_pct = chg_pct
+
+                    # Pozisyon ve Saatlik Güç / Akış Hesabı
+                    rng = today_high - today_low
+                    if rng > 0.0001:
+                        pos_pct = max(0.0, min(100.0, ((today_close - today_low) / rng) * 100.0))
+                    else:
+                        pos_pct = 75.0 if chg_pct > 0 else (25.0 if chg_pct < 0 else 50.0)
+
+                    # Saatlik Güç Skoru (0 - 100)
+                    h_strength = pos_pct * 0.6
+                    if chg_pct > 0:
+                        h_strength += min(chg_pct * 3.5, 25.0)
+                    elif chg_pct < 0:
+                        h_strength += max(chg_pct * 3.5, -25.0)
+                    h_strength = round(max(5.0, min(98.0, h_strength)), 1)
+
+                    if h_strength >= 65.0 or (chg_pct >= 2.5 and pos_pct >= 60.0):
+                        h_flow = "Toplanıyor"
+                    elif h_strength <= 35.0 or (chg_pct <= -2.5 and pos_pct <= 40.0):
+                        h_flow = "Satılıyor"
+                    else:
+                        h_flow = "Denge"
+
                     intra_fallback = {
                         "session_open": round(today_open, 2),
                         "current_price": round(today_close, 2),
                         "intraday_change_pct": round(intra_change_pct, 2),
                         "session_high": round(today_high, 2),
                         "session_low": round(today_low, 2),
-                        "hourly_flow": "-"
+                        "session_position_pct": round(pos_pct, 1),
+                        "hourly_strength": h_strength,
+                        "hourly_flow": h_flow,
+                        "accumulation_score": h_strength,
+                        "last_hour_buying_pressure": h_strength
                     }
                 except Exception:
-                    intra_fallback = {"intraday_change_pct": 0.0, "hourly_flow": "-"}
+                    intra_fallback = {
+                        "intraday_change_pct": round(float(r.get("Change_Pct", 0.0)), 2),
+                        "hourly_flow": "Denge",
+                        "hourly_strength": 50.0,
+                        "accumulation_score": 50.0
+                    }
 
                 # RSI_14 "N/A" stringi gelebilir; sayiya cevir, olmazsa bos birak
                 try:

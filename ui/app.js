@@ -7807,12 +7807,52 @@ function renderAllStocksTable() {
             rVol = directVol > 0 ? directVol : (volume > 0 && volumeAverage > 0 ? volume / volumeAverage : 0);
         }
         
-        // Gün içi güç metrikleri
+        // Gün içi güç & Saatlik güç metrikleri (dinamik akıllı fallback)
         let intra = data.intraday_strength || {};
-        let intra_change = intra.intraday_change_pct || 0;
-        let hourly_flow = intra.hourly_flow || '-';
-        let acc_score = intra.accumulation_score || 0;
-        let hourly_strength = Number(intra.hourly_strength || intra.hourly_power || intra.timeframe_quality || 0);
+        let intra_change = Number(intra.intraday_change_pct || 0);
+        let price0 = Number(data.Price || data.Daily_Close || 0);
+
+        // Eğer intra_change 0 ise ve günlük değişim varsa (özellikle tavan/gap hisselerinde)
+        if (Math.abs(intra_change) < 0.01 && Math.abs(change) > 0.01) {
+            const dOpen = Number(data.Daily_Open || 0);
+            if (dOpen > 0 && price0 > 0 && Math.abs(price0 - dOpen) > 0.001) {
+                intra_change = ((price0 - dOpen) / dOpen) * 100;
+            } else {
+                intra_change = change;
+            }
+        }
+
+        // Günlük/Seans aralığı ve pozisyon yüzdesi
+        const sHigh = Number(data.High || intra.session_high || price0 || 0);
+        const sLow = Number(data.Low || intra.session_low || price0 || 0);
+        const sRange = sHigh - sLow;
+        const posPct = sRange > 0.001 ? Math.min(Math.max(((price0 - sLow) / sRange) * 100, 0), 100) : (change >= 0 ? 75 : 25);
+
+        // Saatlik Güç Skoru (0 - 100)
+        let hourly_strength = Number(intra.hourly_strength || intra.last_hour_buying_pressure || intra.accumulation_score || intra.hourly_power || intra.session_position_pct || 0);
+        if (hourly_strength <= 0) {
+            let baseScore = posPct * 0.6;
+            if (change > 0) baseScore += Math.min(change * 3.5, 25);
+            else if (change < 0) baseScore += Math.max(change * 3.5, -25);
+            if (rVol > 1.2) baseScore += Math.min((rVol - 1) * 10, 15);
+            else if (rVol < 0.8) baseScore -= 10;
+            hourly_strength = Math.round(Math.min(Math.max(baseScore, 5), 98));
+        } else {
+            hourly_strength = Math.round(hourly_strength);
+        }
+
+        // Saatlik Akış (Toplanıyor / Satılıyor / Denge)
+        let hourly_flow = intra.hourly_flow;
+        if (!hourly_flow || hourly_flow === '-' || hourly_flow === 'null' || hourly_flow === 'undefined') {
+            if (hourly_strength >= 65 || (change >= 2.5 && posPct >= 60)) {
+                hourly_flow = 'Toplanıyor';
+            } else if (hourly_strength <= 35 || (change <= -2.5 && posPct <= 40)) {
+                hourly_flow = 'Satılıyor';
+            } else {
+                hourly_flow = 'Denge';
+            }
+        }
+        let acc_score = Number(intra.accumulation_score || hourly_strength || 0);
         let hourly_volume = Number(intra.hourly_volume_strength || intra.hourly_rel_vol || rVol || 0);
 
         // Risk yonetimi: ATR bazli stop/hedef + para girisi + trend
@@ -7968,6 +8008,12 @@ function renderAllStocksTable() {
             return b.intra_change - a.intra_change;
         }
 
+        if (currentStocksSort.col === 'hourly_flow') {
+            const hA = Number(a.hourly_strength || 50);
+            const hB = Number(b.hourly_strength || 50);
+            return currentStocksSort.asc ? (hA - hB) : (hB - hA);
+        }
+
         if (currentStocksSort.col === 'opportunity') {
             // Puan siralamasi gercek sayisal siralama olmalidir.
             // Yesil/likit katmanlari puani ezmemeli; aksi halde dusuk
@@ -8034,12 +8080,12 @@ function renderAllStocksTable() {
         
         const intraColor = s.intra_change > 0 ? 'var(--accent-green)' : (s.intra_change < 0 ? 'var(--accent-red)' : 'var(--text-color)');
         const intraSign = s.intra_change > 0 ? '+' : '';
-        const flowColor = s.hourly_flow === 'Toplanıyor' ? 'var(--accent-green)' : (s.hourly_flow === 'Satılıyor' ? 'var(--accent-red)' : 'var(--text-muted)');
+        const flowStrength = Math.round(Number(s.hourly_strength || 50));
         
-        let flowHtml = s.hourly_flow;
+        let flowHtml = '';
         if (s.hourly_flow === 'Toplanıyor') {
-            flowHtml = `<div style="display:flex; flex-direction:column; align-items:center; line-height:1.2; width:70px; margin:0 auto;">
-                <svg viewBox="0 0 100 30" preserveAspectRatio="none" style="width:100%; height:20px; overflow:visible;">
+            flowHtml = `<div style="display:flex; flex-direction:column; align-items:center; line-height:1.2; width:75px; margin:0 auto;" title="Saatlik Güç Skoru: %${flowStrength}">
+                <svg viewBox="0 0 100 30" preserveAspectRatio="none" style="width:100%; height:18px; overflow:visible;">
                     <defs>
                         <linearGradient id="grad-green" x1="0%" y1="0%" x2="0%" y2="100%">
                             <stop offset="0%" stop-color="var(--accent-green)" stop-opacity="0.35" />
@@ -8049,11 +8095,11 @@ function renderAllStocksTable() {
                     <path d="M0,25 Q15,20 25,23 T50,15 T75,18 T100,5 L100,30 L0,30 Z" fill="url(#grad-green)"></path>
                     <path d="M0,25 Q15,20 25,23 T50,15 T75,18 T100,5" fill="none" stroke="var(--accent-green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
                 </svg>
-                <span style="font-size:0.75rem; margin-top:2px;">Toplanıyor</span>
+                <span style="font-size:0.75rem; margin-top:2px; font-weight:700; color:var(--accent-green);">Toplanıyor <span style="font-size:0.68rem; opacity:0.9;">(%${flowStrength})</span></span>
             </div>`;
         } else if (s.hourly_flow === 'Satılıyor') {
-            flowHtml = `<div style="display:flex; flex-direction:column; align-items:center; line-height:1.2; width:70px; margin:0 auto;">
-                <svg viewBox="0 0 100 30" preserveAspectRatio="none" style="width:100%; height:20px; overflow:visible;">
+            flowHtml = `<div style="display:flex; flex-direction:column; align-items:center; line-height:1.2; width:75px; margin:0 auto;" title="Saatlik Güç Skoru: %${flowStrength}">
+                <svg viewBox="0 0 100 30" preserveAspectRatio="none" style="width:100%; height:18px; overflow:visible;">
                     <defs>
                         <linearGradient id="grad-red" x1="0%" y1="0%" x2="0%" y2="100%">
                             <stop offset="0%" stop-color="var(--accent-red)" stop-opacity="0.35" />
@@ -8063,21 +8109,22 @@ function renderAllStocksTable() {
                     <path d="M0,5 Q15,10 25,7 T50,15 T75,12 T100,25 L100,30 L0,30 Z" fill="url(#grad-red)"></path>
                     <path d="M0,5 Q15,10 25,7 T50,15 T75,12 T100,25" fill="none" stroke="var(--accent-red)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
                 </svg>
-                <span style="font-size:0.75rem; margin-top:2px;">Satılıyor</span>
+                <span style="font-size:0.75rem; margin-top:2px; font-weight:700; color:var(--accent-red);">Satılıyor <span style="font-size:0.68rem; opacity:0.9;">(%${flowStrength})</span></span>
             </div>`;
-        } else if (s.hourly_flow === '-' || !s.hourly_flow) {
-            flowHtml = `<div style="display:flex; flex-direction:column; align-items:center; line-height:1.2; width:70px; margin:0 auto;">
-                <svg viewBox="0 0 100 30" preserveAspectRatio="none" style="width:100%; height:20px; overflow:visible;">
+        } else {
+            // Denge veya nötr
+            flowHtml = `<div style="display:flex; flex-direction:column; align-items:center; line-height:1.2; width:75px; margin:0 auto;" title="Saatlik Güç Skoru: %${flowStrength}">
+                <svg viewBox="0 0 100 30" preserveAspectRatio="none" style="width:100%; height:18px; overflow:visible;">
                     <defs>
-                        <linearGradient id="grad-gray" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stop-color="var(--text-muted)" stop-opacity="0.25" />
-                            <stop offset="100%" stop-color="var(--text-muted)" stop-opacity="0.0" />
+                        <linearGradient id="grad-blue" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.25" />
+                            <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.0" />
                         </linearGradient>
                     </defs>
-                    <path d="M0,15 L100,15 L100,30 L0,30 Z" fill="url(#grad-gray)"></path>
-                    <path d="M0,15 L100,15" fill="none" stroke="var(--text-muted)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                    <path d="M0,15 Q25,12 50,15 T100,15 L100,30 L0,30 Z" fill="url(#grad-blue)"></path>
+                    <path d="M0,15 Q25,12 50,15 T100,15" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"></path>
                 </svg>
-                <span style="font-size:0.75rem; margin-top:2px; color:var(--text-muted);">-</span>
+                <span style="font-size:0.75rem; margin-top:2px; font-weight:600; color:#38bdf8;">Denge <span style="font-size:0.68rem; opacity:0.85;">(%${flowStrength})</span></span>
             </div>`;
         }
         

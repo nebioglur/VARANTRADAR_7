@@ -181,6 +181,7 @@ class IntradayStrengthAnalyzer:
             "money_flow_status": money_flow_status,
             "obv_change_pct": round(obv_change_pct, 2),
             "accumulation_score": round(acc_score, 1),
+            "hourly_strength": round(hourly_profile[-1]["buying_pressure"], 1) if hourly_profile else round(acc_score, 1),
             "hourly_flow": hourly_flow,
             "hourly_profile": hourly_profile,
             "last_hour_buying_pressure": round(hourly_profile[-1]["buying_pressure"], 1) if hourly_profile else 50.0,
