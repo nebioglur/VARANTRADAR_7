@@ -119,6 +119,8 @@ def sync_once():
         print_flush(f"[{t_str}] [CANLI XU100 DOGRULANDI] %{xu100_change:+.2f}")
 
     dash_data["cache_date"] = date_str
+    dash_data["last_sync_time"] = t_str[:5]
+    dash_data["last_updated"] = t_str[:5]
     payload = {
         "token": AUTH_TOKEN,
         "dashboard_data": dash_data,

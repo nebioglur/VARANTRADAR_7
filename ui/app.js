@@ -4924,10 +4924,31 @@ async function fetchSimulationData() {
                         // 4. Alış Fiyatı Sütunu
                         const entryPxStr = `₺${entryPx.toFixed(2)}`;
 
-                        // 5. Güncel Fiyat (Anlık) Sütunu - VURGULU VE NET
+                        // 5. Güncel Fiyat (Anlık) Sütunu - VURGULU VE YANINDA VERİ SAATİ
+                        let pxTime = t.price_time || '';
+                        if (!pxTime) {
+                            if (isFullyClosed && t.exit_time) {
+                                pxTime = String(t.exit_time).slice(11, 16);
+                            } else if (data && data.last_sync_time) {
+                                pxTime = data.last_sync_time;
+                            } else if (window.globalDashboardData && (window.globalDashboardData.last_updated || window.globalDashboardData.last_sync_time)) {
+                                pxTime = window.globalDashboardData.last_updated || window.globalDashboardData.last_sync_time;
+                            }
+                        }
+                        if (pxTime && pxTime.length > 5) {
+                            pxTime = pxTime.slice(0, 5);
+                        }
+
+                        const pxTimeBadge = pxTime ? `
+                            <span style="display:inline-flex; align-items:center; gap:3px; font-size:0.72rem; font-weight:600; color:#94a3b8; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); padding:1px 5px; border-radius:4px; letter-spacing:0.2px;" title="Veri Alınış Saati: ${pxTime}">
+                                <i class="fa-regular fa-clock" style="font-size:0.65rem; color:#38bdf8;"></i>${pxTime}
+                            </span>
+                        ` : '';
+
                         const currentPxHtml = `
-                            <div style="font-weight:700; color:${pnlColor}; font-size:0.95rem; font-variant-numeric:tabular-nums;">
-                                ₺${currentPx.toFixed(2)}
+                            <div style="display:flex; align-items:center; justify-content:flex-end; gap:6px; font-variant-numeric:tabular-nums; flex-wrap:wrap;">
+                                <span style="font-weight:700; color:${pnlColor}; font-size:0.95rem;">₺${currentPx.toFixed(2)}</span>
+                                ${pxTimeBadge}
                             </div>
                         `;
 
