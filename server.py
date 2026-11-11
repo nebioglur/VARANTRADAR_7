@@ -1256,8 +1256,6 @@ def require_auth():
     if request.method == 'GET' and (
         request.path in (
             '/api/simulation/daily_pnl',
-            '/api/simulation/summary',
-            '/api/simulation/trades',
             '/api/simulation/live_orders',
             '/api/telegram/send_open_positions',
             '/api/v8/market/regime',
@@ -3585,6 +3583,14 @@ def api_simulation_daily_pnl():
                                 t["pnl_val"] = round(pnl_val, 2)
                                 t["realized_pnl"] = round(pnl_val, 2)
                                 t["pnl_pct"] = round(pnl_pct, 2)
+                            elif abs(pnl_val - calc_val) <= shares * 0.011 and "TP1" not in str(t.get("exit_reason") or ""):
+                                # Eski kayitlarda cikis fiyati 2 haneye yuvarlanmisken pnl ham
+                                # fiyattan hesaplandigi icin birkac liralik fark kalabilir;
+                                # gosterimde kayitli fiyatlara gore uzlastir (yuvarlama artifakti).
+                                # Boylece her satir paddingsiz "lot x (cikis - giris)" ile
+                                # elle dogrulanabilir hale gelir.
+                                t["pnl_val"] = round(calc_val, 2)
+                                t["pnl_pct"] = round(calc_pct, 2)
                     else:
                         st_p = float(st.get("Price") or st.get("Daily_Close") or 0.0)
                         if st_p > 0:

@@ -997,13 +997,13 @@ class SimulationEngine:
 
                 # En kötü senaryo: Önce Stop Loss patlar varsayımı
                 if low <= stop_price:
-                    sell_price = min(stop_price, bar_open) * 0.9985 # gap-aware stop fill + slippage
+                    sell_price = round(min(stop_price, bar_open) * 0.9985, 2) # gap-aware stop fill + slippage
                     reason = f"{prefix}⛔ ÇELİK STOP KESİLDİ"
                 elif is_stagnant:
-                    sell_price = close * 0.9990
+                    sell_price = round(close * 0.9990, 2)
                     reason = "⏳ ZAMAN STOPU (35 DK HAREKETSİZLİK / MOMENTUM KAYBI)"
                 elif high >= tp2_price:
-                    sell_price = max(tp2_price, bar_open) * 0.9985
+                    sell_price = round(max(tp2_price, bar_open) * 0.9985, 2)
                     reason = f"🚀 TAVAN (TAM KÂR ALINDI)"
                 elif high >= tp1_price and not trade.get('scaled_out', False):
                     # Kademeli kâr alma (TP1): satış oranı rejime gore exit planindan gelir.
@@ -1017,7 +1017,7 @@ class SimulationEngine:
                         out_shares = max(1, trade['shares'] - 1)
                     if out_shares > 0:
                         trade['shares'] -= out_shares
-                        scale_out_price = tp1_price * 0.9985
+                        scale_out_price = round(tp1_price * 0.9985, 2)
                         buy_vol = out_shares * entry
                         sell_vol = out_shares * scale_out_price
                         comm = (buy_vol + sell_vol) * 0.0004
@@ -1054,7 +1054,7 @@ class SimulationEngine:
                             from services.telegram_bot import notify_sim_trade
                             notify_sim_trade(sym, "SAT (TP1)", scale_out_price,
                                          (net_profit / buy_vol * 100) if buy_vol > 0 else 0.0,
-                                         "⚖️ TP1: Yarısı kâr alındı, stop maliyete çekildi (risk-free)",
+                                         f"⚖️ TP1: %{_tp1_pct} kâr alındı, stop maliyete çekildi (risk-free)",
                                          str(current_time)[:10], completed_trades[-1])
                         except Exception:
                             pass
@@ -1210,7 +1210,9 @@ class SimulationEngine:
                     to_remove.append(s)
                     continue
 
-                entry_price = raw_entry * 1.0015
+                # Fiyatlar 2 haneye yuvarlanir: kaydedilen giris/cikis/lot ile
+                # pnl_val tamamen elle dogrulanabilir olur (yuvarlama farki sıfır).
+                entry_price = round(raw_entry * 1.0015, 2)
                 setup = self._entry_setup(df.loc[:current_time], entry_price)
                 if not setup:
                     # V8 Onaylı veya yüksek kaliteli adayların 5dk osilasyonunda elenmesini engelle:
@@ -1314,7 +1316,7 @@ class SimulationEngine:
                         continue
                     sub_df = df.loc[:current_time]
                     raw_entry = float(sub_df['Close'].iloc[-1])
-                    entry_price = raw_entry * 1.0015
+                    entry_price = round(raw_entry * 1.0015, 2)
                     setup = self._entry_setup(sub_df, entry_price)
                     if not setup:
                         continue
@@ -1370,7 +1372,7 @@ class SimulationEngine:
                     trade['status'] = 'CLOSED'
                     trade['exit_time'] = str(last_time)
                     # End-of-day market exit includes conservative sell-side slippage.
-                    eod_sell_price = close * 0.9985
+                    eod_sell_price = round(close * 0.9985, 2)
                     trade['exit_price'] = eod_sell_price
                     buy_volume = trade['shares'] * trade['entry_price']
                     sell_volume = trade['shares'] * eod_sell_price
