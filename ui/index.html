@@ -1877,27 +1877,33 @@
                     </div>
                     <div id="tg-settings-msg" style="margin-top:0.6rem; font-size:0.82rem; display:none;"></div>
                 </div>
-                <div style="font-size:0.74rem; color:var(--text-muted); margin-bottom:0.55rem; display:flex; align-items:center; gap:6px; padding:0 2px;">
-                    <i class="fa-solid fa-arrows-left-right" style="color:var(--accent-blue);"></i>
-                    <span>Tabloyu sağa/sola kaydırarak tüm sütunları (Alış/Satış, Kâr/Zarar, Çıkış Nedeni) inceleyebilirsiniz.</span>
+                <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.6rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; padding:0 2px;">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <i class="fa-solid fa-circle-info" style="color:var(--accent-blue);"></i>
+                        <span><b>Sadeleştirilmiş İşlem Defteri:</b> Alış, anlık güncel fiyat, kâr/zarar ve pozisyon durumu canlı izlenir.</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:12px; font-size:0.72rem;">
+                        <span style="color:#38bdf8;"><i class="fa-solid fa-circle" style="font-size:0.5rem;"></i> Canlı Güncel Fiyat</span>
+                        <span style="color:#facc15;"><i class="fa-solid fa-circle" style="font-size:0.5rem;"></i> İşlemde</span>
+                        <span style="color:#10b981;"><i class="fa-solid fa-circle" style="font-size:0.5rem;"></i> Kâr Realizasyonu</span>
+                    </div>
                 </div>
-                <div class="table-scroll-wrapper" style="max-height: 500px; overflow-y: auto; overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch;">
+                <div class="table-scroll-wrapper" style="max-height: 520px; overflow-y: auto; overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch;">
                     <table class="data-table" style="width:100%; min-width: 760px; border-collapse: separate; border-spacing: 0;">
                         <thead>
                             <tr>
-                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Alış Saati</th>
-                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Satış Saati</th>
-                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Sembol</th>
-                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Lot</th>
-                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Alış Fiyatı</th>
-                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Satış Fiyatı</th>
-                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Kâr / Zarar (₺)</th>
-                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Kâr / Zarar (%)</th>
-                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Durum / Çıkış Nedeni</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10; text-align: left;">Saat</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10; text-align: left;">Sembol</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10; text-align: right;">Lot</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10; text-align: right;">Alış Fiyatı</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10; text-align: right; color: #38bdf8;">Güncel Fiyat (Anlık)</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10; text-align: right;">Satış Fiyatı</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10; text-align: right;">Kâr / Zarar</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10; text-align: center;">Durum</th>
                             </tr>
                         </thead>
                         <tbody id="sim-trade-log-tbody">
-                            <tr><td colspan="14" class="text-muted text-center" style="padding:3rem;"><i class="fa-solid fa-spinner fa-spin"></i> İşlem Geçmişi Yükleniyor...</td></tr>
+                            <tr><td colspan="8" class="text-muted text-center" style="padding:3rem;"><i class="fa-solid fa-spinner fa-spin"></i> İşlem Geçmişi Yükleniyor...</td></tr>
                         </tbody>
                     </table>
                 </div>

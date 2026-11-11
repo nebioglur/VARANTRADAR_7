@@ -1938,11 +1938,14 @@ def send_open_positions_report(trades: list = None, force: bool = True) -> dict:
         if " " in entry_time_str:
             entry_time_str = entry_time_str.split(" ")[1][:5]
 
-        import html
-        reason = tr.get("strategy_name") or tr.get("exit_reason") or tr.get("setup") or "V8 Erken Kopuş (Phase 1)"
-        reason = html.escape(str(reason).replace("AÇIK POZİSYON", "").strip())
-        if not reason:
-            reason = "V8 Erken Kopuş (Phase 1)"
+        curr_p = float(tr.get("current_price") or 0.0)
+        if curr_p <= 0:
+            if shares > 0 and entry_p > 0:
+                curr_p = entry_p + (pnl_val / shares)
+            elif entry_p > 0 and pnl_pct != 0:
+                curr_p = entry_p * (1.0 + (pnl_pct / 100.0))
+            else:
+                curr_p = entry_p
 
         t1 = float(tr.get("target1") or (entry_p * 1.03))
         t2 = float(tr.get("target2") or (entry_p * 1.05))
@@ -1950,11 +1953,11 @@ def send_open_positions_report(trades: list = None, force: bool = True) -> dict:
 
         lines.extend([
             f"<b>{i}. #{sym}</b>",
-            f"├ 💵 <b>Giriş Fiyatı:</b> ₺{entry_p:.2f}",
+            f"├ 💵 <b>Alış Fiyatı:</b> ₺{entry_p:.2f}",
+            f"├ 🏷️ <b>Güncel Fiyat:</b> ₺{curr_p:.2f}",
             f"├ 📦 <b>Lot:</b> {shares:,} Adet (₺{cost:,.2f})",
-            f"├ 📈 <b>Anlık Kâr/Zarar:</b> {pnl_emoji} <b>{pnl_sign}₺{pnl_val:,.2f} ({pnl_sign}%{pnl_pct:.2f})</b>",
+            f"├ 📈 <b>Kâr/Zarar:</b> {pnl_emoji} <b>{pnl_sign}₺{pnl_val:,.2f} ({pnl_sign}%{pnl_pct:.2f})</b>",
             f"├ ⏰ <b>Giriş Saati:</b> {entry_time_str}",
-            f"├ 🛡️ <b>Kurulum:</b> {reason}",
             f"└ 🎯 <b>Hedefler:</b> TP1: ₺{t1:.2f} · TP2: ₺{t2:.2f} · Stop: ₺{sl:.2f}",
             ""
         ])

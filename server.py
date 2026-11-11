@@ -3504,6 +3504,26 @@ def api_simulation_daily_pnl():
                 trade_rows = c.fetchall()
                 if trade_rows:
                     trades = [dict(row) for row in trade_rows]
+
+            # Calculate current_price for every trade to ensure frontends receive live price
+            for t in trades:
+                try:
+                    entry_p = float(t.get("entry_price") or 0.0)
+                    shares = float(t.get("shares") or 0.0)
+                    pnl_val = float(t.get("pnl_val") or 0.0)
+                    pnl_pct = float(t.get("pnl_pct") or 0.0)
+                    exit_p = t.get("exit_price")
+                    if exit_p is not None and not (isinstance(exit_p, float) and (exit_p != exit_p or exit_p <= 0)):
+                        curr_p = float(exit_p)
+                    elif shares > 0 and entry_p > 0:
+                        curr_p = entry_p + (pnl_val / shares)
+                    elif entry_p > 0 and pnl_pct != 0:
+                        curr_p = entry_p * (1.0 + (pnl_pct / 100.0))
+                    else:
+                        curr_p = entry_p
+                    t["current_price"] = round(curr_p, 2)
+                except Exception:
+                    t["current_price"] = round(float(t.get("entry_price") or 0.0), 2)
                 if not equity_curve or (len(equity_curve) == 1 and float(equity_curve[0].get("daily_pnl") or equity_curve[0].get("total_pnl") or 0.0) == 0.0):
                     c.execute("SELECT * FROM equity_log ORDER BY date_str ASC")
                     eq_fb = c.fetchall()

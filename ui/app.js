@@ -4863,7 +4863,7 @@ async function fetchSimulationData() {
                 } else {
                     trades.forEach(t => {
                         const tr = document.createElement('tr');
-                        const hasExitPrice = (t.exit_price !== null && t.exit_price !== undefined && !isNaN(Number(t.exit_price)));
+                        const hasExitPrice = (t.exit_price !== null && t.exit_price !== undefined && !isNaN(Number(t.exit_price)) && Number(t.exit_price) > 0);
                         const hasExitTime = Boolean(t.exit_time);
                         const isFullyClosed = hasExitTime && hasExitPrice;
                         const isTP1 = String(t.entry_time || '').includes('[TP1]') || String(t.exit_reason || '').includes('TP1');
@@ -4871,32 +4871,25 @@ async function fetchSimulationData() {
                         const pnlVal = Number(t.pnl_val || 0);
                         const pnlPct = Number(t.pnl_pct || 0);
                         const entryPx = Number(t.entry_price || 0);
-                        const pnlColor = pnlPct >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-                        const pnlSign = pnlPct >= 0 ? '+' : '';
+                        const shares = Number(t.shares || 0);
                         
-                        const exitPriceStr = hasExitPrice
-                            ? `₺${Number(t.exit_price).toFixed(2)}`
-                            : '<span style="color:var(--text-muted)">-</span>';
-                            
-                        const pnlValStr = `${pnlSign}₺${pnlVal.toFixed(2)}`;
-                        const realizedPnlVal = Number(t.realized_pnl || 0);
-                        const realizedPnlStr = (!isFullyClosed && realizedPnlVal !== 0)
-                            ? `<div style="font-size:.68rem;color:var(--text-muted);margin-top:3px;">Gerçekleşen: ₺${realizedPnlVal.toFixed(2)}</div>`
-                            : '';
-                        const pnlPctStr = `${pnlSign}${pnlPct.toFixed(2)}%`;
-                        const strategyStr = t.strategy_name
-                            ? `<div style="margin-top:0.25rem; color:var(--accent-blue); font-size:0.7rem;" title="${t.entry_checks || ''}">${t.strategy_name}${t.risk_amount ? ` · Risk: ₺${Number(t.risk_amount).toFixed(0)}` : ''}</div>`
-                            : '';
-                        const tp1Badge = '<span style="background:rgba(16,185,129,0.18); color:#34d399; border:1px solid rgba(16,185,129,0.35); padding:2px 8px; border-radius:12px; font-weight:800; font-size:0.75rem;"><i class="fa-solid fa-scale-balanced"></i> TP1 KÂR ALINDI (%50)</span>';
-                        let exitLabel = '';
-                        if (isFullyClosed) {
-                            exitLabel = t.exit_reason || 'Kapandı';
-                        } else if (isTP1) {
-                            exitLabel = tp1Badge + (t.exit_reason ? ` <span style="font-size:0.75rem; color:#cbd5e1;">${t.exit_reason}</span>` : '');
-                        } else {
-                            exitLabel = '<span style="color:var(--accent-yellow); font-weight:bold;"><i class="fa-solid fa-spinner fa-spin"></i> AÇIK POZİSYON</span>';
+                        // Canlı Güncel Fiyat (Anlık Fiyat)
+                        let currentPx = Number(t.current_price || 0);
+                        if (!currentPx || isNaN(currentPx) || currentPx <= 0) {
+                            if (hasExitPrice) {
+                                currentPx = Number(t.exit_price);
+                            } else if (shares > 0 && entryPx > 0) {
+                                currentPx = entryPx + (pnlVal / shares);
+                            } else if (entryPx > 0 && pnlPct !== 0) {
+                                currentPx = entryPx * (1 + (pnlPct / 100));
+                            } else {
+                                currentPx = entryPx;
+                            }
                         }
-                        const statusStr = exitLabel + strategyStr;
+                        
+                        const pnlColor = pnlPct >= 0 ? '#10b981' : '#ef4444';
+                        const pnlSign = pnlPct >= 0 ? '+' : '';
+                        const pnlIcon = pnlPct >= 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
 
                         const formatDt = (iso) => {
                             if (!iso) return '-';
@@ -4908,18 +4901,88 @@ async function fetchSimulationData() {
                             } catch(e) { return cleanIso; }
                         };
                         const entryTimeFmt = formatDt(t.entry_time);
-                        const exitTimeFmt = hasExitTime ? formatDt(t.exit_time) : '<span style="color:var(--accent-yellow)">İşlemde</span>';
+                        const exitTimeFmt = hasExitTime ? formatDt(t.exit_time) : '';
+
+                        // 1. Saat Sütunu (Giriş saati ve çıkış saati)
+                        const timeCellHtml = `
+                            <div style="font-weight:600; color:var(--text-light); font-size:0.84rem;">${entryTimeFmt}</div>
+                            ${isFullyClosed ? `<div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;" title="Çıkış Saati"><i class="fa-solid fa-arrow-right-from-bracket" style="font-size:0.65rem;"></i> ${exitTimeFmt}</div>` : ''}
+                        `;
+
+                        // 2. Sembol Sütunu
+                        const cleanSym = String(t.symbol || '').replace('.IS', '');
+                        const symCellHtml = `
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <span style="font-weight:700; color:#f8fafc; font-size:0.92rem; letter-spacing:0.5px;">${cleanSym}</span>
+                                <span style="font-size:0.62rem; padding:1px 5px; background:rgba(59,130,246,0.15); color:#60a5fa; border:1px solid rgba(59,130,246,0.3); border-radius:4px; font-weight:600;">BIST</span>
+                            </div>
+                        `;
+
+                        // 3. Lot Sütunu
+                        const lotStr = shares > 0 ? shares.toLocaleString('tr-TR') : '-';
+
+                        // 4. Alış Fiyatı Sütunu
+                        const entryPxStr = `₺${entryPx.toFixed(2)}`;
+
+                        // 5. Güncel Fiyat (Anlık) Sütunu - VURGULU VE NET
+                        const currentPxHtml = `
+                            <div style="font-weight:700; color:${pnlColor}; font-size:0.95rem; font-variant-numeric:tabular-nums;">
+                                ₺${currentPx.toFixed(2)}
+                            </div>
+                        `;
+
+                        // 6. Satış Fiyatı Sütunu
+                        let exitPriceHtml = '';
+                        if (isFullyClosed) {
+                            exitPriceHtml = `<div style="font-weight:600; color:var(--text-light); font-size:0.88rem; font-variant-numeric:tabular-nums;">₺${Number(t.exit_price).toFixed(2)}</div>`;
+                        } else {
+                            exitPriceHtml = `<span style="display:inline-flex; align-items:center; gap:4px; background:rgba(234,179,8,0.12); color:#facc15; border:1px solid rgba(234,179,8,0.25); padding:2px 8px; border-radius:5px; font-size:0.75rem; font-weight:600;"><i class="fa-solid fa-clock fa-spin" style="animation-duration:3s;"></i> İşlemde</span>`;
+                        }
+
+                        // 7. Kâr / Zarar Sütunu (TL ve % tek sütunda, düzenli)
+                        const realizedPnlVal = Number(t.realized_pnl || 0);
+                        const realizedPnlStr = (!isFullyClosed && realizedPnlVal !== 0)
+                            ? `<div style="font-size:0.68rem; color:#94a3b8; margin-top:2px;" title="TP1 gerçekleşen kâr">Kâr Alındı: ₺${realizedPnlVal.toFixed(2)}</div>`
+                            : '';
+                        const pnlMergedHtml = `
+                            <div style="display:flex; align-items:center; justify-content:flex-end; gap:5px; color:${pnlColor}; font-weight:700; font-size:0.88rem; font-variant-numeric:tabular-nums;">
+                                <i class="fa-solid ${pnlIcon}" style="font-size:0.75rem;"></i>
+                                <span>${pnlSign}₺${pnlVal.toFixed(2)}</span>
+                                <span style="font-size:0.76rem; opacity:0.9;">(${pnlSign}%${pnlPct.toFixed(2)})</span>
+                            </div>
+                            ${realizedPnlStr}
+                        `;
+
+                        // 8. Durum Sütunu (Gereksiz karmaşıklıktan arındırılmış temiz rozetler)
+                        let statusBadgeHtml = '';
+                        const rawReason = String(t.exit_reason || '').toUpperCase();
+                        const tooltipText = [t.strategy_name, t.exit_reason, t.risk_amount ? `Risk: ₺${Number(t.risk_amount).toFixed(0)}` : ''].filter(Boolean).join(' | ');
+
+                        if (!isFullyClosed && !isTP1) {
+                            statusBadgeHtml = `<span title="${tooltipText}" style="display:inline-flex; align-items:center; gap:5px; background:rgba(16,185,129,0.12); color:#34d399; border:1px solid rgba(16,185,129,0.28); padding:3px 10px; border-radius:12px; font-weight:600; font-size:0.75rem;"><span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10b981; box-shadow:0 0 6px #10b981;"></span> AÇIK POZİSYON</span>`;
+                        } else if (isTP1 && !isFullyClosed) {
+                            statusBadgeHtml = `<span title="${tooltipText}" style="display:inline-flex; align-items:center; gap:5px; background:rgba(59,130,246,0.15); color:#60a5fa; border:1px solid rgba(59,130,246,0.3); padding:3px 10px; border-radius:12px; font-weight:700; font-size:0.75rem;"><i class="fa-solid fa-scale-balanced"></i> TP1 (%50 ALINDI)</span>`;
+                        } else if (rawReason.includes('TP2') || rawReason.includes('HEDEF')) {
+                            statusBadgeHtml = `<span title="${tooltipText}" style="display:inline-flex; align-items:center; gap:5px; background:rgba(16,185,129,0.18); color:#10b981; border:1px solid rgba(16,185,129,0.4); padding:3px 10px; border-radius:12px; font-weight:700; font-size:0.75rem;"><i class="fa-solid fa-bullseye"></i> TP2 HEDEF ALINDI</span>`;
+                        } else if (rawReason.includes('STOP')) {
+                            statusBadgeHtml = `<span title="${tooltipText}" style="display:inline-flex; align-items:center; gap:5px; background:rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.3); padding:3px 10px; border-radius:12px; font-weight:700; font-size:0.75rem;"><i class="fa-solid fa-shield-halved"></i> STOP LOSS</span>`;
+                        } else if (rawReason.includes('SEANS SONU') || rawReason.includes('17:50') || rawReason.includes('NAK')) {
+                            statusBadgeHtml = `<span title="${tooltipText}" style="display:inline-flex; align-items:center; gap:5px; background:rgba(148,163,184,0.15); color:#cbd5e1; border:1px solid rgba(148,163,184,0.25); padding:3px 10px; border-radius:12px; font-weight:600; font-size:0.75rem;"><i class="fa-solid fa-flag-checkered"></i> SEANS SONU NAKİT</span>`;
+                        } else if (pnlVal > 0) {
+                            statusBadgeHtml = `<span title="${tooltipText}" style="display:inline-flex; align-items:center; gap:5px; background:rgba(16,185,129,0.15); color:#34d399; border:1px solid rgba(16,185,129,0.3); padding:3px 10px; border-radius:12px; font-weight:600; font-size:0.75rem;"><i class="fa-solid fa-check"></i> KÂRLA KAPANDI</span>`;
+                        } else {
+                            statusBadgeHtml = `<span title="${tooltipText}" style="display:inline-flex; align-items:center; gap:5px; background:rgba(239,68,68,0.12); color:#f87171; border:1px solid rgba(239,68,68,0.25); padding:3px 10px; border-radius:12px; font-weight:600; font-size:0.75rem;"><i class="fa-solid fa-xmark"></i> ZARARLA KAPANDI</span>`;
+                        }
 
                         tr.innerHTML = `
-                            <td>${entryTimeFmt}</td>
-                            <td>${exitTimeFmt}</td>
-                            <td style="font-weight:bold; color:var(--text-light);">${t.symbol}</td>
-                            <td>${t.shares || '-'}</td>
-                            <td>₺${entryPx.toFixed(2)}</td>
-                            <td>${exitPriceStr}</td>
-                            <td style="color:${pnlColor}; font-weight:bold;">${pnlValStr}${realizedPnlStr}</td>
-                            <td style="color:${pnlColor}; font-weight:bold;">${pnlPctStr}</td>
-                            <td>${statusStr}</td>
+                            <td style="text-align: left;">${timeCellHtml}</td>
+                            <td style="text-align: left;">${symCellHtml}</td>
+                            <td style="text-align: right; font-variant-numeric:tabular-nums; font-size:0.86rem; color:var(--text-light);">${lotStr}</td>
+                            <td style="text-align: right; font-variant-numeric:tabular-nums; font-size:0.88rem; font-weight:600; color:var(--text-light);">${entryPxStr}</td>
+                            <td style="text-align: right;">${currentPxHtml}</td>
+                            <td style="text-align: right;">${exitPriceHtml}</td>
+                            <td style="text-align: right;">${pnlMergedHtml}</td>
+                            <td style="text-align: center;">${statusBadgeHtml}</td>
                         `;
                         tbody.appendChild(tr);
                     });
