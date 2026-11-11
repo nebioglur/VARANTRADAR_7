@@ -295,12 +295,13 @@ class MarketRegimeEngine:
         elif adv_ratio <= 0.35 and effective_trend <= -1.0:
             regime = 'STRONG_BEAR'
             score = round(max(10.0, 25.0 - (0.35 - adv_ratio) * 50.0), 1)
-        elif adv_ratio <= 0.45 or effective_trend <= -0.30:
+        elif effective_trend <= -0.30 and adv_ratio <= 0.45:
             regime = 'BEAR'
             score = round(max(25.0, 40.0 - (0.45 - adv_ratio) * 50.0), 1)
         else:
             regime = 'NEUTRAL'
-            score = round(45.0 + (adv_ratio - 0.45) * 50.0, 1)
+            score = round(48.0 + min(12.0, max(-8.0, effective_trend * 15.0)) + ((adv_ratio - 0.40) * 15.0), 1)
+            score = max(40.0, min(60.0, score))
 
         result = {
             'regime': regime,

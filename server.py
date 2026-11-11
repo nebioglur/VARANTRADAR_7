@@ -2520,15 +2520,14 @@ def api_system_push_market_data():
             except Exception:
                 pass
 
-        date_str = dash_data.get('cache_date')
-        if not date_str:
-            try:
-                from zoneinfo import ZoneInfo
-                from datetime import datetime
-                date_str = datetime.now(ZoneInfo('Europe/Istanbul')).strftime('%Y-%m-%d')
-            except Exception:
-                from datetime import datetime
-                date_str = datetime.now().strftime('%Y-%m-%d')
+        try:
+            from zoneinfo import ZoneInfo
+            from datetime import datetime
+            date_str = datetime.now(ZoneInfo('Europe/Istanbul')).strftime('%Y-%m-%d')
+        except Exception:
+            from datetime import datetime
+            date_str = datetime.now().strftime('%Y-%m-%d')
+        dash_data['cache_date'] = date_str
 
         all_cands = list(dash_data.get('tavan_adaylari', []) or [])
         sim_seen = {c.get('symbol') or c.get('Symbol') for c in all_cands if (c.get('symbol') or c.get('Symbol'))}

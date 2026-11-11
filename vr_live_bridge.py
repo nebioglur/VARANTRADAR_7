@@ -76,9 +76,43 @@ def sync_once():
         if vmr.get("stale") or "2026-09" in str(vmr.get("timestamp") or ""):
             print(f"[{t_str}] [TEMİZLİK] Verdent'ten gelen bayat rejim verisi ({vmr.get('regime')}, {vmr.get('xu100_trend')}%) temizlendi.")
             dash_data.pop("v8_market_regime", None)
-            xu100_change = None
+            # Stale rejim temizlendi, ancak canli xu100 degeri korunuyor
+            pass
 
     # 4. PythonAnywhere'e Veri Enjekte Et (Push Market Data)
+        # 3.5. Canli BIST 100 Endeksini Is Yatirim ve Yahoo'dan dogrula
+    live_xu100 = None
+    try:
+        from bs4 import BeautifulSoup
+        r_is = requests.get("https://www.isyatirim.com.tr/tr-tr/analiz/hisse/Sayfalar/default.aspx", headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
+        if r_is.status_code == 200:
+            soup = BeautifulSoup(r_is.text, 'html.parser')
+            for tr in soup.find_all('tr'):
+                t = tr.get_text(separator=' ', strip=True)
+                if 'XU100' in t:
+                    parts = t.split()
+                    live_xu100 = float(parts[3].replace(',', '.'))
+                    break
+    except Exception:
+        pass
+
+    if live_xu100 is None:
+        try:
+            r_yf = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/XU100.IS?interval=1d&range=2d", headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
+            if r_yf.status_code == 200:
+                meta = r_yf.json()["chart"]["result"][0]["meta"]
+                p = meta.get("regularMarketPrice")
+                prev = meta.get("chartPreviousClose")
+                if p and prev:
+                    live_xu100 = round(((p - prev) / prev) * 100, 2)
+        except Exception:
+            pass
+
+    if live_xu100 is not None:
+        xu100_change = live_xu100
+        print(f"[{t_str}] [CANLI XU100 DOGRULANDI] %{xu100_change:+.2f}")
+
+    dash_data["cache_date"] = date_str
     payload = {
         "token": AUTH_TOKEN,
         "dashboard_data": dash_data,
@@ -130,8 +164,8 @@ def main():
             # Seans araligi: 09:50 - 18:15 (Pzt - Cuma)
             in_session = weekday and ((hour == 9 and minute >= 50) or (10 <= hour < 18) or (hour == 18 and minute <= 15))
 
-            # Seans ve seans disi: 8 dakikada bir (480 saniye)
-            interval = 480
+            # Seans ici canli veri: 3 dakikada bir (180 saniye), Seans disi: 8 dakikada bir (480 saniye)
+            interval = 180 if in_session else 480
 
             if in_session:
                 print(f"[SEANS AKTIF] Veri senkronizasyonu yapiliyor ({now.strftime('%H:%M:%S')})...")

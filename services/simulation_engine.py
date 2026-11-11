@@ -565,9 +565,13 @@ class SimulationEngine:
         except Exception:
             pass
 
-        if _sim_regime in ("BEAR", "STRONG_BEAR"):
+        if _sim_regime == "STRONG_BEAR":
             effective_max_positions = 0
-            print(f"[SimEngine] {date_str} -> Rejim kilidi ({_sim_regime}): simülasyon girişleri kapalı")
+            print(f"[SimEngine] {date_str} -> Şiddetli Ayı kilidi: simülasyon girişleri kapalı")
+        elif _sim_regime == "BEAR":
+            # SAVUNMA MODU: Sert düşüşte piyasa kilitlenmez; sadece en güçlü 1 A-sınıfı istisnaya izin verilir
+            effective_max_positions = 1
+            print(f"[SimEngine] {date_str} -> Savunma Modu: Sadece 1 adet yüksek kaliteli seçici işleme izin veriliyor")
         elif _weekly_loss_locked:
             effective_max_positions = 0
             print(f"[SimEngine] {date_str} -> Haftalık zarar kilidi aktif: yeni girişler durduruldu (açık pozisyonlar planıyla yönetilir)")
@@ -588,7 +592,6 @@ class SimulationEngine:
                 _sec_lup[_mm.replace('.IS', '')] = _sn
 
         valid_signals = []
-        import json
         for s in signals:
             score = float(s.get('score', 0))
             phase = str(s.get('morning_phase', 'Phase 1'))
