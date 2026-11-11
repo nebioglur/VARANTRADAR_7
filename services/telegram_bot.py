@@ -170,12 +170,32 @@ def send_telegram_message(text: str, parse_mode: str = "HTML", force: bool = Fal
             if proxies:
                 kwargs["proxies"] = proxies
 
-            response = requests.post(url, **kwargs)
+            try:
+                response = requests.post(url, **kwargs)
+            except Exception as e_req:
+                if proxies:
+                    kwargs.pop("proxies", None)
+                    response = requests.post(url, **kwargs)
+                else:
+                    raise e_req
+
             response_data = response.json()
 
             if response.status_code == 200 and response_data.get("ok"):
                 logger.info(f"Telegram mesaji basariyla gonderildi ({cid}): {text[:50]}...")
                 any_success = True
+            elif "parse" in str(response_data).lower() or response.status_code == 400:
+                clean_payload = {
+                    "chat_id": cid,
+                    "text": text.replace("<b>", "").replace("</b>", "").replace("<i>", "").replace("</i>", "")
+                }
+                kwargs["json"] = clean_payload
+                retry_resp = requests.post(url, **kwargs).json()
+                if retry_resp.get("ok"):
+                    logger.info(f"Telegram mesaji duz metin olarak basariyla iletildi ({cid})")
+                    any_success = True
+                else:
+                    logger.error(f"Telegram duz metin gonderilemedi ({cid})! Hata: {retry_resp}")
             else:
                 logger.error(f"Telegram mesaji gonderilemedi ({cid})! Hata: {response_data}")
         except Exception as e:
@@ -1916,8 +1936,9 @@ def send_open_positions_report(trades: list = None, force: bool = True) -> dict:
         if " " in entry_time_str:
             entry_time_str = entry_time_str.split(" ")[1][:5]
 
-        reason = tr.get("exit_reason") or tr.get("setup") or "V8 Erken Kopuş (Phase 1)"
-        reason = reason.replace("AÇIK POZİSYON", "").strip()
+        import html
+        reason = tr.get("strategy_name") or tr.get("exit_reason") or tr.get("setup") or "V8 Erken Kopuş (Phase 1)"
+        reason = html.escape(str(reason).replace("AÇIK POZİSYON", "").strip())
         if not reason:
             reason = "V8 Erken Kopuş (Phase 1)"
 
