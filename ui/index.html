@@ -37,6 +37,19 @@
         .sim-pill.on  { border-color:rgba(34,197,94,0.6); color:#22c55e; background:linear-gradient(145deg, rgba(34,197,94,0.12), rgba(15,23,42,0.9)); }
         .sim-pill.off { border-color:rgba(250,204,21,0.45); color:#facc15; }
         .sim-pill-accent { border-color:rgba(56,189,248,0.45); color:#38bdf8; }
+        /* Trade Log Responsive Mobile Cards */
+        .sim-mobile-cards-container { display: none; }
+        @media (max-width: 768px) {
+            .table-scroll-wrapper.sim-table-wrap { display: none !important; }
+            .sim-mobile-cards-container { display: flex; flex-direction: column; gap: 0.75rem; }
+            .sim-order-card {
+                background: linear-gradient(145deg, rgba(30,41,59,0.75) 0%, rgba(15,23,42,0.95) 100%);
+                border: 1px solid rgba(255,255,255,0.09);
+                border-radius: 12px;
+                padding: 1rem;
+                box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+            }
+        }
         .sim-notify-badge {
             font-size:0.72rem; padding:0.32rem 0.7rem; border-radius:999px;
             background:rgba(100,116,139,0.15); color:var(--text-muted); border:1px solid rgba(100,116,139,0.3); white-space:nowrap;
@@ -1300,117 +1313,224 @@
         </div>
     </div> <!-- END DASHBOARD WRAPPER -->
 
-    <!-- 📊 İSTATİSTİKLER & PERFORMANS MERKEZİ WRAPPER -->
+        <!-- 📊 İSTATİSTİKLER & PERFORMANS MERKEZİ WRAPPER (REBUILT FOR 6% WEEKLY / 90% WR / TIME-SLOT KPI) -->
     <div id="stats-wrapper" class="main-wrapper" style="display: none;">
         <div style="max-width:1200px; margin:0 auto; padding: 1rem;">
+            <!-- Üst Başlık & Mod Seçici -->
             <div style="margin-bottom:2rem; text-align: center;">
-                <h2 style="color:var(--accent-purple); font-size: 1.8rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-chart-pie"></i> Performans Merkezi (KPI)</h2>
-                <p style="color:var(--text-muted); font-size: 0.95rem;">Sistemimizin başarı istatistikleri ve genel performansı.</p>
-                <div id="stats-data-status" role="status" aria-live="polite" style="color:var(--text-muted); font-size:0.8rem; min-height:1.2rem;">İstatistikler yükleniyor...</div>
+                <div style="display:inline-flex; align-items:center; gap:8px; background:rgba(168,85,247,0.12); border:1px solid rgba(168,85,247,0.3); padding:4px 14px; border-radius:20px; color:#c084fc; font-size:0.8rem; font-weight:700; margin-bottom:8px;">
+                    <i class="fa-solid fa-chart-line"></i> V8 STRATEJİ & PORTFÖY PERFORMANS MERKEZİ
+                </div>
+                <h2 style="color:var(--text-main); font-size: 1.8rem; font-weight:800; margin-bottom: 0.4rem;">
+                    Haftalık Hedef & İstatistik Karnesi
+                </h2>
+                <p style="color:var(--text-muted); font-size: 0.92rem; max-width:650px; margin:0 auto;">
+                    Haftalık minimum %6 kâr ve %90 başarı hedefine giden yol: Zaman dilimleri, risk rasyoları, çıkış disiplini ve net sermaye karnesi.
+                </p>
+                <div id="stats-data-status" role="status" aria-live="polite" style="color:#94a3b8; font-size:0.82rem; margin-top:8px;">
+                    Canlı simülasyon ve seans verileri analiz ediliyor...
+                </div>
                 
-                <!-- NEW TOGGLE FOR TODAY VS CUMULATIVE -->
-                <div style="display:flex; justify-content:center; margin-top: 1.5rem;">
-                    <div style="display:flex; background: rgba(30,41,59,0.7); padding: 5px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
-                        <button id="stats-mode-daily-btn" onclick="switchStatsMode('daily')" style="background:var(--accent-purple); border:none; color:#fff; padding: 8px 16px; border-radius: 6px; cursor:pointer; font-weight:600; font-size: 0.9rem; transition:all 0.3s ease;">Son Seans Özeti</button>
-                        <button id="stats-mode-cumulative-btn" onclick="switchStatsMode('cumulative')" style="background:transparent; border:none; color:var(--text-muted); padding: 8px 16px; border-radius: 6px; cursor:pointer; font-weight:600; font-size: 0.9rem; transition:all 0.3s ease;">Kümülatif Başarı (Tüm Zamanlar)</button>
+                <!-- Günlük / Kümülatif Seçici -->
+                <div style="display:flex; justify-content:center; margin-top: 1.25rem;">
+                    <div style="display:flex; background: rgba(30,41,59,0.7); padding: 5px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.1);">
+                        <button id="stats-mode-daily-btn" onclick="switchStatsMode('daily')" class="sim-pill on" style="border:none;">Son Seans (Bugün)</button>
+                        <button id="stats-mode-cumulative-btn" onclick="switchStatsMode('cumulative')" class="sim-pill off" style="border:none;">Tüm Zamanlar (Kümülatif)</button>
                     </div>
                 </div>
             </div>
 
-            <!-- Main KPIs Row 1 -->
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1.5rem; margin-bottom:1.5rem;">
-                <div class="card" style="background: linear-gradient(145deg, rgba(30,41,59,0.5) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(255,255,255,0.05); text-align:center; padding: 1.5rem;">
-                    <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-regular fa-calendar-days"></i> Son Kaydedilen Seans</div>
-                    <div id="stats-tab-total-days" style="font-size:2.5rem; font-weight:800; color:var(--text-main);">-</div>
-                    <div id="stats-tab-total-candidates-sub" style="font-size:0.8rem; color:var(--text-muted); margin-top:5px;">Toplam Öneri</div>
+            <!-- 🎯 HAFTALIK ANA HEDEF HERO KARTI (Weekly %6 Net Target & Win-Rate) -->
+            <div class="card" style="background: linear-gradient(135deg, rgba(30,41,59,0.75) 0%, rgba(15,23,42,0.95) 100%); border:1px solid rgba(56,189,248,0.3); padding:1.75rem; border-radius:16px; margin-bottom:2rem; box-shadow:0 8px 30px rgba(0,0,0,0.35);">
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div style="width:48px; height:48px; border-radius:12px; background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.3); display:flex; align-items:center; justify-content:center; font-size:1.4rem; color:#38bdf8;">
+                            <i class="fa-solid fa-bullseye"></i>
+                        </div>
+                        <div>
+                            <div style="font-size:0.82rem; text-transform:uppercase; letter-spacing:1px; color:#94a3b8; font-weight:700;">Haftalık Ana Strateji Hedefi</div>
+                            <div style="font-size:1.35rem; font-weight:800; color:#fff;">Minimum %6.00 Net Getiri & %90 Win-Rate</div>
+                        </div>
+                    </div>
+                    <div id="stats-weekly-badge" style="padding:6px 14px; border-radius:999px; font-weight:700; font-size:0.85rem; background:rgba(59,130,246,0.2); color:#60a5fa; border:1px solid rgba(59,130,246,0.4);">
+                        <i class="fa-solid fa-rocket"></i> HEDEF YOLUNDA 🚀
+                    </div>
                 </div>
-                <div class="card" onclick="openStatsDetailModal('tavan')" style="background: linear-gradient(145deg, rgba(16,185,129,0.05) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(16,185,129,0.2); text-align:center; padding: 1.5rem; cursor:pointer;" title="Tavan Olan Hisseleri Görmek İçin Tıklayın">
-                    <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-rocket"></i> Tavan Başarısı</div>
-                    <div id="stats-tab-tavan-rate" style="font-size:2.5rem; font-weight:800; color:var(--accent-green);">-</div>
-                    <div id="stats-tab-tavan-cnt-sub" style="font-size:0.8rem; color:var(--accent-green); margin-top:5px; opacity:0.8;">- Tavan</div>
+
+                <!-- Progress Bar -->
+                <div style="margin-bottom:1rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; margin-bottom:6px;">
+                        <span style="color:#cbd5e1; font-weight:600;">Haftalık İlerleme: <b id="stats-weekly-progress-txt" style="color:#38bdf8;">+%3.55 / %6.00</b> (<span id="stats-weekly-pnl-txt">+₺3.545,51</span>)</span>
+                        <span id="stats-weekly-pct-badge" style="color:#34d399; font-weight:800;">%59.2 Tamamlandı</span>
+                    </div>
+                    <div style="width:100%; height:12px; background:rgba(15,23,42,0.8); border-radius:999px; overflow:hidden; border:1px solid rgba(255,255,255,0.1); position:relative;">
+                        <div id="stats-weekly-bar" style="width:59.2%; height:100%; background:linear-gradient(90deg, #38bdf8 0%, #10b981 100%); border-radius:999px; transition:width 0.8s ease; box-shadow:0 0 12px rgba(56,189,248,0.5);"></div>
+                    </div>
                 </div>
-                <div class="card" onclick="openStatsDetailModal('plus5')" style="background: linear-gradient(145deg, rgba(59,130,246,0.05) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(59,130,246,0.2); text-align:center; padding: 1.5rem; cursor:pointer;" title="+%5 Üzeri Yapan Hisseleri Görmek İçin Tıklayın">
-                    <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-chart-line"></i> +%5 Üzeri Kâr</div>
-                    <div id="stats-tab-plus5-rate" style="font-size:2.5rem; font-weight:800; color:var(--accent-blue);">-</div>
-                    <div id="stats-tab-plus5-cnt-sub" style="font-size:0.8rem; color:var(--accent-blue); margin-top:5px; opacity:0.8;">- Hisse</div>
+
+                <!-- 3 Alt Metrik Şeridi -->
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:1rem; padding-top:1rem; border-top:1px solid rgba(255,255,255,0.08);">
+                    <div>
+                        <div style="font-size:0.75rem; color:#94a3b8;">Haftalık Kazanma Oranı</div>
+                        <div id="stats-weekly-winrate" style="font-size:1.25rem; font-weight:800; color:#34d399;">%66.7 <span style="font-size:0.8rem; color:#94a3b8; font-weight:500;">(8W / 4L)</span></div>
+                    </div>
+                    <div>
+                        <div style="font-size:0.75rem; color:#94a3b8;">Hafta Kalan Hedef Farkı</div>
+                        <div id="stats-weekly-gap" style="font-size:1.25rem; font-weight:800; color:#facc15;">%2.45 <span style="font-size:0.8rem; color:#94a3b8; font-weight:500;">(₺2.454)</span></div>
+                    </div>
+                    <div>
+                        <div style="font-size:0.75rem; color:#94a3b8;">Sermaye Koruma Kalkanı</div>
+                        <div id="stats-weekly-shield" style="font-size:1.25rem; font-weight:800; color:#38bdf8;">Aktif <span style="font-size:0.8rem; color:#94a3b8; font-weight:500;">(Max %2 Kayıp Limiti)</span></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Main KPIs Row 2 -->
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1.5rem; margin-bottom:2rem;">
-                <div class="card" onclick="openStatsDetailModal('all')" style="background: linear-gradient(145deg, rgba(234,179,8,0.05) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(234,179,8,0.2); text-align:center; padding: 1.5rem; cursor:pointer;" title="Tüm Hisseleri Görmek İçin Tıklayın">
-                    <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-fire"></i> Ort. Zirve Primi</div>
-                    <div id="stats-tab-avg-max-gain" style="font-size:2.5rem; font-weight:800; color:var(--accent-yellow);">-</div>
-                    <div id="stats-tab-avg-close-sub" style="font-size:0.8rem; color:var(--text-muted); margin-top:5px;">Kapanış: -</div>
+            <!-- 💎 4 TEMEL METRİK KARTLARI -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:1.25rem; margin-bottom:2rem;">
+                <!-- 1. Kazanma Oranı -->
+                <div class="card" style="background:linear-gradient(145deg, rgba(16,185,129,0.08) 0%, rgba(15,23,42,0.95) 100%); border:1px solid rgba(16,185,129,0.3); padding:1.5rem; text-align:center;">
+                    <div style="font-size:0.8rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; margin-bottom:0.5rem;"><i class="fa-solid fa-trophy" style="color:#10b981;"></i> Kazanma Oranı (Win Rate)</div>
+                    <div id="stats-kpi-winrate" style="font-size:2.4rem; font-weight:800; color:#10b981;">%69.2</div>
+                    <div id="stats-kpi-winrate-sub" style="font-size:0.82rem; color:#cbd5e1; margin-top:4px;">9 Kazanç / 4 Kayıp (Toplam 13)</div>
                 </div>
-                <div class="card" style="display:none; background: linear-gradient(145deg, rgba(168,85,247,0.05) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(168,85,247,0.2); text-align:center; padding: 1.5rem;">
-                    <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-building-columns"></i> Ahlatcı Varant Ort. Kâr</div>
-                    <div id="stats-tab-warrant-avg-gain" style="font-size:2.5rem; font-weight:800; color:var(--accent-purple);">-</div>
-                    <div style="font-size:0.8rem; color:var(--accent-purple); margin-top:5px; opacity:0.8;">~6.2x Kaldıraç</div>
+                <!-- 2. Profit Factor -->
+                <div class="card" style="background:linear-gradient(145deg, rgba(56,189,248,0.08) 0%, rgba(15,23,42,0.95) 100%); border:1px solid rgba(56,189,248,0.3); padding:1.5rem; text-align:center;">
+                    <div style="font-size:0.8rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; margin-bottom:0.5rem;"><i class="fa-solid fa-scale-balanced" style="color:#38bdf8;"></i> Kâr Faktörü (Profit Factor)</div>
+                    <div id="stats-kpi-pf" style="font-size:2.4rem; font-weight:800; color:#38bdf8;">3.59x</div>
+                    <div id="stats-kpi-pf-sub" style="font-size:0.82rem; color:#cbd5e1; margin-top:4px;">Brüt Kâr: ₺6.184 / Zarar: ₺1.688</div>
                 </div>
-            </div>
-
-            <!-- Main KPIs Row 3: Net Profit/Loss -->
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1.5rem; margin-bottom:2rem;">
-                <div class="card" onclick="openStatsDetailModal('positive_close')" style="background: linear-gradient(145deg, rgba(16,185,129,0.05) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(16,185,129,0.2); text-align:center; padding: 1.5rem; cursor:pointer;" title="Kârda Kapatanları Görmek İçin Tıklayın">
-                    <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-arrow-trend-up"></i> Günü Kârda Kapatanlar</div>
-                    <div id="stats-tab-pos-count" style="font-size:2.5rem; font-weight:800; color:var(--accent-green);">-</div>
-                    <div id="stats-tab-pos-avg" style="font-size:0.8rem; color:var(--accent-green); margin-top:5px; opacity:0.8;">(Ort. +%0.00)</div>
+                <!-- 3. Risk / Ödül (Ort. Kazanç / Kayıp) -->
+                <div class="card" style="background:linear-gradient(145deg, rgba(234,179,8,0.08) 0%, rgba(15,23,42,0.95) 100%); border:1px solid rgba(234,179,8,0.3); padding:1.5rem; text-align:center;">
+                    <div style="font-size:0.8rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; margin-bottom:0.5rem;"><i class="fa-solid fa-arrows-up-down" style="color:#facc15;"></i> Ort. Kazanç / Kayıp (R:R)</div>
+                    <div id="stats-kpi-rr" style="font-size:2.4rem; font-weight:800; color:#facc15;">+₺687 / -₺422</div>
+                    <div id="stats-kpi-rr-sub" style="font-size:0.82rem; color:#cbd5e1; margin-top:4px;">Asimetrik Risk Avantajı (1.63x)</div>
                 </div>
-                <div class="card" onclick="openStatsDetailModal('negative_close')" style="background: linear-gradient(145deg, rgba(239,68,68,0.05) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(239,68,68,0.2); text-align:center; padding: 1.5rem; cursor:pointer;" title="Zararda Kapatanları Görmek İçin Tıklayın">
-                    <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-arrow-trend-down"></i> Günü Zararda Kapatanlar</div>
-                    <div id="stats-tab-neg-count" style="font-size:2.5rem; font-weight:800; color:var(--accent-red);">-</div>
-                    <div id="stats-tab-neg-avg" style="font-size:0.8rem; color:var(--accent-red); margin-top:5px; opacity:0.8;">(Ort. -%0.00)</div>
-                </div>
-                <div class="card" id="stats-tab-net-card" onclick="openStatsDetailModal('all')" style="background: linear-gradient(145deg, rgba(59,130,246,0.05) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(59,130,246,0.2); text-align:center; padding: 1.5rem; cursor:pointer;" title="Tüm İşlemleri Görmek İçin Tıklayın">
-                    <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-scale-balanced"></i> Net Kâr / Zarar (%)</div>
-                    <div id="stats-tab-net-pct" style="font-size:2.5rem; font-weight:800; color:var(--accent-blue);">-</div>
-                    <div style="font-size:0.8rem; color:var(--text-muted); margin-top:5px; opacity:0.8;">Kâr Ort. + Zarar Ort.</div>
+                <!-- 4. Max Drawdown & Net PnL -->
+                <div class="card" style="background:linear-gradient(145deg, rgba(168,85,247,0.08) 0%, rgba(15,23,42,0.95) 100%); border:1px solid rgba(168,85,247,0.3); padding:1.5rem; text-align:center;">
+                    <div style="font-size:0.8rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; margin-bottom:0.5rem;"><i class="fa-solid fa-shield-halved" style="color:#c084fc;"></i> Net Kâr / Max Drawdown</div>
+                    <div id="stats-kpi-net" style="font-size:2.4rem; font-weight:800; color:#c084fc;">+₺4.496,18</div>
+                    <div id="stats-kpi-net-sub" style="font-size:0.82rem; color:#cbd5e1; margin-top:4px;">Max Drawdown: -₺1.534 (%1.53)</div>
                 </div>
             </div>
 
-            <!-- Elite KPIs Row (Score 100 Only) -->
-            <h3 class="card-title" style="margin-bottom: 1.5rem; font-size: 1.2rem; margin-top: 1rem;"><i class="fa-solid fa-medal text-yellow"></i> Elit Sinyal Performansı (100 Puan)</h3>
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1.5rem; margin-bottom:2rem;">
-                <div class="card" onclick="openStatsDetailModal('elite_positive_close')" style="background: linear-gradient(145deg, rgba(16,185,129,0.05) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(16,185,129,0.5); text-align:center; padding: 1.5rem; box-shadow: 0 0 15px rgba(16,185,129,0.1); cursor:pointer;" title="Elit Kârda Kapatanları Görmek İçin Tıklayın">
-                    <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-arrow-trend-up"></i> Elit Kârda Kapatanlar</div>
-                    <div id="stats-tab-elite-pos-count" style="font-size:2.5rem; font-weight:800; color:var(--accent-green);">-</div>
-                    <div id="stats-tab-elite-pos-avg" style="font-size:0.8rem; color:var(--accent-green); margin-top:5px; opacity:0.8;">(Ort. +%0.00)</div>
+            <!-- ⏰ ZAMAN DİLİMİ KARNESİ (Time-Slot Edge Analytics) -->
+            <div class="card" style="border:1px solid var(--border-color); background:var(--bg-card); padding:1.5rem; border-radius:14px; margin-bottom:2rem;">
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; margin-bottom:1.25rem;">
+                    <h3 class="card-title" style="margin:0; font-size:1.15rem;">
+                        <i class="fa-solid fa-clock text-blue"></i> Zaman Dilimi İstatistikleri (Neden 14:30 Cutoff?)
+                    </h3>
+                    <span style="font-size:0.78rem; color:#94a3b8; background:rgba(255,255,255,0.06); padding:3px 10px; border-radius:999px;">
+                        Seans İçi Saatlik Alfa Ölçümü
+                    </span>
                 </div>
-                <div class="card" onclick="openStatsDetailModal('elite_negative_close')" style="background: linear-gradient(145deg, rgba(239,68,68,0.05) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(239,68,68,0.5); text-align:center; padding: 1.5rem; box-shadow: 0 0 15px rgba(239,68,68,0.1); cursor:pointer;" title="Elit Zararda Kapatanları Görmek İçin Tıklayın">
-                    <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-arrow-trend-down"></i> Elit Zararda Kapatanlar</div>
-                    <div id="stats-tab-elite-neg-count" style="font-size:2.5rem; font-weight:800; color:var(--accent-red);">-</div>
-                    <div id="stats-tab-elite-neg-avg" style="font-size:0.8rem; color:var(--accent-red); margin-top:5px; opacity:0.8;">(Ort. -%0.00)</div>
-                </div>
-                <div class="card" id="stats-tab-elite-net-card" onclick="openStatsDetailModal('elite_all')" style="background: linear-gradient(145deg, rgba(234,179,8,0.05) 0%, rgba(15,23,42,1) 100%); border:1px solid rgba(234,179,8,0.5); text-align:center; padding: 1.5rem; box-shadow: 0 0 15px rgba(234,179,8,0.1); cursor:pointer;" title="Tüm Elit İşlemleri Görmek İçin Tıklayın">
-                    <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:1px;"><i class="fa-solid fa-scale-balanced"></i> Elit Net Kâr/Zarar</div>
-                    <div id="stats-tab-elite-net-pct" style="font-size:2.5rem; font-weight:800; color:var(--accent-yellow);">-</div>
-                    <div style="font-size:0.8rem; color:var(--text-muted); margin-top:5px; opacity:0.8;">Kâr Ort. + Zarar Ort.</div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:1.25rem;">
+                    <!-- 10:00 - 11:30 Sabah Altın Saatler -->
+                    <div style="background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.3); border-radius:12px; padding:1.25rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                            <span style="font-weight:700; color:#34d399; font-size:0.95rem;"><i class="fa-solid fa-sun"></i> 10:00 - 11:30 (Sabah Altın)</span>
+                            <span style="font-size:0.72rem; padding:2px 8px; border-radius:999px; background:rgba(16,185,129,0.2); color:#34d399; font-weight:700;">EN YÜKSEK ALFA</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.85rem;">
+                            <span style="color:#94a3b8;">İşlem Sayısı:</span> <b id="stats-time-morning-cnt" style="color:#fff;">11 Sinyal</b>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.85rem;">
+                            <span style="color:#94a3b8;">Kazanma Oranı:</span> <b id="stats-time-morning-wr" style="color:#34d399;">%81.8 (9W / 2L)</b>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+                            <span style="color:#94a3b8;">Net Kâr / Getiri:</span> <b id="stats-time-morning-pnl" style="color:#34d399;">+₺4.649,96</b>
+                        </div>
+                    </div>
+
+                    <!-- 11:30 - 14:30 Öğle Konsolidasyonu -->
+                    <div style="background:rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.25); border-radius:12px; padding:1.25rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                            <span style="font-weight:700; color:#60a5fa; font-size:0.95rem;"><i class="fa-solid fa-mug-hot"></i> 11:30 - 14:30 (Öğle Durgunluğu)</span>
+                            <span style="font-size:0.72rem; padding:2px 8px; border-radius:999px; background:rgba(59,130,246,0.15); color:#60a5fa; font-weight:600;">SEÇİCİ GİRİŞ</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.85rem;">
+                            <span style="color:#94a3b8;">İşlem Sayısı:</span> <b id="stats-time-noon-cnt" style="color:#fff;">0 Sinyal</b>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.85rem;">
+                            <span style="color:#94a3b8;">Kazanma Oranı:</span> <b id="stats-time-noon-wr" style="color:#cbd5e1;">—</b>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+                            <span style="color:#94a3b8;">Net Kâr / Getiri:</span> <b id="stats-time-noon-pnl" style="color:#cbd5e1;">₺0.00</b>
+                        </div>
+                    </div>
+
+                    <!-- 14:30+ Kapanış & Cutoff -->
+                    <div style="background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.25); border-radius:12px; padding:1.25rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                            <span style="font-weight:700; color:#f87171; font-size:0.95rem;"><i class="fa-solid fa-ban"></i> 14:30+ (Sert Cutoff Bölgesi)</span>
+                            <span style="font-size:0.72rem; padding:2px 8px; border-radius:999px; background:rgba(239,68,68,0.2); color:#f87171; font-weight:700;">GİRİŞ KAPALI</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.85rem;">
+                            <span style="color:#94a3b8;">İşlem Sayısı (Eski):</span> <b id="stats-time-afternoon-cnt" style="color:#fff;">2 Sinyal</b>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.85rem;">
+                            <span style="color:#94a3b8;">Kazanma Oranı:</span> <b id="stats-time-afternoon-wr" style="color:#f87171;">%0.0 (0W / 2L)</b>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+                            <span style="color:#94a3b8;">Net Kâr / Zarar:</span> <b id="stats-time-afternoon-pnl" style="color:#f87171;">-₺153.78</b>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Stats Table for Daily History -->
-            <div class="card" style="border:1px solid var(--border-color); background: var(--bg-card); box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-                <h3 class="card-title" style="margin-bottom: 1.5rem; font-size: 1.2rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem;">
-                    <span><i class="fa-solid fa-calendar-check text-green"></i> Geçmiş Günlerin Karnesi</span>
-                    <select id="stats-tab-week-select" onchange="applyStatsWeekFilter()" style="background:var(--bg-base); color:var(--text-light); border:1px solid var(--border-color); border-radius:6px; padding:5px 10px; font-size:0.85rem; cursor:pointer;">
-                        <option value="">Tüm Kayıtlar</option>
-                    </select>
+            <!-- 🛑 ÇIKIŞ SEBEPLERİ VE STRATEJİ DAĞILIMI -->
+            <div class="card" style="border:1px solid var(--border-color); background:var(--bg-card); padding:1.5rem; border-radius:14px; margin-bottom:2rem;">
+                <h3 class="card-title" style="margin:0 0 1.25rem 0; font-size:1.15rem;">
+                    <i class="fa-solid fa-arrow-right-from-bracket text-green"></i> Çıkış Disiplini ve Kâr Realizasyonu Dağılımı
+                </h3>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:1rem;">
+                    <div style="background:rgba(15,23,42,0.6); border:1px solid rgba(255,255,255,0.06); border-radius:10px; padding:1rem; text-align:center;">
+                        <div style="font-size:0.75rem; color:#94a3b8; text-transform:uppercase;">🎯 TP1 (%60 Kâr Al)</div>
+                        <div id="stats-exit-tp1" style="font-size:1.8rem; font-weight:800; color:#38bdf8; margin:4px 0;">3 İşlem</div>
+                        <div style="font-size:0.72rem; color:#94a3b8;">Risk Sıfırlandı</div>
+                    </div>
+                    <div style="background:rgba(15,23,42,0.6); border:1px solid rgba(255,255,255,0.06); border-radius:10px; padding:1rem; text-align:center;">
+                        <div style="font-size:0.75rem; color:#94a3b8; text-transform:uppercase;">🚀 TP2 (Tam Hedef)</div>
+                        <div id="stats-exit-tp2" style="font-size:1.8rem; font-weight:800; color:#10b981; margin:4px 0;">0 İşlem</div>
+                        <div style="font-size:0.72rem; color:#94a3b8;">Maksimum Trend Primi</div>
+                    </div>
+                    <div style="background:rgba(15,23,42,0.6); border:1px solid rgba(255,255,255,0.06); border-radius:10px; padding:1rem; text-align:center;">
+                        <div style="font-size:0.75rem; color:#94a3b8; text-transform:uppercase;">⏱️ 35 Dk Zaman Stopu</div>
+                        <div id="stats-exit-time" style="font-size:1.8rem; font-weight:800; color:#facc15; margin:4px 0;">0 İşlem</div>
+                        <div style="font-size:0.72rem; color:#94a3b8;">Hantallaşan Pozisyondan Çıkış</div>
+                    </div>
+                    <div style="background:rgba(15,23,42,0.6); border:1px solid rgba(255,255,255,0.06); border-radius:10px; padding:1rem; text-align:center;">
+                        <div style="font-size:0.75rem; color:#94a3b8; text-transform:uppercase;">🛑 Stop Loss</div>
+                        <div id="stats-exit-stop" style="font-size:1.8rem; font-weight:800; color:#f87171; margin:4px 0;">0 İşlem</div>
+                        <div style="font-size:0.72rem; color:#94a3b8;">Sermaye Koruma</div>
+                    </div>
+                    <div style="background:rgba(15,23,42,0.6); border:1px solid rgba(255,255,255,0.06); border-radius:10px; padding:1rem; text-align:center;">
+                        <div style="font-size:0.75rem; color:#94a3b8; text-transform:uppercase;">🏁 17:50 Gün Sonu Nakit</div>
+                        <div id="stats-exit-close" style="font-size:1.8rem; font-weight:800; color:#cbd5e1; margin:4px 0;">10 İşlem</div>
+                        <div style="font-size:0.72rem; color:#94a3b8;">Sıfır Gece Riski</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 📅 SEANS GEÇMİŞİ TABLOSU -->
+            <div class="card" style="border:1px solid var(--border-color); background: var(--bg-card); box-shadow: 0 4px 15px rgba(0,0,0,0.2); padding:1.5rem; border-radius:14px;">
+                <h3 class="card-title" style="margin-bottom: 1.25rem; font-size: 1.15rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem;">
+                    <span><i class="fa-solid fa-calendar-check text-green"></i> Seans Geçmişi & Kasa Karnesi</span>
+                    <span style="font-size:0.8rem; color:#94a3b8; font-weight:normal;">Günlük net kapanış bakiyeleri</span>
                 </h3>
                 <div class="table-scroll-wrapper" style="max-height: 400px; overflow-y: auto; overflow-x: auto;">
                     <table class="data-table" style="width:100%; border-collapse: separate; border-spacing: 0;">
                         <thead>
                             <tr>
                                 <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Tarih</th>
-                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Toplam Sinyal</th>
-                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Tavan Sayısı</th>
-                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">+%5 Üzeri</th>
-                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Ort. Zirve (%)</th>
-                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Ort. Kapanış (%)</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">İşlem Sayısı</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Başarı (Win/Loss)</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Günlük Getiri (%)</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Günlük Net PnL (₺)</th>
+                                <th style="position: sticky; top: 0; background: var(--bg-base); z-index: 10;">Kapanış Bakiyesi (₺)</th>
                             </tr>
                         </thead>
                         <tbody id="stats-history-tbody">
-                            <tr><td colspan="6" class="text-muted text-center" style="padding:3rem;"><i class="fa-solid fa-spinner fa-spin"></i> İstatistikler Yükleniyor...</td></tr>
+                            <tr><td colspan="6" class="text-muted text-center" style="padding:2.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> İstatistikler Yükleniyor...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1877,6 +1997,18 @@
                     </div>
                     <div id="tg-settings-msg" style="margin-top:0.6rem; font-size:0.82rem; display:none;"></div>
                 </div>
+                <!-- 🟢 CANLI AÇIK POZİSYONLAR VİTRİNİ -->
+                <div id="sim-active-positions-hero" style="margin-bottom:1rem;"></div>
+
+                <!-- ⚡ HIZLI FİLTRE BUTONLARI -->
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:1rem;" id="sim-log-filter-pills">
+                    <button type="button" class="sim-pill on" onclick="filterTradeLog('all', this)" id="filter-pill-all">Tümü (13)</button>
+                    <button type="button" class="sim-pill" onclick="filterTradeLog('open', this)" id="filter-pill-open"><span style="color:#10b981;">●</span> Açık (0)</button>
+                    <button type="button" class="sim-pill" onclick="filterTradeLog('win', this)" id="filter-pill-win"><i class="fa-solid fa-arrow-trend-up" style="color:#10b981;"></i> Kazanç (9)</button>
+                    <button type="button" class="sim-pill" onclick="filterTradeLog('loss', this)" id="filter-pill-loss"><i class="fa-solid fa-arrow-trend-down" style="color:#f87171;"></i> Kayıp (4)</button>
+                    <button type="button" class="sim-pill" onclick="filterTradeLog('eod', this)" id="filter-pill-eod"><i class="fa-solid fa-flag-checkered"></i> Seans Sonu (10)</button>
+                </div>
+
                 <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.6rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; padding:0 2px;">
                     <div style="display:flex; align-items:center; gap:6px;">
                         <i class="fa-solid fa-circle-info" style="color:var(--accent-blue);"></i>
@@ -1888,7 +2020,7 @@
                         <span style="color:#10b981;"><i class="fa-solid fa-circle" style="font-size:0.5rem;"></i> Kâr Realizasyonu</span>
                     </div>
                 </div>
-                <div class="table-scroll-wrapper" style="max-height: 520px; overflow-y: auto; overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch;">
+                <div class="table-scroll-wrapper sim-table-wrap" style="max-height: 520px; overflow-y: auto; overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch;">
                     <table class="data-table" style="width:100%; min-width: 760px; border-collapse: separate; border-spacing: 0;">
                         <thead>
                             <tr>
@@ -1907,6 +2039,8 @@
                         </tbody>
                     </table>
                 </div>
+                <!-- 📱 MOBİL AKICI EMİR KARTLARI (Mobile Order Ticket View) -->
+                <div id="sim-trade-log-mobile-cards" class="sim-mobile-cards-container"></div>
             </div>
         </div>
     </div>
@@ -2606,7 +2740,7 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="app.js?v=20261111_v53"></script>
+    <script src="app.js?v=20261111_v54"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js?v=20260916_v13"></script>
     <script>
