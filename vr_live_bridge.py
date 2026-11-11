@@ -16,7 +16,13 @@ try:
     from zoneinfo import ZoneInfo
 except ImportError:
     ZoneInfo = None
+import socket
+socket.setdefaulttimeout(15)
 import requests
+
+def print_flush(*args, **kwargs):
+    kwargs['flush'] = True
+    print(*args, **kwargs)
 
 VERDENT_URL = "https://varantradar-pro-8.verdent.app"
 PA_URL = "https://varantradarpro.pythonanywhere.com"
@@ -38,27 +44,27 @@ def sync_once():
     try:
         r_log = session.post(f"{VERDENT_URL}/login", json={"username": "nebioglur", "password": "123"}, timeout=12)
         if r_log.status_code != 200:
-            print(f"[{t_str}] [HATA] Verdent oturum acilamadi (HTTP {r_log.status_code})")
+            print_flush(f"[{t_str}] [HATA] Verdent oturum acilamadi (HTTP {r_log.status_code})")
             return False
     except Exception as e:
-        print(f"[{t_str}] [HATA] Verdent erisim hatasi: {e}")
+        print_flush(f"[{t_str}] [HATA] Verdent erisim hatasi: {e}")
         return False
 
     # 2. Verdent Dashboard Data Cek
     try:
         r_dash = session.get(f"{VERDENT_URL}/api/dashboard_init", timeout=25)
         if r_dash.status_code != 200:
-            print(f"[{t_str}] [HATA] Verdent dashboard_init alinamadi (HTTP {r_dash.status_code})")
+            print_flush(f"[{t_str}] [HATA] Verdent dashboard_init alinamadi (HTTP {r_dash.status_code})")
             return False
         dash_json = r_dash.json()
         dash_data = dash_json.get("dashboard_data", {})
         xu100_change = dash_json.get("xu100_change")
         symbols_count = len(dash_data.get("all_symbols_stats", {}))
         if symbols_count == 0:
-            print(f"[{t_str}] [UYARI] Verdent hisse listesi bos!")
+            print_flush(f"[{t_str}] [UYARI] Verdent hisse listesi bos!")
             return False
     except Exception as e:
-        print(f"[{t_str}] [HATA] Verdent veri indirme hatasi: {e}")
+        print_flush(f"[{t_str}] [HATA] Verdent veri indirme hatasi: {e}")
         return False
 
     # 3. Verdent V8 Breakout Cek (Opsiyonel)
@@ -74,7 +80,7 @@ def sync_once():
     if "v8_market_regime" in dash_data:
         vmr = dash_data.get("v8_market_regime") or {}
         if vmr.get("stale") or "2026-09" in str(vmr.get("timestamp") or ""):
-            print(f"[{t_str}] [TEMİZLİK] Verdent'ten gelen bayat rejim verisi ({vmr.get('regime')}, {vmr.get('xu100_trend')}%) temizlendi.")
+            print_flush(f"[{t_str}] [TEMİZLİK] Verdent'ten gelen bayat rejim verisi ({vmr.get('regime')}, {vmr.get('xu100_trend')}%) temizlendi.")
             dash_data.pop("v8_market_regime", None)
             # Stale rejim temizlendi, ancak canli xu100 degeri korunuyor
             pass
@@ -84,7 +90,7 @@ def sync_once():
     live_xu100 = None
     try:
         from bs4 import BeautifulSoup
-        r_is = requests.get("https://www.isyatirim.com.tr/tr-tr/analiz/hisse/Sayfalar/default.aspx", headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
+        r_is = requests.get("https://www.isyatirim.com.tr/tr-tr/analiz/hisse/Sayfalar/default.aspx", headers={'User-Agent': 'Mozilla/5.0'}, timeout=(3, 5))
         if r_is.status_code == 200:
             soup = BeautifulSoup(r_is.text, 'html.parser')
             for tr in soup.find_all('tr'):
@@ -98,7 +104,7 @@ def sync_once():
 
     if live_xu100 is None:
         try:
-            r_yf = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/XU100.IS?interval=1d&range=2d", headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
+            r_yf = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/XU100.IS?interval=1d&range=2d", headers={'User-Agent': 'Mozilla/5.0'}, timeout=(3, 5))
             if r_yf.status_code == 200:
                 meta = r_yf.json()["chart"]["result"][0]["meta"]
                 p = meta.get("regularMarketPrice")
@@ -110,7 +116,7 @@ def sync_once():
 
     if live_xu100 is not None:
         xu100_change = live_xu100
-        print(f"[{t_str}] [CANLI XU100 DOGRULANDI] %{xu100_change:+.2f}")
+        print_flush(f"[{t_str}] [CANLI XU100 DOGRULANDI] %{xu100_change:+.2f}")
 
     dash_data["cache_date"] = date_str
     payload = {
@@ -125,34 +131,34 @@ def sync_once():
             f"{PA_URL}/api/system/push_market_data?token={AUTH_TOKEN}",
             json=payload,
             headers={"Content-Type": "application/json"},
-            timeout=35
+            timeout=(5, 30)
         )
         if r_push.status_code == 200:
             res = r_push.json()
             regime = dash_data.get("v8_market_regime", {}).get("regime", "NEUTRAL")
-            print(f"[{t_str}] [OK] {symbols_count} Hisse Senkronize Edildi | Rejim: {regime} | PA Simulasyon: {res.get('simulation', {}).get('status')}")
+            print_flush(f"[{t_str}] [OK] {symbols_count} Hisse Senkronize Edildi | Rejim: {regime} | PA Simulasyon: {res.get('simulation', {}).get('status')}")
             return True
         else:
-            print(f"[{t_str}] [HATA] PA push basarisiz (HTTP {r_push.status_code}): {r_push.text[:120]}")
+            print_flush(f"[{t_str}] [HATA] PA push basarisiz (HTTP {r_push.status_code}): {r_push.text[:120]}")
             return False
     except Exception as e:
-        print(f"[{t_str}] [HATA] PA baglanti hatasi: {e}")
+        print_flush(f"[{t_str}] [HATA] PA baglanti hatasi: {e}")
         return False
 
 def main():
-    print("=" * 65)
-    print("  VARANTRADAR PRO - CANLI VERI & OTO-PING KOPRUSU")
-    print(f"  Kaynak: {VERDENT_URL}")
-    print(f"  Hedef:  {PA_URL}")
-    print("=" * 65)
+    print_flush("=" * 65)
+    print_flush("  VARANTRADAR PRO - CANLI VERI & OTO-PING KOPRUSU")
+    print_flush(f"  Kaynak: {VERDENT_URL}")
+    print_flush(f"  Hedef:  {PA_URL}")
+    print_flush("=" * 65)
 
     if "--once" in sys.argv:
-        print("\n-> Tek seferlik senkronizasyon baslatiliyor...")
+        print_flush("\n-> Tek seferlik senkronizasyon baslatiliyor...")
         ok = sync_once()
         sys.exit(0 if ok else 1)
 
-    print("\n-> Surekli arka plan modu aktif (Piyasa saatlerinde her 8 dakikada bir).")
-    print("   Durdurmak icin Ctrl+C tusuna basin.\n")
+    print_flush("\n-> Surekli arka plan modu aktif (Piyasa saatlerinde her 8 dakikada bir).")
+    print_flush("   Durdurmak icin Ctrl+C tusuna basin.\n")
 
     while True:
         try:
@@ -165,20 +171,20 @@ def main():
             in_session = weekday and ((hour == 9 and minute >= 50) or (10 <= hour < 18) or (hour == 18 and minute <= 15))
 
             # Seans ici canli veri: 3 dakikada bir (180 saniye), Seans disi: 8 dakikada bir (480 saniye)
-            interval = 180 if in_session else 480
+            interval = 120 if in_session else 300
 
             if in_session:
-                print(f"[SEANS AKTIF] Veri senkronizasyonu yapiliyor ({now.strftime('%H:%M:%S')})...")
+                print_flush(f"[SEANS AKTIF] Veri senkronizasyonu yapiliyor ({now.strftime('%H:%M:%S')})...")
             else:
-                print(f"[SEANS DISI / UYKU ONLEME] Ping gonderiliyor ({now.strftime('%H:%M:%S')})...")
+                print_flush(f"[SEANS DISI / UYKU ONLEME] Ping gonderiliyor ({now.strftime('%H:%M:%S')})...")
 
             sync_once()
 
         except KeyboardInterrupt:
-            print("\nKullanici tarafindan durduruldu.")
+            print_flush("\nKullanici tarafindan durduruldu.")
             break
         except Exception as e:
-            print(f"[DONGU HATASI] {e}")
+            print_flush(f"[DONGU HATASI] {e}")
 
         time.sleep(interval)
 

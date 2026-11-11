@@ -2578,7 +2578,8 @@ def api_system_push_market_data():
         if all_cands:
             MarketDataManager.record_signals(date_str, all_cands)
             try:
-                MarketDataManager.fetch_and_store_intraday(date_str, period="5d")
+                import threading
+                threading.Thread(target=MarketDataManager.fetch_and_store_intraday, args=(date_str,), kwargs={"period": "5d"}, daemon=True).start()
             except Exception:
                 pass
 
