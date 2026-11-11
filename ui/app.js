@@ -7860,7 +7860,6 @@ function renderAllStocksTable() {
         try { atr = parseFloat(data.ATR) || 0; } catch (e) { atr = 0; }
         let hi = data.High || 0, lo = data.Low || 0;
         if (!atr && hi > 0 && lo > 0 && hi > lo) atr = hi - lo; // ATR yoksa gun araligi yaklasimi
-        let price0 = data.Price || data.Daily_Close || 0;
         let stopLvl = atr > 0 ? price0 - 1.5 * atr : 0;
         let tgt1Lvl = atr > 0 ? price0 + 1.5 * atr : 0;
         let tgt2Lvl = atr > 0 ? price0 + 2.5 * atr : 0;

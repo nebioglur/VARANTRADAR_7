@@ -5504,11 +5504,7 @@ def api_simulation_sync_staggered_today():
                     WHERE date_str = ? AND symbol = ?
                 """, (new_phase, json.dumps(meta, ensure_ascii=False), d_str, sym))
 
-            # 10:15'e yapay kilitlenmiş AÇIK işlemleri temizle (kapalı işlemler korunur)
-            cur.execute("""
-                DELETE FROM trades 
-                WHERE date_str = ? AND exit_time IS NULL
-            """, (d_str,))
+            # Güvenli Defter İlkesi: İşlemler silinmez, korunur.
             conn.commit()
 
         # 2. Yeni kademeli simülasyon motorunu çalıştır
