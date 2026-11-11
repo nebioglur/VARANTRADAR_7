@@ -447,6 +447,14 @@ class SimulationEngine:
                         sig_time_str = str(item.get("time"))[:5]
                     if not sig_time_str and item.get("discovery_time"):
                         sig_time_str = str(item.get("discovery_time"))[:5]
+                    if not sig_time_str:
+                        try:
+                            from zoneinfo import ZoneInfo
+                            _now_ist = datetime.now(ZoneInfo("Europe/Istanbul"))
+                            if date_str == _now_ist.strftime("%Y-%m-%d") and _now_ist.hour >= 11:
+                                sig_time_str = f"{_now_ist.hour:02d}:{(_now_ist.minute // 5) * 5:02d}"
+                        except Exception:
+                            pass
 
                     phase_str = f"V8 Breakout ({sig_time_str})" if sig_time_str else "V8 Breakout"
                     v8_sig_list.append({
@@ -882,18 +890,32 @@ class SimulationEngine:
                         meta = {}
 
                 import re
-                match = re.search(r'(\d{2}:\d{2})', phase)
+                disc_cand = s.get('discovery_time') or meta.get('discovery_time')
                 time_str = None
-                if match:
-                    time_str = match.group(1) + ":00"
-                elif s.get('discovery_time'):
-                    time_str = str(s.get('discovery_time'))[:5] + ":00"
-                elif meta.get('discovery_time'):
-                    time_str = str(meta.get('discovery_time'))[:5] + ":00"
-                elif s.get('time') or meta.get('time'):
-                    t_cand = str(s.get('time') or meta.get('time'))[:5]
+                if disc_cand:
+                    t_cand = str(disc_cand)[:5]
                     if re.match(r'^\d{2}:\d{2}$', t_cand):
                         time_str = t_cand + ":00"
+
+                if not time_str:
+                    match = re.search(r'(\d{2}:\d{2})', phase)
+                    if match:
+                        time_str = match.group(1) + ":00"
+
+                if not time_str and (s.get('time') or meta.get('time') or meta.get('Time')):
+                    t_cand = str(s.get('time') or meta.get('time') or meta.get('Time'))[:5]
+                    if re.match(r'^\d{2}:\d{2}$', t_cand):
+                        time_str = t_cand + ":00"
+
+                if not time_str and (s.get('scan_timestamp') or meta.get('scan_timestamp')):
+                    try:
+                        from zoneinfo import ZoneInfo
+                        _ts = float(s.get('scan_timestamp') or meta.get('scan_timestamp'))
+                        _dt = datetime.fromtimestamp(_ts, ZoneInfo('Europe/Istanbul'))
+                        if _dt.strftime('%Y-%m-%d') == date_str:
+                            time_str = _dt.strftime('%H:%M:00')
+                    except Exception:
+                        pass
 
                 if not time_str:
                     time_str = "10:15:00"
@@ -1145,7 +1167,17 @@ class SimulationEngine:
                 entry_price = raw_entry * 1.0015
                 setup = self._entry_setup(df.loc[:current_time], entry_price)
                 if not setup:
-                    continue
+                    # V8 Onaylı veya yüksek kaliteli adayların 5dk osilasyonunda elenmesini engelle:
+                    if float(s.get('score', 0)) >= 85 or 'ENTER' in str(meta.get('entry_status', '')).upper() or 'V8' in str(s.get('morning_phase', '')):
+                        _atr = float(s.get('ATR') or meta.get('ATR') or (entry_price * 0.02))
+                        _stop_pct = 0.025
+                        setup = {
+                            'stop_price': entry_price * (1.0 - _stop_pct),
+                            'atr_value': _atr,
+                            'stop_pct': _stop_pct
+                        }
+                    else:
+                        continue
 
                 _tp1_dist = max(setup['atr_value'] * 1.8, entry_price * 0.025) * _tp1_mult
                 tp1_price = min(ceiling * 0.997, entry_price + _tp1_dist)

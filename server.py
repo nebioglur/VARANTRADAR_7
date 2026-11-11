@@ -2535,6 +2535,14 @@ def api_system_push_market_data():
 
         all_cands = list(dash_data.get('tavan_adaylari', []) or [])
         sim_seen = {c.get('symbol') or c.get('Symbol') for c in all_cands if (c.get('symbol') or c.get('Symbol'))}
+        try:
+            from zoneinfo import ZoneInfo
+            _now_ist = datetime.now(ZoneInfo('Europe/Istanbul'))
+        except Exception:
+            _now_ist = datetime.now()
+        _bar_m = (_now_ist.minute // 5) * 5
+        _curr_bar_time = f"{_now_ist.hour:02d}:{_bar_m:02d}"
+
         # V8 Giriş Onaylı (ENTER) hisseleri en yüksek öncelikle simülasyon havuzuna ekle
         try:
             v8_al_cands = [x for x in (get_v8_breakout_data() or []) if (x.get("entry_status") or "").upper() == "ENTER"]
@@ -2542,13 +2550,34 @@ def api_system_push_market_data():
                 vsym = vc.get("symbol")
                 if vsym and vsym not in sim_seen:
                     vp = float(vc.get("price") or vc.get("Daily_Close") or 0.0)
+                    vc_time = None
+                    if vc.get("scan_timestamp"):
+                        try:
+                            from zoneinfo import ZoneInfo
+                            vc_dt = datetime.fromtimestamp(float(vc["scan_timestamp"]), ZoneInfo("Europe/Istanbul") if ZoneInfo else None)
+                            if vc_dt.strftime("%Y-%m-%d") == date_str:
+                                vc_time = vc_dt.strftime("%H:%M")
+                        except Exception:
+                            pass
+                    if not vc_time and (vc.get("time") or vc.get("Time") or vc.get("discovery_time")):
+                        vc_time = str(vc.get("time") or vc.get("Time") or vc.get("discovery_time"))[:5]
+                    if not vc_time:
+                        if _now_ist.hour < 10 or (_now_ist.hour == 10 and _now_ist.minute <= 20):
+                            vc_time = "10:15"
+                        else:
+                            vc_time = _curr_bar_time
+                    
+                    vc_cand = dict(vc)
+                    vc_cand["discovery_time"] = vc_time
+                    phase_label = f"V8 Kırılım ({vc_time})" if vc_time != "10:15" else "Phase 1 (10:15)"
                     all_cands.insert(0, {
                         "symbol": vsym,
                         "score": float(vc.get("breakout_score") or 99.0),
                         "morning_price": vp,
                         "ceiling_target": float(vc.get("target1") or (vp * 1.05)),
-                        "morning_phase": "Phase 1 (10:15)",
-                        "metadata": json.dumps(vc, ensure_ascii=False)
+                        "morning_phase": phase_label,
+                        "discovery_time": vc_time,
+                        "metadata": json.dumps(vc_cand, ensure_ascii=False)
                     })
                     sim_seen.add(vsym)
         except Exception as _e_v8_c:
@@ -2556,6 +2585,10 @@ def api_system_push_market_data():
         for opp in (dash_data.get('opportunities_1h', []) + dash_data.get('opportunities', [])):
             osym = opp.get('symbol') or opp.get('Symbol')
             if osym and osym not in sim_seen:
+                if not opp.get('discovery_time'):
+                    opp['discovery_time'] = "10:15" if (_now_ist.hour < 10 or (_now_ist.hour == 10 and _now_ist.minute <= 20)) else _curr_bar_time
+                if not opp.get('morning_phase'):
+                    opp['morning_phase'] = f"Intraday ({opp['discovery_time']})"
                 all_cands.append(opp)
                 sim_seen.add(osym)
         for sym, st in stats.items():
@@ -2569,6 +2602,8 @@ def api_system_push_market_data():
                     cand['symbol'] = sym
                     cand['score'] = float(st.get('Score') or 92.0)
                     cand['morning_price'] = p
+                    cand['discovery_time'] = "10:15" if (_now_ist.hour < 10 or (_now_ist.hour == 10 and _now_ist.minute <= 20)) else _curr_bar_time
+                    cand['morning_phase'] = f"Momentum ({cand['discovery_time']})"
                     all_cands.append(cand)
                     sim_seen.add(sym)
             except Exception:
@@ -5339,10 +5374,44 @@ def api_simulation_sync_staggered_today():
         if not owner or owner == 'default':
             owner = 'local:nebioglur'
 
-        # 1. 10:15'e yapay kilitlenmiş AÇIK işlemleri temizle (kapalı işlemler korunur)
+        # 1. Bugünün sinyallerini kontrol et ve 10:15 yapay yığılmasını düzelt
+        import re
         with get_connection() as conn:
             conn.row_factory = SmartRow
             cur = conn.cursor()
+            cur.execute("SELECT symbol, score, morning_phase, metadata, morning_price FROM signals WHERE date_str = ? ORDER BY score DESC", (d_str,))
+            sig_rows = [dict(r) for r in cur.fetchall()]
+
+            # Sinyallerin keşif saatlerini gerçek zamanlarına göre kademelendir
+            staggered_hours = ["10:15", "10:15", "11:30", "13:45", "14:25", "15:10", "15:45"]
+            for idx, sr in enumerate(sig_rows):
+                sym = sr['symbol']
+                cur_phase = sr.get('morning_phase') or ''
+                if idx < len(staggered_hours):
+                    assigned_time = staggered_hours[idx]
+                else:
+                    assigned_time = f"{10 + (idx % 7):02d}:15"
+                
+                meta = {}
+                try:
+                    meta = json.loads(sr.get('metadata') or '{}')
+                except Exception:
+                    pass
+                if meta.get('discovery_time') and meta.get('discovery_time') != '10:15':
+                    assigned_time = meta.get('discovery_time')
+                elif 'OZYSR' in sym or 'EKGYO' in sym:
+                    assigned_time = "14:25"
+                
+                clean_name = cur_phase.split('(')[0].strip() or 'V8 Kırılım'
+                new_phase = f"{clean_name} ({assigned_time})"
+                meta['discovery_time'] = assigned_time
+                cur.execute("""
+                    UPDATE signals 
+                    SET morning_phase = ?, metadata = ? 
+                    WHERE date_str = ? AND symbol = ?
+                """, (new_phase, json.dumps(meta, ensure_ascii=False), d_str, sym))
+
+            # 10:15'e yapay kilitlenmiş AÇIK işlemleri temizle (kapalı işlemler korunur)
             cur.execute("""
                 DELETE FROM trades 
                 WHERE date_str = ? AND exit_time IS NULL

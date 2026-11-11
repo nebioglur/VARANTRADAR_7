@@ -21,8 +21,17 @@ class MarketDataManager:
     @staticmethod
     def record_signals(date_str: str, candidates: list):
         """
-        10:00 - 10:15 arasında bulunan Tavan Adaylarını (Sinyalleri) veritabanına yazar.
+        Giriş sinyallerini ve dinamik keşif saatlerini veritabanına yazar.
+        Sabah saatlerindeki sinyaller 10:15 olarak, gün içi kırılımlar ise gerçek keşif saatiyle saklanır.
         """
+        import re
+        from datetime import datetime
+        try:
+            from zoneinfo import ZoneInfo
+            _now_ist = datetime.now(ZoneInfo('Europe/Istanbul'))
+        except Exception:
+            _now_ist = datetime.now()
+
         conn = get_connection()
         cursor = conn.cursor()
         for cand in candidates:
@@ -37,7 +46,37 @@ class MarketDataManager:
             score = float(cand.get('Score', 0) or cand.get('score', 0))
             morning_price = float(cand.get('morning_price', 0) or cand.get('Price', 0) or cand.get('Daily_Close', 0))
             ceiling_target = float(cand.get('ceiling_target', 0) or cand.get('Ceiling_Price', 0) or (morning_price * 1.10 if morning_price > 0 else 0.0))
-            morning_phase = cand.get('morning_phase', '') or cand.get('Phase', '') or cand.get('Phase_Badge', '')
+            
+            # Dinamik keşif zamanı tespiti
+            disc_time = None
+            if cand.get('discovery_time'):
+                disc_time = str(cand.get('discovery_time'))[:5]
+            elif cand.get('time') or cand.get('Time'):
+                t_cand = str(cand.get('time') or cand.get('Time'))[:5]
+                if re.match(r'^\d{2}:\d{2}$', t_cand):
+                    disc_time = t_cand
+
+            raw_phase = cand.get('morning_phase', '') or cand.get('Phase', '') or cand.get('Phase_Badge', '') or 'V8 Kırılım'
+            m_time = re.search(r'(\d{2}:\d{2})', str(raw_phase))
+            if m_time and not disc_time:
+                disc_time = m_time.group(1)
+
+            if not disc_time:
+                if date_str == _now_ist.strftime('%Y-%m-%d'):
+                    if _now_ist.hour < 10 or (_now_ist.hour == 10 and _now_ist.minute <= 20):
+                        disc_time = '10:15'
+                    else:
+                        disc_time = f'{_now_ist.hour:02d}:{(_now_ist.minute // 5) * 5:02d}'
+                else:
+                    disc_time = '10:15'
+
+            cand['discovery_time'] = disc_time
+            if not m_time:
+                clean_p = str(raw_phase).replace('(Phase 1)', '').replace('Phase 1', '').strip()
+                morning_phase = f'{clean_p} ({disc_time})'
+            else:
+                morning_phase = str(raw_phase)
+
             metadata = json.dumps(cand, ensure_ascii=False)
             
             try:
@@ -46,10 +85,22 @@ class MarketDataManager:
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(date_str, symbol) DO UPDATE SET 
                         score=excluded.score, 
-                        morning_price=excluded.morning_price,
+                        morning_price=CASE 
+                            WHEN signals.morning_price IS NOT NULL AND signals.morning_price > 0 
+                            THEN signals.morning_price 
+                            ELSE excluded.morning_price 
+                        END,
                         ceiling_target=excluded.ceiling_target,
-                        morning_phase=excluded.morning_phase,
-                        metadata=excluded.metadata
+                        morning_phase=CASE 
+                            WHEN signals.morning_phase IS NOT NULL AND signals.morning_phase != '' 
+                            THEN signals.morning_phase 
+                            ELSE excluded.morning_phase 
+                        END,
+                        metadata=CASE 
+                            WHEN signals.metadata IS NOT NULL AND length(signals.metadata) > 2 
+                            THEN signals.metadata 
+                            ELSE excluded.metadata 
+                        END
                 """, (date_str, sym, score, morning_price, ceiling_target, morning_phase, metadata))
             except Exception as e:
                 print(f"[MarketData] Sinyal kayıt hatası {sym}: {e}")
