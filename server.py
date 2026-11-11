@@ -3545,6 +3545,7 @@ def api_simulation_daily_pnl():
                     trades = [dict(row) for row in trade_rows]
 
             # Calculate current_price and price_time for every trade to ensure frontends receive live price and quote time
+            from datetime import datetime as _dt_cls, timedelta as _td_cls
             stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
             last_sync_time = GLOBAL_DASHBOARD_CACHE.get("last_sync_time") or GLOBAL_DASHBOARD_CACHE.get("last_updated")
             if not last_sync_time:
