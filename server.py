@@ -5282,7 +5282,14 @@ def api_telegram_send_open_positions():
         except Exception as e_db:
             print(f"[API OPEN POS] DB okuma hatası: {e_db}")
 
+        from services.telegram_bot import get_telegram_credentials, _get_telegram_proxies
+        t, c = get_telegram_credentials()
         res = send_open_positions_report(trades=open_trades, force=True)
+        res['debug'] = {
+            'has_token': bool(t),
+            'chat_id': c,
+            'proxies': _get_telegram_proxies()
+        }
         return jsonify(res)
     except Exception as e:
         import traceback

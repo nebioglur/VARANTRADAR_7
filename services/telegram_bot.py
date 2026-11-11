@@ -135,7 +135,11 @@ def _get_telegram_proxies():
     return None
 
 
+_LAST_TG_ERROR = ""
+
 def send_telegram_message(text: str, parse_mode: str = "HTML", force: bool = False) -> bool:
+    global _LAST_TG_ERROR
+    _LAST_TG_ERROR = "" 
     if not force:
         allowed, reason = is_authorized_telegram_sender()
         if not allowed:
@@ -197,9 +201,9 @@ def send_telegram_message(text: str, parse_mode: str = "HTML", force: bool = Fal
                 else:
                     logger.error(f"Telegram duz metin gonderilemedi ({cid})! Hata: {retry_resp}")
             else:
-                logger.error(f"Telegram mesaji gonderilemedi ({cid})! Hata: {response_data}")
+                _LAST_TG_ERROR = f"TG error: {response_data}"; logger.error(f"Telegram mesaji gonderilemedi ({cid})! Hata: {response_data}")
         except Exception as e:
-            logger.error(f"Telegram API cagrisi sirasinda hata olustu ({cid}): {str(e)}")
+            _LAST_TG_ERROR = f"API error: {str(e)}"; logger.error(f"Telegram API cagrisi sirasinda hata olustu ({cid}): {str(e)}")
 
     return any_success
 
@@ -1972,9 +1976,11 @@ def send_open_positions_report(trades: list = None, force: bool = True) -> dict:
 
     text = "\n".join(lines)
     ok = send_telegram_message(text, force=force)
+    global _LAST_TG_ERROR
     return {
         "status": "success",
         "count": len(open_trades),
         "sent": ok,
+        "tg_error": _LAST_TG_ERROR,
         "message": f"{len(open_trades)} açık pozisyon Telegram'a başarıyla iletildi."
     }
