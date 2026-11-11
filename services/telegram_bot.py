@@ -174,14 +174,36 @@ def send_telegram_message(text: str, parse_mode: str = "HTML", force: bool = Fal
             if proxies:
                 kwargs["proxies"] = proxies
 
+            # Cift hat garantisi: Direct baglanti + Squid proxy fallback (Squid 503 veya timeout'ta sifir kayip)
+            response = None
+            last_req_err = None
+
+            # Hat 1: Dogrudan baglanti (trust_env=False ile bozuk proxy atlanir)
             try:
-                response = requests.post(url, **kwargs)
-            except Exception as e_req:
-                if proxies:
-                    kwargs.pop("proxies", None)
-                    response = requests.post(url, **kwargs)
-                else:
-                    raise e_req
+                sess = requests.Session()
+                sess.trust_env = False
+                resp_direct = sess.post(url, json=payload, timeout=10)
+                if resp_direct.status_code == 200:
+                    response = resp_direct
+            except Exception as e_dir:
+                last_req_err = e_dir
+
+            # Hat 2: Squid proxy (PA free tier uzerinde calisirken)
+            if response is None or response.status_code != 200:
+                try:
+                    p = "http://proxy.server:3128"
+                    resp_proxy = requests.post(url, json=payload, proxies={"http": p, "https": p}, timeout=12)
+                    if resp_proxy.status_code == 200:
+                        response = resp_proxy
+                except Exception as e_prx:
+                    if not last_req_err:
+                        last_req_err = e_prx
+
+            # Hat 3: Standart fallback
+            if response is None:
+                if last_req_err:
+                    raise last_req_err
+                response = requests.post(url, json=payload, timeout=15)
 
             response_data = response.json()
 
