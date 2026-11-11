@@ -4535,6 +4535,55 @@ async function testTelegramSettings(btnEl) {
     }
 }
 
+
+
+async function sendOpenPositionsToTelegram(btnEl) {
+    const btn = btnEl || document.getElementById('tg-open-positions-btn');
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gönderiliyor...';
+    }
+    try {
+        const res = await vrAuthorizedFetch('/api/telegram/send_open_positions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ force: true })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            const count = data.count || 0;
+            const msg = data.message || `${count} açık pozisyon Telegram'a başarıyla iletildi!`;
+            if (typeof showToast === 'function') {
+                showToast('✅ ' + msg, 'success');
+            } else {
+                alert('✅ ' + msg);
+            }
+            if (btn) {
+                btn.innerHTML = `<i class="fa-solid fa-check"></i> ${count} Pozisyon Gönderildi!`;
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = origHtml;
+                }, 3500);
+            }
+        } else {
+            alert('⚠️ ' + (data.message || 'Gönderilemedi.'));
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = origHtml;
+            }
+        }
+    } catch (e) {
+        console.error('sendOpenPositionsToTelegram error:', e);
+        alert('❌ Bağlantı hatası: ' + (e.message || e));
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+    }
+}
+window.sendOpenPositionsToTelegram = sendOpenPositionsToTelegram;
+
 async function sendSpecialRankingTelegram(btnEl) {
     const btn = btnEl || document.getElementById('tg-special-ranking-btn') || document.getElementById('all-stocks-tg-send-btn');
     const origHtml = btn ? btn.innerHTML : '';

@@ -1256,6 +1256,7 @@ def require_auth():
             '/api/simulation/summary',
             '/api/simulation/trades',
             '/api/simulation/live_orders',
+            '/api/telegram/send_open_positions',
             '/api/v8/market/regime',
             '/api/v8/radar/breakout',
             '/api/v8/radar/discovery',
@@ -5253,6 +5254,30 @@ def api_telegram_test_suite():
         return jsonify({'status': 'success', 'results': results})
     except Exception as e:
         return jsonify({'status': 'error', 'message': 'İşlem sırasında hata oluştu'}), 500
+
+
+@app.route('/api/telegram/send_open_positions', methods=['GET', 'POST'])
+def api_telegram_send_open_positions():
+    """Kullanıcının isteğiyle tüm açık simülasyon pozisyonlarını detaylarıyla Telegram'a gönderir."""
+    try:
+        from services.telegram_bot import send_open_positions_report
+        from services.trade_database import get_connection, SmartRow
+        open_trades = []
+        try:
+            with get_connection() as conn:
+                conn.row_factory = SmartRow
+                cur = conn.cursor()
+                cur.execute("SELECT * FROM trades WHERE exit_time IS NULL ORDER BY entry_time DESC")
+                open_trades = [dict(r) for r in cur.fetchall()]
+        except Exception as e_db:
+            print(f"[API OPEN POS] DB okuma hatası: {e_db}")
+
+        res = send_open_positions_report(trades=open_trades if open_trades else None, force=True)
+        return jsonify(res)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 if __name__ == "__main__":

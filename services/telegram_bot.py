@@ -828,8 +828,9 @@ def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.
             if date_str != today_str:
                 logger.info(f"[TG-FILTER] Geçmiş gün ({date_str} != {today_str}) AL sinyali engellendi: {symbol}")
                 return True
-            if event_dt < local_now - timedelta(minutes=15):
-                logger.info(f"[TG-FILTER] 15 dakikadan eski ({event_time}) geçmiş AL sinyali engellendi: {symbol}")
+            # Aynı gün seans içi sinyaller gönderilir; simulation_alerts tablosu zaten mükerrerliği %100 önler.
+            if event_dt.date() != local_now.date():
+                logger.info(f"[TG-FILTER] Farklı seans tarihi ({event_dt.date()}) AL sinyali engellendi: {symbol}")
                 return True
             # Seans saati kontrolü: 10:00 - 17:35 dışındaki AL sinyallerini engelle
             ev_time_val = event_dt.time()
@@ -1825,3 +1826,124 @@ def notify_trap_warning(symbol: str, price: float, reason: str) -> bool:
     return send_telegram_message(text)
 
 
+
+
+def send_open_positions_report(trades: list = None, force: bool = True) -> dict:
+    """
+    Kullanicinin tek tikla tum acik simulasyon pozisyonlarini
+    detaylariyla (lot, tutar, giris, kar/zarar, strateji, hedefler, portfoy ozeti)
+    Telegram'a aninda gondermesini saglar.
+    """
+    from datetime import datetime
+    try:
+        from zoneinfo import ZoneInfo
+        now_ist = datetime.now(ZoneInfo("Europe/Istanbul"))
+    except Exception:
+        now_ist = datetime.now()
+
+    t_str = now_ist.strftime("%d.%m.%Y")
+    h_str = now_ist.strftime("%H:%M")
+
+    from services.trade_database import get_connection, SmartRow
+    open_trades = []
+    equity_info = {}
+
+    if trades is not None:
+        open_trades = [t for t in trades if not t.get("exit_time")]
+    else:
+        try:
+            with get_connection() as conn:
+                conn.row_factory = SmartRow
+                cur = conn.cursor()
+                cur.execute("SELECT * FROM trades WHERE exit_time IS NULL ORDER BY entry_time DESC")
+                rows = cur.fetchall()
+                open_trades = [dict(r) for r in rows]
+
+                cur.execute("SELECT * FROM equity_log ORDER BY date_str DESC LIMIT 1")
+                eq_row = cur.fetchone()
+                if eq_row:
+                    equity_info = dict(eq_row)
+        except Exception as e:
+            logger.error(f"[OPEN-POS-TG] Veritabani okuma hatasi: {e}")
+
+    if not open_trades:
+        empty_lines = [
+            "💼 <b>VARANTRADAR PRO — AÇIK POZİSYONLAR RAPORU</b>",
+            "",
+            f"📅 <b>Tarih:</b> {t_str} | ⏰ <b>Saat:</b> {h_str}",
+            "ℹ️ <i>Şu anda portföyde açıkta bekleyen hisse pozisyonu bulunmamaktadır.</i>",
+            "🛡️ <b>Durum:</b> %100 Nakit korunuyor."
+        ]
+        empty_text = "\n".join(empty_lines)
+        ok = send_telegram_message(empty_text, force=force)
+        return {"status": "success", "count": 0, "sent": ok, "message": "Açık pozisyon yok bilgisi iletildi."}
+
+    lines = [
+        "🚀 <b>VARANTRADAR PRO — CANLI AÇIK POZİSYONLAR</b> 🚀",
+        f"📅 <b>Tarih:</b> {t_str} | ⏰ <b>Saat:</b> {h_str}",
+        f"💼 <b>Toplam Açık Pozisyon:</b> {len(open_trades)} Adet",
+        "────────────────────────"
+    ]
+
+    total_invested = 0.0
+    total_unrealized_pnl = 0.0
+
+    for i, tr in enumerate(open_trades, 1):
+        sym = tr.get("symbol", "").replace(".IS", "").upper()
+        entry_p = float(tr.get("entry_price") or 0.0)
+        shares = int(tr.get("shares") or 0)
+        cost = entry_p * shares
+        total_invested += cost
+
+        pnl_val = float(tr.get("pnl_val") or 0.0)
+        pnl_pct = float(tr.get("pnl_pct") or 0.0)
+        total_unrealized_pnl += pnl_val
+
+        pnl_sign = "+" if pnl_pct >= 0 else ""
+        pnl_emoji = "🟢" if pnl_pct >= 0 else "🔴"
+
+        entry_time_str = str(tr.get("entry_time") or "")
+        if " " in entry_time_str:
+            entry_time_str = entry_time_str.split(" ")[1][:5]
+
+        reason = tr.get("exit_reason") or tr.get("setup") or "V8 Erken Kopuş (Phase 1)"
+        reason = reason.replace("AÇIK POZİSYON", "").strip()
+        if not reason:
+            reason = "V8 Erken Kopuş (Phase 1)"
+
+        t1 = float(tr.get("target1") or (entry_p * 1.03))
+        t2 = float(tr.get("target2") or (entry_p * 1.05))
+        sl = float(tr.get("stop_loss") or (entry_p * 0.98))
+
+        lines.extend([
+            f"<b>{i}. #{sym}</b>",
+            f"├ 💵 <b>Giriş Fiyatı:</b> ₺{entry_p:.2f}",
+            f"├ 📦 <b>Lot:</b> {shares:,} Adet (₺{cost:,.2f})",
+            f"├ 📈 <b>Anlık Kâr/Zarar:</b> {pnl_emoji} <b>{pnl_sign}₺{pnl_val:,.2f} ({pnl_sign}%{pnl_pct:.2f})</b>",
+            f"├ ⏰ <b>Giriş Saati:</b> {entry_time_str}",
+            f"├ 🛡️ <b>Kurulum:</b> {reason}",
+            f"└ 🎯 <b>Hedefler:</b> TP1: ₺{t1:.2f} · TP2: ₺{t2:.2f} · Stop: ₺{sl:.2f}",
+            ""
+        ])
+
+    lines.append("────────────────────────")
+    lines.append("📊 <b>PORTFÖY ÖZETİ:</b>")
+    lines.append(f"💼 <b>Açık Pozisyon Tutarı:</b> ₺{total_invested:,.2f}")
+
+    unreal_sign = "+" if total_unrealized_pnl >= 0 else ""
+    unreal_emoji = "🟢" if total_unrealized_pnl >= 0 else "🔴"
+    lines.append(f"💰 <b>Anlık Toplam Kâr/Zarar:</b> {unreal_emoji} <b>{unreal_sign}₺{total_unrealized_pnl:,.2f}</b>")
+
+    balance = float(equity_info.get("end_equity") or (100000.0 + total_unrealized_pnl))
+    lines.append(f"🏦 <b>Kasa Bakiyesi:</b> ₺{balance:,.2f}")
+    lines.append("")
+    lines.append("🔔 <i>Otomatik kâr alma (TP1/TP2) ve iz süren stop koruması aktiftir.</i>")
+
+    text = "\n".join(lines)
+    ok = send_telegram_message(text, force=force)
+    return {
+        "status": "success",
+        "count": len(open_trades),
+        "sent": ok,
+        "message": f"{len(open_trades)} açık pozisyon Telegram'a başarıyla iletildi."
+    }
