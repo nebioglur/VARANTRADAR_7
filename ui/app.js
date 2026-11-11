@@ -4868,10 +4868,19 @@ async function fetchSimulationData() {
                         const isFullyClosed = hasExitTime && hasExitPrice;
                         const isTP1 = String(t.entry_time || '').includes('[TP1]') || String(t.exit_reason || '').includes('TP1');
                         
-                        const pnlVal = Number(t.pnl_val || 0);
-                        const pnlPct = Number(t.pnl_pct || 0);
+                        let pnlVal = Number(t.pnl_val || 0);
+                        let pnlPct = Number(t.pnl_pct || 0);
                         const entryPx = Number(t.entry_price || 0);
                         const shares = Number(t.shares || 0);
+                        const exitPx = Number(t.exit_price || 0);
+
+                        // Matematiksel Bütünlük: Kapanmış işlemde fiyat farkı varken PnL 0 kalmışsa düzelt
+                        if (isFullyClosed && shares > 0 && entryPx > 0 && exitPx > 0) {
+                            if (Math.abs(pnlVal) < 0.01 && Math.abs(exitPx - entryPx) > 0.001) {
+                                pnlVal = (exitPx - entryPx) * shares;
+                                pnlPct = ((exitPx - entryPx) / entryPx) * 100;
+                            }
+                        }
                         
                         // Canlı Güncel Fiyat (Anlık Fiyat)
                         let currentPx = Number(t.current_price || 0);
@@ -4887,9 +4896,9 @@ async function fetchSimulationData() {
                             }
                         }
                         
-                        const pnlColor = pnlPct >= 0 ? '#10b981' : '#ef4444';
-                        const pnlSign = pnlPct >= 0 ? '+' : '';
-                        const pnlIcon = pnlPct >= 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
+                        const pnlColor = pnlVal > 0 ? '#10b981' : (pnlVal < 0 ? '#ef4444' : '#94a3b8');
+                        const pnlSign = pnlVal > 0 ? '+' : '';
+                        const pnlIcon = pnlVal >= 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
 
                         const formatDt = (iso) => {
                             if (!iso) return '-';
@@ -4968,8 +4977,8 @@ async function fetchSimulationData() {
                         const pnlMergedHtml = `
                             <div style="display:flex; align-items:center; justify-content:flex-end; gap:5px; color:${pnlColor}; font-weight:700; font-size:0.88rem; font-variant-numeric:tabular-nums;">
                                 <i class="fa-solid ${pnlIcon}" style="font-size:0.75rem;"></i>
-                                <span>${pnlSign}₺${pnlVal.toFixed(2)}</span>
-                                <span style="font-size:0.76rem; opacity:0.9;">(${pnlSign}%${pnlPct.toFixed(2)})</span>
+                                <span>${pnlVal >= 0 ? `+₺${pnlVal.toFixed(2)}` : `-₺${Math.abs(pnlVal).toFixed(2)}`}</span>
+                                <span style="font-size:0.76rem; opacity:0.9;">(${pnlPct >= 0 ? `+` : `-`}%${Math.abs(pnlPct).toFixed(2)})</span>
                             </div>
                             ${realizedPnlStr}
                         `;

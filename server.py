@@ -3575,6 +3575,16 @@ def api_simulation_daily_pnl():
                     if is_closed:
                         curr_p = float(exit_p)
                         p_time = str(exit_t)[11:16] if len(str(exit_t)) >= 16 else str(exit_t)
+                        # Matematiksel Tutarlılık Kalkanı: Giriş ile çıkış farklıyken pnl_val 0 kalmışsa düzelt
+                        if shares > 0 and entry_p > 0 and curr_p > 0:
+                            calc_val = (curr_p - entry_p) * shares
+                            calc_pct = ((curr_p - entry_p) / entry_p) * 100.0
+                            if abs(pnl_val) < 0.01 and abs(curr_p - entry_p) > 0.001:
+                                pnl_val = calc_val
+                                pnl_pct = calc_pct
+                                t["pnl_val"] = round(pnl_val, 2)
+                                t["realized_pnl"] = round(pnl_val, 2)
+                                t["pnl_pct"] = round(pnl_pct, 2)
                     else:
                         st_p = float(st.get("Price") or st.get("Daily_Close") or 0.0)
                         if st_p > 0:
