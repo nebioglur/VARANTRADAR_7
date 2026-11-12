@@ -17,7 +17,7 @@ try:
 except ImportError:
     ZoneInfo = None
 import socket
-socket.setdefaulttimeout(45)
+socket.setdefaulttimeout(90)
 import requests
 
 def print_flush(*args, **kwargs):
@@ -136,7 +136,7 @@ def sync_once():
             f"{PA_URL}/api/system/push_market_data?token={AUTH_TOKEN}",
             data=comp_bytes,
             headers={"Content-Type": "application/json", "Content-Encoding": "gzip"},
-            timeout=(10, 45)
+            timeout=(15, 60)
         )
         if r_push.status_code == 200:
             res = r_push.json()
