@@ -17,7 +17,7 @@ try:
 except ImportError:
     ZoneInfo = None
 import socket
-socket.setdefaulttimeout(15)
+socket.setdefaulttimeout(45)
 import requests
 
 def print_flush(*args, **kwargs):
@@ -129,11 +129,14 @@ def sync_once():
     }
 
     try:
+        import gzip
+        raw_bytes = json.dumps(payload).encode('utf-8')
+        comp_bytes = gzip.compress(raw_bytes)
         r_push = requests.post(
             f"{PA_URL}/api/system/push_market_data?token={AUTH_TOKEN}",
-            json=payload,
-            headers={"Content-Type": "application/json"},
-            timeout=(5, 30)
+            data=comp_bytes,
+            headers={"Content-Type": "application/json", "Content-Encoding": "gzip"},
+            timeout=(10, 45)
         )
         if r_push.status_code == 200:
             res = r_push.json()

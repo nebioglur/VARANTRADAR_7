@@ -2480,7 +2480,14 @@ def api_system_push_market_data():
         if not is_authed:
             return jsonify({'status': 'error', 'message': 'Yetkisiz erisim.'}), 403
 
-        payload = request.get_json(silent=True) or {}
+        if request.headers.get('Content-Encoding') == 'gzip':
+            import gzip
+            try:
+                payload = json.loads(gzip.decompress(request.get_data()).decode('utf-8'))
+            except Exception as _gz_err:
+                payload = request.get_json(silent=True) or {}
+        else:
+            payload = request.get_json(silent=True) or {}
         dash_data = payload.get('dashboard_data') or payload
         if not dash_data or not isinstance(dash_data, dict):
             return jsonify({'status': 'error', 'message': 'Gecersiz dashboard_data'}), 400
