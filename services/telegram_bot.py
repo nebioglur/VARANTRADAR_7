@@ -101,6 +101,14 @@ def is_authorized_telegram_sender() -> tuple:
     if os.environ.get("DISABLE_TELEGRAM", "").lower() in ("1", "true", "yes"):
         return False, "DISABLE_TELEGRAM bayragi aktif"
 
+    # 1b. Acik opt-in: bu ortam birincil gonderici olarak isaretlendiyse izin ver.
+    # Ornek: Verdent'te TELEGRAM_PRIMARY_HOST=verdent (veya IS_PRIMARY_TELEGRAM=true)
+    # ayarlanirsa mesajlar buradan gider; bu durumda PythonAnywhere tarafinda
+    # DISABLE_TELEGRAM=1 yapilmalidir (mukerrer mesaj onlenir).
+    _primary = os.environ.get("TELEGRAM_PRIMARY_HOST", "").lower()
+    if _primary in ("verdent", "any", "this") or os.environ.get("IS_PRIMARY_TELEGRAM") == "true":
+        return True, f"Birincil Telegram gonderici (TELEGRAM_PRIMARY_HOST={_primary or 'this'})"
+
     # 2. Render veya Verdent Cloud ortamindaysa -> KESIN ENGELLE!
     if os.environ.get("RENDER") == "true" or os.environ.get("RENDER_SERVICE_ID"):
         return False, "Render ikincil sunucusunda calisiyor (bilgi kirliligi engellendi)"
