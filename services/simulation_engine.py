@@ -906,8 +906,20 @@ class SimulationEngine:
                 # verisi naive geliyor; sorted() bu karisimda patliyor.
                 # Tum indeksleri naive'e cevir (sutun karsilastirmalari zaten
                 # kodun geri kalaninda naive varsayiyor).
-                if getattr(df.index, 'tz', None) is not None:
-                    df.index = df.index.tz_localize(None)
+                # NOT: concat sonrasi indeks object-dtype olabilir ve icinde
+                # tz-aware + naive karisabilir; bu durumda df.index.tz None'dir,
+                # o yuzden eleman bazinda normallestir.
+                if getattr(df.index, 'tz', None) is not None or str(getattr(df.index, 'dtype', '')) == 'object':
+                    try:
+                        _norm = []
+                        for t in df.index:
+                            _ts = pd.Timestamp(t)
+                            if _ts.tzinfo is not None:
+                                _ts = _ts.tz_convert('Europe/Istanbul').tz_localize(None)
+                            _norm.append(_ts)
+                        df.index = pd.DatetimeIndex(_norm)
+                    except Exception:
+                        pass
                 dfs[sym] = df
                 for t in df.index:
                     all_times.add(t)
@@ -954,7 +966,7 @@ class SimulationEngine:
                 s['time_str'] = time_str
                 pending_signals.append(s)
                 
-        sorted_times = sorted(list(all_times))
+        sorted_times = sorted(list(all_times), key=lambda t: pd.Timestamp(t).tz_convert('Europe/Istanbul').tz_localize(None) if pd.Timestamp(t).tzinfo is not None else pd.Timestamp(t))
         
         for current_time in sorted_times:
             # 1. SATIŞLARI KONTROL ET (Zincir Emirler - OCO)
