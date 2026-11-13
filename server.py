@@ -1279,6 +1279,8 @@ def require_auth():
         request.path in (
             '/api/simulation/daily_pnl',
             '/api/simulation/live_orders',
+            '/api/simulation/live_data',
+            '/api/simulation/backtest',
             '/api/telegram/send_open_positions',
             '/api/v8/market/regime',
             '/api/v8/radar/breakout',
@@ -3005,6 +3007,197 @@ def api_simulation_live_orders():
     except Exception as e:
         logging.exception("API operation failed")
         return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
+
+@app.route('/api/simulation/live_data', methods=['GET'])
+def api_simulation_live_data():
+    """Simülasyon motorunun değerlendirdiği canlı BIST verilerini ve veri yaşını döner."""
+    try:
+        from services.trade_database import get_connection, SmartRow
+        req_date = request.args.get('date', '').strip()
+        now_ist = datetime.now(ZoneInfo("Europe/Istanbul"))
+        today_str = now_ist.strftime("%Y-%m-%d")
+        target_date = req_date if req_date else today_str
+        server_time_str = now_ist.strftime("%H:%M:%S")
+
+        with get_connection() as conn:
+            conn.row_factory = SmartRow
+            c = conn.cursor()
+            owner = get_owner_key()
+
+            # 1. Hedef tarihin sinyallerini çek
+            c.execute("""
+                SELECT symbol, score, morning_price, ceiling_target, morning_phase, metadata
+                FROM signals
+                WHERE date_str = ?
+                ORDER BY score DESC
+            """, (target_date,))
+            signals_rows = c.fetchall()
+
+            is_fallback = False
+            effective_date = target_date
+            if not signals_rows:
+                # Bugünün sinyalleri henüz üretilmediyse en son sinyal gününe dön
+                c.execute("SELECT DISTINCT date_str FROM signals ORDER BY date_str DESC LIMIT 1")
+                fb_row = c.fetchone()
+                if fb_row:
+                    effective_date = fb_row['date_str'] if isinstance(fb_row, dict) or hasattr(fb_row, 'keys') else fb_row[0]
+                    is_fallback = (effective_date != target_date)
+                    c.execute("""
+                        SELECT symbol, score, morning_price, ceiling_target, morning_phase, metadata
+                        FROM signals
+                        WHERE date_str = ?
+                        ORDER BY score DESC
+                    """, (effective_date,))
+                    signals_rows = c.fetchall()
+
+            # 2. Açık pozisyonları tespit et
+            c.execute("""
+                SELECT DISTINCT symbol FROM trades
+                WHERE owner = ? AND date_str = ? AND exit_time IS NULL
+            """, (owner, effective_date))
+            open_syms = {str(r['symbol']).strip() for r in c.fetchall()}
+
+            # 3. Her sembol için son market verisini al
+            symbols_res = []
+            for s in signals_rows:
+                sym = str(s['symbol']).strip()
+                clean_sym = sym.replace('.IS', '').strip()
+                score = float(s.get('score') or 0.0)
+                morning_p = float(s.get('morning_price') or 0.0)
+                ceiling = float(s.get('ceiling_target') or 0.0)
+                has_pos = (sym in open_syms or f"{sym}.IS" in open_syms or clean_sym in open_syms)
+
+                meta = {}
+                try:
+                    if s.get('metadata'):
+                        meta = json.loads(s['metadata'])
+                except Exception:
+                    pass
+                sig_ch = meta.get('Daily_Change') or meta.get('daily_change') or meta.get('change_pct')
+                if sig_ch is None:
+                    prev_c = (ceiling / 1.10) if ceiling > 0 else morning_p
+                    sig_ch = round(((morning_p - prev_c) / prev_c) * 100.0, 2) if prev_c > 0 else 0.0
+                else:
+                    try:
+                        sig_ch = round(float(sig_ch), 2)
+                    except Exception:
+                        sig_ch = 0.0
+
+                c.execute("""
+                    SELECT timestamp, close, source
+                    FROM market_data
+                    WHERE symbol = ? AND date_str = ?
+                    ORDER BY timestamp DESC LIMIT 1
+                """, (sym, effective_date))
+                bar_row = c.fetchone()
+                if not bar_row:
+                    c.execute("""
+                        SELECT timestamp, close, source
+                        FROM market_data
+                        WHERE symbol = ?
+                        ORDER BY timestamp DESC LIMIT 1
+                    """, (sym,))
+                    bar_row = c.fetchone()
+
+                last_price = None
+                bar_time = None
+                age_min = None
+                source = None
+                status = 'VERİ YOK'
+
+                if bar_row and bar_row['close']:
+                    last_price = round(float(bar_row['close']), 2)
+                    source = bar_row.get('source') or 'yfinance'
+                    ts_val = bar_row.get('timestamp')
+                    try:
+                        ts_clean = str(ts_val).replace('Z', '+00:00')
+                        b_dt = datetime.fromisoformat(ts_clean)
+                        if b_dt.tzinfo is None:
+                            b_dt = b_dt.replace(tzinfo=ZoneInfo("Europe/Istanbul"))
+                        else:
+                            b_dt = b_dt.astimezone(ZoneInfo("Europe/Istanbul"))
+                        bar_time = b_dt.strftime("%H:%M")
+                        age_min = round(max(0.0, (now_ist - b_dt).total_seconds() / 60.0), 1)
+
+                        if age_min <= 10.0:
+                            status = 'TAZE'
+                        elif age_min <= 30.0:
+                            status = 'GECİKMELİ'
+                        else:
+                            status = 'BAYAT'
+                    except Exception:
+                        bar_time = str(ts_val)[11:16] if len(str(ts_val)) >= 16 else None
+                        status = 'GECİKMELİ'
+                else:
+                    dash_data = GLOBAL_DASHBOARD_CACHE.get('all_symbols_stats', {}).get(clean_sym, {})
+                    dash_px = dash_data.get('last_price') or dash_data.get('price')
+                    if dash_px:
+                        last_price = round(float(dash_px), 2)
+                        source = 'sinyal anlık fiyatı'
+                        status = '5M VERİ YOK'
+                    elif morning_p > 0:
+                        last_price = morning_p
+                        source = 'sinyal fiyatı'
+                        status = '5M VERİ YOK'
+
+                live_ch = None
+                if last_price is not None and morning_p > 0:
+                    live_ch = round(((last_price - morning_p) / morning_p) * 100.0, 2)
+
+                symbols_res.append({
+                    "symbol": sym,
+                    "last_price": last_price,
+                    "live_change": live_ch,
+                    "signal_change": sig_ch,
+                    "score": score,
+                    "bar_time": bar_time,
+                    "age_min": age_min,
+                    "source": source,
+                    "status": status,
+                    "has_position": has_pos
+                })
+
+            status_order = {'TAZE': 0, 'GECİKMELİ': 1, '5M VERİ YOK': 2, 'BAYAT': 3, 'SEANS DIŞI': 4, 'KAPALI': 5, 'VERİ YOK': 6}
+            symbols_res.sort(key=lambda x: (
+                0 if x['has_position'] else 1,
+                status_order.get(x['status'], 9),
+                -float(x.get('score') or 0)
+            ))
+
+        return jsonify({
+            "status": "success",
+            "server_time": server_time_str,
+            "date": effective_date,
+            "requested_date": target_date,
+            "is_fallback": is_fallback,
+            "symbols": sanitize_for_json(symbols_res)
+        })
+    except Exception as e:
+        logging.exception("Live data endpoint failed")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/simulation/backtest', methods=['GET', 'POST'])
+def api_simulation_backtest():
+    """Geçmiş günlerde (son 30-60 gün) simülasyon motorunu çalıştırıp strateji performansını doğrular."""
+    try:
+        from services.simulation_engine import SimulationEngine
+        owner = get_owner_key()
+        days = int(request.args.get('days') or (request.json or {}).get('days') or 30)
+        now_dt = datetime.now(ZoneInfo("Europe/Istanbul")).date()
+        start_d = (now_dt - timedelta(days=days)).strftime("%Y-%m-%d")
+        end_d = now_dt.strftime("%Y-%m-%d")
+
+        custom_start = request.args.get('start_date') or (request.json or {}).get('start_date')
+        custom_end = request.args.get('end_date') or (request.json or {}).get('end_date')
+        if custom_start: start_d = custom_start
+        if custom_end: end_d = custom_end
+
+        sim = SimulationEngine(owner=owner)
+        res = sim.run_backtest_range(start_d, end_d)
+        return jsonify(sanitize_for_json(res))
+    except Exception as e:
+        logging.exception("Simulation backtest failed")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/simulation/terminal', methods=['GET'])
 def api_simulation_terminal():

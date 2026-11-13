@@ -1831,6 +1831,34 @@
             </div>
         </div>
 
+        <!-- Canlı BIST Veri İzleme Paneli -->
+        <div class="card" style="border:1px solid var(--accent-blue); background: rgba(59,130,246,0.05); margin-bottom:2rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:1rem;">
+                <h3 class="card-title" style="color:var(--accent-blue); font-size:1.2rem; margin:0;"><i class="fa-solid fa-satellite-dish"></i> Sistemin Değerlendirdiği Canlı BIST Verileri</h3>
+                <span style="font-size:0.8rem; color:var(--text-muted);">Motorun gördüğü son fiyat ve veri yaşı · <span id="sim-live-server-time" style="color:#22d3ee; font-weight:700;">-</span><span id="sim-live-data-date"></span></span>
+            </div>
+            <p style="color:var(--text-muted); font-size:0.82rem; margin-bottom:0.9rem;">Durum ölçütü: TAZE ≤10 dk · GECİKMELİ 11–30 dk · BAYAT &gt;30 dk · VERİ YOK. Giriş ve çıkışlar 10 dakikadan eski veya sentetik barlarla çalıştırılmaz.</p>
+            <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+                    <thead>
+                        <tr style="color:var(--text-muted); text-align:left; border-bottom:1px solid var(--border-color);">
+                            <th style="padding:8px 10px;">Sembol</th>
+                            <th style="padding:8px 10px;">Son Fiyat</th>
+                            <th style="padding:8px 10px;">Sabah Fiyatına Göre</th>
+                            <th style="padding:8px 10px;">Sinyal %</th>
+                            <th style="padding:8px 10px;">Son Veri Saati</th>
+                            <th style="padding:8px 10px;">Veri Yaşı</th>
+                            <th style="padding:8px 10px;">Kaynak</th>
+                            <th style="padding:8px 10px;">Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sim-live-data-tbody">
+                        <tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:14px;"><i class="fa-solid fa-spinner fa-spin"></i> Veriler yükleniyor...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <div style="max-width:1200px; margin:0 auto; padding: 1rem;">
             <div style="margin-bottom:2rem; text-align: center;">
                 <h2 style="color:var(--accent-blue); font-size: 1.8rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-flask"></i> Gerçekçi Simülasyon Motoru</h2>
@@ -2740,7 +2768,7 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="app.js?v=20261111_v54"></script>
+    <script src="app.js?v=20261113_v55"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js?v=20260916_v13"></script>
     <script>

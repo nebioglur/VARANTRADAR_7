@@ -363,6 +363,7 @@ function switchMainTab(tabName, btnElement) {
     
     const simWrapper = document.getElementById('simulation-wrapper');
     if (simWrapper) simWrapper.style.display = tabName === 'simulation' ? 'block' : 'none';
+    if (tabName === 'simulation') loadSimLiveData();
 
     const pfWrapper = document.getElementById('portfolio-wrapper');
     if (pfWrapper) pfWrapper.style.display = tabName === 'portfolio' ? 'block' : 'none';
@@ -4989,10 +4990,16 @@ function renderTradeLog(tradesToRender, data) {
             </span>
         ` : '';
 
+        const quoteStatus = t.price_status || (isFullyClosed ? 'KAPALI' : 'KAYNAK ZAMANI BELİRSİZ');
+        const quoteStatusColor = quoteStatus === 'TAZE' ? '#10b981' : (quoteStatus === 'GECİKMELİ' ? '#f59e0b' : (quoteStatus === 'BAYAT' || quoteStatus === 'VERİ YOK' ? '#ef4444' : '#94a3b8'));
+        const quoteAgeText = t.price_age_min != null && Number.isFinite(Number(t.price_age_min)) ? ` · ${Number(t.price_age_min).toFixed(0)} dk` : '';
+        const pxStatusBadge = `<span style="font-size:0.63rem; font-weight:800; color:${quoteStatusColor}; border:1px solid ${quoteStatusColor}; padding:1px 5px; border-radius:8px;" title="${quoteStatus}${quoteAgeText}">${quoteStatus}${quoteAgeText}</span>`;
+
         const currentPxHtml = `
             <div style="display:flex; align-items:center; justify-content:flex-end; gap:6px; font-variant-numeric:tabular-nums; flex-wrap:wrap;">
                 <span style="font-weight:700; color:${pnlColor}; font-size:0.95rem;">₺${currentPx.toFixed(2)}</span>
                 ${pxTimeBadge}
+                ${pxStatusBadge}
             </div>
         `;
 
@@ -5063,7 +5070,10 @@ function renderTradeLog(tradesToRender, data) {
                         <span style="font-size:0.65rem; padding:1px 5px; background:rgba(59,130,246,0.15); color:#60a5fa; border:1px solid rgba(59,130,246,0.3); border-radius:4px; font-weight:600;">BIST</span>
                         ${statusBadgeHtml}
                     </div>
-                    <div style="font-size:0.75rem; color:#94a3b8; font-weight:600;"><i class="fa-regular fa-clock"></i> ${entryTimeFmt}</div>
+                    <div style="font-size:0.75rem; color:#94a3b8; font-weight:600; text-align:right;">
+                        <div><i class="fa-regular fa-clock"></i> ${entryTimeFmt}</div>
+                        ${isFullyClosed && exitTimeFmt ? `<div style="font-size:0.68rem; color:#64748b; margin-top:2px;" title="Çıkış Saati"><i class="fa-solid fa-arrow-right-from-bracket" style="font-size:0.62rem;"></i> ${exitTimeFmt}</div>` : ''}
+                    </div>
                 </div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr 1.2fr; gap:6px; font-size:0.8rem; background:rgba(15,23,42,0.6); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.05);">
                     <div>
@@ -5817,7 +5827,58 @@ setInterval(() => {
         ltRefreshResetUI();
         fetchAdminResetRequests();
     }
+    if (simVisible) loadSimLiveData();
 }, 30000);
+
+// ========== CANLI BIST VERİ İZLEME (Sistemin gördüğü fiyat/veri yaşı) ==========
+async function loadSimLiveData() {
+    const tbody = document.getElementById('sim-live-data-tbody');
+    if (!tbody) return;
+    try {
+        const res = await vrAuthorizedFetch('/api/simulation/live_data?t=' + Date.now());
+        const data = await res.json();
+        const timeEl = document.getElementById('sim-live-server-time');
+        if (timeEl && data.server_time) timeEl.textContent = data.server_time;
+        const dateEl = document.getElementById('sim-live-data-date');
+        if (dateEl) {
+            if (data.is_fallback) {
+                const d = (data.date || '').split('-').reverse().join('.');
+                dateEl.innerHTML = ` <span style="color:#f59e0b; font-weight:800;">· ${escapeHtml(d)} verisi gösteriliyor (bugünün sinyali henüz üretilmedi)</span>`;
+            } else {
+                dateEl.textContent = '';
+            }
+        }
+        const rows = data.symbols || [];
+        if (!rows.length) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:14px;">Değerlendirilen sembol bulunamadı.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = rows.map(r => {
+            const ch = r.live_change;
+            const chColor = ch == null ? 'var(--text-muted)' : (ch >= 0 ? '#10b981' : '#ef4444');
+            const chTxt = ch == null ? '-' : (ch >= 0 ? '+' : '') + ch.toFixed(2) + '%';
+            const sigTxt = r.signal_change == null ? '-' : (r.signal_change >= 0 ? '+' : '') + Number(r.signal_change).toFixed(2) + '%';
+            const statusColors = { 'TAZE': '#10b981', 'GECİKMELİ': '#f59e0b', 'BAYAT': '#ef4444', 'VERİ YOK': '#ef4444', '5M VERİ YOK': '#f59e0b', 'SEANS DIŞI': '#94a3b8', 'KAPALI': '#94a3b8' };
+            const statusColor = statusColors[r.status] || 'var(--text-muted)';
+            const ageTxt = r.age_min == null ? '-' : r.age_min.toFixed(0) + ' dk';
+            const ageColor = r.age_min == null ? 'var(--text-muted)' : (r.age_min <= 10 ? '#10b981' : (r.age_min <= 30 ? '#f59e0b' : '#ef4444'));
+            const posBadge = r.has_position ? ' <span style="font-size:0.65rem; background:rgba(16,185,129,0.2); color:#10b981; padding:1px 6px; border-radius:8px; border:1px solid rgba(16,185,129,0.4);">POZİSYON</span>' : '';
+            const sourceText = escapeHtml(r.source || '-');
+            return `<tr style="border-bottom:1px solid var(--border-color); ${r.status === 'BAYAT' ? 'background:rgba(239,68,68,0.06);' : ''}">
+                <td style="padding:8px 10px; font-weight:800; color:var(--text-main);">${r.symbol}${posBadge}</td>
+                <td style="padding:8px 10px; font-weight:700; color:var(--text-main);">${r.last_price != null ? r.last_price.toFixed(2) + ' ₺' : '-'}</td>
+                <td style="padding:8px 10px; font-weight:900; font-size:0.95rem; color:${chColor};">${chTxt}</td>
+                <td style="padding:8px 10px; color:var(--text-muted);">${sigTxt}</td>
+                <td style="padding:8px 10px; font-weight:700; color:#22d3ee;">${r.bar_time || '-'}</td>
+                <td style="padding:8px 10px; font-weight:800; color:${ageColor};">${ageTxt}</td>
+                <td style="padding:8px 10px; color:var(--text-muted);">${sourceText}</td>
+                <td style="padding:8px 10px;"><span style="font-weight:800; font-size:0.72rem; padding:2px 8px; border-radius:10px; border:1px solid ${statusColor}; color:${statusColor};">${r.status}</span></td>
+            </tr>`;
+        }).join('');
+    } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:14px;">Veri alınamadı, yeniden denenecek...</td></tr>';
+    }
+}
 
 setInterval(() => {
     const wrapper = document.getElementById('simulation-wrapper');

@@ -594,13 +594,32 @@ class SimulationEngine:
         except Exception:
             pass
 
-        if _sim_regime == "STRONG_BEAR":
+        # Günlük gerçekleşmiş kâr/zarar ön kontrolü (Bugünün daha önce kapanmış işlemleri varsa)
+        _today_db_pnl = 0.0
+        try:
+            conn_chk = get_connection()
+            cur_chk = conn_chk.cursor()
+            cur_chk.execute("SELECT SUM(pnl_val) FROM trades WHERE owner=? AND date_str=? AND exit_time IS NOT NULL", (self.owner, date_str))
+            _r_chk = cur_chk.fetchone()
+            if _r_chk and _r_chk[0]:
+                _today_db_pnl = float(_r_chk[0])
+            conn_chk.close()
+        except Exception:
+            pass
+
+        if _today_db_pnl <= -(self.daily_budget * 0.015):
+            effective_max_positions = 0
+            print(f"[SimEngine] {date_str} -> Günlük zarar kesici (-%1.5) önceden tetiklenmiş ({_today_db_pnl:.0f} TL): yeni girişler durduruldu")
+        elif _today_db_pnl >= (self.daily_budget * 0.020):
+            effective_max_positions = 0
+            print(f"[SimEngine] {date_str} -> Günlük kâr kilidi (+%2.0) önceden tetiklenmiş (+{_today_db_pnl:.0f} TL): kâr koruma devrede, yeni giriş yok")
+        elif _sim_regime == "STRONG_BEAR" or is_strong_bear:
             effective_max_positions = 0
             print(f"[SimEngine] {date_str} -> Şiddetli Ayı kilidi: simülasyon girişleri kapalı")
-        elif _sim_regime == "BEAR":
+        elif _sim_regime == "BEAR" or is_bear:
             # SAVUNMA MODU: Sert düşüşte piyasa kilitlenmez; sadece en güçlü 1 A-sınıfı istisnaya izin verilir
             effective_max_positions = 1
-            print(f"[SimEngine] {date_str} -> Savunma Modu: Sadece 1 adet yüksek kaliteli seçici işleme izin veriliyor")
+            print(f"[SimEngine] {date_str} -> Savunma Modu (Ayı): Sadece 1 adet yüksek kaliteli seçici işleme izin veriliyor")
         elif _weekly_loss_locked:
             effective_max_positions = 0
             print(f"[SimEngine] {date_str} -> Haftalık zarar kilidi aktif: yeni girişler durduruldu (açık pozisyonlar planıyla yönetilir)")
@@ -1010,7 +1029,10 @@ class SimulationEngine:
                 # En kötü senaryo: Önce Stop Loss patlar varsayımı
                 if low <= stop_price:
                     sell_price = round(min(stop_price, bar_open) * 0.9985, 2) # gap-aware stop fill + slippage
-                    reason = f"{prefix}⛔ ÇELİK STOP KESİLDİ"
+                    if trade.get('scaled_out', False):
+                        reason = "🛡️ BAŞA BAŞ STOP (BREAK-EVEN STOP: MALİYET KORUNDU)"
+                    else:
+                        reason = f"{prefix}⛔ ÇELİK STOP KESİLDİ"
                 elif is_stagnant:
                     sell_price = round(close * 0.9990, 2)
                     reason = "⏳ ZAMAN STOPU (35 DK HAREKETSİZLİK / MOMENTUM KAYBI)"
@@ -1139,11 +1161,10 @@ class SimulationEngine:
             # 2. YENİ ALIMLARI KONTROL ET
             open_symbols = {t['symbol'] for t in active_trades if t['status'] == 'OPEN'}
 
-            # GÜNLÜK RİSK KİLİDİ (Çelik Kurallar):
-            # - Gün içi zarar bütçenin %2'sine ulaşırsa gün sonuna kadar yeni işlem açılmaz.
-            # - Üst üste 2 STOP zararı sonrası gün sonuna kadar yalnızca izleme modu.
-            # Bu kilit kazanma oranını değil, zarar serisini keserek haftalık
-            # hedefin korunmasını sağlar.
+            # GÜNLÜK RİSK VE KÂR KİLİDİ (Çelik Kurallar):
+            # 1. Günlük zarar kesici: Gün içi zarar bütçenin %1.5'ine (-1.500 TL) ulaşırsa sermaye koruma için yeni işlem açılmaz.
+            # 2. Günlük kâr kilidi: Gün içi kâr bütçenin +%2.0'sine (+2.000 TL) ulaştığında kazancı kilitlemek için yeni giriş durdurulur.
+            # 3. Üst üste 2 STOP zararı sonrası gün sonuna kadar yalnızca izleme modu.
             _daily_pnl = sum(float(t.get('pnl_val') or 0) for t in completed_trades)
             _streak = 0
             for _t in reversed(completed_trades):
@@ -1151,14 +1172,18 @@ class SimulationEngine:
                     _streak += 1
                 else:
                     break
-            if _daily_pnl <= -(self.daily_budget * 0.02) or _streak >= 2:
-                _lock_reason = (
-                    f"Günlük zarar kilidi (-%2): {_daily_pnl:.0f} TL"
-                    if _daily_pnl <= -(self.daily_budget * 0.02)
-                    else f"Üst üste {_streak} zarar kilidi"
-                )
+            _loss_limit = self.daily_budget * 0.015    # -%1.5 (1.500 TL)
+            _profit_limit = self.daily_budget * 0.020  # +%2.0 (2.000 TL)
+
+            if _daily_pnl <= -_loss_limit or _daily_pnl >= _profit_limit or _streak >= 2:
+                if _daily_pnl <= -_loss_limit:
+                    _lock_reason = f"Günlük zarar kesici (-%1.5): {_daily_pnl:.0f} TL; sermaye koruma devrede, yeni alımlar durduruldu"
+                elif _daily_pnl >= _profit_limit:
+                    _lock_reason = f"Günlük kâr kilidi (+%2.0): +{_daily_pnl:.0f} TL; hedefe ulaşıldı, kazanç kilitlendi ve yeni alımlar durduruldu"
+                else:
+                    _lock_reason = f"Üst üste {_streak} zarar kilidi; yeni alımlar durduruldu"
                 if pending_signals:
-                    print(f"[SimEngine] {date_str} {current_time} -> {_lock_reason}; yeni alımlar durduruldu")
+                    print(f"[SimEngine] {date_str} {current_time} -> {_lock_reason}")
                 pending_signals = []
             
             # 2. YENI ALIMLARI KONTROL ET (OFANSIF NAKIT YONETIMI)
@@ -1456,3 +1481,94 @@ class SimulationEngine:
                 send_simulation_report(date_str=date_str, owner=self.owner)
             except Exception as _e_rep:
                 print(f"[SimEngine] Gün sonu rapor gönderim hatası: {_e_rep}")
+
+    def run_backtest_range(self, start_date: str, end_date: str, verbose: bool = False):
+        """
+        Gelişmiş Çok Günlü Backtest Modu (Doğrulama & Parametre Testi):
+        Belirtilen iki tarih arasındaki (son 30-60 gün vb.) tüm işlem günlerinde
+        simülasyon motorunu çalıştırır. Sonuçta sermaye eğrisi, kazanma oranı (win rate),
+        kâr faktörü (profit factor) ve maksimum düşüş (drawdown) hesaplar.
+        """
+        from datetime import datetime as _bt_dt, timedelta as _bt_td
+        d_start = _bt_dt.strptime(start_date, "%Y-%m-%d").date()
+        d_end = _bt_dt.strptime(end_date, "%Y-%m-%d").date()
+
+        current_d = d_start
+        executed_days = []
+        while current_d <= d_end:
+            if current_d.weekday() < 5:  # Hafta içi
+                d_str = current_d.strftime("%Y-%m-%d")
+                try:
+                    self.run_daily_simulation(d_str)
+                    executed_days.append(d_str)
+                except Exception as _e_day:
+                    if verbose:
+                        print(f"[Backtest] {d_str} hata: {_e_day}")
+            current_d += _bt_td(days=1)
+
+        try:
+            conn = get_connection()
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT symbol, entry_time, exit_time, entry_price, exit_price,
+                       shares, pnl_val, pnl_pct, exit_reason, strategy_name
+                FROM trades
+                WHERE owner = ? AND date_str >= ? AND date_str <= ?
+                ORDER BY entry_time ASC
+            """, (self.owner, start_date, end_date))
+            trades = [dict(r) for r in cur.fetchall()]
+
+            cur.execute("""
+                SELECT date_str, start_equity, end_equity, daily_pnl
+                FROM equity_log
+                WHERE owner = ? AND date_str >= ? AND date_str <= ?
+                ORDER BY date_str ASC
+            """, (self.owner, start_date, end_date))
+            equity_curve = [dict(r) for r in cur.fetchall()]
+            conn.close()
+
+            total_trades = len(trades)
+            wins = [t for t in trades if float(t.get('pnl_val') or 0) > 0]
+            losses = [t for t in trades if float(t.get('pnl_val') or 0) < 0]
+            win_rate = (len(wins) / total_trades * 100.0) if total_trades > 0 else 0.0
+
+            gross_profit = sum(float(t.get('pnl_val') or 0) for t in wins)
+            gross_loss = abs(sum(float(t.get('pnl_val') or 0) for t in losses))
+            profit_factor = (gross_profit / gross_loss) if gross_loss > 0 else (99.0 if gross_profit > 0 else 1.0)
+            net_pnl = sum(float(t.get('pnl_val') or 0) for t in trades)
+
+            peak = self.daily_budget
+            max_dd_val = 0.0
+            max_dd_pct = 0.0
+            running_equity = self.daily_budget
+            for day in equity_curve:
+                running_equity = float(day.get('end_equity') or running_equity)
+                if running_equity > peak:
+                    peak = running_equity
+                dd = peak - running_equity
+                dd_pct = (dd / peak * 100.0) if peak > 0 else 0.0
+                if dd > max_dd_val:
+                    max_dd_val = dd
+                if dd_pct > max_dd_pct:
+                    max_dd_pct = dd_pct
+
+            return {
+                "status": "success",
+                "start_date": start_date,
+                "end_date": end_date,
+                "days_tested": len(executed_days),
+                "total_trades": total_trades,
+                "win_count": len(wins),
+                "loss_count": len(losses),
+                "win_rate": round(win_rate, 2),
+                "gross_profit": round(gross_profit, 2),
+                "gross_loss": round(gross_loss, 2),
+                "profit_factor": round(profit_factor, 2),
+                "net_pnl": round(net_pnl, 2),
+                "max_drawdown_val": round(max_dd_val, 2),
+                "max_drawdown_pct": round(max_dd_pct, 2),
+                "trades": trades,
+                "equity_curve": equity_curve
+            }
+        except Exception as e_res:
+            return {"status": "error", "message": str(e_res)}

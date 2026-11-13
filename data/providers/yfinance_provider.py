@@ -52,14 +52,29 @@ class YFinanceProvider(BaseDataProvider):
                         time.sleep(delay)
                         continue
                     else:
+                        try:
+                            from data.providers.isyatirim_provider import IsYatirimProvider
+                            alt_df = IsYatirimProvider().fetch_ohlcv(symbol, period=period, interval=interval)
+                            if alt_df is not None and not alt_df.empty:
+                                self._record_success((time.time() - start_time) * 1000)
+                                return alt_df
+                        except Exception:
+                            pass
                         self._record_error()
                         return pd.DataFrame()
-                        
+
             except Exception as e:
-                if attempt < retries - 1:
+                if attempt < retries - 1 and "429" not in str(e):
                     time.sleep(delay)
                     continue
                 else:
+                    try:
+                        from data.providers.isyatirim_provider import IsYatirimProvider
+                        alt_df = IsYatirimProvider().fetch_ohlcv(symbol, period=period, interval=interval)
+                        if alt_df is not None and not alt_df.empty:
+                            return alt_df
+                    except Exception:
+                        pass
                     self._record_error()
                     return pd.DataFrame()
                     
