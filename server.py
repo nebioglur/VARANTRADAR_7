@@ -832,6 +832,27 @@ def _background_scanner_impl():
         time.sleep(sleep_secs)
 
 
+def _normalize_sim_candidate(c):
+    """tavan_adaylari ve opportunities içindeki adayları simülasyon motorunun
+    beklediği küçük-harf key formatına normalize eder.
+    Orijinal obje değiştirilmez; yeni bir dict döner."""
+    sym = c.get('symbol') or c.get('Symbol') or ''
+    p   = float(c.get('morning_price') or c.get('Price') or c.get('Daily_Close') or 0.0)
+    sc  = float(c.get('score') or c.get('Score') or 90.0)
+    ct  = float(c.get('ceiling_target') or c.get('Ceiling_Price') or (p * 1.10 if p else 0.0))
+    ph  = c.get('morning_phase') or c.get('Phase') or 'Phase 1 (10:15)'
+    dt  = c.get('discovery_time') or ''
+    out = dict(c)
+    out['symbol']        = sym
+    out['score']         = sc
+    out['morning_price'] = p
+    out['ceiling_target'] = ct
+    out['morning_phase'] = ph
+    if dt:
+        out['discovery_time'] = dt
+    return out
+
+
 def simulation_loop():
     """SIMULASYON SUREKLI ARKA PLAN DONGUSU:
     - Her 2 dakikada bir calisir (piyasa acik/kapali fark etmez).
@@ -852,16 +873,17 @@ def simulation_loop():
                 from services.market_data import MarketDataManager
                 from services.trade_database import get_connection as _sc_conn
                 # Sinyal havuzunu gun boyunca dinamik besle (oglen/ogleden sonra kirilimlari dahil)
-                all_cands = list(GLOBAL_DASHBOARD_CACHE.get('tavan_adaylari', []) or [])
-                sim_seen = {c.get('symbol') or c.get('Symbol') for c in all_cands if (c.get('symbol') or c.get('Symbol'))}
+                all_cands = [_normalize_sim_candidate(c) for c in (GLOBAL_DASHBOARD_CACHE.get('tavan_adaylari', []) or []) if (c.get('symbol') or c.get('Symbol'))]
+                sim_seen = {c['symbol'] for c in all_cands if c.get('symbol')}
                 for opp in (GLOBAL_DASHBOARD_CACHE.get('opportunities_1h', []) + GLOBAL_DASHBOARD_CACHE.get('opportunities', [])):
                     osym = opp.get('symbol') or opp.get('Symbol')
                     if osym and osym not in sim_seen:
-                        if not opp.get('morning_phase'):
-                            opp['morning_phase'] = f"Intraday ({now.strftime('%H:%M')})"
-                        if not opp.get('discovery_time'):
-                            opp['discovery_time'] = now.strftime('%H:%M')
-                        all_cands.append(opp)
+                        norm = _normalize_sim_candidate(opp)
+                        if not norm.get('morning_phase'):
+                            norm['morning_phase'] = f"Intraday ({now.strftime('%H:%M')})"
+                        if not norm.get('discovery_time'):
+                            norm['discovery_time'] = now.strftime('%H:%M')
+                        all_cands.append(norm)
                         sim_seen.add(osym)
                 _stats = GLOBAL_DASHBOARD_CACHE.get('all_symbols_stats', {}) or {}
                 for sym, d in _stats.items():
@@ -2538,8 +2560,8 @@ def api_system_push_market_data():
             date_str = datetime.now().strftime('%Y-%m-%d')
         dash_data['cache_date'] = date_str
 
-        all_cands = list(dash_data.get('tavan_adaylari', []) or [])
-        sim_seen = {c.get('symbol') or c.get('Symbol') for c in all_cands if (c.get('symbol') or c.get('Symbol'))}
+        all_cands = [_normalize_sim_candidate(c) for c in (dash_data.get('tavan_adaylari', []) or []) if (c.get('symbol') or c.get('Symbol'))]
+        sim_seen = {c['symbol'] for c in all_cands if c.get('symbol')}
         try:
             from zoneinfo import ZoneInfo
             _now_ist = datetime.now(ZoneInfo('Europe/Istanbul'))
@@ -2596,11 +2618,12 @@ def api_system_push_market_data():
         for opp in (dash_data.get('opportunities_1h', []) + dash_data.get('opportunities', [])):
             osym = opp.get('symbol') or opp.get('Symbol')
             if osym and osym not in sim_seen:
-                if not opp.get('discovery_time'):
-                    opp['discovery_time'] = "10:15" if (_now_ist.hour < 10 or (_now_ist.hour == 10 and _now_ist.minute <= 20)) else _curr_bar_time
-                if not opp.get('morning_phase'):
-                    opp['morning_phase'] = f"Intraday ({opp['discovery_time']})"
-                all_cands.append(opp)
+                norm = _normalize_sim_candidate(opp)
+                if not norm.get('discovery_time'):
+                    norm['discovery_time'] = "10:15" if (_now_ist.hour < 10 or (_now_ist.hour == 10 and _now_ist.minute <= 20)) else _curr_bar_time
+                if not norm.get('morning_phase'):
+                    norm['morning_phase'] = f"Intraday ({norm['discovery_time']})"
+                all_cands.append(norm)
                 sim_seen.add(osym)
         for sym, st in stats.items():
             if not isinstance(st, dict) or sym in sim_seen: continue
@@ -3209,12 +3232,12 @@ def api_admin_simulation_run():
 
         from services.market_data import MarketDataManager
         from services.trade_database import get_connection as _sc_conn
-        all_cands = list(GLOBAL_DASHBOARD_CACHE.get('tavan_adaylari', []) or [])
-        sim_seen = {c.get('symbol') or c.get('Symbol') for c in all_cands if (c.get('symbol') or c.get('Symbol'))}
+        all_cands = [_normalize_sim_candidate(c) for c in (GLOBAL_DASHBOARD_CACHE.get('tavan_adaylari', []) or []) if (c.get('symbol') or c.get('Symbol'))]
+        sim_seen = {c['symbol'] for c in all_cands if c.get('symbol')}
         for opp in (GLOBAL_DASHBOARD_CACHE.get('opportunities_1h', []) + GLOBAL_DASHBOARD_CACHE.get('opportunities', [])):
             osym = opp.get('symbol') or opp.get('Symbol')
             if osym and osym not in sim_seen:
-                all_cands.append(opp)
+                all_cands.append(_normalize_sim_candidate(opp))
                 sim_seen.add(osym)
         _stats = GLOBAL_DASHBOARD_CACHE.get('all_symbols_stats', {}) or {}
         for sym, d in _stats.items():
@@ -5452,8 +5475,8 @@ def api_simulation_sync_staggered_today():
 
             if not sig_rows:
                 # Cache'den sinyalleri çek ve kaydet
-                all_cands = list(GLOBAL_DASHBOARD_CACHE.get('tavan_adaylari', []) or [])
-                sim_seen = {c.get('symbol') or c.get('Symbol') for c in all_cands if (c.get('symbol') or c.get('Symbol'))}
+                all_cands = [_normalize_sim_candidate(c) for c in (GLOBAL_DASHBOARD_CACHE.get('tavan_adaylari', []) or []) if (c.get('symbol') or c.get('Symbol'))]
+                sim_seen = {c['symbol'] for c in all_cands if c.get('symbol')}
                 try:
                     v8_al_cands = [x for x in (get_v8_breakout_data() or []) if (x.get("entry_status") or "").upper() == "ENTER"]
                     for vc in reversed(v8_al_cands):
@@ -5475,7 +5498,7 @@ def api_simulation_sync_staggered_today():
                 for opp in (GLOBAL_DASHBOARD_CACHE.get('opportunities_1h', []) + GLOBAL_DASHBOARD_CACHE.get('opportunities', [])):
                     osym = opp.get('symbol') or opp.get('Symbol')
                     if osym and osym not in sim_seen:
-                        all_cands.append(opp)
+                        all_cands.append(_normalize_sim_candidate(opp))
                         sim_seen.add(osym)
                 _stats = GLOBAL_DASHBOARD_CACHE.get('all_symbols_stats', {}) or {}
                 for sym, d in _stats.items():
