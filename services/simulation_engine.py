@@ -627,9 +627,9 @@ class SimulationEngine:
             effective_max_positions = 0
             print(f"[SimEngine] {date_str} -> Haftalık %6 hedefi doldu: KÂR KORUMA MODU (yeni giriş yok, açık pozisyonlar izleniyor)")
         else:
-            # KULLANICI ISTEGI: Pozisyon sayisi sinirsiz, her hisseye potansiyeline gore bagimsiz butce ayrilir!
-            # Eski pozisyonlarin kapanmasi beklenmez, ozellikle boga rejiminde tum firsatlar aninda alinir.
-            effective_max_positions = self.max_positions  # 999 (sinirsiz)
+            # GARANTİCİ YAKLAŞIM: Aynı anda en fazla 3 seçkin pozisyon taşınır!
+            # Onlarca hisseye birden girip komisyon/kayma/testere tuzağına düşmek KESİNLİKLE engellenir.
+            effective_max_positions = min(3, self.max_positions)
 
         # DOMINO_CLUSTERS ile dinamik sektor ayrismasi haritasi
         from config.bist_symbols import DOMINO_CLUSTERS
@@ -1022,10 +1022,10 @@ class SimulationEngine:
                 bars_held = trade.get('bars_held', 0) + 1
                 trade['bars_held'] = bars_held
 
-                # ZAMAN STOPU: 7 bar (35 dakika) gecti, hisse kâra gecemedi (%0.2'den kucuk),
-                # momentum kaybi var; akşama kadar tasinmaz, hemen maliyet civarindan cikilir.
-                is_stagnant = (bars_held >= 7 and close <= entry * 1.002 and not trade.get('scaled_out', False))
-
+                # GARANTİCİ DİSİPLİN: Erken 35 dk zaman stopu kaldırıldı.
+                # Hisseye nefes aldırılır; hisse ya hedefe (TP1/TP2) gider ya da teknik stop seviyesinde disiplinle çıkılır.
+                # Seans sonu (17:50) ise tüm pozisyonlar zaten %100 nakde geçirilir.
+                
                 # En kötü senaryo: Önce Stop Loss patlar varsayımı
                 if low <= stop_price:
                     sell_price = round(min(stop_price, bar_open) * 0.9985, 2) # gap-aware stop fill + slippage
@@ -1033,9 +1033,6 @@ class SimulationEngine:
                         reason = "🛡️ BAŞA BAŞ STOP (BREAK-EVEN STOP: MALİYET KORUNDU)"
                     else:
                         reason = f"{prefix}⛔ ÇELİK STOP KESİLDİ"
-                elif is_stagnant:
-                    sell_price = round(close * 0.9990, 2)
-                    reason = "⏳ ZAMAN STOPU (35 DK HAREKETSİZLİK / MOMENTUM KAYBI)"
                 elif high >= tp2_price:
                     sell_price = round(max(tp2_price, bar_open) * 0.9985, 2)
                     reason = f"🚀 TAVAN (TAM KÂR ALINDI)"
@@ -1194,11 +1191,21 @@ class SimulationEngine:
             MAX_ENTRIES_PER_BAR = 2  # Tek bir 5 dakikalık barda en fazla 2 en kaliteli hisse alınır (portföy zaman yayılımı)
 
             to_remove = []
+            # GARANTİCİ KURAL: Günlük toplam açılan pozisyon limiti en fazla 4 adettir.
+            # Pozisyonlar kapansa dahi günde 4'ten fazla işlem açıp testere piyasasında doğranmak KESİNLİKLE engellenir.
+            if (len(completed_trades) + len(open_symbols)) >= 4:
+                pending_signals = []
+                break
+
             for s in list(pending_signals):
                 if effective_max_positions <= 0:
                     break  # Yalnizca rejim/zarar kilidi aktifse durdur
                 if available_slots <= 0 or entries_in_this_bar >= MAX_ENTRIES_PER_BAR:
                     break
+
+                # GARANTİCİ SEÇİCİLİK: Yalnızca elit (94+ puan) sinyallere girilir!
+                if float(s.get('score', 0)) < 94.0:
+                    continue
 
                 dt_ps = pd.to_datetime(f"{date_str} {s['time_str']}")
                 dt_ps = dt_ps.tz_localize(None) if dt_ps.tzinfo else dt_ps
@@ -1209,6 +1216,13 @@ class SimulationEngine:
                 # 10:15 oncesi ilk acilis dalgalanmasinda isleme girme
                 if dt_current.time() < time(10, 15):
                     continue
+
+                # GARANTİCİ ÖĞLE ARASI YASAĞI (11:30 - 13:30):
+                # BIST'te öğle arası hacim kurur, sahte kırılımlar ve tuzaklar artar.
+                # Yeni alımlar sadece sabah (10:15 - 11:30) ve öğleden sonra (13:30 - 14:30) yapılır!
+                if time(11, 30) <= dt_current.time() < time(13, 30):
+                    continue
+
                 # KATI ZAMAN KALKANI: Saat 14:30'dan sonra ASLA yeni pozisyon acilmaz!
                 # 17:15 ve 17:25 gibi seans sonu pozisyon acip komisyon/kaymaya kurban gitmeyi KESINLIKLE engeller.
                 if dt_current.time() >= time(14, 30):
