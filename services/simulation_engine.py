@@ -543,6 +543,18 @@ class SimulationEngine:
         if _sim_risk_pct <= 0:
             _sim_risk_pct = 0.005 if is_bear else 0.012
 
+        # ── OTOMATİK ÇİFT VİTES SİSTEMİ (GARANTİCİ DEFANSİF vs OFANSİF TAVAN AVCISI) ──
+        # OFANSİF MOD ŞARTLARI:
+        # 1. Rejim BULL veya STRONG_BULL (ya da XU100 >= +0.60%)
+        # 2. Düşüş baskısı düşük (pressure_pct < 45.0, hisselerin çoğunluğu yeşil)
+        # 3. Ayı rejimi değil
+        is_offensive = (
+            (_sim_regime in ("BULL", "STRONG_BULL") or regime_code in ("BULL", "STRONG_BULL") or xu100_change >= 0.60)
+            and pressure_pct < 45.0
+            and not is_bear
+        )
+        trading_gear = "OFANSİF (Tavan Avcısı & Runner)" if is_offensive else "DEFANSİF (Garantici Çelik Kalkan)"
+
         # ORTAK KADEMELİ ÇIKIŞ PLANI: Hedef1 %3 / Hedef2 %5 / kalan pay (runner)
         # tavan veya iz süren stop ile. Satış oranları rejime gore dinamik.
         try:
@@ -627,9 +639,11 @@ class SimulationEngine:
             effective_max_positions = 0
             print(f"[SimEngine] {date_str} -> Haftalık %6 hedefi doldu: KÂR KORUMA MODU (yeni giriş yok, açık pozisyonlar izleniyor)")
         else:
-            # GARANTİCİ YAKLAŞIM: Aynı anda en fazla 3 seçkin pozisyon taşınır!
-            # Onlarca hisseye birden girip komisyon/kayma/testere tuzağına düşmek KESİNLİKLE engellenir.
-            effective_max_positions = min(3, self.max_positions)
+            # DİNAMİK VİTES POZİSYON LİMİTİ:
+            # Ofansif modda: En fazla 4 hisse (kazananları koşturma payı).
+            # Defansif modda: En fazla 3 hisse (sıkı garantici kalkan).
+            max_cap = 4 if is_offensive else 3
+            effective_max_positions = min(max_cap, self.max_positions)
 
         # DOMINO_CLUSTERS ile dinamik sektor ayrismasi haritasi
         from config.bist_symbols import DOMINO_CLUSTERS
@@ -1034,15 +1048,23 @@ class SimulationEngine:
                     else:
                         reason = f"{prefix}⛔ ÇELİK STOP KESİLDİ"
                 elif high >= tp2_price:
-                    sell_price = round(max(tp2_price, bar_open) * 0.9985, 2)
-                    reason = f"🚀 TAVAN (TAM KÂR ALINDI)"
+                    # OFANSİF MODDA TAVANA TAŞIMA:
+                    # Eğer hisse tavana (+%9.5+) gidiyorsa ve tavan kilitliyse (close >= ceiling * 0.992),
+                    # seans sonuna kadar tavanda tutulur!
+                    if is_offensive and trade.get('is_runner') and (ceiling > 0 and close >= ceiling * 0.992):
+                        pass # Tavan kilitli, pozisyon bozulmaz (17:50'ye kadar tam kâr)
+                    else:
+                        sell_price = round(max(tp2_price, bar_open) * 0.9985, 2)
+                        reason = f"🚀 TAVAN (TAM KÂR ALINDI)"
                 elif high >= tp1_price and not trade.get('scaled_out', False):
                     # Kademeli kâr alma (TP1): satış oranı rejime gore exit planindan gelir.
                     # Boga/yuksek volatilitede erken ve buyuk kisim satilir (kasa guvenligi),
                     # guclu bogada runner payi buyur (tavan potansiyeli).
                     trade['scaled_out'] = True
-                    # KATI ASİMETRİK KÂR KİLİDİ: TP1'de en az %60 satılarak kâr kilitlenir!
-                    _tp1_pct = 60
+                    # DİNAMİK TP1 ÇIKIŞ ORANI (KÂRI KOŞTURMA):
+                    # Ofansif modda TP1'de sadece %30 satılır (maliyet sıfırlanır), kalan %70 'Runner' olarak tavana taşınır!
+                    # Defansif modda TP1'de %60 satılarak kâr kilitlenir.
+                    _tp1_pct = 30 if is_offensive else 60
                     out_shares = max(1, int(round(trade['shares'] * _tp1_pct / 100.0)))
                     if out_shares >= trade['shares']:
                         out_shares = max(1, trade['shares'] - 1)
@@ -1056,7 +1078,10 @@ class SimulationEngine:
                         current_cash += sell_vol - comm 
                         
                         # Artık geride kalan lotlar için stop maliyet + komisyona çekilir! (SIFIR RİSKLİ KASA)
-                        trade['stop_price'] = entry * 1.0010 
+                        trade['stop_price'] = entry * 1.0010
+                        if is_offensive:
+                            trade['is_runner'] = True
+                            trade['reason_prefix'] = "🚀 [RUNNER TAVAN AVCISI] " 
                         
                         completed_trades.append({
                             'symbol': sym,
@@ -1141,18 +1166,36 @@ class SimulationEngine:
                         new_stop = entry_price_for_stop * 1.001
                         open_trade['reason_prefix'] = "[ERKEN MALİYET KORUMA] "
                 else:
-                    # Kalan lotlar için son 2 mumun en düşüğünün altına iz süren stop
-                    try:
-                        two_bar_min = float(open_df.loc[:current_time, 'Low'].tail(2).min())
-                        if two_bar_min > entry_price_for_stop:
-                            new_stop = max(old_stop, two_bar_min * 0.9985)
-                            open_trade['reason_prefix'] = "[2-BAR İZ SÜREN STOP] "
-                    except Exception:
-                        pass
-                    if bar_high >= entry_price_for_stop * 1.050:
-                        new_stop = max(new_stop, entry_price_for_stop * 1.035)
-                    elif bar_high >= entry_price_for_stop * 1.030:
-                        new_stop = max(new_stop, entry_price_for_stop * 1.018)
+                    # Kalan lotlar için iz süren stop (Ofansif Runner veya Defansif)
+                    if is_offensive and open_trade.get('is_runner'):
+                        # OFANSİF RUNNER İZ SÜREN STOP (KÂRI TAVANA KADAR KOŞTUR)
+                        if bar_high >= entry_price_for_stop * 1.080:  # +%8 üzeri (tavan öncesi)
+                            new_stop = max(new_stop, entry_price_for_stop * 1.065)
+                            open_trade['reason_prefix'] = "🚀 [RUNNER +%6.5 KİLİTLİ] "
+                        elif bar_high >= entry_price_for_stop * 1.050:
+                            new_stop = max(new_stop, entry_price_for_stop * 1.035)
+                            open_trade['reason_prefix'] = "🚀 [RUNNER +%3.5 KİLİTLİ] "
+                        elif bar_high >= entry_price_for_stop * 1.030:
+                            new_stop = max(new_stop, entry_price_for_stop * 1.018)
+                        try:
+                            two_bar_min = float(open_df.loc[:current_time, 'Low'].tail(2).min())
+                            if two_bar_min > entry_price_for_stop * 1.01:
+                                new_stop = max(new_stop, two_bar_min * 0.9985)
+                        except Exception:
+                            pass
+                    else:
+                        # DEFANSİF STANDART 2-BAR İZ SÜREN STOP
+                        try:
+                            two_bar_min = float(open_df.loc[:current_time, 'Low'].tail(2).min())
+                            if two_bar_min > entry_price_for_stop:
+                                new_stop = max(old_stop, two_bar_min * 0.9985)
+                                open_trade['reason_prefix'] = "[2-BAR İZ SÜREN STOP] "
+                        except Exception:
+                            pass
+                        if bar_high >= entry_price_for_stop * 1.050:
+                            new_stop = max(new_stop, entry_price_for_stop * 1.035)
+                        elif bar_high >= entry_price_for_stop * 1.030:
+                            new_stop = max(new_stop, entry_price_for_stop * 1.018)
                 open_trade['stop_price'] = new_stop
 
             # 2. YENİ ALIMLARI KONTROL ET
@@ -1176,12 +1219,24 @@ class SimulationEngine:
                 if _daily_pnl <= -_loss_limit:
                     _lock_reason = f"Günlük zarar kesici (-%1.5): {_daily_pnl:.0f} TL; sermaye koruma devrede, yeni alımlar durduruldu"
                 elif _daily_pnl >= _profit_limit:
-                    _lock_reason = f"Günlük kâr kilidi (+%2.0): +{_daily_pnl:.0f} TL; hedefe ulaşıldı, kazanç kilitlendi ve yeni alımlar durduruldu"
+                    _lock_reason = f"Günlük kâr kilidi (+%2.0): +{_daily_pnl:.0f} TL; hedefe ulaşıldı, kazanç kilitlendi"
                 else:
                     _lock_reason = f"Üst üste {_streak} zarar kilidi; yeni alımlar durduruldu"
-                if pending_signals:
-                    print(f"[SimEngine] {date_str} {current_time} -> {_lock_reason}")
-                pending_signals = []
+
+                # OFANSİF FREE-ROLL (EV PARASI) İSTİSNASI:
+                # Kâr kilidi (+2.000 TL) dolduğunda ofansif moddaysak (ralli günü),
+                # kazanılan kârın sadece 300 TL'si risk edilerek 97+ puanlı tek bir tavan adayı denenebilir!
+                has_freeroll = (
+                    is_offensive and
+                    _daily_pnl >= _profit_limit and
+                    _daily_pnl > -_loss_limit and
+                    _streak < 2 and
+                    not any(t.get('is_freeroll') for t in completed_trades + active_trades)
+                )
+                if not has_freeroll:
+                    if pending_signals:
+                        print(f"[SimEngine] {date_str} {current_time} -> {_lock_reason}")
+                    pending_signals = []
             
             # 2. YENI ALIMLARI KONTROL ET (OFANSIF NAKIT YONETIMI)
             open_symbols = {t['symbol'] for t in active_trades if t['status'] == 'OPEN'}
@@ -1191,9 +1246,11 @@ class SimulationEngine:
             MAX_ENTRIES_PER_BAR = 2  # Tek bir 5 dakikalık barda en fazla 2 en kaliteli hisse alınır (portföy zaman yayılımı)
 
             to_remove = []
-            # GARANTİCİ KURAL: Günlük toplam açılan pozisyon limiti en fazla 4 adettir.
-            # Pozisyonlar kapansa dahi günde 4'ten fazla işlem açıp testere piyasasında doğranmak KESİNLİKLE engellenir.
-            if (len(completed_trades) + len(open_symbols)) >= 4:
+            # DİNAMİK GÜNLÜK İŞLEM LİMİTİ:
+            # Ofansif modda: Günde en fazla 6 işlem (akışkan ralli, tavan avı).
+            # Defansif modda: Günde en fazla 4 işlem (testere piyasasında doğranma engeli).
+            max_daily_allowed = 6 if is_offensive else 4
+            if (len(completed_trades) + len(open_symbols)) >= max_daily_allowed and not (is_offensive and _daily_pnl >= _profit_limit):
                 pending_signals = []
                 break
 
@@ -1203,8 +1260,11 @@ class SimulationEngine:
                 if available_slots <= 0 or entries_in_this_bar >= MAX_ENTRIES_PER_BAR:
                     break
 
-                # GARANTİCİ SEÇİCİLİK: Yalnızca elit (94+ puan) sinyallere girilir!
-                if float(s.get('score', 0)) < 94.0:
+                # DİNAMİK SEÇİCİLİK:
+                # Ofansif modda: Minimum skor 92.0+ (hızlı momentum kırılımları dahil).
+                # Defansif modda: Minimum skor 94.0+ (sadece en elit garantici adaylar).
+                min_score_req = 92.0 if is_offensive else 94.0
+                if float(s.get('score', 0)) < min_score_req:
                     continue
 
                 dt_ps = pd.to_datetime(f"{date_str} {s['time_str']}")
@@ -1323,6 +1383,10 @@ class SimulationEngine:
                     'status': 'OPEN',
                     'scaled_out': False,
                     'is_reentry': False,
+                    'is_runner': False,
+                    'is_offensive': is_offensive,
+                    'is_freeroll': bool(is_offensive and _daily_pnl >= _profit_limit),
+                    'trading_gear': trading_gear,
                     'strategy_name': strat_title,
                     'entry_score': float(s.get('score', 0)),
                     'entry_checks': s.get('_entry_checks', ''),

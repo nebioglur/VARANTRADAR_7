@@ -1020,13 +1020,21 @@ def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.
         text += f"📦 <b>Pozisyon:</b> {shares} Lot  (₺{total_val:,.2f})\n"
         text += f"🏆 <b>Sistem Puanı:</b> {float(trade_score):.0f}/100 (Elit Seçim)\n\n"
         
+        gear = trade.get('trading_gear') or ("OFANSİF (Tavan Avcısı)" if trade.get('is_offensive') else "DEFANSİF (Garantici Kalkan)")
+        is_off = "OFANSİF" in str(gear) or trade.get('is_offensive')
+        
+        text += f"⚡ <b>Motor Vitesi:</b> <b>{gear}</b>\n\n"
         text += "🎯 <b>HEDEFLER VE RİSK PLANI</b>\n"
         text += "━━━━━━━━━━━━━━━━━━━━\n"
         tp2 = trade.get('tp2_price', 0) or (round(price * 1.045, 2) if price else 0)
-        text += f"💰 <b>1. Kâr Al (TP1):</b> ₺{tp1:.2f} (<b>+%2.2</b>) ➡️ <i>Yarısı (%50) satılır, stop maliyete çekilir</i>\n"
-        text += f"🎯 <b>2. Kâr Al (TP2):</b> ₺{tp2:.2f} (<b>+%4.5</b>) ➡️ <i>Kalan pozisyon satılır</i>\n"
+        if is_off:
+            text += f"💰 <b>1. Kâr Al (TP1):</b> ₺{tp1:.2f} (<b>+%3.0</b>) ➡️ <i>Yalnızca %30 satılır, maliyet sıfırlanır</i>\n"
+            text += f"🚀 <b>2. Tavan Koşucusu (Runner):</b> Kalan %70 lot tavana (+%9.9) kadar iz süren stopla taşınır!\n"
+            text += f"🎯 <b>Tavan Hedefi:</b> ₺{tp2:.2f} ➡️ <i>Tavan kilitlerse 17:50'ye kadar tam kârla taşınır</i>\n"
+        else:
+            text += f"💰 <b>1. Kâr Al (TP1):</b> ₺{tp1:.2f} (<b>+%2.2</b>) ➡️ <i>%60 kâr satışı, stop maliyete çekilir</i>\n"
+            text += f"🎯 <b>2. Kâr Al (TP2):</b> ₺{tp2:.2f} (<b>+%4.5</b>) ➡️ <i>Kalan pozisyon satılır</i>\n"
         text += f"🛑 <b>Zarar Kes (Stop):</b> ₺{sl:.2f} (<b>-%2.5</b>) ➡️ <i>Kesin disiplin</i>\n"
-        text += f"🛡️ <b>Sıfır Risk:</b> +%1.8 kârda stop maliyet üstüne taşınır\n"
         text += f"⏰ <b>17:50 Disiplini:</b> Gün sonu taşınmaz, 17:50'de %100 nakde geçilir!\n\n"
         
         sr_block = _sr_text_block(symbol)

@@ -4966,10 +4966,16 @@ function renderTradeLog(tradesToRender, data) {
 
         // Sembol Sütunu
         const cleanSym = String(t.symbol || '').replace('.IS', '');
+        const gearText = String(t.trading_gear || (t.is_offensive ? 'OFANSİF' : ''));
+        const isOffensive = gearText.includes('OFANSİF');
+        const gearBadge = isOffensive ? `
+            <span style="font-size:0.60rem; padding:1px 5px; background:rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.3); border-radius:4px; font-weight:700;" title="Ofansif Tavan Avcısı Vitesi"><i class="fa-solid fa-bolt" style="font-size:0.55rem;"></i> OFANSİF</span>
+        ` : '';
         const symCellHtml = `
-            <div style="display:flex; align-items:center; gap:6px;">
+            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                 <span style="font-weight:700; color:#f8fafc; font-size:0.92rem; letter-spacing:0.5px;">${cleanSym}</span>
                 <span style="font-size:0.62rem; padding:1px 5px; background:rgba(59,130,246,0.15); color:#60a5fa; border:1px solid rgba(59,130,246,0.3); border-radius:4px; font-weight:600;">BIST</span>
+                ${gearBadge}
             </div>
         `;
 
