@@ -3182,13 +3182,14 @@ def api_simulation_backtest():
     try:
         from services.simulation_engine import SimulationEngine
         owner = get_owner_key()
-        days = int(request.args.get('days') or (request.json or {}).get('days') or 30)
+        _json = request.get_json(silent=True) or {}
+        days = int(request.args.get('days') or _json.get('days') or 30)
         now_dt = datetime.now(ZoneInfo("Europe/Istanbul")).date()
         start_d = (now_dt - timedelta(days=days)).strftime("%Y-%m-%d")
         end_d = now_dt.strftime("%Y-%m-%d")
 
-        custom_start = request.args.get('start_date') or (request.json or {}).get('start_date')
-        custom_end = request.args.get('end_date') or (request.json or {}).get('end_date')
+        custom_start = request.args.get('start_date') or _json.get('start_date')
+        custom_end = request.args.get('end_date') or _json.get('end_date')
         if custom_start: start_d = custom_start
         if custom_end: end_d = custom_end
 
