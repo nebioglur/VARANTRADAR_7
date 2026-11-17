@@ -129,15 +129,32 @@ def load_dashboard_cache():
     from datetime import datetime
 
     def _accept(data, reason):
-        """Bugunun cache'i her zaman kabul. Onceki gunun cache'i piyasa kapaliyken
-        'Kapanis Verisi' olarak gosterilmek uzere son 72 saat icinde kabul edilir;
-        boylece her yeniden baslatma sonrasi tablolar bos kalmaz."""
-        if not isinstance(data, dict) or not data:
+        """Bugunun cache'i her zaman kabul (aksam/gece kapanis verisi dahil).
+        Onceki gunun veya hafta sonu cache'i son 72 saat icinde son kapanis snapshot'i
+        olarak kabul edilir; boylece yeniden baslatma sonrasi tablolar asla bos kalmaz."""
+        if not isinstance(data, dict) or not data or not data.get("all_symbols_stats"):
             return False
-        stale, _ = _cache_is_stale(data)
-        if not stale:
+
+        try:
+            from zoneinfo import ZoneInfo
+            today_str = datetime.now(ZoneInfo('Europe/Istanbul')).strftime('%Y-%m-%d')
+        except Exception:
+            today_str = datetime.now().strftime('%Y-%m-%d')
+
+        if data.get("cache_date") == today_str:
+            print(f"[CACHE] {reason}: Bugunun kapanis verisi yuklendi ({len(data.get('all_symbols_stats', {}))} hisse).")
             return True
+
         age_h = _cache_age_hours(data)
+        if age_h is None:
+            ts = data.get("price_updated_at")
+            if ts:
+                try:
+                    import time as _t
+                    age_h = (_t.time() - float(ts)) / 3600.0
+                except Exception:
+                    pass
+
         if age_h is not None and age_h <= 72:
             print(f"[CACHE] {reason}: son kapanis snapshot'i yuklenecek ({len(data.get('all_symbols_stats', {}))} hisse, yas {age_h:.1f} saat) - piyasa acilinca taze tarama gelir")
             return True
