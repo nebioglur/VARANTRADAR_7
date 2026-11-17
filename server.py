@@ -2793,8 +2793,21 @@ def api_system_network_test():
         res["isyatirim"] = {"status": r_iy.status_code, "len": len(r_iy.text)}
     except Exception as e_iy:
         res["isyatirim"] = {"error": str(e_iy)}
+
+    # 5. Test Telegram API
+    try:
+        from services.telegram_bot import get_telegram_credentials, _get_telegram_proxies
+        tg_token, tg_chat = get_telegram_credentials()
+        tg_proxies = _get_telegram_proxies() or proxies
+        if tg_token:
+            r_tg = requests.get(f"https://api.telegram.org/bot{tg_token}/getMe", proxies=tg_proxies, timeout=10)
+            res["telegram"] = {"status": r_tg.status_code, "ok": r_tg.json().get("ok"), "bot": r_tg.json().get("result", {}).get("username")}
+        else:
+            res["telegram"] = {"error": "Token bulunamadi"}
+    except Exception as e_tg:
+        res["telegram"] = {"error": str(e_tg)}
         
-    # 5. Cache info
+    # 6. Cache info
     global GLOBAL_DASHBOARD_CACHE
     res["cache_date"] = GLOBAL_DASHBOARD_CACHE.get("cache_date") if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else None
     res["symbols_count"] = len(GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})) if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else 0

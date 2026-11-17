@@ -846,14 +846,14 @@ def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.
             event_dt = event_dt.replace(tzinfo=ZoneInfo("Europe/Istanbul"))
         today_str = local_now.strftime("%Y-%m-%d")
 
-        # 🛡️ GERÇEK PARA GÜVENLİK FİLTRESİ 1: Gelecek zamanlı bozuk sinyalleri engelle
-        if event_dt > local_now + timedelta(minutes=5):
+        # 🛡️ GERÇEK PARA GÜVENLİK FİLTRESİ 1: Gelecek zamanlı bozuk sinyalleri engelle (15dk tolerans)
+        if event_dt > local_now + timedelta(minutes=15):
             logger.info(f"[TG-FILTER] Gelecek zamanlı sinyal engellendi: {symbol} ({event_time})")
             return True
 
         # 🛡️ GERÇEK PARA GÜVENLİK FİLTRESİ 2: Sadece BUGÜNÜN CANLI SEANS AL SİNYALLERİ GİDER!
         # Kullanıcı simülasyon bildirimleriyle gerçek para pozisyonu aldığı için,
-        # geçmiş gün veya 15 dakikadan eski replay sinyalleri KESİNLİKLE Telegram'a gönderilmez.
+        # geçmiş gün sinyalleri KESİNLİKLE Telegram'a gönderilmez.
         if "AL" in action:
             if date_str != today_str:
                 logger.info(f"[TG-FILTER] Geçmiş gün ({date_str} != {today_str}) AL sinyali engellendi: {symbol}")
@@ -862,10 +862,10 @@ def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.
             if event_dt.date() != local_now.date():
                 logger.info(f"[TG-FILTER] Farklı seans tarihi ({event_dt.date()}) AL sinyali engellendi: {symbol}")
                 return True
-            # Seans saati kontrolü: 10:00 - 17:35 dışındaki AL sinyallerini engelle
+            # Seans saati kontrolü: 10:00 - 18:00 dışındaki AL sinyallerini engelle
             ev_time_val = event_dt.time()
             from datetime import time as _dt_time
-            if ev_time_val < _dt_time(10, 0) or ev_time_val > _dt_time(17, 35):
+            if ev_time_val < _dt_time(10, 0) or ev_time_val > _dt_time(18, 0):
                 logger.info(f"[TG-FILTER] Seans dışı ({ev_time_val}) AL sinyali engellendi: {symbol}")
                 return True
         elif "SAT" in action or "TP" in action or "STOP" in action:

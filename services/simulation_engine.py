@@ -637,9 +637,9 @@ class SimulationEngine:
             effective_max_positions = 0
             print(f"[SimEngine] {date_str} -> Şiddetli Ayı kilidi: simülasyon girişleri kapalı")
         elif _sim_regime == "BEAR" or is_bear:
-            # SAVUNMA MODU: Sert düşüşte piyasa kilitlenmez; sadece en güçlü 1 A-sınıfı istisnaya izin verilir
-            effective_max_positions = 1
-            print(f"[SimEngine] {date_str} -> Savunma Modu (Ayı): Sadece 1 adet yüksek kaliteli seçici işleme izin veriliyor")
+            # SAVUNMA MODU: Sert düşüşte piyasa kilitlenmez; 500K kasayla en kaliteli 3 seçici işleme izin verilir
+            effective_max_positions = 3
+            print(f"[SimEngine] {date_str} -> Savunma Modu (Ayı): En kaliteli 3 seçici işleme izin veriliyor")
         elif _weekly_loss_locked:
             effective_max_positions = 0
             print(f"[SimEngine] {date_str} -> Haftalık zarar kilidi aktif: yeni girişler durduruldu (açık pozisyonlar planıyla yönetilir)")
@@ -740,9 +740,10 @@ class SimulationEngine:
                 print(f"[SIM-GUARD] {s.get('symbol')} elendi: Yüksek tuzak riski (%{v8_fakeout:.1f})")
                 continue
 
-            # Kural D: V8 Motoru açıkça NO_ENTRY / AVOID vermişse girilmez!
-            if v8_exec_status in ('NO_ENTRY', 'AVOID'):
-                print(f"[SIM-GUARD] {s.get('symbol')} elendi: V8 Motoru NO_ENTRY verdi")
+            # Kural D: V8 Motoru açıkça AVOID (tehlikeli/kara liste) vermişse girilmez!
+            # (NO_ENTRY sadece V8 kırılımı oluşmadığını belirtir, momentum ve tavan adaylarını engellemez)
+            if v8_exec_status == 'AVOID':
+                print(f"[SIM-GUARD] {s.get('symbol')} elendi: V8 Motoru AVOID verdi")
                 continue
 
             indicators = meta.get('Indicators', {}) if isinstance(meta, dict) else {}
@@ -876,9 +877,20 @@ class SimulationEngine:
         except Exception:
             _now_ist = datetime.now()
         _is_today = date_str == _now_ist.strftime('%Y-%m-%d')
-        _now_t = _now_ist.time() if _is_today else time(18, 0)
-        end_h = min(18, max(11, _now_t.hour))
-        end_m = min(55, max(30, (_now_t.minute // 5) * 5)) if end_h == _now_t.hour else 55
+        if _is_today:
+            _now_t = _now_ist.time()
+            if _now_t.hour < 10:
+                end_h = 10
+                end_m = 0
+            elif _now_t.hour >= 18:
+                end_h = 18
+                end_m = 10
+            else:
+                end_h = _now_t.hour
+                end_m = (_now_t.minute // 5) * 5
+        else:
+            end_h = 18
+            end_m = 10
         
         # Gün içi tam seans zaman ızgarasını (10:00'dan güncel seans saatine kadar) oluştur
         _all_day_times = []
@@ -1270,10 +1282,10 @@ class SimulationEngine:
                     break
 
                 # DİNAMİK SEÇİCİLİK:
-                # Ofansif modda: Minimum skor 92.0+ (hızlı momentum kırılımları dahil).
-                # Defansif modda: Minimum skor 94.0+ (sadece en elit garantici adaylar).
-                min_score_req = 92.0 if is_offensive else 94.0
-                if float(s.get('score', 0)) < min_score_req:
+                # candidate_pool zaten 6 temel filtreyi (RSI, Tuzak, VWAP, CMF, Hacim, Trend) geçmiş elit havuzdur.
+                eff_score = float(s.get('_total_rank_score') or s.get('score', 0))
+                min_score_req = 65.0 if is_offensive else 72.0
+                if eff_score < min_score_req:
                     continue
 
                 dt_ps = pd.to_datetime(f"{date_str} {s['time_str']}")
@@ -1292,9 +1304,9 @@ class SimulationEngine:
                 if time(11, 30) <= dt_current.time() < time(13, 30):
                     continue
 
-                # KATI ZAMAN KALKANI: Saat 14:30'dan sonra ASLA yeni pozisyon acilmaz!
-                # 17:15 ve 17:25 gibi seans sonu pozisyon acip komisyon/kaymaya kurban gitmeyi KESINLIKLE engeller.
-                if dt_current.time() >= time(14, 30):
+                # KATI ZAMAN KALKANI: Saat 17:00'dan sonra seans sonu kapanış dalgalanmasında yeni pozisyon açılmaz.
+                # 10:15 - 17:00 arası gün içi kırılımlara ve öğleden sonra rallilerine izin verilir.
+                if dt_current.time() >= time(17, 0):
                     to_remove.append(s)
                     continue
 
@@ -1304,7 +1316,7 @@ class SimulationEngine:
 
                 # Oglen sahte kirilim elemesi (13:45 - 15:15)
                 if time(13, 45) <= dt_current.time() < time(15, 15):
-                    if float(s.get('score', 0)) < 90:
+                    if float(s.get('_total_rank_score') or s.get('score', 0)) < 65:
                         continue
 
                 df = dfs.get(sym)
@@ -1326,7 +1338,8 @@ class SimulationEngine:
                     ceiling = morning_p * 1.10 if morning_p > 0 else raw_entry * 1.10
                 prev_close = (ceiling / 1.10) if ceiling > 0 else raw_entry
                 current_ch = ((raw_entry - prev_close) / prev_close * 100.0) if prev_close > 0 else 0.0
-                if current_ch >= 5.5 or (ceiling > 0 and raw_entry >= ceiling * 0.96):
+                # Tavan koruması: Tavana kilitlenmiş (+%8.5 üzeri) seviyelerden alım yapılmaz, ancak +%8.5'e kadar kırılımlara girilir
+                if current_ch >= 8.5 or (ceiling > 0 and raw_entry >= ceiling * 0.985):
                     to_remove.append(s)
                     continue
 
