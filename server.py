@@ -91,7 +91,9 @@ def sanitize_for_json(obj):
         return obj.isoformat()
     return obj
 
-STATS_FILE = "stats.json"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATS_FILE = os.path.join(BASE_DIR, "stats.json")
+CACHE_FILE = os.path.join(BASE_DIR, "dashboard_cache.json")
 GLOBAL_OPPORTUNITIES_CACHE = []
 
 def load_stats():
@@ -110,8 +112,6 @@ def save_stats(stats):
             json.dump(stats, f)
     except Exception as e:
         print(f"Stats save error: {e}")
-
-CACHE_FILE = "dashboard_cache.json"
 def _cache_age_hours(data):
     """Cache'in saat cinsinden yasi (cache_timestamp yoksa None)."""
     import time as _time
@@ -201,6 +201,22 @@ def load_dashboard_cache():
         return db_data
     elif file_data:
         return file_data
+
+    # Eger hem DB hem Dosya bossa, TradingView ile aninda yukle (Sifir bos baslangic)
+    try:
+        from data.providers.tradingview_provider import TradingViewBulkProvider
+        tv = TradingViewBulkProvider()
+        fresh = tv.build_dashboard_data()
+        if fresh and len(fresh.get("all_symbols_stats", {})) >= 50:
+            print(f"[CACHE] TradingView Bulk Provider ile ilk yukleme basarili ({len(fresh['all_symbols_stats'])} hisse).")
+            try:
+                save_dashboard_cache(fresh)
+            except Exception:
+                pass
+            return fresh
+    except Exception as e_init_tv:
+        print(f"[CACHE] TradingView ilk yukleme hatasi: {e_init_tv}")
+
     return {}
 
 def sync_to_github():

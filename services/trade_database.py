@@ -9,7 +9,8 @@ from services import pg_store
 
 # DATABASE_URL tanimliysa PostgreSQL (Supabase), degilse yerel SQLite
 IS_PG = pg_store.IS_PG
-DB_PATH = os.path.join("data", "trading_engine.db")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB_PATH = os.path.join(BASE_DIR, "data", "trading_engine.db")
 
 class SmartRow(dict):
     """sqlite3.Row ve dict uyumlu hibrit satir: hem r['col'], r[0] indeks hem de r.get('col') destekler."""
@@ -30,7 +31,7 @@ class SmartRow(dict):
 def get_connection():
     if IS_PG:
         return pg_store.connect()
-    os.makedirs("data", exist_ok=True)
+    os.makedirs(os.path.join(BASE_DIR, "data"), exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = SmartRow
     return conn
