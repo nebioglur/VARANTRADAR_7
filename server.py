@@ -2794,18 +2794,30 @@ def api_system_network_test():
     except Exception as e_iy:
         res["isyatirim"] = {"error": str(e_iy)}
 
-    # 5. Test Telegram API
+    # 5. Test Telegram API (hem proxyli hem proxysiz dene)
+    tg_res = {}
     try:
         from services.telegram_bot import get_telegram_credentials, _get_telegram_proxies
         tg_token, tg_chat = get_telegram_credentials()
         tg_proxies = _get_telegram_proxies() or proxies
         if tg_token:
-            r_tg = requests.get(f"https://api.telegram.org/bot{tg_token}/getMe", proxies=tg_proxies, timeout=10)
-            res["telegram"] = {"status": r_tg.status_code, "ok": r_tg.json().get("ok"), "bot": r_tg.json().get("result", {}).get("username")}
+            # Deneme 1: Proxyli
+            try:
+                r_tg_proxy = requests.get(f"https://api.telegram.org/bot{tg_token}/getMe", proxies=tg_proxies, timeout=5)
+                tg_res["with_proxy"] = {"status": r_tg_proxy.status_code, "ok": r_tg_proxy.json().get("ok")}
+            except Exception as ep:
+                tg_res["with_proxy"] = {"error": str(ep)}
+            # Deneme 2: Doğrudan (Proxysiz)
+            try:
+                r_tg_direct = requests.get(f"https://api.telegram.org/bot{tg_token}/getMe", timeout=5)
+                tg_res["direct"] = {"status": r_tg_direct.status_code, "ok": r_tg_direct.json().get("ok")}
+            except Exception as ed:
+                tg_res["direct"] = {"error": str(ed)}
         else:
-            res["telegram"] = {"error": "Token bulunamadi"}
+            tg_res = {"error": "Token bulunamadi"}
     except Exception as e_tg:
-        res["telegram"] = {"error": str(e_tg)}
+        tg_res = {"error": str(e_tg)}
+    res["telegram"] = tg_res
         
     # 6. Cache info
     global GLOBAL_DASHBOARD_CACHE
