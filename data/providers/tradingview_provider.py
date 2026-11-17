@@ -28,6 +28,13 @@ from typing import Dict, Any, Optional, Tuple, List
 from data.providers.base_provider import BaseDataProvider
 
 
+def _get_pa_proxies():
+    import os
+    if os.path.exists('/var/www') or os.path.exists('/home/varantradarpro') or os.environ.get('http_proxy'):
+        return {'http': 'http://proxy.server:3128', 'https': 'http://proxy.server:3128'}
+    return None
+
+
 class TradingViewBulkProvider(BaseDataProvider):
     SCANNER_URL = "https://scanner.tradingview.com/turkey/scan"
     
@@ -122,7 +129,8 @@ class TradingViewBulkProvider(BaseDataProvider):
         xu100_px: Optional[float] = None
 
         try:
-            resp = requests.post(self.SCANNER_URL, json=payload, headers=headers, timeout=timeout)
+            proxies = _get_pa_proxies()
+            resp = requests.post(self.SCANNER_URL, json=payload, headers=headers, proxies=proxies, timeout=timeout)
             if resp.status_code != 200:
                 self._record_error()
                 print(f"[TradingViewProvider] HTTP {resp.status_code} hatası!")
@@ -262,7 +270,7 @@ class TradingViewBulkProvider(BaseDataProvider):
                     "symbols": {"tickers": ["BIST:XU100"]},
                     "columns": ["close", "change"]
                 }
-                xu_resp = requests.post(self.SCANNER_URL, json=xu_payload, headers=headers, timeout=5)
+                xu_resp = requests.post(self.SCANNER_URL, json=xu_payload, headers=headers, proxies=proxies, timeout=5)
                 if xu_resp.status_code == 200:
                     xu_data = xu_resp.json().get("data", [])
                     if xu_data and xu_data[0].get("d"):
