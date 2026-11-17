@@ -20,7 +20,7 @@ COMMISSION = 0.0002
 TRAIL_ACTIVATION = 3.0   # +3% kazancta izleyen stop devreye girer
 DEFAULT_TRAIL_PCT = 1.5  # zirveden %1.5 geri cekilmede kilitle
 
-LIVE_BUDGET_CAP = 100000.0  # guvenlik ust limiti
+LIVE_BUDGET_CAP = 500000.0  # guvenlik ust limiti
 
 
 def _get_setting(key, default=None):
@@ -41,7 +41,7 @@ def _set_setting(key, value):
     conn.close()
 
 
-STARTING_CASH = 100000.0
+STARTING_CASH = 500000.0
 DEFAULT_OWNER = "local:nebioglur"  # owner belirtilmezse (dogrudan cagrilar icin)
 
 
@@ -474,7 +474,7 @@ def close_position_by_symbol(symbol, price=None, reason="MANUEL KAPATMA", owner=
 
 def reconcile_all_cash(tolerance=1.0):
     """Nakit mutabakati: bakiyeyi pozisyon gecmisinden yeniden hesaplar.
-    expected = 100.000 (baslangic) + SUM(kapali.pnl_val) - SUM(acik.cost_val)
+    expected = 500.000 (baslangic) + SUM(kapali.pnl_val) - SUM(acik.cost_val)
     (Kapali pozisyonda net etki: -cost + (satis - komisyon) = pnl_val;
      acik pozisyonda: -cost. Dolayisiyla bu formul kapali dagilimlar
      (reset, cift kredi, kayip guncelleme) ne olursa olsun dogru bakiyeyi verir.)

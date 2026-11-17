@@ -5175,7 +5175,7 @@ async function fetchSimulationData() {
             }
             
             // Asla Sıfırlanmayan Kümülatif Toplam Kasa (Geçmiş Tüm Aylar + Anlık Açık Pozisyonlar Dahil)
-            const baseCap = cum.base_capital || startBakiye || 100000.0;
+            const baseCap = cum.base_capital || startBakiye || 500000.0;
             const cumEquity = cum.cumulative_equity !== undefined ? cum.cumulative_equity : (endBakiye || baseCap);
             const cumPnl = cum.cumulative_net_pnl !== undefined ? cum.cumulative_net_pnl : (cumEquity - baseCap);
             const cumPct = cum.cumulative_return_pct !== undefined ? cum.cumulative_return_pct : ((cumPnl / baseCap) * 100);
@@ -5300,7 +5300,7 @@ async function fetchSimulationData() {
     } catch (e) {
         if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="text-red text-center" style="padding:2rem;">Bağlantı hatası: ${e.message}</td></tr>`;
         if (document.getElementById('sim-weekly-status-badge')) document.getElementById('sim-weekly-status-badge').innerHTML = '<i class="fa-solid fa-shield-halved"></i> Koruma Aktif (%6 Hedef)';
-        if (document.getElementById('home-kpi-cumulative-equity')) document.getElementById('home-kpi-cumulative-equity').innerText = '👑 Kasa: 100.000,00 ₺';
+        if (document.getElementById('home-kpi-cumulative-equity')) document.getElementById('home-kpi-cumulative-equity').innerText = '👑 Kasa: 500.000,00 ₺';
     }
 }
 
@@ -6288,7 +6288,7 @@ function ltOnSymbolInput() {
 
 // ========== PORTFÖY SIFIRLAMA TALEBİ + YÖNETİCİ PANELİ ==========
 async function ltResetRequest() {
-    if (!(await window.modernConfirm('Portföy sıfırlama talebi yöneticiye gönderilecek.\n\nOnaylanırsa: tüm pozisyonlarınız ve işlem geçmişiniz silinir, bakiyeniz 100.000 ₺ olur.\n\nDevam edilsin mi?'))) return;
+    if (!(await window.modernConfirm('Portföy sıfırlama talebi yöneticiye gönderilecek.\n\nOnaylanırsa: tüm pozisyonlarınız ve işlem geçmişiniz silinir, bakiyeniz 500.000 ₺ olur.\n\nDevam edilsin mi?'))) return;
     try {
         const res = await fetch('/api/portfolio/reset_request', {method: 'POST'});
         const data = await res.json();
@@ -6350,7 +6350,7 @@ async function fetchAdminResetRequests() {
 
 async function ltAdminDecide(id, action) {
     if (!(await window.modernConfirm(action === 'approve'
-        ? 'Bu kullanıcının portföyü TAMAMEN SIFIRLANACAK (pozisyonlar, işlem geçmişi; bakiye 100.000 ₺). Onaylıyor musunuz?'
+        ? 'Bu kullanıcının portföyü TAMAMEN SIFIRLANACAK (pozisyonlar, işlem geçmişi; bakiye 500.000 ₺). Onaylıyor musunuz?'
         : 'Bu sıfırlama talebi reddedilsin mi?'))) return;
     try {
         const res = await fetch('/api/admin/reset_requests/decide', {

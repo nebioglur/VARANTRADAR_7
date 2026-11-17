@@ -20,7 +20,7 @@ class PortfolioOptimizationEngine:
     """
     
     @staticmethod
-    def optimize_max_sharpe(price_df: pd.DataFrame, current_capital: float = 100000.0) -> Dict[str, Any]:
+    def optimize_max_sharpe(price_df: pd.DataFrame, current_capital: float = 500000.0) -> Dict[str, Any]:
         if not PYPFOPT_AVAILABLE:
             logger.warning("[PortfolioOptimization] PyPortfolioOpt kütüphanesi yüklü değil! Eşit ağırlık veriliyor.")
             n = len(price_df.columns)
@@ -53,7 +53,7 @@ class PortfolioOptimizationEngine:
             return {"error": str(e)}
 
     @staticmethod
-    def optimize_min_volatility(price_df: pd.DataFrame, current_capital: float = 100000.0) -> Dict[str, Any]:
+    def optimize_min_volatility(price_df: pd.DataFrame, current_capital: float = 500000.0) -> Dict[str, Any]:
         """Minimum Varyans (En düşük risk) portföyünü oluşturur."""
         if not PYPFOPT_AVAILABLE:
             return {"error": "PyPortfolioOpt kurulu değil."}
@@ -83,7 +83,7 @@ class PortfolioOptimizationEngine:
             return {"error": str(e)}
 
     @staticmethod
-    def optimize_black_litterman(price_df: pd.DataFrame, market_prices: pd.Series, viewdict: Dict[str, float], current_capital: float = 100000.0) -> Dict[str, Any]:
+    def optimize_black_litterman(price_df: pd.DataFrame, market_prices: pd.Series, viewdict: Dict[str, float], current_capital: float = 500000.0) -> Dict[str, Any]:
         """
         Black-Litterman Modeli: Yatırımcı görüşleri (views) ile piyasa dengesini birleştirir.
         viewdict: {'ASELS.IS': 0.10, 'THYAO.IS': 0.05}

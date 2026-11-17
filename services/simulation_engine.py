@@ -22,7 +22,7 @@ class SimulationEngine:
     _owner_locks = {}
     _owner_locks_guard = threading.Lock()
 
-    def __init__(self, daily_budget=100000.0, max_positions=3, owner=None):
+    def __init__(self, daily_budget=500000.0, max_positions=3, owner=None):
         self.daily_budget = daily_budget
         self.max_positions = 999  # KULLANICI ISTEGI: Simulasyonda islem sayisi SINIRSIZ
         self.owner = owner or "local:nebioglur"
@@ -393,11 +393,19 @@ class SimulationEngine:
         else:
             allocation = min(target_notional, risk_limited_notional)
 
-        # Taban ve Tavan guvencesi: hisse basina en az 10.000 TL, EN FAZLA 25.000 TL (Kasanin %25'i)
-        # Dunku HUNER gibi tek hisseye 56.000 TL baglanip tum haftalik kari eritmesi KESINLIKLE engellenir.
-        max_position_cap = min(25000.0, self.daily_budget * 0.25)
-        allocation = max(10000.0, min(allocation, max_position_cap))
-        max_trade_risk = min(1000.0, self.daily_budget * 0.010)
+        # Taban ve Tavan guvencesi: hisse basina kasanin %8'i ila %30'u (500K icin 40.000 TL - 150.000 TL)
+        # Pozisyonlara rahatca girmeyi saglar, tek hisseye asiri risk yigmasini onler.
+        max_position_cap = self.daily_budget * 0.30
+        min_position_floor = self.daily_budget * 0.08
+        allocation = max(min_position_floor, min(allocation, max_position_cap))
+
+        # Eldeki nakit sinirini asmasin (kullanilabilir nakit elverdigi olcude giris)
+        if current_cash is not None:
+            if current_cash < entry_price:
+                return 0.0, 0.0
+            allocation = min(allocation, current_cash)
+
+        max_trade_risk = self.daily_budget * 0.015  # 7.500 TL (500K kasanin %1.5'i)
 
         return allocation, min(max_trade_risk, allocation * risk_per_share / entry_price)
 

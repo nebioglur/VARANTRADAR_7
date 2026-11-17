@@ -153,6 +153,17 @@ def init_db():
     cursor.execute("UPDATE equity_log SET owner='local:legacy' WHERE owner IS NULL OR owner=''")
     cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_equity_owner_date ON equity_log(owner, date_str)")
 
+    # 500K Bakiye Gecisi: Eger eski 100K bazli kayitlar varsa, kasanin tabanini 500K'ya yukselt.
+    # Bu islem tum gerceklesen PnL'leri kurusuna kadar korur, taban kasayi 500.000 TL yapar.
+    try:
+        cursor.execute("SELECT MIN(start_equity) FROM equity_log")
+        min_eq = cursor.fetchone()
+        if min_eq and min_eq[0] is not None and float(min_eq[0]) < 250000.0:
+            diff = 500000.0 - float(min_eq[0])
+            cursor.execute("UPDATE equity_log SET start_equity = start_equity + ?, end_equity = end_equity + ?", (diff, diff))
+    except Exception as e:
+        print(f"[init_db] equity_log 500K gecis notu: {e}")
+
     # 5. Live Positions (Anlık işlem terminali - manuel + akıllı TP/SL motoru, hesap bazlı)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS live_positions (

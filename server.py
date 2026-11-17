@@ -3459,7 +3459,7 @@ def api_leaderboard():
             try:
                 t = get_terminal_state(owner, price_map=price_map)
             except Exception:
-                t = {"cash": 100000.0, "invested": 0.0, "open_pnl": 0.0, "equity": 100000.0}
+                t = {"cash": 500000.0, "invested": 0.0, "open_pnl": 0.0, "equity": 500000.0}
             rows.append({
                 "owner": owner,
                 "name": name,
@@ -3870,7 +3870,7 @@ def api_simulation_daily_pnl():
             equity_curve = [dict(row) for row in equity_rows]
             if not equity_curve:
                 from datetime import datetime
-                equity_curve = [{"date_str": datetime.now().strftime("%Y-%m-%d"), "start_equity": 100000.0, "end_equity": 100000.0, "total_pnl": 0.0}]
+                equity_curve = [{"date_str": datetime.now().strftime("%Y-%m-%d"), "start_equity": 500000.0, "end_equity": 500000.0, "total_pnl": 0.0}]
 
             # Fetch all retained trades for this account, open and closed.
             c.execute("SELECT * FROM trades WHERE owner=? ORDER BY date_str DESC, entry_time DESC", (owner,))
@@ -3979,7 +3979,7 @@ def api_simulation_daily_pnl():
             if not equity_rows:
                 if realized_by_date:
                     equity_curve = []
-                    running_balance = 100000.0
+                    running_balance = 500000.0
                     for trade_date in sorted(realized_by_date):
                         totals = realized_by_date[trade_date]
                         start = running_balance
@@ -3996,12 +3996,12 @@ def api_simulation_daily_pnl():
                 known_dates = {str(row.get("date_str") or "") for row in equity_curve}
                 for trade_date in realized_by_date:
                     if trade_date not in known_dates:
-                        equity_curve.append({"date_str": trade_date, "start_equity": 100000.0, "end_equity": 100000.0, "daily_pnl": 0.0})
+                        equity_curve.append({"date_str": trade_date, "start_equity": 500000.0, "end_equity": 500000.0, "daily_pnl": 0.0})
                 equity_curve.sort(key=lambda row: str(row.get("date_str") or ""))
             previous_end = None
             for row in equity_curve:
                 day = str(row.get("date_str") or "")
-                start = previous_end if previous_end is not None else float(row.get("start_equity") or 100000.0)
+                start = previous_end if previous_end is not None else float(row.get("start_equity") or 500000.0)
                 totals = realized_by_date.get(day)
                 if totals is not None:
                     daily_pnl = totals["pnl"]
@@ -4042,7 +4042,7 @@ def api_simulation_daily_pnl():
                 for r in c.fetchall()
             ]
             
-            base_starting_capital = 100000.0
+            base_starting_capital = 500000.0
             if equity_curve and equity_curve[0].get("start_equity"):
                 base_starting_capital = float(equity_curve[0]["start_equity"])
                 
@@ -4306,7 +4306,7 @@ def api_simulation_send_telegram():
             cur = conn.cursor()
             cur.execute("SELECT start_equity FROM equity_log WHERE owner=? AND date_str=?", (owner, date_str))
             equity = cur.fetchone()
-            base = float(equity['start_equity']) if equity and equity['start_equity'] else 100000.0
+            base = float(equity['start_equity']) if equity and equity['start_equity'] else 500000.0
             cur.execute("SELECT COUNT(*) c, COALESCE(SUM(realized_pnl),0) p FROM trades WHERE owner=? AND date_str=? AND exit_time IS NOT NULL", (owner, date_str))
             totals = cur.fetchone()
         profit = float(totals['p'] or 0) if totals else 0.0
@@ -4715,7 +4715,7 @@ def _v8_scheduled_reports(now=None):
                         conn.close()
                         t_count = int(row["c"]) if row else 0
                         profit = float(row["p"]) if row else 0.0
-                        base = float(eq["start_equity"]) if eq and eq["start_equity"] else 100000.0
+                        base = float(eq["start_equity"]) if eq and eq["start_equity"] else 500000.0
                         ret_pct = (profit / base * 100.0) if base > 0 else 0.0
                         ok = send_simulation_report(t_count, profit, ret_pct, day_key, owner)
                         print(f"[V8-SCHED] Aksam raporu: {'gonderildi' if ok else 'gonderilemedi (config?)'} | {t_count} islem, {profit:+.0f} TL ({ret_pct:+.2f}%)")
@@ -5490,7 +5490,7 @@ def api_v8_weekly():
                 (owner,),
             )
             start = cur.fetchone()
-            base_equity = float(start["start_equity"]) if start and start["start_equity"] else 100000.0
+            base_equity = float(start["start_equity"]) if start and start["start_equity"] else 500000.0
         conn.close()
 
         week_pct = (week_pnl / base_equity * 100.0) if base_equity > 0 else 0.0

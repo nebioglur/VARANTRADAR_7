@@ -319,8 +319,8 @@ def send_simulation_report(total_trades: int = 0, total_profit: float = 0.0, ret
         return True
 
     # 2. Veritabanından tam finansal dökümü al
-    start_equity = 100000.0
-    end_equity = 100000.0
+    start_equity = 500000.0
+    end_equity = 500000.0
     daily_pnl = total_profit
     pnl_pct = return_pct
     win_trades = 0
@@ -359,7 +359,7 @@ def send_simulation_report(total_trades: int = 0, total_profit: float = 0.0, ret
                 cur.execute("SELECT * FROM equity_log WHERE date_str=?", (date_str,))
                 eq = cur.fetchone()
             if eq:
-                start_equity = float(eq['start_equity']) if eq['start_equity'] else 100000.0
+                start_equity = float(eq['start_equity']) if eq['start_equity'] else 500000.0
                 end_equity = float(eq['end_equity']) if eq['end_equity'] else (start_equity + daily_pnl)
                 daily_pnl = float(eq['daily_pnl']) if eq['daily_pnl'] is not None else daily_pnl
                 win_trades = int(eq['win_trades']) if eq['win_trades'] is not None else 0
@@ -1918,7 +1918,7 @@ def send_open_positions_report(trades: list = None, force: bool = True) -> dict:
     unreal_emoji = "🟢" if total_unrealized_pnl >= 0 else "🔴"
     lines.append(f"💰 <b>Anlık Toplam Kâr/Zarar:</b> {unreal_emoji} <b>{unreal_sign}₺{total_unrealized_pnl:,.2f}</b>")
 
-    balance = float(equity_info.get("end_equity") or (100000.0 + total_unrealized_pnl))
+    balance = float(equity_info.get("end_equity") or (500000.0 + total_unrealized_pnl))
     lines.append(f"🏦 <b>Kasa Bakiyesi:</b> ₺{balance:,.2f}")
     lines.append("")
     lines.append("🔔 <i>Otomatik kâr alma (TP1/TP2) ve iz süren stop koruması aktiftir.</i>")
