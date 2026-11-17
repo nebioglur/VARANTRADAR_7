@@ -1051,7 +1051,8 @@ class SimulationEngine:
                     # OFANSİF MODDA TAVANA TAŞIMA:
                     # Eğer hisse tavana (+%9.5+) gidiyorsa ve tavan kilitliyse (close >= ceiling * 0.992),
                     # seans sonuna kadar tavanda tutulur!
-                    if is_offensive and trade.get('is_runner') and (ceiling > 0 and close >= ceiling * 0.992):
+                    ceiling_val = float(trade.get('ceiling_target') or (entry * 1.10))
+                    if is_offensive and trade.get('is_runner') and (ceiling_val > 0 and close >= ceiling_val * 0.992):
                         pass # Tavan kilitli, pozisyon bozulmaz (17:50'ye kadar tam kâr)
                     else:
                         sell_price = round(max(tp2_price, bar_open) * 0.9985, 2)

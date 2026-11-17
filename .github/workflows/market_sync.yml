@@ -1,27 +1,54 @@
-name: BIST Market Sync & Auto Ping
+name: BIST Cloud Market Sync & Auto Ping
 
 on:
   schedule:
-    # Pazartesi - Cuma, 06:50 - 15:20 UTC (09:50 - 18:20 Turkiye Saati)
-    # Her 8 dakikada bir otomatik calisir
-    - cron: '*/8 7-15 * * 1-5'
+    # Pazartesi - Cuma: 
+    # Sabah 09:45 TR (06:45 UTC) - Sabah seansı kesintisiz döngü
+    - cron: '45 6 * * 1-5'
+    # Öğleden sonra 13:45 TR (10:45 UTC) - Öğleden sonra seansı kesintisiz döngü
+    - cron: '45 10 * * 1-5'
+    # Yedek güvenlik ağı: Her 15 dakikada bir otomatik tetikleyici
+    - cron: '*/15 7-15 * * 1-5'
   workflow_dispatch:
 
 jobs:
-  sync_and_ping:
+  cloud_sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 270
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: pip install requests
-
-      - name: Run Verdent to PythonAnywhere Sync
-        run: python vr_live_bridge.py --once
+      - name: Direct Cloud Sync to PythonAnywhere
+        run: |
+          echo "================================================="
+          echo "  VARANTRADAR PRO - BIST CLOUD ENGINE SYNC"
+          echo "  Baslangic Zamani (UTC): $(date -u)"
+          echo "================================================="
+          
+          MAX_LOOPS=90
+          LOOP_COUNT=0
+          
+          while [ $LOOP_COUNT -lt $MAX_LOOPS ]; do
+            LOOP_COUNT=$((LOOP_COUNT+1))
+            NOW_H=$(date -u +%-H)
+            NOW_M=$(date -u +%-M)
+            
+            # 15:35 UTC (18:35 TR) seans kapandiginda donguden cik
+            if [ $NOW_H -gt 15 ] || ([ $NOW_H -eq 15 ] && [ $NOW_M -ge 35 ]); then
+              echo "[$(date -u +%T)] Seans tamamlandi (18:35 TR). Gun sonu islemleri tamam."
+              break
+            fi
+            
+            # Seans oncesi 06:40 UTC (09:40 TR)'den once ise bekle
+            if [ $NOW_H -lt 6 ] || ([ $NOW_H -eq 6 ] && [ $NOW_M -lt 40 ]); then
+              echo "[$(date -u +%T)] Seans oncesi (09:40 TR oncesi). Bekleniyor..."
+              sleep 60
+              continue
+            fi
+            
+            echo "[$(date -u +%T)] [Tur $LOOP_COUNT] Verdent Cloud -> PythonAnywhere veri aktarimi baslatiliyor..."
+            RESP=$(curl -f -s -m 75 "https://varantradar-pro-8.verdent.app/api/cron/sync_to_pa" || echo '{"status":"curl_timeout_or_error"}')
+            echo "Yanit: $RESP"
+            
+            # 3 dakika (180 saniye) bekle
+            sleep 180
+          done
+          echo "Sync gorevi basariyla tamamlandi."

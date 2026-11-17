@@ -2470,22 +2470,35 @@ def api_cron_sync_to_pa():
         if not dash_data or not dash_data.get('all_symbols_stats'):
             return jsonify({"status": "warning", "message": "Henuz taze veri yok, cache bos."}), 200
 
+        xu100_chg = dash_data.get("xu100_change") or (dash_data.get("v8_market_regime") or {}).get("xu100_trend")
         payload = {
             "token": "pro8_sync",
             "dashboard_data": dash_data,
-            "v8_breakout_data": v8_bo
+            "v8_breakout_data": v8_bo,
+            "xu100_change": xu100_chg
         }
 
         import requests
-        r = requests.post(
-            "https://varantradarpro.pythonanywhere.com/api/system/push_market_data?token=pro8_sync",
-            json=payload,
-            headers={"Content-Type": "application/json"},
-            timeout=35
-        )
+        try:
+            import gzip
+            raw_bytes = json.dumps(payload).encode('utf-8')
+            comp_bytes = gzip.compress(raw_bytes)
+            r = requests.post(
+                "https://varantradarpro.pythonanywhere.com/api/system/push_market_data?token=pro8_sync",
+                data=comp_bytes,
+                headers={"Content-Type": "application/json", "Content-Encoding": "gzip"},
+                timeout=(15, 75)
+            )
+        except Exception:
+            r = requests.post(
+                "https://varantradarpro.pythonanywhere.com/api/system/push_market_data?token=pro8_sync",
+                json=payload,
+                headers={"Content-Type": "application/json"},
+                timeout=(15, 75)
+            )
         return jsonify({
             "status": "success",
-            "message": "Verdent verileri PythonAnywhere'e basariyla aktarildi (8 dk dongusu).",
+            "message": "Verdent verileri PythonAnywhere'e basariyla aktarildi.",
             "pa_status": r.status_code,
             "pa_response": r.json() if r.status_code == 200 else r.text[:200]
         })
@@ -2668,6 +2681,12 @@ def api_system_push_market_data():
             v8_sent = auto_send_v8_signals()
         except Exception:
             pass
+
+        # Zamanlanmış Telegram bildirimleri (09:50 Pusula, 10:00 Açılış, 10:15 Radar, 18:20 Akşam)
+        try:
+            _v8_scheduled_reports(_now_ist)
+        except Exception as _e_sched:
+            print(f"[PUSH SCHED ERROR] {_e_sched}")
 
         return jsonify({
             'status': 'success',
@@ -4524,14 +4543,29 @@ def _v8_scheduled_reports(now=None):
         from datetime import datetime as _dt_sched, timezone, timedelta as _td_sched
         from services.telegram_bot import (
             claim_telegram_alert, send_simulation_session_opening,
-            send_simulation_report,
+            send_simulation_report, send_morning_compass_bulletin,
+            get_special_ranking_candidates, send_special_ranking_alert
         )
         if now is None:
             now = _dt_sched.now(ZoneInfo("Europe/Istanbul"))
         day_key = now.strftime("%Y-%m-%d")
 
-        # Seans açılışı (10:00-10:05, günde bir kez); yalnızca kısa sistem durumu.
-        if now.hour == 10 and 0 <= now.minute <= 5:
+        # 1. Sabah Seans Öncesi Pusulası (09:45 - 09:59)
+        if now.hour == 9 and 45 <= now.minute <= 59:
+            sk_compass = f"MORNING_COMPASS_{day_key}"
+            if sk_compass not in _V8_SCHED_SENT:
+                if claim_telegram_alert(sk_compass):
+                    _V8_SCHED_SENT.add(sk_compass)
+                    try:
+                        ok = send_morning_compass_bulletin()
+                        print(f"[SIM-SCHED] Sabah Pusulası: {'gönderildi' if ok else 'gönderilemedi'}")
+                    except Exception as comp_err:
+                        print(f"[SIM-SCHED] Sabah Pusulası hatası: {comp_err}")
+                else:
+                    _V8_SCHED_SENT.add(sk_compass)
+
+        # 2. Seans açılışı (10:00-10:08, günde bir kez); yalnızca kısa sistem durumu.
+        if now.hour == 10 and 0 <= now.minute <= 8:
             sk = f"SIM_SESSION_OPEN_{day_key}"
             if sk not in _V8_SCHED_SENT:
                 if claim_telegram_alert(sk):
@@ -4544,7 +4578,23 @@ def _v8_scheduled_reports(now=None):
                 else:
                     _V8_SCHED_SENT.add(sk)
 
-        # Gün sonu simülasyon özeti (18:20'den sonra, günde bir kez).
+        # 3. Sabah Özel Sıralama / Radar Adayları (10:15 - 10:35, günde bir kez)
+        if now.hour == 10 and 15 <= now.minute <= 35:
+            sk_rank = f"SPECIAL_RANKING_{day_key}"
+            if sk_rank not in _V8_SCHED_SENT:
+                if claim_telegram_alert(sk_rank):
+                    _V8_SCHED_SENT.add(sk_rank)
+                    try:
+                        cands = get_special_ranking_candidates(top_n=3)
+                        if cands:
+                            ok = send_special_ranking_alert(cands)
+                            print(f"[SIM-SCHED] Özel Sıralama: {'gönderildi' if ok else 'gönderilemedi'} ({len(cands)} hisse)")
+                    except Exception as rank_err:
+                        print(f"[SIM-SCHED] Özel Sıralama hatası: {rank_err}")
+                else:
+                    _V8_SCHED_SENT.add(sk_rank)
+
+        # 4. Gün sonu simülasyon özeti (18:20'den sonra, günde bir kez).
         if (now.hour == 18 and now.minute >= 20) or now.hour >= 19:
             ek = f"EVENING_REPORT_{day_key}"
             if ek not in _V8_SCHED_SENT:

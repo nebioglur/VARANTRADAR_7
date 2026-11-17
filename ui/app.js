@@ -4517,6 +4517,38 @@ function refreshSimNow() {
     fetchSimulationData();
 }
 
+async function syncCloudNow(btn) {
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Senkronize Ediliyor...';
+    }
+    try {
+        const res = await fetch('https://varantradar-pro-8.verdent.app/api/cron/sync_to_pa');
+        const data = await res.json();
+        if (data && data.status === 'success') {
+            if (typeof showToast === 'function') showToast('Bulut verileri basariyla senkronize edildi!', 'success');
+            setTimeout(fetchSimulationData, 1000);
+        } else {
+            if (typeof showToast === 'function') showToast(data.message || 'Senkron uyarisi alindi.', 'warning');
+        }
+    } catch (e) {
+        console.warn('Verdent sync error:', e);
+        try {
+            await vrAuthorizedFetch('/api/force_refresh', { method: 'POST' });
+            if (typeof showToast === 'function') showToast('Veriler yenilendi.', 'info');
+            setTimeout(fetchSimulationData, 1000);
+        } catch (e2) {
+            if (typeof showToast === 'function') showToast('Bulut senkron basarisiz: ' + e2.message, 'error');
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+    }
+}
+
 // ========== TELEGRAM BILDIRIM AYARLARI ==========
 function toggleTelegramSettings() {
     const panel = document.getElementById('tg-settings-panel');
