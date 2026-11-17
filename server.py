@@ -4293,27 +4293,39 @@ XU100_CACHE = {"change": 0.0, "last_updated": 0}
 
 _xu100_refreshing = False
 def get_xu100_change():
-    """5 dk cache. Tazeleme arka planda yapilir; dashboard senkron beklemez."""
+    """5 dk cache. TradingView ve YFinance ile BIST100 endeks değişimini çeker."""
     global XU100_CACHE, _xu100_refreshing
     now = time.time()
-    if now - XU100_CACHE['last_updated'] > 300 and not _xu100_refreshing:
+    if now - XU100_CACHE['last_updated'] > 180 and not _xu100_refreshing:
         _xu100_refreshing = True
 
         def _refresh():
             global XU100_CACHE, _xu100_refreshing
             try:
+                # 1. TradingView Primary (Hızlı & Ban-Free)
+                import requests as _req
+                from data.providers.tradingview_provider import _get_pa_proxies
+                r_tv = _req.post("https://scanner.tradingview.com/turkey/scan", json={"symbols": {"tickers": ["BIST:XU100"]}, "columns": ["change"]}, proxies=_get_pa_proxies(), headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
+                if r_tv.status_code == 200:
+                    d_tv = r_tv.json().get("data", [])
+                    if d_tv and d_tv[0].get("d"):
+                        XU100_CACHE['change'] = round(float(d_tv[0]["d"][0]), 2)
+                        XU100_CACHE['last_updated'] = time.time()
+                        return
+            except Exception:
+                pass
+
+            try:
+                # 2. YFinance Fallback
                 import yfinance as yf
-                _pa_sess = None
-                if os.environ.get("http_proxy") or os.path.exists("/var/www"):
-                    import requests as _req
-                    _pa_sess = _req.Session()
-                    _pa_sess.proxies = {"http": "http://proxy.server:3128", "https": "http://proxy.server:3128"}
+                from scanner.universal_scanner import _get_pa_session
+                _pa_sess = _get_pa_session()
                 hist = yf.Ticker('XU100.IS', session=_pa_sess).history(period='5d')
                 if len(hist) >= 2:
                     c1 = hist['Close'].iloc[-2]
                     c2 = hist['Close'].iloc[-1]
                     chg = ((c2 - c1) / c1) * 100
-                    XU100_CACHE['change'] = chg
+                    XU100_CACHE['change'] = round(chg, 2)
                     XU100_CACHE['last_updated'] = time.time()
             except Exception:
                 pass
@@ -4324,6 +4336,9 @@ def get_xu100_change():
 
     # Fallback to GLOBAL_DASHBOARD_CACHE if change is 0.0
     if (XU100_CACHE.get('change') == 0.0 or abs(XU100_CACHE.get('change', 0.0)) < 0.001) and isinstance(GLOBAL_DASHBOARD_CACHE, dict):
+        dash_xu = GLOBAL_DASHBOARD_CACHE.get("xu100_change")
+        if dash_xu is not None and abs(float(dash_xu)) > 0.001:
+            return round(float(dash_xu), 2)
         reg_trend = (GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or {}).get("xu100_trend")
         if reg_trend is not None and abs(float(reg_trend)) > 0.001:
             return round(float(reg_trend), 2)
