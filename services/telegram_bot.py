@@ -1012,127 +1012,69 @@ def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.
     
     if "AL" in action:
         reentry_note = " (Yeniden Giriş)" if "Yeniden" in action else ""
-        text = f"🟢 <b>SİMÜLASYON AL EMRİ{reentry_note}</b> 🟢\n"
-        text += f"⏰ <b>Alış Saati:</b> <code>{display_time}</code>\n"
-        text += "━━━━━━━━━━━━━━━━━━━━\n"
-        text += f"📌 <b>HİSSE:</b> <b>#{clean_sym}</b>\n"
-        text += f"💵 <b>Alış Fiyatı:</b> ₺{price:.2f}\n"
-        text += f"📦 <b>Pozisyon:</b> {shares} Lot  (₺{total_val:,.2f})\n"
-        text += f"🏆 <b>Sistem Puanı:</b> {float(trade_score):.0f}/100 (Elit Seçim)\n\n"
-        
         gear = trade.get('trading_gear') or ("OFANSİF (Tavan Avcısı)" if trade.get('is_offensive') else "DEFANSİF (Garantici Kalkan)")
         is_off = "OFANSİF" in str(gear) or trade.get('is_offensive')
-        
-        text += f"⚡ <b>Motor Vitesi:</b> <b>{gear}</b>\n\n"
-        text += "🎯 <b>HEDEFLER VE RİSK PLANI</b>\n"
+        tp2 = trade.get('tp2_price', 0) or (round(price * 1.065, 2) if price else 0)
+
+        text = f"🟢 <b>[SİMÜLASYON AL EMRİ{reentry_note}] #{clean_sym}</b> 🟢\n"
+        text += f"⏰ <b>Saat:</b> <code>{display_time}</code> | 🏆 <b>Skor:</b> {float(trade_score):.0f}/100\n"
+        text += f"⚡ <b>Motor Vitesi:</b> <b>{gear}</b>\n"
         text += "━━━━━━━━━━━━━━━━━━━━\n"
-        tp2 = trade.get('tp2_price', 0) or (round(price * 1.045, 2) if price else 0)
+        text += f"💵 <b>Alış Fiyatı:</b> ₺{price:.2f} · 📦 <b>Pozisyon:</b> {shares} Lot (₺{total_val:,.0f})\n\n"
+        text += "🎯 <b>HEDEFLER & RİSK PLANI:</b>\n"
         if is_off:
-            text += f"💰 <b>1. Kâr Al (TP1):</b> ₺{tp1:.2f} (<b>+%3.0</b>) ➡️ <i>Yalnızca %30 satılır, maliyet sıfırlanır</i>\n"
-            text += f"🚀 <b>2. Tavan Koşucusu (Runner):</b> Kalan %70 lot tavana (+%9.9) kadar iz süren stopla taşınır!\n"
-            text += f"🎯 <b>Tavan Hedefi:</b> ₺{tp2:.2f} ➡️ <i>Tavan kilitlerse 17:50'ye kadar tam kârla taşınır</i>\n"
+            text += f"💰 <b>TP1 (Kâr Al):</b> ₺{tp1:.2f} (<b>+%{tp_pct:.1f}</b>) ➡️ <i>%30 sat, stop maliyete!</i>\n"
+            text += f"🚀 <b>TP2 (Tavan):</b> ₺{tp2:.2f} ➡️ <i>Runner ile tavana (+%9.9)</i>\n"
         else:
-            text += f"💰 <b>1. Kâr Al (TP1):</b> ₺{tp1:.2f} (<b>+%2.2</b>) ➡️ <i>%60 kâr satışı, stop maliyete çekilir</i>\n"
-            text += f"🎯 <b>2. Kâr Al (TP2):</b> ₺{tp2:.2f} (<b>+%4.5</b>) ➡️ <i>Kalan pozisyon satılır</i>\n"
-        text += f"🛑 <b>Zarar Kes (Stop):</b> ₺{sl:.2f} (<b>-%2.5</b>) ➡️ <i>Kesin disiplin</i>\n"
-        text += f"⏰ <b>17:50 Disiplini:</b> Gün sonu taşınmaz, 17:50'de %100 nakde geçilir!\n\n"
-        
-        sr_block = _sr_text_block(symbol)
-        text += "📊 <b>TEKNİK VE SEVİYELER</b>\n"
-        text += "━━━━━━━━━━━━━━━━━━━━\n"
-        if sr_block:
-            text += sr_block
+            text += f"💰 <b>TP1 (Kâr Al):</b> ₺{tp1:.2f} (<b>+%{tp_pct:.1f}</b>) ➡️ <i>%60 sat, stop maliyete</i>\n"
+            text += f"🎯 <b>TP2 (Hedef):</b> ₺{tp2:.2f} ➡️ <i>Pozisyon kapatılır</i>\n"
+        text += f"🛑 <b>Zarar Kes (Stop):</b> ₺{sl:.2f} (<b>-%{sl_pct:.1f}</b>) ➡️ <i>Çelik disiplin</i>\n"
         if strategy:
-            text += f"🧠 <b>Strateji:</b> {strategy}\n"
-        if "Bonuslar: " in checks:
-            bonuses = checks.split("Bonuslar: ")[-1]
-            text += f"⚡ <b>Başarı Rozetleri:</b> {bonuses}\n"
-        text += "\n"
-        
-        if reason:
-            text += f"💡 <b>İşlem Nedeni:</b> {reason}\n"
-            
+            text += f"\n🧠 <b>Strateji:</b> <i>{strategy}</i>\n"
+        text += "⏰ <i>17:50'de tüm açık pozisyonlar nakde geçirilir. Geceye hisse taşınmaz.</i>"
         return _send_once(text)
 
     elif "TP1" in action:
         pnl_val = trade.get('pnl_val', 0)
         display_exit_time = _format_time_header(exit_time, date_str)
-        display_entry_time = _format_time_header(entry_time, "")
-        
-        text = f"💰 <b>SİMÜLASYON KÂR AL EMRİ (TP1)</b> 💰\n"
-        text += f"⏰ <b>Kâr Al Saati:</b> <code>{display_exit_time}</code>\n"
+        text = f"💰 <b>[HEDEF 1 KÂR ALINDI] #{clean_sym}</b> 💰\n"
+        text += f"⏰ <b>Saat:</b> <code>{display_exit_time}</code>\n"
         text += "━━━━━━━━━━━━━━━━━━━━\n"
-        text += f"📌 <b>HİSSE:</b> <b>#{clean_sym}</b>\n"
-        text += f"💵 <b>Kâr Alış Fiyatı:</b> ₺{price:.2f} (Alış: ₺{float(entry):.2f})\n"
-        if display_entry_time:
-            text += f"🕒 <b>Giriş Saati:</b> {display_entry_time}\n"
-        text += f"📦 <b>Satılan Pozisyon:</b> {shares} Lot (%50 Kâr Satışı)\n\n"
-        
-        text += "📊 <b>KÂR SONUCU</b>\n"
-        text += "━━━━━━━━━━━━━━━━━━━━\n"
-        text += f"🟢 <b>Kilitlenen Kâr:</b> <b>+₺{pnl_val:,.2f}</b>\n"
-        text += f"🟢 <b>Kâr Oranı:</b> <b>+%{pnl_pct:.2f}</b>\n"
-        text += f"🏆 <b>Sistem Puanı:</b> {float(trade_score):.0f}/100\n"
-        text += f"🛡️ <b>Sıfır Risk Stratejisi:</b> <i>Kalan %50 pozisyonun stopu maliyete çekildi, artık bu işlemde risk sıfırdır!</i>\n"
-        
-        text += "\n━━━━━━━━━━━━━━━━━━━━\n"
-        text += "✅ <i>1. Hedefe ulaşıldı, kâr kasaya aktarıldı.</i>"
+        text += f"💵 <b>Satış:</b> ₺{price:.2f} (Alış: ₺{float(entry):.2f})\n"
+        text += f"🟢 <b>Kilitlenen Kâr:</b> <b>+₺{pnl_val:,.2f}</b> (<b>+%{pnl_pct:.2f}</b>)\n\n"
+        text += "🛡️ <b>SIFIR RİSK DEVREDE:</b>\n"
+        text += "Kalan payın stopu maliyete çekildi. Artık bu işlemde risk SIFIRDIR!\n"
+        text += "🚀 Kalan pay tavan kilidine kadar iz süren stopla taşınıyor."
         return _send_once(text)
 
     elif "GUN SONU" in action:
-        emoji = "🟢" if pnl_pct >= 0 else "🔴"
         pnl_val = trade.get('pnl_val', 0)
-        display_exit_time = _format_time_header(exit_time, date_str)
-        display_entry_time = _format_time_header(entry_time, "")
-        
-        text = f"🏁 <b>SİMÜLASYON SEANS SONU KAPANIŞ</b> 🏁\n"
-        text += f"⏰ <b>Kapanış Saati:</b> <code>{display_exit_time}</code>\n"
-        text += "━━━━━━━━━━━━━━━━━━━━\n"
-        text += f"📌 <b>HİSSE:</b> <b>#{clean_sym}</b>\n"
-        text += f"💵 <b>Kapanış Fiyatı:</b> ₺{price:.2f} (Alış: ₺{float(entry):.2f})\n"
-        if display_entry_time:
-            text += f"🕒 <b>Giriş Saati:</b> {display_entry_time}\n"
-        text += f"📦 <b>Kapatılan Lot:</b> {shares} Lot  (₺{total_val:,.2f})\n\n"
-        
-        text += "📊 <b>GÜN SONU SONUCU</b>\n"
-        text += "━━━━━━━━━━━━━━━━━━━━\n"
+        emoji = "🟢" if pnl_val >= 0 else "🔴"
         v_sign = "+" if pnl_val >= 0 else ""
-        text += f"{emoji} <b>Net K/Z Tutarı:</b> <b>{v_sign}₺{pnl_val:,.2f}</b>\n"
-        text += f"{emoji} <b>Getiri Oranı:</b> <b>{v_sign}%{pnl_pct:.2f}</b>\n"
-        text += f"🏷️ <b>Açıklama:</b> <i>17:50 Seans sonu nakite geçiş kuralı uygulandı. Geceye hisse taşınmaz.</i>\n"
-        
-        text += "\n━━━━━━━━━━━━━━━━━━━━\n"
-        text += "✅ <i>Günün işlemi tamamlandı, nakde geçildi.</i>"
+        display_exit_time = _format_time_header(exit_time, date_str)
+        text = f"🏁 <b>[SEANS SONU KAPANIŞ] #{clean_sym}</b> 🏁\n"
+        text += f"⏰ <b>Saat:</b> <code>{display_exit_time}</code>\n"
+        text += "━━━━━━━━━━━━━━━━━━━━\n"
+        text += f"💵 <b>Kapanış:</b> ₺{price:.2f} (Alış: ₺{float(entry):.2f})\n"
+        text += f"{emoji} <b>Net K/Z:</b> <b>{v_sign}₺{pnl_val:,.2f}</b> (<b>{v_sign}%{pnl_pct:.2f}</b>)\n"
+        text += "🏷️ <i>17:50 Seans sonu nakite geçiş kuralı uygulandı. Geceye hisse taşınmaz.</i>"
         return _send_once(text)
 
     else:
         is_profit = pnl_pct >= 0
-        header_title = "🟢 <b>SİMÜLASYON KÂRLI SATIŞ EMRİ</b> 🟢" if is_profit else "🛑 <b>SİMÜLASYON ZARAR KES (STOP)</b> 🛑"
+        header_title = "🟢 <b>[KÂRLI SATIŞ]</b>" if is_profit else "🛑 <b>[ZARAR KES (STOP)]</b>"
         emoji = "🟢" if is_profit else "🔴"
         pnl_val = trade.get('pnl_val', 0)
-        display_exit_time = _format_time_header(exit_time, date_str)
-        display_entry_time = _format_time_header(entry_time, "")
-        
-        text = f"{header_title}\n"
-        text += f"⏰ <b>Satış Saati:</b> <code>{display_exit_time}</code>\n"
-        text += "━━━━━━━━━━━━━━━━━━━━\n"
-        text += f"📌 <b>HİSSE:</b> <b>#{clean_sym}</b>\n"
-        text += f"💵 <b>Satış Fiyatı:</b> ₺{price:.2f} (Alış: ₺{float(entry):.2f})\n"
-        if display_entry_time:
-            text += f"🕒 <b>Giriş Saati:</b> {display_entry_time}\n"
-        text += f"📦 <b>Satılan Lot:</b> {shares} Lot  (₺{total_val:,.2f})\n\n"
-        
-        text += "📊 <b>KÂR / ZARAR SONUCU</b>\n"
-        text += "━━━━━━━━━━━━━━━━━━━━\n"
         v_sign = "+" if pnl_val >= 0 else ""
-        text += f"{emoji} <b>Net K/Z Tutarı:</b> <b>{v_sign}₺{pnl_val:,.2f}</b>\n"
-        text += f"{emoji} <b>Getiri Oranı:</b> <b>{v_sign}%{pnl_pct:.2f}</b>\n"
-        text += f"🏆 <b>Sistem Puanı:</b> {float(trade_score):.0f}/100\n"
+        display_exit_time = _format_time_header(exit_time, date_str)
+        text = f"{header_title} <b>#{clean_sym}</b>\n"
+        text += f"⏰ <b>Saat:</b> <code>{display_exit_time}</code>\n"
+        text += "━━━━━━━━━━━━━━━━━━━━\n"
+        text += f"💵 <b>Çıkış:</b> ₺{price:.2f} (Alış: ₺{float(entry):.2f})\n"
+        text += f"{emoji} <b>Net K/Z:</b> <b>{v_sign}₺{pnl_val:,.2f}</b> (<b>{v_sign}%{pnl_pct:.2f}</b>)\n"
         if reason:
-            text += f"🏷️ <b>Çıkış Nedeni:</b> {reason}\n"
-            
-        text += "\n━━━━━━━━━━━━━━━━━━━━\n"
-        text += "✅ <i>İşlem tamamlandı, sermaye nakde aktarıldı.</i>"
+            text += f"🏷️ <b>Neden:</b> {reason}\n"
+        text += "✅ <i>İşlem tamamlandı, sermaye kasaya aktarıldı.</i>"
         return _send_once(text)
 
 
@@ -1745,62 +1687,44 @@ def get_special_ranking_candidates(all_symbols_stats: dict, top_n: int = 5) -> l
 
 def send_special_ranking_alert(candidates: list, force: bool = False) -> bool:
     """
-    En iyi %90+ başarı oranlı seçkin hisseleri güven skoru, destek, direnç ve
-    canlı aksiyon planıyla şık bir Telegram mesajında gönderir.
+    Yalnızca en seçkin 2 hisseyi net alış, stop ve hedef seviyeleriyle
+    kısa, profesyonel tek bir kartta iletir. Bilgi kirliliği ve spam kesinlikle önlenir.
     """
     if not candidates:
         return False
 
-    medals = ["🥇", "🥈", "🥉", "🎖️", "🏅", "🔹", "🔹", "🔹"]
+    candidates = candidates[:2]
+    medals = ["🥇", "🥈"]
 
-    text = "⭐ <b>%90+ BAŞARI ÖZEL SIRALAMA AKILLI SEÇİMLER</b> ⭐\n"
-    text += "🎯 <i>Tatlı Bölge Kopuşu & Akıllı Kurumsal Para Onaylı Hisseler</i>\n\n"
+    text = "⭐ <b>GÜNÜN ELİT 2 KIRILIM SEÇİMİ</b> ⭐\n"
+    text += "🎯 <i>Kurumsal Para & Hacim Onaylı Radar Hisseleri (10:15)</i>\n\n"
 
     for idx, item in enumerate(candidates):
-        medal = medals[idx] if idx < len(medals) else f"🔹 {idx+1}."
-        sym = item.get("symbol", "")
-        price = item.get("price", 0.0)
-        chg = item.get("change", 0.0)
-        intra_chg = item.get("intra_change", 0.0)
-        r_vol = item.get("rel_vol", 0.0)
-        flow = item.get("hourly_flow", "Denge")
-        score = item.get("special_score", 0.0)
-        conf = item.get("confidence_pct", 90.0)
-        bonuses = item.get("bonuses", [])
-        bonus_str = " ".join([f"[{b}]" for b in bonuses[:3]]) if bonuses else ""
-        h_s1 = item.get("hourly_s1", 0.0)
-        h_r1 = item.get("hourly_r1", 0.0)
-        d_s1 = item.get("daily_s1", 0.0)
-        d_r1 = item.get("daily_r1", 0.0)
-        h_s1_p = item.get("h_s1_pct", 0.0)
-        h_r1_p = item.get("h_r1_pct", 0.0)
+        medal = medals[idx] if idx < len(medals) else "🔹"
+        sym = item.get("symbol", "").replace(".IS", "").upper()
+        price = float(item.get("price", 0.0))
+        chg = float(item.get("change", 0.0))
+        r_vol = float(item.get("rel_vol", 1.5))
+        score = float(item.get("special_score", 95.0))
+        h_s1 = float(item.get("hourly_s1", price * 0.98))
+        h_r1 = float(item.get("hourly_r1", price * 1.035))
+        d_r1 = float(item.get("daily_r1", price * 1.07))
 
         chg_sign = "+" if chg >= 0 else ""
-        intra_sign = "+" if intra_chg >= 0 else ""
-
-        flow_badge = "🟢 Toplanıyor" if flow == "Toplanıyor" else ("🔴 Satılıyor" if flow == "Satılıyor" else "⚪ Denge")
-
-        # Aksiyon Planı Hesaplamaları
         stop_val = round(h_s1 * 0.985, 2)
-        stop_pct = abs(round(((price - stop_val) / price) * 100, 1)) if price > 0 else 2.0
-        tp1_val = round(price + (h_r1 - price) * 0.85, 2) if h_r1 > price else round(price * 1.035, 2)
-        tp1_pct = abs(round(((tp1_val - price) / price) * 100, 1)) if price > 0 else 3.5
+        stop_pct = abs(round(((price - stop_val) / price) * 100, 1)) if price > 0 else 2.5
+        tp1_val = round(price + (h_r1 - price) * 0.85, 2) if h_r1 > price else round(price * 1.030, 2)
+        tp1_pct = abs(round(((tp1_val - price) / price) * 100, 1)) if price > 0 else 3.0
         tp2_val = round(max(d_r1, price * 1.065), 2)
         tp2_pct = abs(round(((tp2_val - price) / price) * 100, 1)) if price > 0 else 6.5
 
-        text += f"{medal} <b>#{sym}</b> — ₺{price:.2f} (<b>{chg_sign}{chg:.2f}%</b>)\n"
-        text += f"   🛡️ Güven Oranı: <b>%{conf:.0f}</b> | 🧠 Skor: <b>{score:.0f}/100</b>\n"
-        if bonus_str:
-            text += f"   ✨ Avantajlar: <i>{bonus_str}</i>\n"
-        text += f"   ⚡ Gün İçi Güç: <b>{intra_sign}{intra_chg:.2f}%</b> | 🔊 Hacim Gücü: <b>{r_vol:.1f}x</b> | 🕒 Akış: <b>{flow_badge}</b>\n"
-        text += f"   🛡️ Destek: ₺{h_s1:.2f} (-%{h_s1_p}) | 🎯 Direnç: ₺{h_r1:.2f} (+%{h_r1_p})\n"
-        text += f"   📋 <b>CANLI AKSİYON PLANI:</b>\n"
-        text += f"      🟢 <b>Alış Bölgesi:</b> ₺{h_s1:.2f} – ₺{price:.2f}\n"
-        text += f"      🛑 <b>Stop (Zarar Kes):</b> ₺{stop_val:.2f} (-%{stop_pct})\n"
-        text += f"      💰 <b>1. Kâr Al (%50 Sat):</b> ₺{tp1_val:.2f} (+%{tp1_pct}) ➡️ <i>Stop maliyete!</i>\n"
-        text += f"      🏁 <b>2. Hedef (Direnç):</b> ₺{tp2_val:.2f} (+%{tp2_pct})\n\n"
+        text += f"{medal} <b>#{sym}</b> — ₺{price:.2f} ({chg_sign}{chg:.2f}%)\n"
+        text += f"   🏆 Skor: <b>{score:.0f}/100</b> | 🔊 Hacim: <b>{r_vol:.1f}x</b> | 🕒 Akış: 🟢 <b>Toplanıyor</b>\n"
+        text += f"   🟢 <b>Alış:</b> ₺{h_s1:.2f} – ₺{price:.2f} | 🛑 <b>Stop:</b> ₺{stop_val:.2f} (-%{stop_pct})\n"
+        text += f"   💰 <b>TP1 (%30 Sat):</b> ₺{tp1_val:.2f} (+%{tp1_pct}) ➡️ <i>Stop maliyete!</i>\n"
+        text += f"   🚀 <b>Hedef 2:</b> ₺{tp2_val:.2f} (+%{tp2_pct})\n\n"
 
-    text += "💡 <i>Kural: Desteğe yakın toplayın, 1. Kâr Al seviyesinde yarısını satıp stopu maliyete çekerek sıfır riskle trendi izleyin.</i>"
+    text += "💡 <i>Kural: TP1'de maliyet sıfırlanır, kalan pay tavana kadar iz süren stopla izlenir.</i>"
 
     return send_telegram_message(text, force=force)
 
@@ -1810,25 +1734,42 @@ def send_special_ranking_alert(candidates: list, force: bool = False) -> bool:
 
 def send_morning_compass_bulletin(force: bool = False) -> bool:
     """
-    Hergün 09:50'de Telegram kanalına gönderilen 'Günün Pusulası & Seans Öncesi Taktik Bülteni'.
+    Her sabah 09:50'de Telegram kanalına gönderilen 'Günün Pusulası & Seans Öncesi Taktik Bülteni'.
     """
     from datetime import datetime
     today_date = datetime.now().strftime("%d.%m.%Y")
 
+    regime_name = "NÖTR (Denge Arayışı)"
+    vites_name = "DEFANSİF (Garantici Çelik Kalkan)"
+    trend_val = 0.0
+    try:
+        from server import GLOBAL_DASHBOARD_CACHE
+        if isinstance(GLOBAL_DASHBOARD_CACHE, dict):
+            vmr = GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") or {}
+            reg = str(vmr.get("regime") or "NEUTRAL").upper()
+            trend_val = float(vmr.get("xu100_trend") or 0.0)
+            if reg in ("STRONG_BULL", "BULL") or trend_val >= 0.60:
+                regime_name = "🟢 BOĞA / YÜKSELİŞ RALLİSİ"
+                vites_name = "🚀 OFANSİF (Tavan Avcısı & Runner)"
+            elif reg in ("STRONG_BEAR", "BEAR") or trend_val <= -0.60:
+                regime_name = "🔴 AYI / DÜŞÜŞ BASKISI"
+                vites_name = "🛡️ DEFANSİF (Sıkı Koruma & Tek İşlem)"
+    except Exception:
+        pass
+
     text = "🧭 <b>GÜNÜN PİYASA PUSULASI & SEANS STRATEJİSİ</b> 🧭\n"
-    text += f"📅 <i>{today_date} | Seans Öncesi Taktik Bülteni</i>\n\n"
+    text += f"📅 <i>{today_date} | 09:50 Seans Öncesi Strateji</i>\n\n"
 
-    text += "📊 <b>Piyasa Genel Durumu:</b>\n"
-    text += "• <b>BIST 100:</b> Seans açılışındaki ilk 15 dakika (10:00 - 10:15) volatiliteye karşı temkinli izleme önerilir.\n"
-    text += "• <b>Odak Sektörler:</b> Hacim toplanması Savunma, Havacılık ve Enerji kümelerinde yoğunlaşıyor.\n\n"
+    text += "📊 <b>Piyasa Durumu & Motor Vitesi:</b>\n"
+    text += f"• <b>Rejim:</b> <b>{regime_name}</b> (%{trend_val:+.2f})\n"
+    text += f"• <b>Aktif Vites:</b> <b>{vites_name}</b>\n\n"
 
-    text += "🏆 <b>BUGÜNÜN 4 ALTIN KAZANÇ KURALI:</b>\n"
-    text += "1️⃣ <b>10:15 - 11:30 Dağ Kekliği Avı:</b> Hacmi katlamış ama primi +%1.5 ile +%4 arasında kalmış erken kopuş adaylarına odaklanın.\n"
-    text += "2️⃣ <b>Destek Altı Stop:</b> Bildirimdeki 'Saatlik Destek' seviyesinin altına mutlaka zarar kes stopu koyun.\n"
-    text += "3️⃣ <b>+%3.5 Kârda %50 Satış:</b> İlk hedefe ulaşıldığında pozisyonun yarısını satın, kalan için stopu maliyet seviyenize çekin. (Sıfır Risk Prensibi)\n"
-    text += "4️⃣ <b>Tuzaklara Düşmeyin:</b> %6 üzeri aşırı koşmuş veya üst fitili uzamış hisselere tepeden FOMO ile girmeyin.\n\n"
+    text += "🏆 <b>BUGÜNÜN 3 ALTIN KURALI:</b>\n"
+    text += "1️⃣ <b>10:00 - 10:15 İzleme:</b> Açılış dalgalanmasında erken girmeyin, 10:15'te teyitli elit adayları bekleyin.\n"
+    text += "2️⃣ <b>Maliyet Sıfırlama:</b> TP1 görüldüğünde pozisyonun bir kısmını satın, stopu maliyete çekerek sıfır riske geçin.\n"
+    text += "3️⃣ <b>11:30 - 13:30 Öğle Arası Molası:</b> Hacimsiz saatlerde testere tuzaklarına kapılmayın.\n\n"
 
-    text += "💡 <i>Özel Sıralama (Aksiyon Planlı) ve Dağ Kekliği sinyalleri 10:15'ten itibaren anlık olarak kanala iletilecektir. Bol kazançlar dileriz!</i> 🚀"
+    text += "💡 <i>Günün en güçlü 2 kırılım adayı saat 10:15'te kanala iletilecektir. Bol kazançlar dileriz!</i> 🚀"
 
     return send_telegram_message(text, force=force)
 
@@ -1915,16 +1856,7 @@ def send_open_positions_report(trades: list = None, force: bool = True) -> dict:
             logger.error(f"[OPEN-POS-TG] Veritabani okuma hatasi: {e}")
 
     if not open_trades:
-        empty_lines = [
-            "💼 <b>VARANTRADAR PRO — AÇIK POZİSYONLAR RAPORU</b>",
-            "",
-            f"📅 <b>Tarih:</b> {t_str} | ⏰ <b>Saat:</b> {h_str}",
-            "ℹ️ <i>Şu anda portföyde açıkta bekleyen hisse pozisyonu bulunmamaktadır.</i>",
-            "🛡️ <b>Durum:</b> %100 Nakit korunuyor."
-        ]
-        empty_text = "\n".join(empty_lines)
-        ok = send_telegram_message(empty_text, force=force)
-        return {"status": "success", "count": 0, "sent": ok, "message": "Açık pozisyon yok bilgisi iletildi."}
+        return {"status": "success", "count": 0, "sent": False, "message": "Açık pozisyon bulunmamaktadır (Telegram mesajı atlanarak bilgi kirliliği engellendi)."}
 
     lines = [
         "🚀 <b>VARANTRADAR PRO — CANLI AÇIK POZİSYONLAR</b> 🚀",

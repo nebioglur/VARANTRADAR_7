@@ -319,11 +319,8 @@ def start_live_data_collector():
                     except Exception as coll_err:
                         print(f"[LIVE DATA] toplama hatasi: {coll_err}")
 
-                    # V8 GİRİŞ ONAYLI YENİ HİSSELERİ TELEGRAM'A BİLDİR (Günde en fazla 1 kez / hisse)
-                    try:
-                        auto_send_v8_signals()
-                    except Exception as _tg_v8_err:
-                        print(f"[V8-TG] Tarama döngüsü telegram hatası: {_tg_v8_err}")
+                    # Sinyal bildirimleri yalnızca simülasyon motoru ve zamanlanmış raporlar üzerinden gider (spam engeli)
+                    pass
 
                         
                     # FAST PRICE UPDATE
@@ -2676,11 +2673,8 @@ def api_system_push_market_data():
         except Exception as e_sim:
             sim_res = {'status': 'error', 'message': str(e_sim)}
 
+        # V8 ham sinyal spamı devre dışı bırakıldı; işlemler yalnızca SimulationEngine AL/SAT üzerinden bildirilir
         v8_sent = False
-        try:
-            v8_sent = auto_send_v8_signals()
-        except Exception:
-            pass
 
         # Zamanlanmış Telegram bildirimleri (09:50 Pusula, 10:00 Açılış, 10:15 Radar, 18:20 Akşam)
         try:
@@ -4550,8 +4544,8 @@ def _v8_scheduled_reports(now=None):
             now = _dt_sched.now(ZoneInfo("Europe/Istanbul"))
         day_key = now.strftime("%Y-%m-%d")
 
-        # 1. Sabah Seans Öncesi Pusulası (09:45 - 09:59)
-        if now.hour == 9 and 45 <= now.minute <= 59:
+        # 1. Sabah Seans Öncesi Pusulası (09:48 - 09:59)
+        if now.hour == 9 and 48 <= now.minute <= 59:
             sk_compass = f"MORNING_COMPASS_{day_key}"
             if sk_compass not in _V8_SCHED_SENT:
                 if claim_telegram_alert(sk_compass):
@@ -4564,28 +4558,14 @@ def _v8_scheduled_reports(now=None):
                 else:
                     _V8_SCHED_SENT.add(sk_compass)
 
-        # 2. Seans açılışı (10:00-10:08, günde bir kez); yalnızca kısa sistem durumu.
-        if now.hour == 10 and 0 <= now.minute <= 8:
-            sk = f"SIM_SESSION_OPEN_{day_key}"
-            if sk not in _V8_SCHED_SENT:
-                if claim_telegram_alert(sk):
-                    _V8_SCHED_SENT.add(sk)
-                    try:
-                        ok = send_simulation_session_opening(day_key)
-                        print(f"[SIM-SCHED] Seans açılışı: {'gönderildi' if ok else 'gönderilemedi'}")
-                    except Exception as opening_err:
-                        print(f"[SIM-SCHED] Seans açılışı hatası: {opening_err}")
-                else:
-                    _V8_SCHED_SENT.add(sk)
-
-        # 3. Sabah Özel Sıralama / Radar Adayları (10:15 - 10:35, günde bir kez)
+        # 2. Sabah Elit Radar Seçimleri (10:15 - 10:35, günde bir kez - SADECE EN İYİ 2 HİSSE)
         if now.hour == 10 and 15 <= now.minute <= 35:
             sk_rank = f"SPECIAL_RANKING_{day_key}"
             if sk_rank not in _V8_SCHED_SENT:
                 if claim_telegram_alert(sk_rank):
                     _V8_SCHED_SENT.add(sk_rank)
                     try:
-                        cands = get_special_ranking_candidates(top_n=3)
+                        cands = get_special_ranking_candidates(top_n=2)
                         if cands:
                             ok = send_special_ranking_alert(cands)
                             print(f"[SIM-SCHED] Özel Sıralama: {'gönderildi' if ok else 'gönderilemedi'} ({len(cands)} hisse)")
@@ -5574,75 +5554,15 @@ def api_telegram_test_suite():
         now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         today_s = datetime.now().strftime('%Y-%m-%d')
 
-        dummy_trade = {
-            'symbol': 'THYAO.IS',
-            'entry_time': now_str,
-            'entry_price': 304.50,
-            'shares': 65,
-            'entry_score': 94.0,
-            'entry_checks': 'Ana trend, RSI dengeli, Hacim teyidi, VWAP üstü | Bonuslar: 💸 Akıllı Para, 🔥 Süper Hacim',
-            'strategy_name': 'V8 Boğa Koşucusu (%90+ Elit)',
-            'exit_time': now_str,
-            'pnl_val': 435.50,
-            'pnl_pct': 2.20
-        }
+        results = {}
+        now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-        if test_type in ('all', 'buy'):
-            ok = notify_sim_trade('THYAO.IS', 'AL', 304.50, 0.0, 'Hacim Patlaması & EMA Kırılımı', today_s, dummy_trade)
-            results['sim_buy'] = ok
-
-        if test_type in ('all', 'tp1'):
-            ok = notify_sim_trade('THYAO.IS', 'SAT (TP1)', 311.20, 2.20, '1. Kâr Alındı, Stop Maliyete Çekildi (Sıfır Risk)', today_s, dummy_trade)
-            results['sim_tp1'] = ok
-
-        if test_type in ('all', 'eod'):
-            ok = notify_sim_trade('THYAO.IS', 'SAT (GUN SONU)', 314.80, 3.38, '17:50 Seans Sonu Nakde Geçiş', today_s, dummy_trade)
-            results['sim_eod'] = ok
-
-        if test_type in ('all', 'report'):
-            from services.telegram_bot import get_telegram_credentials, _get_telegram_proxies, format_simulation_report, send_telegram_message
-            tok, cid = get_telegram_credentials()
-            prox = _get_telegram_proxies()
-            results['debug_cred'] = {'has_token': bool(tok), 'has_cid': bool(cid), 'has_prox': bool(prox)}
-            results['direct_msg'] = send_telegram_message("🧪 <b>Test Gün Sonu Mesajı</b>", force=True)
-            
-            # Debug what trades and caption send_simulation_report generates
-            from services.trade_database import get_connection as _dbg_conn
-            with _dbg_conn() as _dc:
-                _cur = _dc.cursor()
-                _cur.execute("SELECT * FROM trades WHERE date_str=? AND owner=? AND exit_time IS NOT NULL", (today_s, 'local:nebioglur'))
-                _dbg_trades = [dict(r) for r in _cur.fetchall()]
-            # Check all owners and counts in trades table
-            with _dbg_conn() as _dc2:
-                _cur2 = _dc2.cursor()
-                _cur2.execute("SELECT DISTINCT owner, date_str, COUNT(*) c FROM trades GROUP BY owner, date_str")
-                results['all_trade_owners'] = [dict(r) for r in _cur2.fetchall()]
-            results['trades_found'] = len(_dbg_trades)
-            _dbg_caption = format_simulation_report(today_s, 100000.0, 102075.44, 2075.44, 2.08, 3, 4, _dbg_trades)
-            results['caption_sample'] = _dbg_caption[:150]
-            
-            # Test sending this exact caption
-            import requests
-            url = f"https://api.telegram.org/bot{tok}/sendMessage"
-            chat_ids = [c.strip() for c in str(cid).split(",") if c.strip()]
-            tg_err = None
-            for c in chat_ids:
-                resp = requests.post(url, json={"chat_id": c, "text": _dbg_caption, "parse_mode": "HTML"}, proxies=prox, timeout=15)
-                if resp.status_code != 200 or not resp.json().get("ok"):
-                    tg_err = resp.text
-            results['caption_tg_err'] = tg_err
-            
-            ok = send_simulation_report(date_str=today_s, force=True)
-            results['simulation_report'] = ok
-
-        if test_type in ('all', 'ranking'):
-            all_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
-            candidates = get_special_ranking_candidates(all_stats, top_n=3)
-            if candidates:
-                ok = send_special_ranking_alert(candidates)
-                results['special_ranking'] = ok
-            else:
-                results['special_ranking'] = 'Filtrelere uyan aday bulunamadı'
+        # Test çağrısı asla canlı kanala sahte AL/SAT emirleri yağdırmaz!
+        # Yalnızca tek bir temiz onay mesajı gönderir.
+        from services.telegram_bot import send_telegram_message
+        test_msg = f"🧪 <b>[SİSTEM TESTİ]</b> VarantRadar Pro Telegram bağlantısı başarılı.\n⏰ Zaman: {now_str}\n✅ Sistem canlı ve tetikleyiciler devrede."
+        ok = send_telegram_message(test_msg, force=True)
+        results['test_message_sent'] = ok
 
         return jsonify({'status': 'success', 'results': results})
     except Exception as e:
@@ -5814,16 +5734,12 @@ def api_simulation_sync_staggered_today():
             """, (d_str,))
             open_trades = [dict(r) for r in cur.fetchall()]
 
-        # 4. Telegram'a güncellenmiş senkronize raporu gönder
-        from services.telegram_bot import send_open_positions_report
-        tg_res = send_open_positions_report(trades=open_trades, force=True)
-
+        # Telegram bildirimi yalnızca kullanıcı manuel butonuna bastığında gider (arka plan senkronu spam üretmez)
         return jsonify({
             "status": "success",
             "message": "Bugünün işlemleri kademeli seans saatlerine göre başarıyla senkronize edildi.",
             "count": len(open_trades),
-            "trades": [{"symbol": t.get("symbol"), "entry_time": t.get("entry_time"), "price": t.get("entry_price")} for t in open_trades],
-            "telegram": tg_res
+            "trades": [{"symbol": t.get("symbol"), "entry_time": t.get("entry_time"), "price": t.get("entry_price")} for t in open_trades]
         })
     except Exception as e:
         import traceback
