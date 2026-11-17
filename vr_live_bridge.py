@@ -39,42 +39,51 @@ def sync_once():
     date_str = now.strftime("%Y-%m-%d")
 
     session = requests.Session()
-    
-    # 1. Verdent Login
-    try:
-        r_log = session.post(f"{VERDENT_URL}/login", json={"username": "nebioglur", "password": "123"}, timeout=12)
-        if r_log.status_code != 200:
-            print_flush(f"[{t_str}] [HATA] Verdent oturum acilamadi (HTTP {r_log.status_code})")
-            return False
-    except Exception as e:
-        print_flush(f"[{t_str}] [HATA] Verdent erisim hatasi: {e}")
-        return False
-
-    # 2. Verdent Dashboard Data Cek
-    try:
-        r_dash = session.get(f"{VERDENT_URL}/api/dashboard_init", timeout=25)
-        if r_dash.status_code != 200:
-            print_flush(f"[{t_str}] [HATA] Verdent dashboard_init alinamadi (HTTP {r_dash.status_code})")
-            return False
-        dash_json = r_dash.json()
-        dash_data = dash_json.get("dashboard_data", {})
-        xu100_change = dash_json.get("xu100_change")
-        symbols_count = len(dash_data.get("all_symbols_stats", {}))
-        if symbols_count == 0:
-            print_flush(f"[{t_str}] [UYARI] Verdent hisse listesi bos!")
-            return False
-    except Exception as e:
-        print_flush(f"[{t_str}] [HATA] Verdent veri indirme hatasi: {e}")
-        return False
-
-    # 3. Verdent V8 Breakout Cek (Opsiyonel)
+    dash_data = None
+    xu100_change = None
     v8_bo_data = None
+    symbols_count = 0
+    data_source = "Verdent"
+
+    # 1 & 2. Veri Temini (Birinci Kaynak: Verdent Cloud)
     try:
-        r_v8 = session.get(f"{VERDENT_URL}/api/v8/radar/breakout", timeout=15)
-        if r_v8.status_code == 200:
-            v8_bo_data = r_v8.json()
-    except Exception:
-        pass
+        r_log = session.post(f"{VERDENT_URL}/login", json={"username": "nebioglur", "password": "123"}, timeout=10)
+        if r_log.status_code == 200:
+            r_dash = session.get(f"{VERDENT_URL}/api/dashboard_init", timeout=20)
+            if r_dash.status_code == 200:
+                dash_json = r_dash.json()
+                cand_data = dash_json.get("dashboard_data", {})
+                if cand_data and len(cand_data.get("all_symbols_stats", {})) >= 50:
+                    dash_data = cand_data
+                    xu100_change = dash_json.get("xu100_change")
+                    symbols_count = len(dash_data.get("all_symbols_stats", {}))
+                    try:
+                        r_v8 = session.get(f"{VERDENT_URL}/api/v8/radar/breakout", timeout=10)
+                        if r_v8.status_code == 200:
+                            v8_bo_data = r_v8.json()
+                    except Exception:
+                        pass
+    except Exception as e_v:
+        print_flush(f"[{t_str}] [BILGI] Verdent erişilemedi ({e_v}), TradingView Bulk Provider devreye giriyor...")
+
+    # FAILOVER: Verdent yoksa veya boşsa TradingView Bulk Provider ile anında tüm BIST'i çek
+    if not dash_data or symbols_count < 50:
+        try:
+            from data.providers.tradingview_provider import TradingViewBulkProvider
+            tv = TradingViewBulkProvider()
+            fresh_tv = tv.build_dashboard_data()
+            if fresh_tv and fresh_tv.get("all_symbols_stats"):
+                dash_data = fresh_tv
+                data_source = "TradingView"
+                symbols_count = len(dash_data.get("all_symbols_stats", {}))
+                xu100_change = dash_data.get("xu100_change")
+                print_flush(f"[{t_str}] [FAILOVER AKTIF] TradingView'dan {symbols_count} hisse başarıyla alındı.")
+        except Exception as e_tv:
+            print_flush(f"[{t_str}] [HATA] TradingView fallback hatası: {e_tv}")
+
+    if not dash_data or symbols_count == 0:
+        print_flush(f"[{t_str}] [KRITIK HATA] Hiçbir kaynaktan hisse verisi temin edilemedi!")
+        return False
 
     # Verdent'ten gelen eski (Eylül 2026 / bayat) rejim verilerini temizle
     if "v8_market_regime" in dash_data:
@@ -82,8 +91,6 @@ def sync_once():
         if vmr.get("stale") or "2026-09" in str(vmr.get("timestamp") or ""):
             print_flush(f"[{t_str}] [TEMİZLİK] Verdent'ten gelen bayat rejim verisi ({vmr.get('regime')}, {vmr.get('xu100_trend')}%) temizlendi.")
             dash_data.pop("v8_market_regime", None)
-            # Stale rejim temizlendi, ancak canli xu100 degeri korunuyor
-            pass
 
     # 4. PythonAnywhere'e Veri Enjekte Et (Push Market Data)
         # 3.5. Canli BIST 100 Endeksini Is Yatirim ve Yahoo'dan dogrula
@@ -141,7 +148,7 @@ def sync_once():
         if r_push.status_code == 200:
             res = r_push.json()
             regime = dash_data.get("v8_market_regime", {}).get("regime", "NEUTRAL")
-            print_flush(f"[{t_str}] [OK] {symbols_count} Hisse Senkronize Edildi | Rejim: {regime} | PA Simulasyon: {res.get('simulation', {}).get('status')}")
+            print_flush(f"[{t_str}] [OK] {symbols_count} Hisse Senkronize Edildi ({data_source}) | Rejim: {regime} | PA Simulasyon: {res.get('simulation', {}).get('status')}")
             return True
         else:
             print_flush(f"[{t_str}] [HATA] PA push basarisiz (HTTP {r_push.status_code}): {r_push.text[:120]}")

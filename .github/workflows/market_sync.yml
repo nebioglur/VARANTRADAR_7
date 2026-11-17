@@ -16,39 +16,41 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 270
     steps:
-      - name: Direct Cloud Sync to PythonAnywhere
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+        continue-on-error: true
+
+      - name: Install Cloud Runner Dependencies
+        run: |
+          pip install --upgrade requests pandas yfinance
+        continue-on-error: true
+
+      - name: Run Cloud Market Sync Engine
         run: |
           echo "================================================="
-          echo "  VARANTRADAR PRO - BIST CLOUD ENGINE SYNC"
-          echo "  Baslangic Zamani (UTC): $(date -u)"
+          echo "  VARANTRADAR PRO - BIST CLOUD SYNC RUNNER"
+          echo "  Baslangic: $(date -u)"
           echo "================================================="
-          
-          MAX_LOOPS=90
-          LOOP_COUNT=0
-          
-          while [ $LOOP_COUNT -lt $MAX_LOOPS ]; do
-            LOOP_COUNT=$((LOOP_COUNT+1))
-            NOW_H=$(date -u +%-H)
-            NOW_M=$(date -u +%-M)
-            
-            # 15:35 UTC (18:35 TR) seans kapandiginda donguden cik
-            if [ $NOW_H -gt 15 ] || ([ $NOW_H -eq 15 ] && [ $NOW_M -ge 35 ]); then
-              echo "[$(date -u +%T)] Seans tamamlandi (18:35 TR). Gun sonu islemleri tamam."
-              break
-            fi
-            
-            # Seans oncesi 06:40 UTC (09:40 TR)'den once ise bekle
-            if [ $NOW_H -lt 6 ] || ([ $NOW_H -eq 6 ] && [ $NOW_M -lt 40 ]); then
-              echo "[$(date -u +%T)] Seans oncesi (09:40 TR oncesi). Bekleniyor..."
-              sleep 60
-              continue
-            fi
-            
-            echo "[$(date -u +%T)] [Tur $LOOP_COUNT] Verdent Cloud -> PythonAnywhere veri aktarimi baslatiliyor..."
-            RESP=$(curl -f -s -m 75 "https://varantradar-pro-8.verdent.app/api/cron/sync_to_pa" || echo '{"status":"curl_timeout_or_error"}')
-            echo "Yanit: $RESP"
-            
-            # 3 dakika (180 saniye) bekle
-            sleep 180
-          done
-          echo "Sync gorevi basariyla tamamlandi."
+          python scripts/cloud_market_sync.py || {
+            echo "[FALLBACK] Python calismadi, bash curl dongusu baslatiliyor..."
+            MAX_LOOPS=90
+            LOOP_COUNT=0
+            while [ $LOOP_COUNT -lt $MAX_LOOPS ]; do
+              LOOP_COUNT=$((LOOP_COUNT+1))
+              NOW_H=$(date -u +%-H)
+              NOW_M=$(date -u +%-M)
+              if [ $NOW_H -gt 15 ] || ([ $NOW_H -eq 15 ] && [ $NOW_M -ge 35 ]); then
+                echo "Seans kapandi. Cikiliyor."
+                break
+              fi
+              echo "[$(date -u +%T)] Verdent -> PA sync tetikleniyor..."
+              curl -f -s -m 75 "https://varantradar-pro-8.verdent.app/api/cron/sync_to_pa" || true
+              sleep 180
+            done
+          }

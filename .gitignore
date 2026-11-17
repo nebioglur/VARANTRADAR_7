@@ -33,7 +33,9 @@ scratch/__pycache__/
 *.key
 *.p12
 *.pfx
-data/
+data/*.db
+data/*.sqlite
+data/reports/
 logs/
 *.log
 

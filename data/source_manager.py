@@ -2,6 +2,7 @@ import pandas as pd
 import time
 from typing import Optional, List
 from data.providers.base_provider import BaseDataProvider
+from data.providers.tradingview_provider import TradingViewBulkProvider
 from data.providers.yfinance_provider import YFinanceProvider
 from data.providers.finnhub_provider import FinnhubProvider
 from data.providers.isyatirim_provider import IsYatirimProvider
@@ -47,10 +48,11 @@ class DataSourceManager:
     def __init__(self):
         # Provider Registry (Öncelik sırasına göre)
         self.providers: List[BaseDataProvider] = [
-            YFinanceProvider(),     # Priority 1: Primary
-            FinnhubProvider(),      # Priority 2: Secondary
-            IsYatirimProvider(),    # Priority 3: Backup (BIST günlük)
-            TwelveDataProvider(),   # Priority 4: Bağımsız 3. kanal (key ile)
+            TradingViewBulkProvider(), # Priority 1: Ultra-fast BIST Bulk Feed
+            YFinanceProvider(),        # Priority 2: Primary Historical
+            FinnhubProvider(),         # Priority 3: Secondary Global
+            IsYatirimProvider(),       # Priority 4: Backup (BIST resmi kapanış)
+            TwelveDataProvider(),      # Priority 5: Bağımsız 3. kanal (key ile)
         ]
         
         self.cache = DataCache()
@@ -90,7 +92,9 @@ class DataSourceManager:
         import os, sys
         is_pa = os.path.exists("/var/www") or os.path.exists("/home/varantradarpro") or bool(os.environ.get("http_proxy"))
         if is_bist and is_daily and not is_pa:
-            order = ['IsYatirim API', 'YFinance API', 'TwelveData API', 'Finnhub API']
+            order = ['TradingView Bulk Scanner', 'IsYatirim API', 'YFinance API', 'TwelveData API', 'Finnhub API']
+        elif is_bist:
+            order = ['TradingView Bulk Scanner', 'YFinance API', 'IsYatirim API', 'TwelveData API', 'Finnhub API']
         else:
             order = ['YFinance API', 'TwelveData API', 'Finnhub API', 'IsYatirim API']
         return [by_name[n] for n in order if n in by_name]

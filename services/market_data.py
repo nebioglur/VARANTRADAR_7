@@ -230,6 +230,132 @@ class MarketDataManager:
         conn.commit()
         conn.close()
 
+    @classmethod
+    def record_live_bar_snapshot(cls, date_str: str, all_symbols_stats: dict):
+        """
+        Canlı fiyat akışından (push, scanner, bridge) her 5 dakikalık periyot için
+        sentetik OHLCV barı üretir ve SQLite market_data tablosuna UPSERT eder.
+        Yahoo 429 engeli olsa bile simülasyon ve backtest için 5m bar havuzunun
+        kesintisiz dolmasını sağlar.
+        """
+        if not all_symbols_stats or not isinstance(all_symbols_stats, dict):
+            return
+
+        try:
+            from zoneinfo import ZoneInfo
+            now_dt = datetime.now(ZoneInfo("Europe/Istanbul"))
+        except Exception:
+            now_dt = datetime.now()
+
+        # Seans saatleri dışında gece/hafta sonu veri yazma (09:45 - 18:20 TR)
+        h = now_dt.hour
+        m = now_dt.minute
+        if h < 9 or (h == 9 and m < 45) or h > 18 or (h == 18 and m > 20):
+            return
+
+        bar_minute = (m // 5) * 5
+        bar_dt = now_dt.replace(minute=bar_minute, second=0, microsecond=0)
+        ts_str = bar_dt.isoformat()
+
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        # Hedef semboller: Açık pozisyonlar + o günün sinyalleri + ilk 60 hisse
+        target_syms = set()
+        try:
+            cursor.execute("SELECT DISTINCT symbol FROM trades WHERE exit_time IS NULL")
+            target_syms.update(r["symbol"] for r in cursor.fetchall())
+            cursor.execute("SELECT symbol FROM signals WHERE date_str = ?", (date_str,))
+            target_syms.update(r["symbol"] for r in cursor.fetchall())
+        except Exception:
+            pass
+
+        for s in list(all_symbols_stats.keys())[:60]:
+            target_syms.add(s)
+
+        upsert_sql = """
+            INSERT INTO market_data (date_str, timestamp, symbol, open, high, low, close, volume, interval, source)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, '5m', 'live_synth')
+            ON CONFLICT(timestamp, symbol) DO UPDATE SET
+                high = MAX(market_data.high, excluded.high),
+                low = MIN(market_data.low, excluded.low),
+                close = excluded.close,
+                volume = CASE WHEN excluded.volume > market_data.volume THEN excluded.volume ELSE market_data.volume END
+        """
+
+        rows = []
+        for sym in target_syms:
+            sym_clean = sym if sym.endswith(".IS") else f"{sym}.IS"
+            st = all_symbols_stats.get(sym_clean) or all_symbols_stats.get(sym.replace(".IS", ""))
+            if not isinstance(st, dict):
+                continue
+
+            try:
+                px = float(st.get("Price") or st.get("Daily_Close") or 0.0)
+                if px <= 0:
+                    continue
+                vol = float(st.get("Volume") or 0.0)
+                d_high = float(st.get("High") or px)
+                d_low = float(st.get("Low") or px)
+                bar_high = max(px, min(px * 1.002, d_high))
+                bar_low = min(px, max(px * 0.998, d_low))
+                rows.append((date_str, ts_str, sym_clean, px, bar_high, bar_low, px, vol))
+            except Exception:
+                continue
+
+        if rows:
+            try:
+                cursor.executemany(upsert_sql, rows)
+                conn.commit()
+            except Exception as e:
+                print(f"[MarketData] Sentetik bar yazma hatası: {e}")
+
+        conn.close()
+
+    @staticmethod
+    def store_intraday_bars(bars: list) -> int:
+        """Harici bulut koşucudan veya push payload'ından gelen 5m barları toplu kaydeder."""
+        if not bars:
+            return 0
+        conn = get_connection()
+        cursor = conn.cursor()
+        insert_sql = """
+            INSERT INTO market_data (date_str, timestamp, symbol, open, high, low, close, volume, interval, source)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, '5m', ?)
+            ON CONFLICT(timestamp, symbol) DO UPDATE SET
+                high = MAX(market_data.high, excluded.high),
+                low = MIN(market_data.low, excluded.low),
+                close = excluded.close,
+                volume = CASE WHEN excluded.volume > market_data.volume THEN excluded.volume ELSE market_data.volume END
+        """
+        rows = []
+        for b in bars:
+            try:
+                rows.append((
+                    b["date_str"],
+                    b["timestamp"],
+                    b["symbol"] if b["symbol"].endswith(".IS") else f"{b['symbol']}.IS",
+                    float(b["open"]),
+                    float(b["high"]),
+                    float(b["low"]),
+                    float(b["close"]),
+                    float(b.get("volume", 0)),
+                    b.get("source", "cloud_sync")
+                ))
+            except Exception:
+                continue
+
+        saved_count = 0
+        if rows:
+            try:
+                cursor.executemany(insert_sql, rows)
+                conn.commit()
+                saved_count = len(rows)
+            except Exception as e:
+                print(f"[MarketData] store_intraday_bars hatası: {e}")
+        conn.close()
+        return saved_count
+
     @staticmethod
     def get_signals(date_str: str) -> list:
         conn = get_connection()

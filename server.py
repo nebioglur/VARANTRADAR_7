@@ -2464,6 +2464,21 @@ def api_cron_sync_to_pa():
         except Exception:
             pass
 
+        # ULTRA-GÜVENLİ VERİ GÜVENCESİ: Eğer cache boşsa veya 50'den az hisse varsa,
+        # anında TradingView Bulk Scanner ile tüm 600+ BIST hissesini 2.5 saniyede çek!
+        if not dash_data or len(dash_data.get('all_symbols_stats', {})) < 50:
+            try:
+                from data.providers.tradingview_provider import TradingViewBulkProvider
+                tv = TradingViewBulkProvider()
+                fresh_tv_data = tv.build_dashboard_data()
+                if fresh_tv_data and len(fresh_tv_data.get('all_symbols_stats', {})) >= 50:
+                    dash_data = fresh_tv_data
+                    GLOBAL_DASHBOARD_CACHE = dash_data
+                    save_dashboard_cache(dash_data)
+                    print(f"[SYNC_TO_PA] TradingView Provider ile {len(dash_data['all_symbols_stats'])} hisse sıfır bekleme ile üretildi.")
+            except Exception as e_tv_gen:
+                print(f"[SYNC_TO_PA] TradingView fallback hatası: {e_tv_gen}")
+
         if not dash_data or not dash_data.get('all_symbols_stats'):
             return jsonify({"status": "warning", "message": "Henuz taze veri yok, cache bos."}), 200
 
@@ -2552,8 +2567,44 @@ def api_system_push_market_data():
                     dash_data['v8_market_regime'] = V8RegimeEngine()._calculate_from_market_stats(all_stats=stats, xu100_val=xu100_val)
                 except Exception:
                     pass
-            save_dashboard_cache(dash_data)
-            GLOBAL_DASHBOARD_CACHE = dash_data
+
+        try:
+            from zoneinfo import ZoneInfo
+            from datetime import datetime
+            _now_ist = datetime.now(ZoneInfo('Europe/Istanbul'))
+        except Exception:
+            from datetime import datetime
+            _now_ist = datetime.now()
+        date_str = _now_ist.strftime('%Y-%m-%d')
+        _bar_m = (_now_ist.minute // 5) * 5
+        _curr_bar_time = f"{_now_ist.hour:02d}:{_bar_m:02d}"
+
+        dash_data['cache_date'] = date_str
+        dash_data['last_sync_time'] = _curr_bar_time
+        dash_data['last_updated'] = _curr_bar_time
+        dash_data['price_updated_at'] = time.time()
+        dash_data['cache_timestamp'] = time.time()
+
+        # Harici koşucudan gelen 5m barları (varsa) anında SQLite'a işle
+        incoming_bars = payload.get('intraday_bars') or []
+        if incoming_bars:
+            try:
+                from services.market_data import MarketDataManager
+                saved_bars = MarketDataManager.store_intraday_bars(incoming_bars)
+                print(f"[PUSH DATA] {saved_bars} adet harici 5m bar kaydedildi.")
+            except Exception as e_ib:
+                print(f"[PUSH DATA] store_intraday_bars hatası: {e_ib}")
+
+        # Her gelen canlı veri paketinden güncel 5m sentetik barı SQLite'a kaydet (Yahoo 429 kalkanı)
+        if stats:
+            try:
+                from services.market_data import MarketDataManager
+                MarketDataManager.record_live_bar_snapshot(date_str, stats)
+            except Exception as e_synth:
+                print(f"[PUSH DATA] record_live_bar_snapshot hatası: {e_synth}")
+
+        save_dashboard_cache(dash_data)
+        GLOBAL_DASHBOARD_CACHE = dash_data
 
         v8_bo = payload.get('v8_breakout_data')
         if v8_bo and isinstance(v8_bo, dict) and v8_bo.get('data'):
@@ -2563,27 +2614,8 @@ def api_system_push_market_data():
             except Exception:
                 pass
 
-        try:
-            from zoneinfo import ZoneInfo
-            from datetime import datetime
-            date_str = datetime.now(ZoneInfo('Europe/Istanbul')).strftime('%Y-%m-%d')
-        except Exception:
-            from datetime import datetime
-            date_str = datetime.now().strftime('%Y-%m-%d')
-        dash_data['cache_date'] = date_str
-
         all_cands = [_normalize_sim_candidate(c) for c in (dash_data.get('tavan_adaylari', []) or []) if (c.get('symbol') or c.get('Symbol'))]
         sim_seen = {c['symbol'] for c in all_cands if c.get('symbol')}
-        try:
-            from zoneinfo import ZoneInfo
-            _now_ist = datetime.now(ZoneInfo('Europe/Istanbul'))
-        except Exception:
-            _now_ist = datetime.now()
-        _bar_m = (_now_ist.minute // 5) * 5
-        _curr_bar_time = f"{_now_ist.hour:02d}:{_bar_m:02d}"
-        dash_data['last_sync_time'] = _curr_bar_time
-        dash_data['last_updated'] = _curr_bar_time
-        dash_data['price_updated_at'] = time.time()
 
         # V8 Giriş Onaylı (ENTER) hisseleri en yüksek öncelikle simülasyon havuzuna ekle
         # KATI SAAT SINIRI: 14:30'dan sonra gelen V8 sinyalleri simülasyona sokulmaz!
@@ -2714,8 +2746,22 @@ def api_system_network_test():
         res["verdent"] = {"status": r_vd.status_code, "text": r_vd.text[:100]}
     except Exception as e_vd:
         res["verdent"] = {"error": str(e_vd)}
+
+    # 3. Test TradingView Scanner
+    try:
+        r_tv = requests.post("https://scanner.tradingview.com/turkey/scan", json={"symbols": {"tickers": ["BIST:THYAO"]}, "columns": ["close", "change"]}, proxies=proxies, timeout=10)
+        res["tradingview"] = {"status": r_tv.status_code, "data": r_tv.json().get("data", [])[:1]}
+    except Exception as e_tv:
+        res["tradingview"] = {"error": str(e_tv)}
+
+    # 4. Test IsYatirim
+    try:
+        r_iy = requests.get("https://www.isyatirim.com.tr/_layouts/15/Isyatirim.Website/Common/Data.aspx/HisseTekil?hisse=THYAO&startdate=10-11-2026&enddate=17-11-2026", proxies=proxies, timeout=10)
+        res["isyatirim"] = {"status": r_iy.status_code, "len": len(r_iy.text)}
+    except Exception as e_iy:
+        res["isyatirim"] = {"error": str(e_iy)}
         
-    # 3. Cache info
+    # 5. Cache info
     global GLOBAL_DASHBOARD_CACHE
     res["cache_date"] = GLOBAL_DASHBOARD_CACHE.get("cache_date") if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else None
     res["symbols_count"] = len(GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})) if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else 0
@@ -2723,12 +2769,33 @@ def api_system_network_test():
 
 @app.route('/api/system/fast_scan', methods=['GET', 'POST'])
 def api_system_fast_scan():
-    """Hizli sekilde BIST50 hisselerinin guncel fiyatlarini ceker ve cache_date'i bugune alir."""
+    """Hizli sekilde TradingView ve YFinance ile BIST hisselerinin guncel fiyatlarini ceker ve cache_date'i bugune alir."""
     token = request.args.get('token') or request.form.get('token')
     if token != 'pro8_sync' and not session.get('logged_in'):
         return jsonify({"status": "error", "message": "Unauthorized"}), 401
     global GLOBAL_DASHBOARD_CACHE
     from datetime import datetime
+    today_str = datetime.now().strftime("%Y-%m-%d")
+
+    # Kademe 1: Ultra Hızlı TradingView Bulk Provider (Sıfır Rate Limit, 2.5s)
+    try:
+        from data.providers.tradingview_provider import TradingViewBulkProvider
+        tv = TradingViewBulkProvider()
+        fresh_data = tv.build_dashboard_data()
+        if fresh_data and len(fresh_data.get("all_symbols_stats", {})) >= 50:
+            GLOBAL_DASHBOARD_CACHE = fresh_data
+            save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
+            return jsonify({
+                "status": "success",
+                "source": "tradingview",
+                "updated": len(fresh_data["all_symbols_stats"]),
+                "cache_date": today_str,
+                "total_cached": len(fresh_data["all_symbols_stats"])
+            })
+    except Exception as e_tv:
+        print(f"[FAST SCAN] TradingView fallback hatasi: {e_tv}")
+
+    # Kademe 2: YFinance Fallback
     import yfinance as yf
     from scanner.universal_scanner import _get_pa_session
     
@@ -2736,7 +2803,6 @@ def api_system_fast_scan():
     syms = [s + ".IS" if not s.endswith(".IS") else s for s in BIST50_SYMBOLS]
     data = yf.download(syms, period="5d", interval="1d", group_by='ticker', threads=False, progress=False, session=_pa_s)
     
-    today_str = datetime.now().strftime("%Y-%m-%d")
     if not isinstance(GLOBAL_DASHBOARD_CACHE, dict):
         GLOBAL_DASHBOARD_CACHE = {}
     if "all_symbols_stats" not in GLOBAL_DASHBOARD_CACHE:
@@ -2777,6 +2843,7 @@ def api_system_fast_scan():
     
     return jsonify({
         "status": "success",
+        "source": "yfinance",
         "updated": updated,
         "cache_date": today_str,
         "total_cached": len(GLOBAL_DASHBOARD_CACHE["all_symbols_stats"])
