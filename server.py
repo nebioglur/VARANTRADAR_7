@@ -1291,7 +1291,7 @@ def require_auth():
             pass
     if request.method == 'OPTIONS': return
     
-    allowed = ['/login', '/logout', '/api/ping', '/api/auth_config', '/api/auth/session', '/api/system/git_pull', '/api/system/deploy', '/api/system/sync_verdent', '/api/system/push_market_data', '/api/cron/sync_to_pa', '/api/system/network_test', '/api/system/fast_scan', '/api/telegram/send_open_positions', '/api/simulation/sync_staggered_today']
+    allowed = ['/login', '/logout', '/api/ping', '/api/auth_config', '/api/auth/session', '/api/system/git_pull', '/api/system/deploy', '/api/system/sync_verdent', '/api/system/push_market_data', '/api/cron/sync_to_pa', '/api/system/network_test', '/api/system/fast_scan', '/api/telegram/send_open_positions', '/api/telegram/test_suite', '/api/simulation/sync_staggered_today']
     if request.path in allowed: return
     
     # Allow static assets for login page
@@ -5680,6 +5680,12 @@ def start_background_services():
 def api_telegram_test_suite():
     """Telegram uçtan uca bildirim test paketi (AL, TP1, Seans Sonu, Finans Raporu, %90 Sıralama)."""
     try:
+        data = request.get_json(force=True, silent=True) or {}
+        secret = request.args.get('token') or request.form.get('token') or data.get('token')
+        is_authed = bool(session.get("logged_in") and is_admin_owner()) or (secret in ['pro8_sync', 'deploy_now', 'varant_pro_secret_2026'])
+        if not is_authed:
+            return jsonify({'status': 'error', 'message': 'Yetkisiz erişim'}), 403
+
         from services.telegram_bot import (
             notify_sim_trade,
             get_special_ranking_candidates,
