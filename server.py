@@ -880,12 +880,13 @@ from flask import request
 def compress_response(response):
     try:
         accept_encoding = request.headers.get('Accept-Encoding', '')
+        mtype = (response.mimetype or response.content_type or '').split(';')[0].strip().lower()
         if (
             'gzip' in accept_encoding.lower()
             and response.status_code < 300
             and not response.direct_passthrough
             and 'Content-Encoding' not in response.headers
-            and response.mimetype in ['application/json', 'text/html', 'text/css', 'application/javascript', 'text/javascript']
+            and (mtype in ['application/json', 'text/html', 'text/css', 'application/javascript', 'text/javascript', 'application/x-javascript'] or mtype.startswith('text/'))
         ):
             response_data = response.get_data()
             if len(response_data) > 1024:
@@ -1796,7 +1797,8 @@ def api_dashboard_init():
             if fresh_tv and len(fresh_tv.get("all_symbols_stats", {})) >= 50:
                 GLOBAL_DASHBOARD_CACHE = fresh_tv
                 save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
-                _sync_signals_and_run_simulation(today_str, fresh_tv)
+                import threading
+                threading.Thread(target=_sync_signals_and_run_simulation, args=(today_str, fresh_tv), daemon=True).start()
         except Exception as e_sg:
             print(f"[AUTO-REFRESH ERROR] {e_sg}")
 
