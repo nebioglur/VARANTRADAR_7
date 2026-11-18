@@ -447,12 +447,13 @@ class SimulationEngine:
             return 0.0, 0.0
 
         # ── KATI PARASAL RİSK PARİTESİ (DOLLAR RISK PARITY) ──
-        # Kural: İşlem başına azami risk portföyün %0.25'idir (500K kasada kesinlikle 1.250 TL).
+        # Kural: Normal stop gerçekleşmesinde hedeflenen azami başlangıç riski 1.250 TL'dir (%0.25).
         # Stop mesafesi ne kadar genişse, pozisyon o kadar KÜÇÜLÜR:
-        # Pozisyon = min(%10 Sermaye, 1.250 TL / Stop Mesafesi Yüzdesi)
+        # Pozisyon = min(%10 Sermaye, 1.250 TL / (Stop Mesafesi + Komisyon))
         max_trade_risk_tl = min(1250.0, self.daily_budget * 0.0025)
         stop_pct = max(0.015, risk_per_share / entry_price)
-        risk_based_allocation = max_trade_risk_tl / stop_pct
+        effective_risk_pct = stop_pct + 0.0008  # Çift yönlü %0.08 borsa/aracı kurum komisyon payı dahil
+        risk_based_allocation = max_trade_risk_tl / effective_risk_pct
 
         # Nihai Pozisyon: min(Tavan, Parasal Risk Limiti)
         allocation = min(max_position_cap, risk_based_allocation)
@@ -1869,16 +1870,28 @@ class SimulationEngine:
             should_close = is_stopped or is_tp or is_eod
             reason = ""
             if is_stopped:
-                reason = f"⛔ ENDEKS ŞALTERİ & ÇELİK STOP (%{pnl_pct:+.2f})" if is_index_dump else f"⛔ ÇELİK STOP KESİLDİ (%{pnl_pct:+.2f})"
+                slippage_tl = max(0.0, round(shares * (stop_px - live_px), 2))
+                if slippage_tl > (shares * entry_px * 0.003): # %0.3'ten fazla gap kayması varsa
+                    reason = f"⛔ GAP STOP (%{pnl_pct:+.2f}, Kayma: -{slippage_tl:.0f}₺)"
+                elif is_index_dump:
+                    reason = f"⛔ ENDEKS ŞALTERİ & ÇELİK STOP (%{pnl_pct:+.2f})"
+                else:
+                    reason = f"⛔ ÇELİK STOP KESİLDİ (%{pnl_pct:+.2f})"
             elif is_tp:
                 reason = f"🚀 KÂR ALINDI (%{pnl_pct:+.2f})"
             elif is_eod:
                 reason = "SEANS SONU NAKİTE GEÇİŞ (17:50)"
 
             # ── MFE, MAE, R-MULTIPLE & HOLD DURATION TAKİBİ ──
+            # İntraday High ve Low kullanarak gerçek seans içi tepe (MFE) ve dip (MAE) tespiti
             cur_unrealized_pct = round(((live_px - entry_px) / entry_px) * 100.0, 2)
-            cur_mfe = max(float(r.get('mfe_pct') or 0.0), cur_unrealized_pct)
-            cur_mae = min(float(r.get('mae_pct') or 0.0), cur_unrealized_pct)
+            day_h = float(stat.get('High') or live_px)
+            day_l = float(stat.get('Low') or live_px)
+            high_pct_possible = round(((day_h - entry_px) / entry_px) * 100.0, 2)
+            low_pct_possible = round(((day_l - entry_px) / entry_px) * 100.0, 2)
+
+            cur_mfe = max(float(r.get('mfe_pct') or 0.0), cur_unrealized_pct, high_pct_possible)
+            cur_mae = min(float(r.get('mae_pct') or 0.0), cur_unrealized_pct, low_pct_possible)
             risk_amt = float(r.get('risk_amount') or 1250.0)
             r_mult = round(net_pnl / risk_amt, 2) if risk_amt > 0 else 0.0
             hold_mins = 0
