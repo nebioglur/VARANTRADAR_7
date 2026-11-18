@@ -190,11 +190,13 @@ def send_telegram_message(text: str, parse_mode: str = "HTML", force: bool = Fal
                 kwargs["proxies"] = proxies
 
             response = None
+            e_direct_err = None
             # 1. Deneme: Dogrudan baglanti (Telegram API whitelist'tedir ve dogrudan 200 doner)
             try:
                 response = requests.post(url, json=payload, timeout=12)
-            except Exception as e_direct:
-                logger.warning(f"Telegram dogrudan baglanti basarisiz ({e_direct}), proxy deneniyor...")
+            except Exception as e_d:
+                e_direct_err = str(e_d)
+                logger.warning(f"Telegram dogrudan baglanti basarisiz ({e_d}), proxy deneniyor...")
 
             # 2. Deneme: Dogrudan basarisiz olduysa Squid proxy ile dene
             if response is None or response.status_code != 200:
@@ -205,7 +207,7 @@ def send_telegram_message(text: str, parse_mode: str = "HTML", force: bool = Fal
                         response = p_resp
                 except Exception as e_pxy:
                     if response is None:
-                        _LAST_TG_ERROR = f"Direct: {e_direct} | Proxy: {e_pxy}"
+                        _LAST_TG_ERROR = f"Direct: {e_direct_err} | Proxy: {e_pxy}"
                         raise e_pxy
 
             response_data = response.json()
