@@ -125,6 +125,40 @@ def sync_once():
         xu100_change = live_xu100
         print_flush(f"[{t_str}] [CANLI XU100 DOGRULANDI] %{xu100_change:+.2f}")
 
+    # 3.8. Yerel işlemleri canlı fiyatlarla güncelle ve senkronize et
+    local_trades = []
+    try:
+        from services.simulation_engine import SimulationEngine
+        sim_eng = SimulationEngine(owner='local:nebioglur')
+        sim_eng.evaluate_live_positions(dash_data.get("all_symbols_stats", {}))
+
+        import sqlite3
+        conn = sqlite3.connect('data/trading_engine.db')
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM trades WHERE date_str = ?", (date_str,))
+        local_trades = [dict(r) for r in cur.fetchall()]
+        conn.close()
+
+        all_stats = dash_data.get('all_symbols_stats', {}) if isinstance(dash_data, dict) else {}
+        for tr in local_trades:
+            if not tr.get('exit_time') or not tr.get('exit_price'):
+                sym = tr.get('symbol', '')
+                clean_sym = sym.replace('.IS', '')
+                st = all_stats.get(sym) or all_stats.get(clean_sym) or all_stats.get(clean_sym + '.IS') or {}
+                st_p = float(st.get('Price') or st.get('Daily_Close') or 0.0)
+                if st_p > 0:
+                    tr['current_price'] = round(st_p, 2)
+                    ep = float(tr.get('entry_price') or 0.0)
+                    sh = float(tr.get('shares') or 0.0)
+                    if ep > 0 and sh > 0:
+                        tr['pnl_val'] = round((st_p - ep) * sh, 2)
+                        tr['pnl_pct'] = round(((st_p - ep) / ep) * 100.0, 2)
+        if local_trades:
+            print_flush(f"[{t_str}] [ISLEM KOPRUSU] {len(local_trades)} adet canlı işlem senkronizasyona hazır.")
+    except Exception as e_lt:
+        print_flush(f"[{t_str}] [ISLEM KOPRUSU UYARI] {e_lt}")
+
     dash_data["cache_date"] = date_str
     dash_data["last_sync_time"] = t_str[:5]
     dash_data["last_updated"] = t_str[:5]
@@ -132,7 +166,8 @@ def sync_once():
         "token": AUTH_TOKEN,
         "dashboard_data": dash_data,
         "v8_breakout_data": v8_bo_data,
-        "xu100_change": xu100_change
+        "xu100_change": xu100_change,
+        "incoming_trades": local_trades
     }
 
     try:

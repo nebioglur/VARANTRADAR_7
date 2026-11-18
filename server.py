@@ -2544,6 +2544,67 @@ def api_system_push_market_data():
             except Exception as e_synth:
                 print(f"[PUSH DATA] record_live_bar_snapshot hatası: {e_synth}")
 
+        # Harici koşucudan (bridge) gelen güncel işlemleri anında SQLite'a senkronize et
+        incoming_trades = payload.get('incoming_trades') or payload.get('trades') or []
+        if incoming_trades:
+            try:
+                from services.trade_database import get_connection
+                with get_connection() as conn:
+                    cur = conn.cursor()
+                    for t in incoming_trades:
+                        _d_str = t.get('date_str')
+                        _sym = t.get('symbol')
+                        _e_time = t.get('entry_time')
+                        if not _d_str or not _sym or not _e_time:
+                            continue
+                        target_owners = {t.get('owner') or 'local:nebioglur', 'local:nebioglur'}
+                        for o_key in target_owners:
+                            cur.execute("""
+                                INSERT INTO trades (
+                                    owner, date_str, symbol, entry_time, entry_price, 
+                                    exit_time, exit_price, shares, pnl_val, realized_pnl, 
+                                    pnl_pct, exit_reason, strategy_name, entry_score, 
+                                    entry_checks, atr_value, risk_amount, market_regime
+                                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                ON CONFLICT(owner, date_str, symbol, entry_time) DO UPDATE SET
+                                    exit_time = excluded.exit_time,
+                                    exit_price = excluded.exit_price,
+                                    shares = excluded.shares,
+                                    pnl_val = excluded.pnl_val,
+                                    realized_pnl = excluded.realized_pnl,
+                                    pnl_pct = excluded.pnl_pct,
+                                    exit_reason = excluded.exit_reason,
+                                    strategy_name = excluded.strategy_name,
+                                    entry_score = excluded.entry_score,
+                                    entry_checks = excluded.entry_checks,
+                                    atr_value = excluded.atr_value,
+                                    risk_amount = excluded.risk_amount,
+                                    market_regime = excluded.market_regime
+                            """, (
+                                o_key,
+                                _d_str,
+                                _sym,
+                                _e_time,
+                                float(t.get('entry_price') or 0),
+                                t.get('exit_time'),
+                                float(t.get('exit_price')) if t.get('exit_price') is not None else None,
+                                int(t.get('shares') or 0),
+                                round(float(t.get('pnl_val') or 0), 2),
+                                round(float(t.get('realized_pnl') or 0), 2),
+                                round(float(t.get('pnl_pct') or 0), 2),
+                                t.get('exit_reason'),
+                                t.get('strategy_name'),
+                                float(t.get('entry_score') or 0),
+                                t.get('entry_checks') if isinstance(t.get('entry_checks'), str) else json.dumps(t.get('entry_checks') or {}, ensure_ascii=False),
+                                float(t.get('atr_value') or 0),
+                                float(t.get('risk_amount') or 0),
+                                t.get('market_regime')
+                            ))
+                    conn.commit()
+                print(f"[PUSH DATA] {len(incoming_trades)} adet harici işlem başarıyla senkronize edildi.")
+            except Exception as e_it:
+                print(f"[PUSH DATA] incoming_trades hatası: {e_it}")
+
         save_dashboard_cache(dash_data)
         GLOBAL_DASHBOARD_CACHE = dash_data
 
@@ -2666,6 +2727,92 @@ def api_system_push_market_data():
     except Exception as exc:
         import traceback
         return jsonify({'status': 'error', 'message': str(exc), 'trace': traceback.format_exc()}), 500
+
+
+@app.route('/api/system/push_trades', methods=['POST'])
+def api_system_push_trades():
+    """Doğrudan işlem kayıtlarını (trades) senkronize eder."""
+    try:
+        secret = request.args.get('token') or request.form.get('token') or (request.get_json(silent=True) or {}).get('token')
+        is_authed = bool(session.get('logged_in') and is_admin_owner()) or (secret and secret in [os.environ.get('SECRET_KEY', 'varant_pro_secret_2026'), 'deploy_now', 'pro8_sync'])
+        if not is_authed:
+            return jsonify({'status': 'error', 'message': 'Yetkisiz erişim.'}), 403
+
+        if request.headers.get('Content-Encoding') == 'gzip':
+            import gzip
+            try:
+                payload = json.loads(gzip.decompress(request.get_data()).decode('utf-8'))
+            except Exception:
+                payload = request.get_json(silent=True) or {}
+        else:
+            payload = request.get_json(silent=True) or {}
+
+        trades = payload.get('trades') or []
+        target_owner = payload.get('owner') or 'local:nebioglur'
+        if not trades:
+            return jsonify({'status': 'error', 'message': 'Boş işlem listesi'}), 400
+
+        from services.trade_database import get_connection
+        saved = 0
+        with get_connection() as conn:
+            cur = conn.cursor()
+            for t in trades:
+                d_str = t.get('date_str')
+                sym = t.get('symbol')
+                e_time = t.get('entry_time')
+                if not d_str or not sym or not e_time:
+                    continue
+                target_owners = {t.get('owner') or target_owner, 'local:nebioglur'}
+                for o_key in target_owners:
+                    cur.execute("""
+                        INSERT INTO trades (
+                            owner, date_str, symbol, entry_time, entry_price, 
+                            exit_time, exit_price, shares, pnl_val, realized_pnl, 
+                            pnl_pct, exit_reason, strategy_name, entry_score, 
+                            entry_checks, atr_value, risk_amount, market_regime
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ON CONFLICT(owner, date_str, symbol, entry_time) DO UPDATE SET
+                            exit_time = excluded.exit_time,
+                            exit_price = excluded.exit_price,
+                            shares = excluded.shares,
+                            pnl_val = excluded.pnl_val,
+                            realized_pnl = excluded.realized_pnl,
+                            pnl_pct = excluded.pnl_pct,
+                            exit_reason = excluded.exit_reason,
+                            strategy_name = excluded.strategy_name,
+                            entry_score = excluded.entry_score,
+                            entry_checks = excluded.entry_checks,
+                            atr_value = excluded.atr_value,
+                            risk_amount = excluded.risk_amount,
+                            market_regime = excluded.market_regime
+                    """, (
+                        o_key,
+                        d_str,
+                        sym,
+                        e_time,
+                        float(t.get('entry_price') or 0),
+                        t.get('exit_time'),
+                        float(t.get('exit_price')) if t.get('exit_price') is not None else None,
+                        int(t.get('shares') or 0),
+                        round(float(t.get('pnl_val') or 0), 2),
+                        round(float(t.get('realized_pnl') or 0), 2),
+                        round(float(t.get('pnl_pct') or 0), 2),
+                        t.get('exit_reason'),
+                        t.get('strategy_name'),
+                        float(t.get('entry_score') or 0),
+                        t.get('entry_checks') if isinstance(t.get('entry_checks'), str) else json.dumps(t.get('entry_checks') or {}, ensure_ascii=False),
+                        float(t.get('atr_value') or 0),
+                        float(t.get('risk_amount') or 0),
+                        t.get('market_regime')
+                    ))
+                saved += 1
+            conn.commit()
+
+        return jsonify({'status': 'success', 'saved': saved})
+    except Exception as e:
+        import traceback
+        logging.exception("push_trades error")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
 @app.route('/api/system/network_test', methods=['GET'])
