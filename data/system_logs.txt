@@ -30873,3 +30873,10 @@ elisted
 [2026-11-10 12:37:22] [WARNING] [KAP] Bulten servisi erisilemiyor, filtre pasif: KAP erisilemedi: The read operation timed out
 [2026-11-10 12:39:09] [WARNING] [KAP] Bulten servisi erisilemiyor, filtre pasif: KAP erisilemedi: The read operation timed out
 [2026-11-10 12:39:09] [INFO] [V8-TG] Gruplu sinyal özeti gönderildi: 2 hisse
+[2026-11-18 11:57:37] [INFO] [TG-TRADE] Tekrar mesaji engellendi (dedup): 2026-11-18 VEYAS.IS AL
+[2026-11-18 11:57:37] [INFO] [TG-TRADE] Bildirim hazirlaniyor: 2026-11-18 TKNKA.IS AL @ 46.89
+[2026-11-18 11:57:40] [INFO] Telegram mesaji basariyla gonderildi (-1004489296054): 🟢 <b>[SİMÜLASYON AL EMRİ] #TKNKA</b> 🟢
+⏰ <b>Saat:<...
+[2026-11-18 11:57:41] [INFO] [TG-TRADE] Bildirim hazirlaniyor: 2026-11-18 SVGYO.IS AL @ 3.98
+[2026-11-18 11:57:43] [INFO] Telegram mesaji basariyla gonderildi (-1004489296054): 🟢 <b>[SİMÜLASYON AL EMRİ] #SVGYO</b> 🟢
+⏰ <b>Saat:<...

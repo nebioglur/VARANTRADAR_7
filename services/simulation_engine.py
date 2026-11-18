@@ -249,9 +249,24 @@ class SimulationEngine:
             
         return False, ""
 
-    def _entry_setup(self, sub_df, entry_price):
-        # 5dk veride sinyal saatinde (or. 10:15-10:30) az sayida bar bulunur;
-        # Sabah erken saatlerde firsatlari kacirmamak icin minimum 4 bar (20 dk) yeterlidir.
+    def _entry_setup(self, sub_df, entry_price, meta=None):
+        """
+        KULLANICI STRATEJİSİ: 'Desteğe Yavaş Süzülüş & Ani Kırılıma Giriş' (Pullback-at-Support)
+        
+        1. Aşırı Uzaklaşma / Tepe Kovalaması Engeli:
+           Fiyat dinamik desteklerinden (VWAP veya 5m EMA21) %2.5'ten fazla yukarıdaysa,
+           ani alımın zirvesidir; alım KESİNLİKLE yapılmaz (FOMO / Tepe Kovalaması Engeli).
+           
+        2. Desteğe Yavaş / Hacimsiz İniş Teyidi:
+           Son barlardaki satış hacmi, alım hacminden belirgin derecede düşük olmalıdır
+           (panik satış değil, sağlıklı absorbsiyon / kurumsal sindirme).
+           
+        3. Destek Teyidi ve Tepki:
+           Fiyat kurumsal VWAP veya EMA21 desteğine yakın bölgededir (%0.0 - %1.8 aralığı).
+           
+        4. Çelik ve Dar Stop-Loss:
+           Stop doğrudan desteğin %0.8 altına yerleştirilir; stop mesafesi %1.2 - %2.0 aralığındadır.
+        """
         if len(sub_df) < 4:
             return None
 
@@ -259,30 +274,60 @@ class SimulationEngine:
         high = pd.to_numeric(sub_df['High'], errors='coerce').reindex(close.index)
         low = pd.to_numeric(sub_df['Low'], errors='coerce').reindex(close.index)
         open_prices = pd.to_numeric(sub_df['Open'], errors='coerce').reindex(close.index)
+        vol = pd.to_numeric(sub_df.get('Volume', pd.Series(50000, index=close.index)), errors='coerce').reindex(close.index).fillna(50000)
+
         if len(close) < 4 or high.isna().any() or low.isna().any() or open_prices.isna().any():
-            return None
-        ohlc = pd.concat([open_prices, high, low, close], axis=1)
-        if not np.isfinite(ohlc.to_numpy(dtype=float)).all():
-            return None
-        if (ohlc <= 0).any().any() or (high < low).any():
-            return None
-        if (high < pd.concat([open_prices, close], axis=1).max(axis=1)).any():
-            return None
-        if (low > pd.concat([open_prices, close], axis=1).min(axis=1)).any():
             return None
 
         ema9 = close.ewm(span=9, adjust=False).mean()
         ema21 = close.ewm(span=21, adjust=False).mean()
 
-        ema9_ok = ema9.iloc[-1] > ema9.iloc[-2] and close.iloc[-1] >= ema9.iloc[-1]
-        if len(ema21.dropna()) >= 2 and len(close) >= 12:
-            ema_confirmed = ema9_ok and (ema9.iloc[-1] > ema21.iloc[-1])
-        else:
-            # Erken saatlerde EMA21 henuz olusmamissa EMA9 momentumu yeterlidir
-            ema_confirmed = ema9_ok
-        if not ema_confirmed:
+        # Intraday VWAP hesabi
+        cum_vol = vol.cumsum()
+        pv = (vol * (high + low + close) / 3.0).cumsum()
+        intraday_vwap = float(pv.iloc[-1] / cum_vol.iloc[-1]) if cum_vol.iloc[-1] > 0 else 0.0
+        meta_vwap = float((meta or {}).get('VWAP') or 0.0) if isinstance(meta, dict) else 0.0
+        support_vwap = intraday_vwap if intraday_vwap > 0 else meta_vwap
+
+        c_ema9 = float(ema9.iloc[-1])
+        c_ema21 = float(ema21.iloc[-1])
+
+        # 1. AŞIRI ŞİŞKİNLİK / TEPE TUZAĞI ENGELİ:
+        # Fiyat hem VWAP'tan hem EMA21'den %2.5'ten fazla yukarıdaysa, hisse ani patlamanın tepesindedir.
+        # "Desteğe yavaşça süzülüş" gerçekleşmeden tepeden girmek KESİNLİKLE yasaktır!
+        dist_vwap = (entry_price - support_vwap) / support_vwap if support_vwap > 0 else 0.0
+        dist_ema21 = (entry_price - c_ema21) / c_ema21 if c_ema21 > 0 else 0.0
+
+        if dist_vwap > 0.025 and dist_ema21 > 0.022:
             return None
 
+        # 2. YAVAŞ SÜZÜLME / DÜŞÜK SATIŞ HACMİ KONTROLÜ:
+        # Son barlarda düşüş varsa hacim zayıf olmalı (büyük oyuncu satmıyor, sindiriyor)
+        if len(sub_df) >= 4:
+            recent_bars = sub_df.tail(4)
+            red_bars = recent_bars[recent_bars['Close'] < recent_bars['Open']]
+            green_bars = recent_bars[recent_bars['Close'] >= recent_bars['Open']]
+            if not red_bars.empty and not green_bars.empty:
+                avg_red = red_bars['Volume'].mean()
+                avg_green = green_bars['Volume'].mean()
+                if avg_red > avg_green * 1.8:
+                    return None
+
+        # 3. DİNAMİK DESTEK SEVİYESİ VE STOP HESABI:
+        valid_supports = []
+        if support_vwap > 0 and support_vwap <= entry_price * 1.005:
+            valid_supports.append(support_vwap)
+        if c_ema21 > 0 and c_ema21 <= entry_price * 1.005:
+            valid_supports.append(c_ema21)
+        if low.iloc[-3:].min() > 0:
+            valid_supports.append(float(low.iloc[-3:].min()))
+
+        primary_support = max(valid_supports) if valid_supports else (entry_price * 0.985)
+
+        # Destek seviyesinin %0.8 altına çelik stop yerleştir
+        support_stop = primary_support * 0.992
+
+        # ATR hesapla
         prev_close = close.shift(1)
         true_range = pd.concat([
             high - low,
@@ -290,19 +335,23 @@ class SimulationEngine:
             (low - prev_close).abs()
         ], axis=1).max(axis=1)
         atr_series = true_range.ewm(alpha=1.0 / 14.0, adjust=False, min_periods=3).mean()
-        atr = float(atr_series.iloc[-1]) if len(atr_series) > 0 and pd.notna(atr_series.iloc[-1]) else None
-        if atr is None or not math.isfinite(atr) or atr <= 0:
-            return None
+        atr = float(atr_series.iloc[-1]) if len(atr_series) > 0 and pd.notna(atr_series.iloc[-1]) else (entry_price * 0.015)
 
-        # Sağlam Stop-Loss Aralığı: BIST gün içi dalgalanma gürültüsünde erkenden elenmemek için en az %2.4, en fazla %4.0
-        stop_pct = min(0.040, max(0.024, (atr / entry_price) * 1.8))
-        stop_price = entry_price * (1 - stop_pct)
+        # Stop mesafesi: En az %1.2, en fazla %2.2 (asla körlemesine %3-%4 değil!)
+        calc_stop_pct = (entry_price - support_stop) / entry_price
+        stop_pct = max(0.012, min(0.022, calc_stop_pct))
+        stop_price = round(entry_price * (1.0 - stop_pct), 2)
+
         return {
             'atr_value': atr,
             'stop_pct': stop_pct,
             'stop_price': stop_price,
-            'ema9': float(ema9.iloc[-1]),
-            'ema21': float(ema21.iloc[-1]) if len(ema21.dropna()) >= 1 else None
+            'support_level': primary_support,
+            'dist_vwap_pct': round(dist_vwap * 100, 2),
+            'dist_ema21_pct': round(dist_ema21 * 100, 2),
+            'strategy_tag': 'Desteğe Süzülüş (Pullback)',
+            'ema9': c_ema9,
+            'ema21': c_ema21
         }
 
     @classmethod
@@ -1441,19 +1490,10 @@ class SimulationEngine:
                 # Fiyatlar 2 haneye yuvarlanir: kaydedilen giris/cikis/lot ile
                 # pnl_val tamamen elle dogrulanabilir olur (yuvarlama farki sıfır).
                 entry_price = round(raw_entry * 1.0015, 2)
-                setup = self._entry_setup(df.loc[:current_time], entry_price)
+                setup = self._entry_setup(df.loc[:current_time], entry_price, meta=meta)
                 if not setup:
-                    # V8 Onaylı veya yüksek kaliteli adayların 5dk osilasyonunda elenmesini engelle:
-                    if float(s.get('score', 0)) >= 85 or 'ENTER' in str(meta.get('entry_status', '')).upper() or 'V8' in str(s.get('morning_phase', '')):
-                        _atr = float(s.get('ATR') or meta.get('ATR') or (entry_price * 0.02))
-                        _stop_pct = 0.025
-                        setup = {
-                            'stop_price': entry_price * (1.0 - _stop_pct),
-                            'atr_value': _atr,
-                            'stop_pct': _stop_pct
-                        }
-                    else:
-                        continue
+                    # Desteğe süzülüş / destek tutunması teyit edilmemişse (aşırı uzamışsa) KESİNLİKLE girilmez!
+                    continue
 
                 _tp1_dist = max(setup['atr_value'] * 1.8, entry_price * 0.025) * _tp1_mult
                 tp1_price = min(ceiling * 0.997, entry_price + _tp1_dist)
@@ -1479,7 +1519,8 @@ class SimulationEngine:
                 sec_name = s.get('_sector_name', '')
                 sec_rel = s.get('_sector_rel', 0.0)
                 sec_tag = f' | {sec_name} (%{sec_rel:+.2f})' if sec_name else ''
-                strat_title = s.get('strategy_name') or f"V8 {s.get('morning_phase', 'Kirilim')}{sec_tag}"
+                strat_tag = setup.get('strategy_tag') or 'Desteğe Süzülüş'
+                strat_title = s.get('strategy_name') or f"V8 {s.get('morning_phase', 'Kirilim')}{sec_tag} | 🎯 {strat_tag}"
 
                 orig_entry_time = str(current_time)
                 orig_entry_price = entry_price
