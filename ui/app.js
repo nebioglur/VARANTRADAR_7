@@ -4954,10 +4954,59 @@ function renderTradeLog(tradesToRender, data) {
     if (mobileContainer) mobileContainer.innerHTML = '';
 
     if (!tradesToRender || tradesToRender.length === 0) {
-        if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="text-muted text-center" style="padding:2rem;">Filtreye uygun işlem bulunamadı.</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="9" class="text-muted text-center" style="padding:2rem;">Filtreye uygun işlem bulunamadı.</td></tr>';
         if (mobileContainer) mobileContainer.innerHTML = '<div class="text-muted text-center" style="padding:1.5rem;">Filtreye uygun işlem bulunamadı.</div>';
         return;
     }
+
+    // ── DİNAMİK FORWARD-TEST KARNESİ GÜNCELLEMESİ (30-50 İŞLEM PROTOKOLÜ) ──
+    const ftTotal = tradesToRender.length;
+    let ftWins = 0;
+    let ftLosses = 0;
+    let ftSumR = 0;
+    let ftSumMfe = 0;
+    let ftSumMae = 0;
+    let ftCrashCount = 0;
+    let ftNormCount = 0;
+    let ftRiskCount = 0;
+
+    tradesToRender.forEach(tr => {
+        const p = Number(tr.pnl_val || 0);
+        const r = Number(tr.risk_amount || 1250);
+        let rm = Number(tr.r_multiple || 0);
+        if (rm === 0 && r > 0 && p !== 0) rm = p / r;
+        ftSumR += rm;
+        if (p > 0) ftWins++;
+        else if (p < 0) ftLosses++;
+        ftSumMfe += Number(tr.mfe_pct || 0);
+        ftSumMae += Number(tr.mae_pct || 0);
+        const rg = String(tr.market_regime || '').toUpperCase();
+        const xu = tr.xu100_at_entry != null ? Number(tr.xu100_at_entry) : null;
+        if (rg.includes('CRASH') || (xu != null && xu < -0.3)) ftCrashCount++;
+        else if (rg.includes('NORMAL') || (xu != null && xu > 0.3)) ftNormCount++;
+        else ftRiskCount++;
+    });
+
+    const ftWinRate = ftTotal > 0 ? ((ftWins / ftTotal) * 100).toFixed(1) : '0.0';
+    const ftExp = ftTotal > 0 ? (ftSumR / ftTotal).toFixed(2) : '0.00';
+    const ftAvgMfe = ftTotal > 0 ? (ftSumMfe / ftTotal).toFixed(2) : '0.00';
+    const ftAvgMae = ftTotal > 0 ? (ftSumMae / ftTotal).toFixed(2) : '0.00';
+
+    const elN = document.getElementById('sim-ft-n-val');
+    if (elN) elN.innerText = `N = ${ftTotal}`;
+    const elExp = document.getElementById('sim-ft-expectancy');
+    if (elExp) {
+        elExp.innerText = `${Number(ftExp) >= 0 ? '+' : ''}${ftExp} R`;
+        elExp.style.color = Number(ftExp) >= 0 ? '#10b981' : '#f87171';
+    }
+    const elWr = document.getElementById('sim-ft-winrate');
+    if (elWr) elWr.innerText = `%${ftWinRate}`;
+    const elWrSub = document.getElementById('sim-ft-winrate-sub');
+    if (elWrSub) elWrSub.innerText = `${ftWins} Kâr / ${ftLosses} Zarar`;
+    const elMfeMae = document.getElementById('sim-ft-mfemae');
+    if (elMfeMae) elMfeMae.innerText = `Zirve: +%${ftAvgMfe} | Dip: ${ftAvgMae}%`;
+    const elReg = document.getElementById('sim-ft-regimes');
+    if (elReg) elReg.innerText = `🔴 CRASH: ${ftCrashCount} | 🟢 NORM: ${ftNormCount} | 🟡 DENG: ${ftRiskCount}`;
 
     tradesToRender.forEach(t => {
         const hasExitPrice = (t.exit_price !== null && t.exit_price !== undefined && !isNaN(Number(t.exit_price)) && Number(t.exit_price) > 0);
@@ -5015,6 +5064,43 @@ function renderTradeLog(tradesToRender, data) {
             ${isFullyClosed ? `<div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;" title="Çıkış Saati"><i class="fa-solid fa-arrow-right-from-bracket" style="font-size:0.65rem;"></i> ${exitTimeFmt}</div>` : ''}
         `;
 
+        // Rejim Rozeti
+        const regRaw = String(t.market_regime || '').toUpperCase();
+        const xuVal = t.xu100_at_entry != null ? Number(t.xu100_at_entry) : null;
+        let regText = regRaw || (xuVal != null ? (xuVal < -0.3 ? 'CRASH' : (xuVal <= 0.3 ? 'DENGELİ' : 'NORMAL')) : 'NÖTR');
+        let regColor = '#94a3b8';
+        let regBg = 'rgba(148,163,184,0.12)';
+        let regBorder = 'rgba(148,163,184,0.3)';
+        let regIcon = 'fa-scale-balanced';
+
+        if (regText.includes('CRASH') || (xuVal != null && xuVal < -0.3)) {
+            regText = 'CRASH';
+            regColor = '#ef4444';
+            regBg = 'rgba(239,68,68,0.15)';
+            regBorder = 'rgba(239,68,68,0.35)';
+            regIcon = 'fa-triangle-exclamation';
+        } else if (regText.includes('SAVUNMA') || (xuVal != null && xuVal < 0)) {
+            regText = 'SAVUNMA';
+            regColor = '#f97316';
+            regBg = 'rgba(249,115,22,0.15)';
+            regBorder = 'rgba(249,115,22,0.35)';
+            regIcon = 'fa-shield';
+        } else if (regText.includes('DENGELİ') || regText.includes('RISK') || (xuVal != null && xuVal <= 0.3)) {
+            regText = 'DENGELİ';
+            regColor = '#facc15';
+            regBg = 'rgba(250,204,21,0.15)';
+            regBorder = 'rgba(250,204,21,0.35)';
+            regIcon = 'fa-scale-balanced';
+        } else if (regText.includes('NORMAL') || (xuVal != null && xuVal > 0.3)) {
+            regText = 'NORMAL';
+            regColor = '#10b981';
+            regBg = 'rgba(16,185,129,0.15)';
+            regBorder = 'rgba(16,185,129,0.35)';
+            regIcon = 'fa-circle-check';
+        }
+        const xuStr = xuVal != null ? ` · XU100: ${xuVal >= 0 ? '+' : ''}${xuVal.toFixed(2)}%` : '';
+        const regBadge = `<span style="font-size:0.62rem; padding:1px 5px; background:${regBg}; color:${regColor}; border:1px solid ${regBorder}; border-radius:4px; font-weight:700;" title="Piyasa Rejimi${xuStr}"><i class="fa-solid ${regIcon}"></i> ${regText}</span>`;
+
         // Sembol Sütunu
         const cleanSym = String(t.symbol || '').replace('.IS', '');
         const gearText = String(t.trading_gear || (t.is_offensive ? 'OFANSİF' : ''));
@@ -5025,13 +5111,53 @@ function renderTradeLog(tradesToRender, data) {
         const symCellHtml = `
             <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                 <span style="font-weight:700; color:#f8fafc; font-size:0.92rem; letter-spacing:0.5px;">${cleanSym}</span>
-                <span style="font-size:0.62rem; padding:1px 5px; background:rgba(59,130,246,0.15); color:#60a5fa; border:1px solid rgba(59,130,246,0.3); border-radius:4px; font-weight:600;">BIST</span>
+                ${regBadge}
                 ${gearBadge}
             </div>
+            ${xuVal != null ? `<div style="font-size:0.66rem; color:#94a3b8; margin-top:2px;" title="Giriş Anındaki XU100 Değişimi"><i class="fa-solid fa-chart-line" style="font-size:0.60rem;"></i> XU100: ${xuVal >= 0 ? '+' : ''}${xuVal.toFixed(2)}%</div>` : ''}
         `;
 
         const lotStr = shares > 0 ? shares.toLocaleString('tr-TR') : '-';
         const entryPxStr = `₺${entryPx.toFixed(2)}`;
+
+        // Alış & İlk Stop (Risk Paritesi)
+        const initStopVal = Number(t.initial_stop || 0);
+        const initStopStr = initStopVal > 0 ? `₺${initStopVal.toFixed(2)}` : (entryPx > 0 ? `₺${(entryPx * 0.975).toFixed(2)}` : '-');
+        const riskAmtVal = Number(t.risk_amount || 1250);
+        const stopDistPct = entryPx > 0 && initStopVal > 0 ? (((entryPx - initStopVal) / entryPx) * 100).toFixed(1) : '2.5';
+        const entryAndStopHtml = `
+            <div style="font-weight:700; color:var(--text-light); font-size:0.88rem;">${entryPxStr}</div>
+            <div style="font-size:0.68rem; color:#f87171; margin-top:2px;" title="İlk Stop Seviyesi & Nominal Risk Mesafesi">
+                <i class="fa-solid fa-shield-halved" style="font-size:0.62rem;"></i> Stop: ${initStopStr} <span style="opacity:0.8;">(-%${stopDistPct})</span>
+            </div>
+            <div style="font-size:0.64rem; color:#94a3b8;" title="Maksimum Nominal Hedef Risk">Risk: ₺${Math.round(riskAmtVal).toLocaleString('tr-TR')}</div>
+        `;
+
+        // MFE / MAE (Giriş Sonrası Zirve ve Dip)
+        const mfeVal = Number(t.mfe_pct || 0);
+        const maeVal = Number(t.mae_pct || 0);
+        const mfeMaeHtml = `
+            <div style="font-weight:700; color:#34d399; font-size:0.84rem;" title="MFE: Giriş sonrası görülen en yüksek kâr potansiyeli">
+                <i class="fa-solid fa-arrow-trend-up" style="font-size:0.7rem;"></i> +%${mfeVal.toFixed(2)}
+            </div>
+            <div style="font-weight:600; color:#f87171; font-size:0.75rem; margin-top:2px;" title="MAE: Giriş sonrası katlanılan en derin negatif dip (ısı)">
+                <i class="fa-solid fa-arrow-trend-down" style="font-size:0.68rem;"></i> ${maeVal <= 0 ? '' : '-'}${maeVal.toFixed(2)}%
+            </div>
+        `;
+
+        // R-Multiple (Risk Birimi Getirisi)
+        let rMultVal = Number(t.r_multiple || 0);
+        if (rMultVal === 0 && isFullyClosed && riskAmtVal > 0 && pnlVal !== 0) {
+            rMultVal = Math.round((pnlVal / riskAmtVal) * 100) / 100;
+        }
+        const rColor = rMultVal > 0 ? '#10b981' : (rMultVal < 0 ? '#ef4444' : '#94a3b8');
+        const rSign = rMultVal > 0 ? '+' : '';
+        const rMultipleHtml = `
+            <div style="font-weight:800; color:${rColor}; font-size:0.92rem; font-variant-numeric:tabular-nums;">
+                ${rSign}${rMultVal.toFixed(2)} R
+            </div>
+            <div style="font-size:0.64rem; color:#94a3b8;" title="1R = Hedeflenen Başlangıç Riski (₺1.250)">1R = ₺${Math.round(riskAmtVal)}</div>
+        `;
 
         // Güncel Fiyat
         let pxTime = t.price_time || '';
@@ -5054,18 +5180,11 @@ function renderTradeLog(tradesToRender, data) {
 
         const currentPxHtml = `
             <div style="display:flex; align-items:center; justify-content:flex-end; gap:6px; font-variant-numeric:tabular-nums; flex-wrap:wrap;">
-                <span style="font-weight:700; color:${pnlColor}; font-size:0.95rem;">₺${currentPx.toFixed(2)}</span>
+                <span style="font-weight:700; color:${isFullyClosed ? 'var(--text-light)' : pnlColor}; font-size:0.95rem;">₺${(isFullyClosed ? exitPx : currentPx).toFixed(2)}</span>
                 ${pxTimeBadge}
-                ${pxStatusBadge}
+                ${!isFullyClosed ? pxStatusBadge : ''}
             </div>
         `;
-
-        let exitPriceHtml = '';
-        if (isFullyClosed) {
-            exitPriceHtml = `<div style="font-weight:600; color:var(--text-light); font-size:0.88rem; font-variant-numeric:tabular-nums;">₺${Number(t.exit_price).toFixed(2)}</div>`;
-        } else {
-            exitPriceHtml = `<span style="display:inline-flex; align-items:center; gap:4px; background:rgba(234,179,8,0.12); color:#facc15; border:1px solid rgba(234,179,8,0.25); padding:2px 8px; border-radius:5px; font-size:0.75rem; font-weight:600;"><i class="fa-solid fa-clock fa-spin" style="animation-duration:3s;"></i> İşlemde</span>`;
-        }
 
         const realizedPnlVal = Number(t.realized_pnl || 0);
         const realizedPnlStr = (!isFullyClosed && realizedPnlVal !== 0)
@@ -5082,7 +5201,7 @@ function renderTradeLog(tradesToRender, data) {
 
         let statusBadgeHtml = '';
         const rawReason = String(t.exit_reason || '').toUpperCase();
-        const tooltipText = [t.strategy_name, t.exit_reason, t.risk_amount ? `Risk: ₺${Number(t.risk_amount).toFixed(0)}` : ''].filter(Boolean).join(' | ');
+        const tooltipText = [t.strategy_name, t.exit_reason, t.risk_amount ? `Risk: ₺${Number(t.risk_amount).toFixed(0)}` : '', `R: ${rMultVal.toFixed(2)}R`].filter(Boolean).join(' | ');
 
         if (!isFullyClosed && !isTP1) {
             statusBadgeHtml = `<span title="${tooltipText}" style="display:inline-flex; align-items:center; gap:5px; background:rgba(16,185,129,0.12); color:#34d399; border:1px solid rgba(16,185,129,0.28); padding:3px 10px; border-radius:12px; font-weight:600; font-size:0.75rem;"><span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10b981; box-shadow:0 0 6px #10b981;"></span> AÇIK POZİSYON</span>`;
@@ -5090,6 +5209,8 @@ function renderTradeLog(tradesToRender, data) {
             statusBadgeHtml = `<span title="${tooltipText}" style="display:inline-flex; align-items:center; gap:5px; background:rgba(59,130,246,0.15); color:#60a5fa; border:1px solid rgba(59,130,246,0.3); padding:3px 10px; border-radius:12px; font-weight:700; font-size:0.75rem;"><i class="fa-solid fa-scale-balanced"></i> TP1 (%50 ALINDI)</span>`;
         } else if (rawReason.includes('TP2') || rawReason.includes('HEDEF')) {
             statusBadgeHtml = `<span title="${tooltipText}" style="display:inline-flex; align-items:center; gap:5px; background:rgba(16,185,129,0.18); color:#10b981; border:1px solid rgba(16,185,129,0.4); padding:3px 10px; border-radius:12px; font-weight:700; font-size:0.75rem;"><i class="fa-solid fa-bullseye"></i> TP2 HEDEF ALINDI</span>`;
+        } else if (rawReason.includes('GAP')) {
+            statusBadgeHtml = `<span title="${tooltipText}" style="display:inline-flex; align-items:center; gap:5px; background:rgba(239,68,68,0.2); color:#fca5a5; border:1px solid rgba(239,68,68,0.4); padding:3px 10px; border-radius:12px; font-weight:700; font-size:0.75rem;"><i class="fa-solid fa-triangle-exclamation"></i> GAP STOP (KAYMA)</span>`;
         } else if (rawReason.includes('STOP')) {
             statusBadgeHtml = `<span title="${tooltipText}" style="display:inline-flex; align-items:center; gap:5px; background:rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.3); padding:3px 10px; border-radius:12px; font-weight:700; font-size:0.75rem;"><i class="fa-solid fa-shield-halved"></i> STOP LOSS</span>`;
         } else if (rawReason.includes('SEANS SONU') || rawReason.includes('17:50') || rawReason.includes('NAK')) {
@@ -5100,17 +5221,18 @@ function renderTradeLog(tradesToRender, data) {
             statusBadgeHtml = `<span title="${tooltipText}" style="display:inline-flex; align-items:center; gap:5px; background:rgba(239,68,68,0.12); color:#f87171; border:1px solid rgba(239,68,68,0.25); padding:3px 10px; border-radius:12px; font-weight:600; font-size:0.75rem;"><i class="fa-solid fa-xmark"></i> ZARARLA KAPANDI</span>`;
         }
 
-        // Render Desktop Row
+        // Render Desktop Row (9 Sütun)
         if (tbody) {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td style="text-align: left;">${timeCellHtml}</td>
                 <td style="text-align: left;">${symCellHtml}</td>
                 <td style="text-align: right; font-variant-numeric:tabular-nums; font-size:0.86rem; color:var(--text-light);">${lotStr}</td>
-                <td style="text-align: right; font-variant-numeric:tabular-nums; font-size:0.88rem; font-weight:600; color:var(--text-light);">${entryPxStr}</td>
+                <td style="text-align: right;">${entryAndStopHtml}</td>
                 <td style="text-align: right;">${currentPxHtml}</td>
-                <td style="text-align: right;">${exitPriceHtml}</td>
+                <td style="text-align: right;">${mfeMaeHtml}</td>
                 <td style="text-align: right;">${pnlMergedHtml}</td>
+                <td style="text-align: right;">${rMultipleHtml}</td>
                 <td style="text-align: center;">${statusBadgeHtml}</td>
             `;
             tbody.appendChild(tr);
@@ -5121,18 +5243,18 @@ function renderTradeLog(tradesToRender, data) {
             const mCard = document.createElement('div');
             mCard.className = 'sim-order-card';
             mCard.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                     <div style="display:flex; align-items:center; gap:8px;">
                         <span style="font-weight:800; font-size:1.1rem; color:#fff;">${cleanSym}</span>
-                        <span style="font-size:0.65rem; padding:1px 5px; background:rgba(59,130,246,0.15); color:#60a5fa; border:1px solid rgba(59,130,246,0.3); border-radius:4px; font-weight:600;">BIST</span>
-                        ${statusBadgeHtml}
+                        ${regBadge}
+                        ${gearBadge}
                     </div>
                     <div style="font-size:0.75rem; color:#94a3b8; font-weight:600; text-align:right;">
                         <div><i class="fa-regular fa-clock"></i> ${entryTimeFmt}</div>
                         ${isFullyClosed && exitTimeFmt ? `<div style="font-size:0.68rem; color:#64748b; margin-top:2px;" title="Çıkış Saati"><i class="fa-solid fa-arrow-right-from-bracket" style="font-size:0.62rem;"></i> ${exitTimeFmt}</div>` : ''}
                     </div>
                 </div>
-                <div style="display:grid; grid-template-columns: 1fr 1fr 1.2fr; gap:6px; font-size:0.8rem; background:rgba(15,23,42,0.6); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.05);">
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1.2fr; gap:6px; font-size:0.8rem; background:rgba(15,23,42,0.6); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.05); margin-bottom:6px;">
                     <div>
                         <div style="font-size:0.68rem; color:#94a3b8;">Alış · Lot</div>
                         <div style="font-weight:600; color:#cbd5e1;">₺${entryPx.toFixed(2)} (${lotStr})</div>
@@ -5145,6 +5267,20 @@ function renderTradeLog(tradesToRender, data) {
                         <div style="font-size:0.68rem; color:#94a3b8;">Net K/Z</div>
                         <div style="font-weight:800; color:${pnlColor}; font-size:0.92rem;">${pnlVal >= 0 ? '+' : ''}₺${pnlVal.toFixed(2)} <span style="font-size:0.75rem;">(${pnlPct >= 0 ? '+' : ''}%${pnlPct.toFixed(2)})</span></div>
                     </div>
+                </div>
+                <!-- 2. Satır: Quant İstatistikleri (MFE/MAE & R-Multiple) -->
+                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:6px; padding:5px 8px; font-size:0.74rem;">
+                    <div style="color:#94a3b8;">
+                        <i class="fa-solid fa-shield-halved" style="color:#f87171;"></i> Stop: ${initStopStr} (Risk: ₺${Math.round(riskAmtVal)})
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="color:#34d399; font-weight:700;">MFE: +%${mfeVal.toFixed(1)}</span>
+                        <span style="color:#f87171; font-weight:700;">MAE: ${maeVal <= 0 ? '' : '-'}${maeVal.toFixed(1)}%</span>
+                        <span style="color:${rColor}; font-weight:800; background:rgba(255,255,255,0.05); padding:1px 5px; border-radius:4px;">${rSign}${rMultVal.toFixed(2)}R</span>
+                    </div>
+                </div>
+                <div style="margin-top:6px; text-align:center;">
+                    ${statusBadgeHtml}
                 </div>
             `;
             mobileContainer.appendChild(mCard);
