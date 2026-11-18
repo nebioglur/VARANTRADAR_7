@@ -1961,20 +1961,36 @@ function srCellHtml(symbol, price) {
 }
 
 let dashboardPollInterval = null;
+let _dashboardInitialized = false;
 
-window.onload = function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const sym = urlParams.get('symbol');
-    const tab = urlParams.get('tab');
-    if (sym && tab === 'graphic') {
-        document.getElementById('symbol-input').value = sym;
-        analyzeSymbol();
-    }
+function _initDashboard() {
+    if (_dashboardInitialized) return;
+    _dashboardInitialized = true;
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const sym = urlParams.get('symbol');
+        const tab = urlParams.get('tab');
+        if (sym && tab === 'graphic') {
+            const si = document.getElementById('symbol-input');
+            if (si) si.value = sym;
+            analyzeSymbol();
+        }
+    } catch (_) {}
     
+    try { updateLiveClock(); } catch (_) {}
     fetchDashboardData();
     fetchSimulationData(); // Ana sayfadaki Kasa Kümülatif KPI'ını doldur
-    // Veri boşsa hızlı yeniden denemek için 15 sn, dolunca 30 sn'ye geçer
-    dashboardPollInterval = setInterval(fetchDashboardData, 15000);
+    if (!dashboardPollInterval) {
+        dashboardPollInterval = setInterval(fetchDashboardData, 15000);
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _initDashboard);
+} else {
+    _initDashboard();
+}
+window.addEventListener('load', _initDashboard);
     
     // KULLANICI İSTEĞİ: TABLOYA ÇİFT TIKLAYINCA TAM TABLOYU TEK GÖSTER
     const FS_STYLE_ID = 'radar-fs-style';

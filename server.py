@@ -13,13 +13,17 @@ if hasattr(time, 'tzset'):
     os.environ['TZ'] = 'Europe/Istanbul'
     time.tzset()
 
+def is_pythonanywhere():
+    return bool(
+        os.path.exists('/var/www') or
+        os.path.exists('/home/varantradarpro') or
+        'pythonanywhere' in os.environ.get('PYTHONANYWHERE_DOMAIN', '').lower() or
+        'pythonanywhere' in os.environ.get('PYTHONANYWHERE_SITE', '').lower() or
+        any('pythonanywhere' in str(p).lower() for p in sys.path)
+    )
+
 # PythonAnywhere Proxy Configuration (Giden baglantilar icin zorunlu)
-if (
-    os.path.exists('/var/www') or
-    os.path.exists('/home/varantradarpro') or
-    'pythonanywhere' in os.environ.get('PYTHONANYWHERE_DOMAIN', '').lower() or
-    any('pythonanywhere' in str(p).lower() for p in sys.path)
-):
+if is_pythonanywhere():
     os.environ.setdefault('http_proxy', 'http://proxy.server:3128')
     os.environ.setdefault('https_proxy', 'http://proxy.server:3128')
     os.environ.setdefault('HTTP_PROXY', 'http://proxy.server:3128')
@@ -1789,7 +1793,8 @@ def api_dashboard_init():
 
     # OTOMATIK GUNCELLEME: Seans saatlerinde cache dunden kaldiysa veya bossa,
     # 2.5s TradingView ile aninda taze veriyi ceker ve simulasyonu kosturur.
-    if (cache_dt != today_str or stats_len < 50) and 9 <= _now_ist.hour <= 19:
+    # PythonAnywhere'de dis TradingView baglantisi engellidir; veriyi yerel kopru aktarir.
+    if (cache_dt != today_str or stats_len < 50) and 9 <= _now_ist.hour <= 19 and not is_pythonanywhere():
         try:
             from data.providers.tradingview_provider import TradingViewBulkProvider
             tv = TradingViewBulkProvider()
@@ -5797,6 +5802,13 @@ def start_background_services():
     if _BACKGROUND_SERVICES_STARTED:
         return
     _BACKGROUND_SERVICES_STARTED = True
+
+    # PYTHONANYWHERE KORUMASI: PythonAnywhere'de arka plan scraper thread'leri
+    # GIL'i kilitler, CPU kotasını tüketir ve gelen HTTP isteklerini (dashboard, tradelog) dondurur.
+    # Canlı veriyi zaten Verdent ve yerel köprü (vr_live_bridge) push_market_data ile PA'ya aktarmaktadır.
+    if is_pythonanywhere():
+        logging.info("[PA GUARD] PythonAnywhere ortamında ağır arka plan scraper thread'leri devre dışı bırakıldı.")
+        return
 
     if os.environ.get("ENABLE_BACKGROUND_SERVICES", "true").lower() != "true":
         logging.info("Background services disabled by configuration")

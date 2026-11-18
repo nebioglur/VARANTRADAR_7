@@ -135,11 +135,18 @@ def is_authorized_telegram_sender() -> tuple:
 
 def _get_telegram_proxies():
     """PythonAnywhere ortaminda dis baglanti icin Squid proxy destegi saglar."""
-    if os.environ.get("https_proxy") or os.environ.get("HTTPS_PROXY") or os.environ.get("http_proxy") or os.environ.get("HTTP_PROXY"):
-        return None
-    if os.path.exists("/home/varantradarpro") or "pythonanywhere" in os.environ.get("PYTHONANYWHERE_DOMAIN", "").lower() or os.path.exists("/etc/pythonanywhere"):
+    if (
+        os.path.exists("/home/varantradarpro") or
+        os.path.exists("/var/www") or
+        "pythonanywhere" in os.environ.get("PYTHONANYWHERE_DOMAIN", "").lower() or
+        "pythonanywhere" in os.environ.get("PYTHONANYWHERE_SITE", "").lower() or
+        os.path.exists("/etc/pythonanywhere")
+    ):
         p = "http://proxy.server:3128"
         return {"http": p, "https": p}
+    proxy = os.environ.get("https_proxy") or os.environ.get("HTTPS_PROXY") or os.environ.get("http_proxy") or os.environ.get("HTTP_PROXY")
+    if proxy:
+        return {"http": proxy, "https": proxy}
     return None
 
 

@@ -223,6 +223,21 @@
                 <div style="text-align:right;">
                     <div id="live-clock" style="font-size:2.5rem; font-weight:800; font-variant-numeric: tabular-nums; background: -webkit-linear-gradient(45deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 20px rgba(56,189,248,0.3); letter-spacing: 2px;">00:00:00</div>
                     <div id="live-date" style="font-size:0.9rem; color:var(--text-muted); text-transform:uppercase; font-weight:600; letter-spacing:1px; margin-top:0.2rem;">GÜN AY YIL</div>
+                    <script>
+                        (function() {
+                            function tick() {
+                                var c = document.getElementById('live-clock');
+                                var d = document.getElementById('live-date');
+                                if (c && d) {
+                                    var n = new Date();
+                                    c.innerText = n.toLocaleTimeString('tr-TR');
+                                    d.innerText = n.toLocaleDateString('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).toLocaleUpperCase('tr-TR');
+                                }
+                            }
+                            tick();
+                            setInterval(tick, 1000);
+                        })();
+                    </script>
                 </div>
             </div>
 
@@ -2771,7 +2786,7 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="app.js?v=20261118_v59"></script>
+    <script src="app.js?v=20261118_v60"></script>
     <script src="/vendor/supabase.umd.js"></script>
     <script type="module" src="/app-auth.js?v=20260916_v13"></script>
     <script>
@@ -2814,7 +2829,7 @@
         // PWA service worker kaydi (canli veri API'leri onbelleklenmez)
         if ("serviceWorker" in navigator) {
             window.addEventListener("load", function () {
-                navigator.serviceWorker.register("/sw.js?v=20261118_v59").then(function(reg) { if (reg) reg.update(); }).catch(function () {});
+                navigator.serviceWorker.register("/sw.js?v=20261118_v60").then(function(reg) { if (reg) reg.update(); }).catch(function () {});
             });
         }
     </script>
