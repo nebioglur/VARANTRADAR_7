@@ -4393,7 +4393,9 @@ def api_telegram_test():
         )
         if ok:
             return jsonify({"status": "success", "message": "Test mesaji gonderildi. Telegram'ı kontrol edin."})
-        return jsonify({"status": "error", "message": "Gonderim basarisiz. Token/Chat ID'yi ve botun sohbeti baslattigini kontrol edin."}), 500
+        import services.telegram_bot as tb_mod
+        last_err = getattr(tb_mod, '_LAST_TG_ERROR', 'Bilinmeyen hata')
+        return jsonify({"status": "error", "message": f"Gonderim basarisiz: {last_err}"}), 500
     except Exception as e:
         logging.exception("API operation failed")
         return jsonify({"status": "error", "message": "İşlem sırasında hata oluştu"}), 500
