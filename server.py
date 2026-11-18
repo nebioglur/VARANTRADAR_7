@@ -349,6 +349,7 @@ def _sync_signals_and_run_simulation(date_str: str, data: dict):
         # Simülasyonu çalıştır (500.000 TL bütçe)
         sim = SimulationEngine(daily_budget=500000.0, owner="local:nebioglur")
         sim.run_daily_simulation(date_str)
+        sim.evaluate_live_positions(data.get("all_symbols_stats", {}))
         print(f"[AUTO-SYNC] {date_str} simülasyonu başarıyla tamamlandı.")
         return True
     except Exception as e_sync:
@@ -3096,10 +3097,18 @@ def api_simulation_live_data():
             except Exception:
                 cache_time_str = now_ist.strftime("%H:%M")
 
+        owner = get_owner_key()
+        # Açık pozisyonları canlı TradingView fiyatlarıyla değerlendir ve stop/kâr al tetikle
+        try:
+            from services.simulation_engine import SimulationEngine
+            sim_monitor = SimulationEngine(daily_budget=500000.0, owner=owner)
+            sim_monitor.evaluate_live_positions(dash_stats)
+        except Exception as e_ev:
+            print(f"[LIVE POSITION EVAL ERROR] {e_ev}")
+
         with get_connection() as conn:
             conn.row_factory = SmartRow
             c = conn.cursor()
-            owner = get_owner_key()
 
             # 1. Hedef tarihin sinyallerini çek
             c.execute("""

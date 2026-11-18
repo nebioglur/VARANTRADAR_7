@@ -491,10 +491,12 @@ class SimulationEngine:
         if not signals:
             return
 
+        _live_symbols_stats = {}
         xu100_change = 0.0
         try:
             with open('dashboard_cache.json', encoding='utf-8') as _cf:
                 _cc = json.load(_cf)
+                _live_symbols_stats = _cc.get('all_symbols_stats', {})
                 _vr = _cc.get('v8_market_regime', {})
                 if _vr and _vr.get('xu100_trend') is not None:
                     xu100_change = float(_vr['xu100_trend'])
@@ -755,6 +757,22 @@ class SimulationEngine:
                 print(f"[SIM-GUARD] {s.get('symbol')} elendi: V8 Motoru AVOID verdi")
                 continue
 
+            # Kural E1 (FİTİL KORUMASI / ZİRVEDEN DÖNÜŞ TUZAĞI):
+            # Gün içi zirvesinden %2.2'den fazla geri çekilmiş (fitil atan / mal boşaltılan) hisseye KESİNLİKLE girilmez!
+            d_high = float(intra_strength.get('session_high') or meta.get('High') or 0.0)
+            curr_p = float(intra_strength.get('current_price') or meta.get('Price') or price)
+            pos_pct = float(intra_strength.get('session_position_pct') or 100.0)
+            if d_high > 0 and curr_p > 0:
+                pullback_from_high = ((d_high - curr_p) / d_high) * 100.0
+                if pullback_from_high > 2.2:
+                    print(f"[SIM-GUARD] {s.get('symbol')} elendi: Zirveden geri çekilme / Üst fitil tuzağı (%{pullback_from_high:.1f} geri çekildi)")
+                    continue
+
+            # Kural E2 (ZİRVE YAKINLIĞI): Gün içi pozisyonu zirveye yakın olmayan (pos_pct < 70) hisselere girilmez!
+            if pos_pct < 70.0:
+                print(f"[SIM-GUARD] {s.get('symbol')} elendi: Zirveden uzak gün içi pozisyon (%{pos_pct:.1f})")
+                continue
+
             indicators = meta.get('Indicators', {}) if isinstance(meta, dict) else {}
             rsi = float(indicators.get('RSI') or indicators.get('RSI_14') or meta.get('RSI') or 50)
             volume_multiplier = float(meta.get('Vol_Multiplier') or meta.get('Volume_Ratio') or indicators.get('Volume_Ratio') or r_vol or 1.2)
@@ -915,26 +933,43 @@ class SimulationEngine:
 
         for s in candidate_pool:
             sym = s['symbol']
+            clean_sym = sym.replace('.IS', '').strip()
             df = MarketDataManager.get_market_data(date_str, sym)
             p = float(s.get('morning_price') or s.get('Price') or 0.0)
-            ch = float(s.get('Change_Pct') or 1.5)
-            _cur_p = p * (1.0 + ch / 100.0) if p > 0 else 10.0
+
+            # Canlı piyasa verisinden gerçek fiyat, gün içi en yüksek ve en düşük değerleri al
+            _stat = (
+                _live_symbols_stats.get(sym) or
+                _live_symbols_stats.get(f"{clean_sym}.IS") or
+                _live_symbols_stats.get(clean_sym) or
+                {}
+            ) if _is_today and isinstance(_live_symbols_stats, dict) else {}
+
+            _cur_p = float(_stat.get('Price') or _stat.get('Daily_Close') or p)
+            _day_high = float(_stat.get('High') or max(p, _cur_p))
+            _day_low = float(_stat.get('Low') or min(p, _cur_p))
 
             if df.empty:
                 if p > 0:
                     _n = len(_all_day_times)
                     _bars = []
+                    _mid_idx = max(1, _n // 3)
                     for _i, _t_str in enumerate(_all_day_times):
-                        _pct = (_i + 1) / _n
-                        _step_c = p + (_cur_p - p) * _pct
+                        if _i <= _mid_idx:
+                            _sub_pct = _i / _mid_idx
+                            _step_c = p + (_day_high - p) * _sub_pct
+                        else:
+                            _sub_pct = (_i - _mid_idx) / max(1, (_n - _mid_idx))
+                            _step_c = _day_high + (_cur_p - _day_high) * _sub_pct
+
                         _step_o = p if _i == 0 else _bars[-1]['Close']
-                        _step_h = max(_step_o, _step_c) * 1.004
-                        _step_l = min(_step_o, _step_c) * 0.996
+                        _step_h = max(_step_o, _step_c, _day_high if _i == _mid_idx else _step_c)
+                        _step_l = min(_step_o, _step_c, _day_low if (_i >= _mid_idx and _cur_p < p) else _step_c * 0.998)
                         _bars.append({
-                            'Open': _step_o,
-                            'High': _step_h,
-                            'Low': _step_l,
-                            'Close': _step_c,
+                            'Open': round(_step_o, 2),
+                            'High': round(_step_h, 2),
+                            'Low': round(_step_l, 2),
+                            'Close': round(_step_c, 2),
                             'Volume': 50000 + int(_i * 1000)
                         })
                     df = pd.DataFrame(_bars, index=[pd.to_datetime(f'{date_str} {t}') for t in _all_day_times])
@@ -1590,6 +1625,128 @@ class SimulationEngine:
                 send_simulation_report(date_str=date_str, owner=self.owner)
             except Exception as _e_rep:
                 print(f"[SimEngine] Gün sonu rapor gönderim hatası: {_e_rep}")
+
+    def evaluate_live_positions(self, live_stats: dict = None):
+        """Açık pozisyonları canlı TradingView fiyatlarıyla değerlendirir.
+        Stop-loss (Zarar Kes) veya Kâr Al seviyelerine ulaşıldığında pozisyonu
+        anında kapatır, veritabanına işler ve Telegram bildirimini iletir.
+        """
+        if not live_stats:
+            try:
+                for _cf_path in ["dashboard_cache.json", "data/cache/dashboard_cache.json"]:
+                    if os.path.exists(_cf_path):
+                        with open(_cf_path, "r", encoding="utf-8") as f:
+                            live_stats = json.load(f).get("all_symbols_stats", {})
+                        if live_stats:
+                            break
+            except Exception:
+                live_stats = {}
+
+        if not live_stats:
+            return []
+
+        try:
+            from zoneinfo import ZoneInfo
+            now_ist = datetime.now(ZoneInfo("Europe/Istanbul"))
+        except Exception:
+            now_ist = datetime.now()
+        now_str = now_ist.strftime("%Y-%m-%d %H:%M:%S")
+        today_str = now_ist.strftime("%Y-%m-%d")
+
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("""
+            SELECT id, date_str, symbol, entry_time, entry_price, shares, atr_value,
+                   strategy_name, entry_score, entry_checks, risk_amount, market_regime, engine_version
+            FROM trades
+            WHERE owner = ? AND exit_time IS NULL
+        """, (self.owner,))
+        open_rows = [dict(r) for r in c.fetchall()]
+        conn.close()
+
+        updated_trades = []
+        for r in open_rows:
+            sym = str(r['symbol']).strip()
+            clean_sym = sym.replace('.IS', '').strip()
+            stat = (
+                live_stats.get(sym) or
+                live_stats.get(f"{clean_sym}.IS") or
+                live_stats.get(clean_sym) or
+                live_stats.get(f"BIST:{clean_sym}") or
+                {}
+            )
+            live_px = stat.get('Price') or stat.get('Daily_Close') or stat.get('last_price') or stat.get('price')
+            if not live_px or float(live_px) <= 0:
+                continue
+
+            live_px = round(float(live_px), 2)
+            entry_px = float(r['entry_price'])
+            shares = int(r['shares'])
+            if entry_px <= 0 or shares <= 0:
+                continue
+
+            buy_vol = shares * entry_px
+            sell_vol = shares * live_px
+            comm = (buy_vol + sell_vol) * 0.0004
+            gross_pnl = shares * (live_px - entry_px)
+            net_pnl = round(gross_pnl - comm, 2)
+            pnl_pct = round((net_pnl / buy_vol) * 100.0, 2)
+
+            atr = float(r.get('atr_value') or (entry_px * 0.02))
+            stop_pct = min(0.040, max(0.024, (atr / entry_px) * 1.8))
+            stop_px = round(entry_px * (1.0 - stop_pct), 2)
+            tp1_px = round(entry_px * 1.04, 2)
+
+            is_stopped = (live_px <= stop_px) or (pnl_pct <= -2.4)
+            is_tp = (live_px >= tp1_px) or (pnl_pct >= 4.0)
+            is_eod = (now_ist.hour >= 18 or (now_ist.hour == 17 and now_ist.minute >= 50)) and r.get('date_str') == today_str
+
+            should_close = is_stopped or is_tp or is_eod
+            reason = ""
+            if is_stopped:
+                reason = f"⛔ ÇELİK STOP KESİLDİ (%{pnl_pct:+.2f})"
+            elif is_tp:
+                reason = f"🚀 KÂR ALINDI (%{pnl_pct:+.2f})"
+            elif is_eod:
+                reason = "SEANS SONU NAKİTE GEÇİŞ (17:50)"
+
+            if should_close:
+                conn = get_connection()
+                cur = conn.cursor()
+                cur.execute("""
+                    UPDATE trades
+                    SET exit_time = ?, exit_price = ?, pnl_val = ?, realized_pnl = ?, pnl_pct = ?, exit_reason = ?
+                    WHERE id = ?
+                """, (now_str, live_px, net_pnl, net_pnl, pnl_pct, reason, r['id']))
+                conn.commit()
+                conn.close()
+
+                r['exit_time'] = now_str
+                r['exit_price'] = live_px
+                r['pnl_val'] = net_pnl
+                r['realized_pnl'] = net_pnl
+                r['pnl_pct'] = pnl_pct
+                r['exit_reason'] = reason
+                updated_trades.append(r)
+
+                try:
+                    from services.telegram_bot import notify_sim_trade
+                    action = "SAT (STOP)" if is_stopped else ("SAT (KÂR)" if is_tp else "SAT (GÜN SONU)")
+                    notify_sim_trade(sym, action, live_px, pnl_pct, reason, today_str, r)
+                except Exception as tg_err:
+                    print(f"[LIVE STOP TG ERROR] {tg_err}")
+            else:
+                conn = get_connection()
+                cur = conn.cursor()
+                cur.execute("""
+                    UPDATE trades
+                    SET pnl_val = ?, pnl_pct = ?
+                    WHERE id = ?
+                """, (net_pnl, pnl_pct, r['id']))
+                conn.commit()
+                conn.close()
+
+        return updated_trades
 
     def run_backtest_range(self, start_date: str, end_date: str, verbose: bool = False):
         """
