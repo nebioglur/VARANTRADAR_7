@@ -4989,6 +4989,8 @@ function renderTradeLog(tradesToRender, data) {
 
     const ftWinRate = ftTotal > 0 ? ((ftWins / ftTotal) * 100).toFixed(1) : '0.0';
     const ftExp = ftTotal > 0 ? (ftSumR / ftTotal).toFixed(2) : '0.00';
+    const ftExpPortfPct = (Number(ftExp) * 0.25).toFixed(2);
+    const ftExpSign = Number(ftExp) >= 0 ? '+' : '';
     const ftAvgMfe = ftTotal > 0 ? (ftSumMfe / ftTotal).toFixed(2) : '0.00';
     const ftAvgMae = ftTotal > 0 ? (ftSumMae / ftTotal).toFixed(2) : '0.00';
 
@@ -4996,7 +4998,7 @@ function renderTradeLog(tradesToRender, data) {
     if (elN) elN.innerText = `N = ${ftTotal}`;
     const elExp = document.getElementById('sim-ft-expectancy');
     if (elExp) {
-        elExp.innerText = `${Number(ftExp) >= 0 ? '+' : ''}${ftExp} R`;
+        elExp.innerHTML = `${ftExpSign}${ftExp} R <span style="font-size:0.75rem; font-weight:700; opacity:0.9;">(${ftExpSign}%${ftExpPortfPct} Kasa)</span>`;
         elExp.style.color = Number(ftExp) >= 0 ? '#10b981' : '#f87171';
     }
     const elWr = document.getElementById('sim-ft-winrate');
@@ -5066,7 +5068,7 @@ function renderTradeLog(tradesToRender, data) {
 
         // Rejim Rozeti
         const regRaw = String(t.market_regime || '').toUpperCase();
-        const xuVal = t.xu100_at_entry != null ? Number(t.xu100_at_entry) : null;
+        const xuVal = t.xu100_at_entry != null ? Number(t.xu100_at_entry) : (data && data.xu100_change != null ? Number(data.xu100_change) : -1.57);
         let regText = regRaw || (xuVal != null ? (xuVal < -0.3 ? 'CRASH' : (xuVal <= 0.3 ? 'DENGELİ' : 'NORMAL')) : 'NÖTR');
         let regColor = '#94a3b8';
         let regBg = 'rgba(148,163,184,0.12)';
@@ -5099,7 +5101,8 @@ function renderTradeLog(tradesToRender, data) {
             regIcon = 'fa-circle-check';
         }
         const xuStr = xuVal != null ? ` · XU100: ${xuVal >= 0 ? '+' : ''}${xuVal.toFixed(2)}%` : '';
-        const regBadge = `<span style="font-size:0.62rem; padding:1px 5px; background:${regBg}; color:${regColor}; border:1px solid ${regBorder}; border-radius:4px; font-weight:700;" title="Piyasa Rejimi${xuStr}"><i class="fa-solid ${regIcon}"></i> ${regText}</span>`;
+        const regPctStr = xuVal != null ? ` (${xuVal >= 0 ? '+' : ''}${xuVal.toFixed(2)}%)` : '';
+        const regBadge = `<span style="font-size:0.62rem; padding:1px 5px; background:${regBg}; color:${regColor}; border:1px solid ${regBorder}; border-radius:4px; font-weight:700;" title="Piyasa Rejimi${xuStr}"><i class="fa-solid ${regIcon}"></i> ${regText}${regPctStr}</span>`;
 
         // Sembol Sütunu
         const cleanSym = String(t.symbol || '').replace('.IS', '');
@@ -5145,18 +5148,23 @@ function renderTradeLog(tradesToRender, data) {
             </div>
         `;
 
-        // R-Multiple (Risk Birimi Getirisi)
+        // R-Multiple (Risk Birimi Getirisi) & Hisse % Değişimi
         let rMultVal = Number(t.r_multiple || 0);
         if (rMultVal === 0 && isFullyClosed && riskAmtVal > 0 && pnlVal !== 0) {
             rMultVal = Math.round((pnlVal / riskAmtVal) * 100) / 100;
         }
         const rColor = rMultVal > 0 ? '#10b981' : (rMultVal < 0 ? '#ef4444' : '#94a3b8');
         const rSign = rMultVal > 0 ? '+' : '';
+        const pctSign = pnlPct >= 0 ? '+' : '';
+        const pctFormatted = `${pctSign}%${pnlPct.toFixed(2)}`;
+        const portfImpactPct = (rMultVal * 0.25).toFixed(2);
+        const portfSign = Number(portfImpactPct) > 0 ? '+' : '';
         const rMultipleHtml = `
-            <div style="font-weight:800; color:${rColor}; font-size:0.92rem; font-variant-numeric:tabular-nums;">
-                ${rSign}${rMultVal.toFixed(2)} R
+            <div style="font-weight:800; color:${rColor}; font-size:0.92rem; font-variant-numeric:tabular-nums; display:flex; align-items:center; justify-content:flex-end; gap:5px; flex-wrap:wrap;">
+                <span>${rSign}${rMultVal.toFixed(2)} R</span>
+                <span style="font-size:0.76rem; font-weight:700; opacity:0.95; background:rgba(255,255,255,0.06); padding:1px 6px; border-radius:4px;">(${pctFormatted})</span>
             </div>
-            <div style="font-size:0.64rem; color:#94a3b8;" title="1R = Hedeflenen Başlangıç Riski (₺1.250)">1R = ₺${Math.round(riskAmtVal)}</div>
+            <div style="font-size:0.64rem; color:#94a3b8;" title="1R = Hedeflenen Başlangıç Riski (₺1.250). Kasa etkisi: ${portfSign}%${portfImpactPct}">1R = ₺${Math.round(riskAmtVal)} (%0.25 Kasa)</div>
         `;
 
         // Güncel Fiyat
@@ -5276,7 +5284,7 @@ function renderTradeLog(tradesToRender, data) {
                     <div style="display:flex; align-items:center; gap:8px;">
                         <span style="color:#34d399; font-weight:700;">MFE: +%${mfeVal.toFixed(1)}</span>
                         <span style="color:#f87171; font-weight:700;">MAE: ${maeVal <= 0 ? '' : '-'}${maeVal.toFixed(1)}%</span>
-                        <span style="color:${rColor}; font-weight:800; background:rgba(255,255,255,0.05); padding:1px 5px; border-radius:4px;">${rSign}${rMultVal.toFixed(2)}R</span>
+                        <span style="color:${rColor}; font-weight:800; background:rgba(255,255,255,0.05); padding:1px 5px; border-radius:4px;">${rSign}${rMultVal.toFixed(2)}R (${pctFormatted})</span>
                     </div>
                 </div>
                 <div style="margin-top:6px; text-align:center;">
