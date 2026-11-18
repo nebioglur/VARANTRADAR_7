@@ -139,12 +139,16 @@ class TradingViewBulkProvider(BaseDataProvider):
             res_json = resp.json()
             rows = res_json.get("data", [])
             
-            # Tarih damgası
+            # Tarih ve saat damgası
             try:
                 from zoneinfo import ZoneInfo
-                today_str = datetime.now(ZoneInfo("Europe/Istanbul")).strftime("%Y-%m-%d")
+                _now_tr = datetime.now(ZoneInfo("Europe/Istanbul"))
+                today_str = _now_tr.strftime("%Y-%m-%d")
+                time_str = _now_tr.strftime("%H:%M")
             except Exception:
-                today_str = datetime.now().strftime("%Y-%m-%d")
+                _now_tr = datetime.now()
+                today_str = _now_tr.strftime("%Y-%m-%d")
+                time_str = _now_tr.strftime("%H:%M")
 
             for item in rows:
                 ticker_full = item.get("s", "")  # Örn: "BIST:ASELS"
@@ -217,6 +221,8 @@ class TradingViewBulkProvider(BaseDataProvider):
                     stats_dict[sym_with_is] = {
                         "Symbol": sym_with_is,
                         "Price": round(price, 2),
+                        "last_price": round(price, 2),
+                        "price": round(price, 2),
                         "Daily_Close": round(price, 2),
                         "Daily_Open": round(d_open, 2),
                         "High": round(d_high, 2),
@@ -236,6 +242,9 @@ class TradingViewBulkProvider(BaseDataProvider):
                         "Distance_To_Ceiling_Pct": dist_to_ceiling,
                         "Price_Stale": False,
                         "Last_Price_Update": today_str,
+                        "time": time_str,
+                        "last_updated": time_str,
+                        "bar_time": time_str,
                         "Indicators": {
                             "RSI_14": round(rsi, 2),
                             "MACD": round(macd, 2),
