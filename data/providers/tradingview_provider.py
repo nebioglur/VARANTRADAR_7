@@ -331,14 +331,48 @@ class TradingViewBulkProvider(BaseDataProvider):
         losers = sorted([x for x in clean_items if x.get("Change_Pct", 0) < 0], key=lambda x: x.get("Change_Pct", 0))[:25]
         high_vol = sorted(clean_items, key=lambda x: x.get("Money_Volume", 0), reverse=True)[:25]
         
-        # Tavan adayları: Değişim %2 ile %9.8 arası, hacim çarpanı >= 1.25, fiyat >= 3 TL
+        def is_healthy_candle(x):
+            p = float(x.get("Price", 0))
+            d_open = float(x.get("Daily_Open", p))
+            d_high = float(x.get("High", p))
+            d_low = float(x.get("Low", p))
+            rng = d_high - d_low
+            if rng <= 0: return True
+            upper_wick = d_high - max(d_open, p)
+            if (upper_wick / rng) > 0.28:
+                return False
+            if d_high > 0 and ((d_high - p) / d_high) > 0.020:
+                return False
+            pos_pct = ((p - d_low) / rng) * 100.0
+            if pos_pct < 70.0:
+                return False
+            return True
+
+        # Kurumsal Likidite ve Fitil Filtresi (Institutional Grade):
+        # 1. Günlük hacim >= 75M TL veya 10 günlük ortalama ciro >= 100M TL
+        # 2. Fiyat >= 8.0 TL (sığ ve spekülatif penny stock hisseleri elenir)
+        # 3. Fitil tuzağı olmamalı (üst fitil <= %28, zirveden çekilme <= %2.0, pos_pct >= %70)
         tavan_adaylari = sorted(
-            [x for x in clean_items if 2.0 <= x.get("Change_Pct", 0) < 9.9 and x.get("Vol_Multiplier", 0) >= 1.2 and x.get("Price", 0) >= 3.0],
+            [x for x in clean_items if (
+                2.0 <= x.get("Change_Pct", 0) < 9.9 and
+                x.get("Vol_Multiplier", 0) >= 1.15 and
+                x.get("Price", 0) >= 8.0 and
+                (x.get("Money_Volume", 0) >= 75_000_000 or (x.get("Vol_SMA10", 0) * x.get("Price", 0)) >= 100_000_000) and
+                is_healthy_candle(x)
+            )],
             key=lambda x: (-x.get("Score", 0), -x.get("Vol_Multiplier", 0), x.get("Distance_To_Ceiling_Pct", 99))
         )[:15]
 
-        # Fırsatlar: Skoru yüksek olanlar
-        opportunities = sorted([x for x in clean_items if x.get("Score", 0) >= 70.0], key=lambda x: x.get("Score", 0), reverse=True)[:20]
+        # Fırsatlar: Skoru yüksek, likit ve fitil tuzağı olmayan kurumsal liderler
+        opportunities = sorted(
+            [x for x in clean_items if (
+                x.get("Score", 0) >= 70.0 and
+                x.get("Price", 0) >= 8.0 and
+                (x.get("Money_Volume", 0) >= 50_000_000 or (x.get("Vol_SMA10", 0) * x.get("Price", 0)) >= 75_000_000) and
+                is_healthy_candle(x)
+            )],
+            key=lambda x: x.get("Score", 0), reverse=True
+        )[:20]
 
         return {
             "cache_date": today_str,

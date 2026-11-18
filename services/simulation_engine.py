@@ -399,13 +399,21 @@ class SimulationEngine:
         min_position_floor = self.daily_budget * 0.08
         allocation = max(min_position_floor, min(allocation, max_position_cap))
 
+        # RİSK PARİTESİ (Kelly / Volatilite Koruma Kuralı):
+        # Tek bir işlemde portföy riski en fazla %1.0 (5.000 TL) olabilir.
+        # Volatilitesi yüksek hissede bütçe otomatik küçülür, kasa korunur.
+        max_allowed_loss = self.daily_budget * 0.010
+        stop_pct = max(0.015, risk_per_share / entry_price)
+        risk_parity_allocation = max_allowed_loss / stop_pct
+        allocation = min(allocation, risk_parity_allocation)
+
         # Eldeki nakit sinirini asmasin (kullanilabilir nakit elverdigi olcude giris)
         if current_cash is not None:
             if current_cash < entry_price:
                 return 0.0, 0.0
             allocation = min(allocation, current_cash)
 
-        max_trade_risk = self.daily_budget * 0.015  # 7.500 TL (500K kasanin %1.5'i)
+        max_trade_risk = self.daily_budget * 0.010
 
         return allocation, min(max_trade_risk, allocation * risk_per_share / entry_price)
 
@@ -773,6 +781,31 @@ class SimulationEngine:
                 print(f"[SIM-GUARD] {s.get('symbol')} elendi: Zirveden uzak gün içi pozisyon (%{pos_pct:.1f})")
                 continue
 
+            # Kural F1 (KURUMSAL LİKİDİTE KALKANI):
+            # Günlük hacim < 50M TL ve 10 günlük ortalama ciro < 75M TL olan sığ hisselere KESİNLİKLE girilmez!
+            money_vol = float(meta.get('Money_Volume') or (price * float(meta.get('Volume') or 0)))
+            vol_sma = float(meta.get('Vol_SMA10') or 0)
+            avg_turnover = vol_sma * price if vol_sma > 0 else money_vol
+            if money_vol < 50_000_000 and avg_turnover < 75_000_000:
+                print(f"[SIM-GUARD] {s.get('symbol')} elendi: Yetersiz kurumsal likidite ({money_vol/1e6:.1f}M TL)")
+                continue
+
+            # Kural F2 (PENNY STOCK ENGELİ): Fiyatı 8.0 TL altındaki spekülatif sığ tahtalara girilmez!
+            if price < 8.0:
+                print(f"[SIM-GUARD] {s.get('symbol')} elendi: Penny stock / Sığ fiyat ({price:.2f} TL < 8.0 TL)")
+                continue
+
+            # Kural F3 (MUM ANATOMİSİ - ÜST FİTİL KORUMASI):
+            # Üst fitil toplam mum aralığının %28'inden büyükse bu bir boğa tuzağıdır!
+            d_open = float(intra_strength.get('session_open') or meta.get('Daily_Open') or price)
+            d_low = float(intra_strength.get('session_low') or meta.get('Low') or price)
+            rng = d_high - d_low
+            if rng > 0:
+                upper_wick = d_high - max(d_open, curr_p)
+                if (upper_wick / rng) > 0.28:
+                    print(f"[SIM-GUARD] {s.get('symbol')} elendi: Üst fitil tuzağı / Gövdeden büyük fitil (%{upper_wick/rng*100:.1f})")
+                    continue
+
             indicators = meta.get('Indicators', {}) if isinstance(meta, dict) else {}
             rsi = float(indicators.get('RSI') or indicators.get('RSI_14') or meta.get('RSI') or 50)
             volume_multiplier = float(meta.get('Vol_Multiplier') or meta.get('Volume_Ratio') or indicators.get('Volume_Ratio') or r_vol or 1.2)
@@ -1057,8 +1090,8 @@ class SimulationEngine:
                     except Exception:
                         pass
 
-                if not time_str:
-                    time_str = "10:15:00"
+                if not time_str or time_str < "10:20:00":
+                    time_str = "10:20:00"
                 
                 s['time_str'] = time_str
                 pending_signals.append(s)
@@ -1356,6 +1389,11 @@ class SimulationEngine:
 
                 sym = s['symbol']
                 if sym in open_symbols or sym in stopped_out_symbols:
+                    continue
+
+                # 🛡️ KURUMSAL ORB KURALI (10:00 - 10:20 AÇILIŞ TUZAĞI KORUMASI):
+                # Sabah ilk 20 dakika piyasanın gerçek yönü belirsizdir; açılış sahte tavan tuzaklarına girilmez!
+                if dt_current.time() < time(10, 20):
                     continue
 
                 # Oglen sahte kirilim elemesi (13:45 - 15:15)
