@@ -1574,6 +1574,7 @@ def serve_apk(filename):
             return response
     return "APK Bulunamadı", 404
 
+@app.route('/ios/HisseRadarPro.mobileconfig')
 @app.route('/ios/VarantRadarPro.mobileconfig')
 @app.route('/download/ios')
 def serve_ios_profile():
@@ -1600,13 +1601,13 @@ def serve_ios_profile():
             <key>IsRemovable</key>
             <true/>
             <key>Label</key>
-            <string>VarantRadar Pro</string>
+            <string>HisseRadar Pro</string>
             <key>PayloadDescription</key>
-            <string>VarantRadar Pro iOS WebClip Uygulamasi</string>
+            <string>HisseRadar Pro iOS WebClip Uygulamasi</string>
             <key>PayloadDisplayName</key>
-            <string>VarantRadar Pro</string>
+            <string>HisseRadar Pro</string>
             <key>PayloadIdentifier</key>
-            <string>com.varantradarpro.ios.webclip</string>
+            <string>com.hisseradarpro.ios.webclip</string>
             <key>PayloadType</key>
             <string>com.apple.webClip.managed</string>
             <key>PayloadUUID</key>
@@ -1620,9 +1621,9 @@ def serve_ios_profile():
         </dict>
     </array>
     <key>PayloadDisplayName</key>
-    <string>VarantRadar Pro</string>
+    <string>HisseRadar Pro</string>
     <key>PayloadIdentifier</key>
-    <string>com.varantradarpro.ios.profile</string>
+    <string>com.hisseradarpro.ios.profile</string>
     <key>PayloadRemovalDisallowed</key>
     <false/>
     <key>PayloadType</key>
@@ -1635,7 +1636,7 @@ def serve_ios_profile():
 </plist>"""
     response = make_response(mobileconfig)
     response.headers['Content-Type'] = 'application/x-apple-aspen-config; charset=utf-8'
-    response.headers['Content-Disposition'] = 'attachment; filename="VarantRadarPro.mobileconfig"'
+    response.headers['Content-Disposition'] = 'attachment; filename="HisseRadarPro.mobileconfig"'
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     return response
 
