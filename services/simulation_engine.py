@@ -696,14 +696,16 @@ class SimulationEngine:
             price = float(meta.get('Price') or meta.get('Daily_Close') or s.get('morning_price', 0))
             ema50, ema200 = self._daily_trend_values(meta, s['symbol'])
             
-            # Hacim carpanini tespit et (>=1.2x makul esik)
+            # Hacim çarpanını tespit et (intraday normalize veya derin likidite koruması)
             v8_disc = meta.get('v8_discovery', {}) if isinstance(meta, dict) else {}
             metrics = v8_disc.get('metrics', {}) if isinstance(v8_disc, dict) else {}
             r_vol = metrics.get('relative_volume', 0)
             if not r_vol:
                 indicators = meta.get('Indicators', {}) if isinstance(meta, dict) else {}
                 r_vol = float(meta.get('Vol_Multiplier') or meta.get('Volume_Ratio') or indicators.get('Volume_Ratio') or 0)
-            if float(r_vol or 0) > 0 and float(r_vol) < 1.2:
+            # Sabah/öğlen saatlerinde kümülatif hacim tam gün ortalamasına bölündüğünden 
+            # ham r_vol 0.15-0.50 arasında olabilir. Gerçek likidite Kural F1 (50M/75M TL) ile denetlenir.
+            if float(r_vol or 0) > 0 and float(r_vol) < 0.05:
                 continue
 
             # Tavan tuzagi engeli (+%5.5 ve uzeri acilislar elenir)
