@@ -46,9 +46,11 @@ class SimulationEngine:
                 INSERT INTO trades (
                     owner, date_str, symbol, entry_time, entry_price, exit_time,
                     exit_price, shares, pnl_val, realized_pnl, pnl_pct, exit_reason, strategy_name,
-                    entry_score, entry_checks, atr_value, risk_amount, market_regime, engine_version
+                    entry_score, entry_checks, atr_value, risk_amount, market_regime, engine_version,
+                    xu100_at_entry, vwap_at_entry, initial_stop, stop_model, mfe_pct, mae_pct,
+                    tp1_price, tp1_hit, breakeven_moved, r_multiple, hold_minutes
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(owner, date_str, symbol, entry_time) DO UPDATE SET
                     exit_time=COALESCE(excluded.exit_time, trades.exit_time),
                     exit_price=COALESCE(excluded.exit_price, trades.exit_price),
@@ -63,13 +65,27 @@ class SimulationEngine:
                     atr_value=COALESCE(excluded.atr_value, trades.atr_value),
                     risk_amount=COALESCE(excluded.risk_amount, trades.risk_amount),
                     market_regime=COALESCE(excluded.market_regime, trades.market_regime),
-                    engine_version=COALESCE(excluded.engine_version, trades.engine_version)
+                    engine_version=COALESCE(excluded.engine_version, trades.engine_version),
+                    xu100_at_entry=COALESCE(excluded.xu100_at_entry, trades.xu100_at_entry),
+                    vwap_at_entry=COALESCE(excluded.vwap_at_entry, trades.vwap_at_entry),
+                    initial_stop=COALESCE(excluded.initial_stop, trades.initial_stop),
+                    stop_model=COALESCE(excluded.stop_model, trades.stop_model),
+                    mfe_pct=COALESCE(excluded.mfe_pct, trades.mfe_pct),
+                    mae_pct=COALESCE(excluded.mae_pct, trades.mae_pct),
+                    tp1_price=COALESCE(excluded.tp1_price, trades.tp1_price),
+                    tp1_hit=COALESCE(excluded.tp1_hit, trades.tp1_hit),
+                    breakeven_moved=COALESCE(excluded.breakeven_moved, trades.breakeven_moved),
+                    r_multiple=COALESCE(excluded.r_multiple, trades.r_multiple),
+                    hold_minutes=COALESCE(excluded.hold_minutes, trades.hold_minutes)
             """, (
                 self.owner, date_str, trade['symbol'], trade['entry_time'], trade['entry_price'],
                 trade.get('exit_time'), trade.get('exit_price'), trade.get('shares'),
                 trade.get('pnl_val', 0.0), trade.get('realized_pnl', 0.0), trade.get('pnl_pct', 0.0), trade.get('exit_reason'),
                 trade.get('strategy_name'), trade.get('entry_score'), trade.get('entry_checks'),
-                trade.get('atr_value'), trade.get('risk_amount'), trade.get('market_regime'), trade.get('engine_version', 'V8_ELITE')
+                trade.get('atr_value'), trade.get('risk_amount'), trade.get('market_regime'), trade.get('engine_version', 'V8_ELITE'),
+                trade.get('xu100_at_entry'), trade.get('vwap_at_entry'), trade.get('initial_stop'), trade.get('stop_model', 'ATR 1.8x + Destek'),
+                trade.get('mfe_pct', 0.0), trade.get('mae_pct', 0.0), trade.get('tp1_price'), trade.get('tp1_hit', 0),
+                trade.get('breakeven_moved', 0), trade.get('r_multiple', 0.0), trade.get('hold_minutes', 0)
             ))
             conn.commit()
             conn.close()
@@ -121,9 +137,11 @@ class SimulationEngine:
                     INSERT INTO trades (
                         owner, date_str, symbol, entry_time, entry_price, exit_time,
                         exit_price, shares, pnl_val, realized_pnl, pnl_pct, exit_reason, strategy_name,
-                        entry_score, entry_checks, atr_value, risk_amount, market_regime, engine_version
+                        entry_score, entry_checks, atr_value, risk_amount, market_regime, engine_version,
+                        xu100_at_entry, vwap_at_entry, initial_stop, stop_model, mfe_pct, mae_pct,
+                        tp1_price, tp1_hit, breakeven_moved, r_multiple, hold_minutes
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(owner, date_str, symbol, entry_time) DO UPDATE SET
                         exit_time=CASE WHEN trades.exit_time IS NOT NULL AND excluded.exit_time IS NULL THEN trades.exit_time ELSE excluded.exit_time END,
                         exit_price=CASE WHEN trades.exit_time IS NOT NULL AND excluded.exit_time IS NULL THEN trades.exit_price ELSE excluded.exit_price END,
@@ -138,13 +156,27 @@ class SimulationEngine:
                         atr_value=excluded.atr_value,
                         risk_amount=excluded.risk_amount,
                         market_regime=excluded.market_regime,
-                        engine_version=excluded.engine_version
+                        engine_version=excluded.engine_version,
+                        xu100_at_entry=COALESCE(excluded.xu100_at_entry, trades.xu100_at_entry),
+                        vwap_at_entry=COALESCE(excluded.vwap_at_entry, trades.vwap_at_entry),
+                        initial_stop=COALESCE(excluded.initial_stop, trades.initial_stop),
+                        stop_model=COALESCE(excluded.stop_model, trades.stop_model),
+                        mfe_pct=COALESCE(excluded.mfe_pct, trades.mfe_pct),
+                        mae_pct=COALESCE(excluded.mae_pct, trades.mae_pct),
+                        tp1_price=COALESCE(excluded.tp1_price, trades.tp1_price),
+                        tp1_hit=COALESCE(excluded.tp1_hit, trades.tp1_hit),
+                        breakeven_moved=COALESCE(excluded.breakeven_moved, trades.breakeven_moved),
+                        r_multiple=COALESCE(excluded.r_multiple, trades.r_multiple),
+                        hold_minutes=COALESCE(excluded.hold_minutes, trades.hold_minutes)
                 """, (
                     self.owner, date_str, t['symbol'], t['entry_time'], t['entry_price'],
                     t.get('exit_time'), t.get('exit_price'), t.get('shares'),
                     t.get('pnl_val'), t.get('realized_pnl', 0.0), t.get('pnl_pct'), t.get('exit_reason'),
                     t.get('strategy_name'), t.get('entry_score'), t.get('entry_checks'),
-                    t.get('atr_value'), t.get('risk_amount'), t.get('market_regime'), t.get('engine_version', 'V8_ELITE')
+                    t.get('atr_value'), t.get('risk_amount'), t.get('market_regime'), t.get('engine_version', 'V8_ELITE'),
+                    t.get('xu100_at_entry'), t.get('vwap_at_entry'), t.get('initial_stop'), t.get('stop_model', 'ATR 1.8x + Destek'),
+                    t.get('mfe_pct', 0.0), t.get('mae_pct', 0.0), t.get('tp1_price'), t.get('tp1_hit', 0),
+                    t.get('breakeven_moved', 0), t.get('r_multiple', 0.0), t.get('hold_minutes', 0)
                 ))
             except Exception as e:
                 print(f"[SimEngine] Trade save err {t['symbol']}: {e}")
@@ -414,18 +446,19 @@ class SimulationEngine:
         if max_position_cap <= 0:
             return 0.0, 0.0
 
-        # İşlem başına azami risk: 1.000 - 2.500 TL (kasanın %0.2 - %0.5'i)
-        max_trade_risk = min(2500.0, self.daily_budget * max_trade_risk_ratio)
-
-        # RİSK PARİTESİ (Kelly / Stop Mesafesi Güvencesi):
-        # Stop mesafesi ne kadar genişse, pozisyon o kadar küçülür; stop olduğunda zarar ASLA tavanı aşamaz.
+        # ── KATI PARASAL RİSK PARİTESİ (DOLLAR RISK PARITY) ──
+        # Kural: İşlem başına azami risk portföyün %0.25'idir (500K kasada kesinlikle 1.250 TL).
+        # Stop mesafesi ne kadar genişse, pozisyon o kadar KÜÇÜLÜR:
+        # Pozisyon = min(%10 Sermaye, 1.250 TL / Stop Mesafesi Yüzdesi)
+        max_trade_risk_tl = min(1250.0, self.daily_budget * 0.0025)
         stop_pct = max(0.015, risk_per_share / entry_price)
-        risk_parity_allocation = max_trade_risk / stop_pct
+        risk_based_allocation = max_trade_risk_tl / stop_pct
 
-        allocation = min(max_position_cap, risk_parity_allocation)
+        # Nihai Pozisyon: min(Tavan, Parasal Risk Limiti)
+        allocation = min(max_position_cap, risk_based_allocation)
 
-        # Taban güvencesi (işleme değecek asgari pay: kasanın %4'ü, 20.000 TL)
-        min_position_floor = min(max_position_cap, self.daily_budget * 0.04)
+        # Taban güvencesi (işleme değecek asgari pay: 10.000 TL)
+        min_position_floor = min(allocation, 10000.0)
         allocation = max(min_position_floor, allocation)
 
         # Eldeki nakit sinirini asmasin
@@ -434,7 +467,8 @@ class SimulationEngine:
                 return 0.0, 0.0
             allocation = min(allocation, current_cash)
 
-        return allocation, min(max_trade_risk, allocation * risk_per_share / entry_price)
+        actual_risk_tl = allocation * (risk_per_share / entry_price)
+        return allocation, min(max_trade_risk_tl, actual_risk_tl)
 
     def run_daily_simulation(self, date_str: str):
         # Aynı hesap için eşzamanlı replay önlenir: iki koşucu üst üste binince
@@ -1560,7 +1594,17 @@ class SimulationEngine:
                     'market_regime': market_regime,
                     'sector_name': sec_name,
                     '_sector_name': sec_name,
-                    'engine_version': 'V8_ELITE'
+                    'engine_version': 'V8_ELITE',
+                    'initial_stop': setup['stop_price'],
+                    'stop_model': 'ATR 1.8x + Destek',
+                    'xu100_at_entry': xu100_change,
+                    'vwap_at_entry': float(s.get('VWAP') or s.get('_metadata', {}).get('VWAP') or entry_price),
+                    'mfe_pct': 0.0,
+                    'mae_pct': 0.0,
+                    'tp1_hit': 0,
+                    'breakeven_moved': 0,
+                    'r_multiple': 0.0,
+                    'hold_minutes': 0
                 }
                 trade_entry['owner'] = self.owner
                 active_trades.append(trade_entry)
@@ -1770,7 +1814,8 @@ class SimulationEngine:
         c = conn.cursor()
         c.execute("""
             SELECT id, date_str, symbol, entry_time, entry_price, shares, atr_value,
-                   strategy_name, entry_score, entry_checks, risk_amount, market_regime, engine_version
+                   strategy_name, entry_score, entry_checks, risk_amount, market_regime, engine_version,
+                   mfe_pct, mae_pct, initial_stop, tp1_price, tp1_hit, breakeven_moved
             FROM trades
             WHERE owner = ? AND exit_time IS NULL
         """, (self.owner,))
@@ -1830,14 +1875,29 @@ class SimulationEngine:
             elif is_eod:
                 reason = "SEANS SONU NAKİTE GEÇİŞ (17:50)"
 
+            # ── MFE, MAE, R-MULTIPLE & HOLD DURATION TAKİBİ ──
+            cur_unrealized_pct = round(((live_px - entry_px) / entry_px) * 100.0, 2)
+            cur_mfe = max(float(r.get('mfe_pct') or 0.0), cur_unrealized_pct)
+            cur_mae = min(float(r.get('mae_pct') or 0.0), cur_unrealized_pct)
+            risk_amt = float(r.get('risk_amount') or 1250.0)
+            r_mult = round(net_pnl / risk_amt, 2) if risk_amt > 0 else 0.0
+            hold_mins = 0
+            try:
+                dt_in = pd.to_datetime(r['entry_time'])
+                dt_now = pd.to_datetime(now_str)
+                hold_mins = max(1, int((dt_now - dt_in).total_seconds() / 60))
+            except Exception:
+                pass
+
             if should_close:
                 conn = get_connection()
                 cur = conn.cursor()
                 cur.execute("""
                     UPDATE trades
-                    SET exit_time = ?, exit_price = ?, pnl_val = ?, realized_pnl = ?, pnl_pct = ?, exit_reason = ?
+                    SET exit_time = ?, exit_price = ?, pnl_val = ?, realized_pnl = ?, pnl_pct = ?, exit_reason = ?,
+                        mfe_pct = ?, mae_pct = ?, r_multiple = ?, hold_minutes = ?
                     WHERE id = ?
-                """, (now_str, live_px, net_pnl, net_pnl, pnl_pct, reason, r['id']))
+                """, (now_str, live_px, net_pnl, net_pnl, pnl_pct, reason, cur_mfe, cur_mae, r_mult, hold_mins, r['id']))
                 conn.commit()
                 conn.close()
 
@@ -1847,6 +1907,10 @@ class SimulationEngine:
                 r['realized_pnl'] = net_pnl
                 r['pnl_pct'] = pnl_pct
                 r['exit_reason'] = reason
+                r['mfe_pct'] = cur_mfe
+                r['mae_pct'] = cur_mae
+                r['r_multiple'] = r_mult
+                r['hold_minutes'] = hold_mins
                 updated_trades.append(r)
 
                 try:
@@ -1860,9 +1924,9 @@ class SimulationEngine:
                 cur = conn.cursor()
                 cur.execute("""
                     UPDATE trades
-                    SET pnl_val = ?, pnl_pct = ?
+                    SET pnl_val = ?, pnl_pct = ?, mfe_pct = ?, mae_pct = ?
                     WHERE id = ?
-                """, (net_pnl, pnl_pct, r['id']))
+                """, (net_pnl, pnl_pct, cur_mfe, cur_mae, r['id']))
                 conn.commit()
                 conn.close()
 

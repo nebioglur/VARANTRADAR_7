@@ -126,6 +126,17 @@ def init_db():
         ('risk_amount', 'REAL'),
         ('market_regime', 'TEXT'),
         ('engine_version', "TEXT DEFAULT 'LEGACY'"),
+        ('xu100_at_entry', 'REAL'),
+        ('vwap_at_entry', 'REAL'),
+        ('initial_stop', 'REAL'),
+        ('stop_model', 'TEXT'),
+        ('mfe_pct', 'REAL DEFAULT 0.0'),
+        ('mae_pct', 'REAL DEFAULT 0.0'),
+        ('tp1_price', 'REAL'),
+        ('tp1_hit', 'INTEGER DEFAULT 0'),
+        ('breakeven_moved', 'INTEGER DEFAULT 0'),
+        ('r_multiple', 'REAL DEFAULT 0.0'),
+        ('hold_minutes', 'INTEGER DEFAULT 0'),
     ]:
         if column not in _table_columns(cursor, 'trades'):
             cursor.execute(f"ALTER TABLE trades ADD COLUMN {column} {definition}")

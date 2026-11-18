@@ -3205,7 +3205,9 @@ def api_simulation_live_orders():
             cursor.execute("""
                 SELECT id, date_str, symbol, entry_time, entry_price, exit_time,
                        exit_price, shares, pnl_val, pnl_pct, exit_reason,
-                       strategy_name, entry_score, atr_value, risk_amount, market_regime
+                       strategy_name, entry_score, atr_value, risk_amount, market_regime,
+                       xu100_at_entry, vwap_at_entry, initial_stop, stop_model,
+                       mfe_pct, mae_pct, tp1_price, tp1_hit, breakeven_moved, r_multiple, hold_minutes
                 FROM trades
                 WHERE owner=? AND date_str=?
                 ORDER BY entry_time DESC, id DESC
