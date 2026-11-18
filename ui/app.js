@@ -1978,6 +1978,7 @@ function _initDashboard() {
     } catch (_) {}
     
     try { updateLiveClock(); } catch (_) {}
+    _initRadarFullscreen();
     fetchDashboardData();
     fetchSimulationData(); // Ana sayfadaki Kasa Kümülatif KPI'ını doldur
     if (!dashboardPollInterval) {
@@ -1991,7 +1992,8 @@ if (document.readyState === 'loading') {
     _initDashboard();
 }
 window.addEventListener('load', _initDashboard);
-    
+
+function _initRadarFullscreen() {
     // KULLANICI İSTEĞİ: TABLOYA ÇİFT TIKLAYINCA TAM TABLOYU TEK GÖSTER
     const FS_STYLE_ID = 'radar-fs-style';
     const ensureFsStyle = () => {
