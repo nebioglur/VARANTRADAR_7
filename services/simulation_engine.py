@@ -430,11 +430,15 @@ class SimulationEngine:
                 with open("v8_breakout_cache.json", "r", encoding="utf-8") as _v8f:
                     v8_bos = json.load(_v8f).get("data", [])
             if not v8_bos:
-                try:
-                    from server import get_v8_breakout_data
-                    v8_bos = get_v8_breakout_data() or []
-                except Exception:
-                    pass
+                for _cf_path in ["v8_breakout_cache.json", "data/cache/v8_breakout_cache.json"]:
+                    if os.path.exists(_cf_path):
+                        try:
+                            with open(_cf_path, "r", encoding="utf-8") as _v8f:
+                                v8_bos = json.load(_v8f).get("data", [])
+                            if v8_bos:
+                                break
+                        except Exception:
+                            pass
             v8_al = [x for x in v8_bos if (x.get("entry_status") or "").upper() == "ENTER"]
             seen_syms = {s.get("symbol") for s in (signals or [])}
             v8_sig_list = []
@@ -526,8 +530,13 @@ class SimulationEngine:
         # V8 hicbir kirilim girisi acmaz; sim ayni gercegi yansitir.
         _sim_regime = "NEUTRAL"
         try:
-            from server import GLOBAL_DASHBOARD_CACHE as _sim_gdc
-            _sim_regime = (_sim_gdc.get("v8_market_regime") or {}).get("regime", "NEUTRAL")
+            for _c_cand in ["dashboard_cache.json", "data/cache/dashboard_cache.json"]:
+                if os.path.exists(_c_cand):
+                    with open(_c_cand, "r", encoding="utf-8") as _f_dc:
+                        _sim_gdc = json.load(_f_dc)
+                        _sim_regime = (_sim_gdc.get("v8_market_regime") or {}).get("regime", "NEUTRAL")
+                        if _sim_regime:
+                            break
         except Exception:
             pass
         try:

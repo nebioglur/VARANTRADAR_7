@@ -308,6 +308,53 @@ except Exception as e_tg_init:
     print(f"[SERVER] Telegram kimlik güvencesi hatası: {e_tg_init}")
 
 BACKGROUND_ERROR = "No Error"
+
+def _sync_signals_and_run_simulation(date_str: str, data: dict):
+    """TradingView verisinden tavan ve ivmelenme adaylarini toparlayip
+    signals tablosuna yazar ve SimulationEngine'i calistirir."""
+    try:
+        from services.market_data import MarketDataManager
+        from services.simulation_engine import SimulationEngine
+        all_cands = []
+        seen = set()
+        
+        # 1. Tavan adaylari (Phase 1 - 10:15)
+        for cand in data.get("tavan_adaylari", []):
+            sym = cand.get("symbol") or cand.get("Symbol")
+            if sym and sym not in seen:
+                c = dict(cand)
+                c["symbol"] = sym
+                c["morning_phase"] = "Phase 1 (10:15)"
+                c["discovery_time"] = "10:15"
+                all_cands.append(c)
+                seen.add(sym)
+                
+        # 2. Fırsatlar ve İvmelenen hisseler (Kademeli saatler: 10:20 - 14:15)
+        stag_times = ["10:20", "10:35", "10:50", "11:15", "11:30", "11:45", "13:30", "14:15"]
+        for idx, opp in enumerate(data.get("opportunities", [])):
+            sym = opp.get("symbol") or opp.get("Symbol")
+            if sym and sym not in seen:
+                c = dict(opp)
+                c["symbol"] = sym
+                at = stag_times[idx % len(stag_times)]
+                c["morning_phase"] = f"İvmelenme ({at})"
+                c["discovery_time"] = at
+                all_cands.append(c)
+                seen.add(sym)
+                
+        if all_cands:
+            MarketDataManager.record_signals(date_str, all_cands)
+            print(f"[AUTO-SYNC] {len(all_cands)} aday sinyal olarak signals tablosuna yazildi.")
+            
+        # Simülasyonu çalıştır (500.000 TL bütçe)
+        sim = SimulationEngine(daily_budget=500000.0, owner="local:nebioglur")
+        sim.run_daily_simulation(date_str)
+        print(f"[AUTO-SYNC] {date_str} simülasyonu başarıyla tamamlandı.")
+        return True
+    except Exception as e_sync:
+        print(f"[AUTO-SYNC ERROR] {e_sync}")
+        return False
+
 def background_scanner():
     global BACKGROUND_ERROR
     try:
@@ -587,75 +634,27 @@ def _background_scanner_impl():
                 sent_5m[sym] = sig_key
                 time.sleep(0.5)
     
-    # Hızlı Başlangıç (Fast Start): Eğer cache boşsa kullanıcıyı bekletmemek için sadece BIST 50'yi anında tara
-    if not GLOBAL_DASHBOARD_CACHE:
+    # Hızlı Başlangıç (Fast Start): Ultra Hızlı TradingView Bulk Provider (Sıfır Rate Limit, 2.5s)
+    if not GLOBAL_DASHBOARD_CACHE or len(GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})) < 50:
         try:
-            print("[BACKGROUND] Hızlı Başlangıç (Fast Start) - BIST 50 taranıyor...")
-            fast_results = scanner.scan_pool_bulk(BIST50_SYMBOLS)
-            from datetime import datetime
-            if fast_results.get("all_symbols_stats"):
+            print("[BACKGROUND] Hızlı Başlangıç - TradingView Bulk Scanner ile tüm BIST taranıyor...")
+            from data.providers.tradingview_provider import TradingViewBulkProvider
+            tv = TradingViewBulkProvider()
+            fast_results = tv.build_dashboard_data()
+            if fast_results and len(fast_results.get("all_symbols_stats", {})) >= 50:
                 _mark_prices_updated(fast_results)
-
-            _prev_regime = GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else None
-            GLOBAL_DASHBOARD_CACHE = sanitize_for_json(fast_results)
-            if _prev_regime:
-                GLOBAL_DASHBOARD_CACHE["v8_market_regime"] = _prev_regime
-            save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
-            print("[BACKGROUND] Hızlı Başlangıç Faz 1 tamamlandı - Günlük veriler HAZIR!")
-            
-            daily_stats = fast_results.get("all_symbols_stats", {})
-            try:
-                print("[BACKGROUND] Hızlı Başlangıç Faz 2 - 1 Saatlik (1h) Taraması yapılıyor...")
-                fast_1h_res = scanner.scan_pool_bulk_1h(BIST50_SYMBOLS, daily_stats)
-                GLOBAL_DASHBOARD_CACHE["opportunities_1h"] = sanitize_for_json(fast_1h_res.get("opportunities_1h", []))
-                GLOBAL_DASHBOARD_CACHE["tavan_adaylari"] = sanitize_for_json(fast_1h_res.get("tavan_adaylari", []))
-                GLOBAL_DASHBOARD_CACHE["stay_away_1h"] = sanitize_for_json(fast_1h_res.get("stay_away_1h", []))
-
-                # V8 1h kirilim teyidini gunluk istatistiklere isle
-                _v8_intra = sanitize_for_json(fast_1h_res.get("v8_intraday_breakout", {}))
-                for _sym, _v8b in _v8_intra.items():
-                    if _sym in daily_stats:
-                        daily_stats[_sym]["v8_breakout_1h"] = _v8b
+                _prev_regime = GLOBAL_DASHBOARD_CACHE.get("v8_market_regime") if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else None
+                GLOBAL_DASHBOARD_CACHE = sanitize_for_json(fast_results)
+                if _prev_regime:
+                    GLOBAL_DASHBOARD_CACHE["v8_market_regime"] = _prev_regime
                 save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
-                
-                # Hızlı Başlangıçta da sinyalleri DB'ye yaz (Simülasyon boş kalmasın)
-                from services.market_data import MarketDataManager
-                MarketDataManager.record_signals(fast_results["cache_date"], fast_1h_res.get("tavan_adaylari", []))
-                MarketDataManager.fetch_and_store_intraday(fast_results["cache_date"])
-
-                # Hızlı başlangıçta da bugunun tavan denetim kaydini olustur:
-                # aksi halde her yeniden dagitimdan sonra istatistik eskse (son kayit eski tarih) kalir.
-                try:
-                    from services.tavan_tracker import TavanAuditTracker
-                    bf_fast = TavanAuditTracker.backfill_from_db(fast_results["cache_date"])
-                    if not bf_fast:
-                        TavanAuditTracker.record_snapshot(fast_1h_res.get("tavan_adaylari", []), all_symbols_stats=daily_stats)
-                    TavanAuditTracker.update_daily_progress(daily_stats)
-                    print("[BACKGROUND] Hızlı Başlangıç tavan denetim kaydı oluşturuldu.")
-                except Exception as e_audit:
-                    print(f"[BACKGROUND] Hızlı Başlangıç denetim kaydı hatası: {e_audit}")
-            except Exception as e_1h:
-                print(f"[BACKGROUND] Hızlı Başlangıç 1h hatası: {e_1h}")
-            
-            try:
-                print("[BACKGROUND] Hızlı Başlangıç Faz 3 - 5 Dakikalık (5m) Taraması yapılıyor...")
-                valid_bist50 = [s for s in BIST50_SYMBOLS if s in daily_stats]
-                fast_5m = scanner.scan_pool_bulk_5m(valid_bist50)
-                GLOBAL_DASHBOARD_CACHE["signals_5m"] = sanitize_for_json(fast_5m)
-                save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
-            except Exception as e_5m:
-                print(f"[BACKGROUND] Hızlı Başlangıç 5m hatası: {e_5m}")
-            
-            # Otomatik tarayıcı aday bildirimleri kapalı; istenen Telegram akışı yalnızca simülasyondur.
-
-        except Exception as e:
-            print(f"[BACKGROUND] Hızlı Başlangıç Hatası: {e}")
-            import traceback
-            traceback.print_exc()
+                print(f"[BACKGROUND] Hızlı Başlangıç tamamlandı ({len(fast_results['all_symbols_stats'])} hisse HAZIR!).")
+                _sync_signals_and_run_simulation(fast_results.get("cache_date", datetime.now().strftime("%Y-%m-%d")), fast_results)
+        except Exception as e_fast:
+            print(f"[BACKGROUND] Hızlı Başlangıç Hatası: {e_fast}")
 
     while True:
         try:
-            
             # --- V8 REGIME UPDATE ---
             if regime_engine:
                 try:
@@ -666,168 +665,54 @@ def _background_scanner_impl():
                     print(f"[V8 REGIME ERROR] {re_e}")
             # ------------------------
             
-            
-            # --- V8 REGIME UPDATE ---
-            if regime_engine:
-                try:
-                    regime_data = regime_engine.determine_regime()
-                    GLOBAL_DASHBOARD_CACHE["v8_market_regime"] = regime_data
-                    print(f"[V8 REGIME] Current Market Regime: {regime_data.get('regime')} (Score: {regime_data.get('score')})")
-                except Exception as re_e:
-                    print(f"[V8 REGIME ERROR] {re_e}")
-            # ------------------------
-            
-            print("[BACKGROUND] Tüm BIST hisseleri için Kapsamlı (Bulk) Günlük Data indiriliyor...")
-            
-            # 550 hisseyi tek bir pakette indir:
-            results = scanner.scan_pool_bulk(BIST_SYMBOLS)
+            print("[BACKGROUND] Tüm BIST hisseleri için TradingView Bulk Scanner çalıştırılıyor...")
             from datetime import datetime
-            if isinstance(results, dict): results["cache_date"] = datetime.now().strftime("%Y-%m-%d")
-            
-            from datetime import datetime
-            today_str = datetime.now().strftime("%Y-%m-%d")
-            
-            stats_count = len(results.get("all_symbols_stats", {})) if isinstance(results, dict) else 0
-            
-            if results and isinstance(results, dict) and stats_count > 50:
-                # Mevcut 1h, tavan ve 5m verilerini KORU!
-                if "opportunities_1h" in GLOBAL_DASHBOARD_CACHE:
-                    results["opportunities_1h"] = GLOBAL_DASHBOARD_CACHE["opportunities_1h"]
-                if "tavan_adaylari" in GLOBAL_DASHBOARD_CACHE:
-                    results["tavan_adaylari"] = GLOBAL_DASHBOARD_CACHE["tavan_adaylari"]
-                if "stay_away_1h" in GLOBAL_DASHBOARD_CACHE:
-                    results["stay_away_1h"] = GLOBAL_DASHBOARD_CACHE["stay_away_1h"]
-                if "signals_5m" in GLOBAL_DASHBOARD_CACHE:
-                    results["signals_5m"] = GLOBAL_DASHBOARD_CACHE["signals_5m"]
+            try:
+                from zoneinfo import ZoneInfo
+                today_str = datetime.now(ZoneInfo("Europe/Istanbul")).strftime("%Y-%m-%d")
+            except Exception:
+                today_str = datetime.now().strftime("%Y-%m-%d")
+
+            fresh_tv = None
+            try:
+                from data.providers.tradingview_provider import TradingViewBulkProvider
+                tv = TradingViewBulkProvider()
+                fresh_tv = tv.build_dashboard_data()
+            except Exception as e_tv:
+                print(f"[BACKGROUND] TradingView bulk hatasi: {e_tv}")
+
+            if fresh_tv and len(fresh_tv.get("all_symbols_stats", {})) >= 50:
+                results = fresh_tv
                 if "v8_market_regime" in GLOBAL_DASHBOARD_CACHE:
                     results["v8_market_regime"] = GLOBAL_DASHBOARD_CACHE["v8_market_regime"]
-
-                # Sembol istatistikleri TAM DEGISTIRILMEZ, onceki veriyle BIRLESTIRILIR:
-                # kismi taramalar onceki kapsamayi silmesin (606 -> 48 gibi kuculmeler olmasin).
-                _prev_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {}) if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else {}
-                if not isinstance(_prev_stats, dict):
-                    _prev_stats = {}
-                _merged_stats = dict(_prev_stats)
-                _merged_stats.update(sanitize_for_json(results.get("all_symbols_stats", {})))
-                results["all_symbols_stats"] = _merged_stats
                 _mark_prices_updated(results)
-
                 GLOBAL_DASHBOARD_CACHE = sanitize_for_json(results)
                 save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
-                print(f"[BACKGROUND] Günlük veriler güncellendi ({stats_count} yeni, toplam {len(_merged_stats)} hisse). 1h taraması başlıyor...")
-            elif results and isinstance(results, dict) and stats_count > 0:
-                # Kısmi veri geldi: Sembol istatistiklerini mevcut cache ile birleştir,
-                # kapsama alanı sonraki döngülerde kademeli olarak büyüsün.
-                if not isinstance(GLOBAL_DASHBOARD_CACHE, dict):
-                    GLOBAL_DASHBOARD_CACHE = {}
-                existing_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
-                if not isinstance(existing_stats, dict):
-                    existing_stats = {}
-                existing_stats.update(sanitize_for_json(results.get("all_symbols_stats", {})))
-                GLOBAL_DASHBOARD_CACHE["all_symbols_stats"] = existing_stats
-                _mark_prices_updated(GLOBAL_DASHBOARD_CACHE)
-                save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
-                print(f"[BACKGROUND] Kısmi veri geldi ({stats_count} hisse). Mevcut cache ile birleştirildi (toplam {len(existing_stats)} hisse).")
-                results = GLOBAL_DASHBOARD_CACHE
-            else:
-                print(f"[BACKGROUND] Yfinance hatası veya boş veri! results length: {len(results.get('all_symbols_stats', {})) if isinstance(results, dict) else 0}. Cache korunuyor.")
-                # Eger cache hic yoksa, en azindan bos listelerle dolsun ki UI patlamasin.
-                if not GLOBAL_DASHBOARD_CACHE:
-                    if isinstance(results, dict) and "v8_market_regime" not in results:
-                        try:
-                            results["v8_market_regime"] = regime_engine.determine_regime() if regime_engine else {"regime": "NEUTRAL", "score": 50.0, "xu100_trend": 0.0}
-                        except Exception:
-                            pass
-                    GLOBAL_DASHBOARD_CACHE = results
-                results = GLOBAL_DASHBOARD_CACHE
+                stats_count = len(results.get("all_symbols_stats", {}))
+                print(f"[BACKGROUND] Günlük veriler güncellendi ({stats_count} hisse, TradingView).")
                 
-            if results and isinstance(results, dict):
-                daily_stats = results.get("all_symbols_stats", {})
+                # Tavan takibi anlık görüntüsü
                 try:
-                    res_1h = scanner.scan_pool_bulk_1h(BIST_SYMBOLS, daily_stats)
-                    if res_1h and isinstance(res_1h, dict):
-                        tavan_candidates = res_1h.get("tavan_adaylari", [])
-                        # Gün içi güç metriklerini mevcut all_symbols_stats'a entegre et
-                        intra_stats = res_1h.get("all_symbols_stats", {})
-                        existing_stats = GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})
-                        for sym, stats in intra_stats.items():
-                            if sym in existing_stats:
-                                existing_stats[sym]["intraday_strength"] = stats.get("intraday_strength")
-                            else:
-                                existing_stats[sym] = stats
-                        # V8 1h kirilim teyidini gunluk istatistiklere isle
-                        _v8_intra = sanitize_for_json(res_1h.get("v8_intraday_breakout", {}))
-                        for _sym, _v8b in _v8_intra.items():
-                            if _sym in existing_stats:
-                                existing_stats[_sym]["v8_breakout_1h"] = _v8b
-                        GLOBAL_DASHBOARD_CACHE["all_symbols_stats"] = existing_stats
-                        GLOBAL_DASHBOARD_CACHE["opportunities_1h"] = sanitize_for_json(res_1h.get("opportunities_1h", []))
-                        GLOBAL_DASHBOARD_CACHE["tavan_adaylari"] = sanitize_for_json(tavan_candidates)
-                        GLOBAL_DASHBOARD_CACHE["stay_away_1h"] = sanitize_for_json(res_1h.get("stay_away_1h", []))
-                        save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
-                        
-                        # Belirli Saatlerdeki Tavan Listesi Bellek Kaydı & 18:10 Kapanış Denetimi
-                        try:
-                            from services.tavan_tracker import TavanAuditTracker
-                            TavanAuditTracker.record_snapshot(tavan_candidates, all_symbols_stats=daily_stats)
-                            TavanAuditTracker.update_daily_progress(daily_stats)
-                            
-                            # YENİ MİMARİ: SQLite'a sinyalleri ve market datasını kaydet
-                            from services.market_data import MarketDataManager
-                            from services.simulation_engine import SimulationEngine
-                            from datetime import datetime
-                            d_str = datetime.now().strftime("%Y-%m-%d")
-                            all_sim_cands = list(tavan_candidates or [])
-                            sim_seen = {c.get('symbol') or c.get('Symbol') for c in all_sim_cands if (c.get('symbol') or c.get('Symbol'))}
-                            for opp in (GLOBAL_DASHBOARD_CACHE.get('opportunities_1h', []) + GLOBAL_DASHBOARD_CACHE.get('opportunities', [])):
-                                osym = opp.get('symbol') or opp.get('Symbol')
-                                if osym and osym not in sim_seen:
-                                    all_sim_cands.append(opp)
-                                    sim_seen.add(osym)
-                            for sym, d in (daily_stats or {}).items():
-                                if not isinstance(d, dict) or sym in sim_seen:
-                                    continue
-                                price = float(d.get('Price') or d.get('Daily_Close') or 0)
-                                ch = float(d.get('Change_Pct') or 0)
-                                vol = float(d.get('Vol_Multiplier') or d.get('Volume_Ratio') or 0)
-                                vol_tl = float(d.get('Volume_TL') or (float(d.get('Volume', 0)) * price) or 0)
-                                if price >= 4.0 and 0.5 <= ch < 5.2 and vol >= 1.2 and vol_tl >= 25_000_000:
-                                    cand = dict(d)
-                                    cand['symbol'] = sym
-                                    cand['score'] = float(d.get('Score') or 92.0)
-                                    cand['morning_price'] = price
-                                    cand['ceiling_target'] = price * 1.10
-                                    cand['morning_phase'] = 'Phase 1 (10:15)'
-                                    all_sim_cands.append(cand)
-                                    sim_seen.add(sym)
-                            MarketDataManager.record_signals(d_str, all_sim_cands)
-                            MarketDataManager.fetch_and_store_intraday(d_str)
-                            
-                            # Günlük simülasyon tek koşturucuda çalışır: simulation_loop (her 2 dk).
-                            # Buradan ikinci kez çağrılırsa iki replay aynı anda çalışır; bu,
-                            # mükerrer Telegram mesajlarına ve aynı hissenin eşzamanlı
-                            # AL/SAT görünmesine neden oluyordu. (Koşturucu: simulation_loop / manuel API)
+                    from services.tavan_tracker import TavanAuditTracker
+                    TavanAuditTracker.record_snapshot(results.get("tavan_adaylari", []), all_symbols_stats=results.get("all_symbols_stats", {}))
+                    TavanAuditTracker.update_daily_progress(results.get("all_symbols_stats", {}))
+                except Exception as e_audit:
+                    print(f"[BACKGROUND] Tavan denetim kaydı hatası: {e_audit}")
 
-                            
-                        except Exception as e_audit:
-                            print(f"[BACKGROUND] Yeni Motor Hatası: {e_audit}")
-                            import traceback
-                            traceback.print_exc()
-                        
-                        # Runtime GitHub writes are intentionally disabled.
-                            
-                        print("[BACKGROUND] 1h ve Tavan taraması tamamlandı, saatlik tavan denetçisine kaydedildi.")
-                except Exception as e_1h:
-                    print(f"[BACKGROUND] 1h Tarama hatası: {e_1h}")
-                
-                # Otomatik tavan/RSI/saatlik fırsat Telegram mesajları kapalı.
-                print(f"[BACKGROUND] Kapsamlı Tarama tamamlandı. Veriler önbelleğe ve diske kaydedildi.")
+                # Sinyalleri SQLite'a kaydet ve simülasyonu koştur
+                _sync_signals_and_run_simulation(today_str, results)
+            else:
+                print("[BACKGROUND] TradingView verisi alınamadı, yedek taranıyor...")
+                results = scanner.scan_pool_bulk(BIST_SYMBOLS)
+                if results and isinstance(results, dict):
+                    results["cache_date"] = today_str
+                    GLOBAL_DASHBOARD_CACHE = sanitize_for_json(results)
+                    save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
             
         except Exception as e:
             print(f"[BACKGROUND] Bulk Tarama hatası: {e}")
             import traceback
             traceback.print_exc()
-            
 
         # --- MTF BACKGROUND SCAN ---
         try:
@@ -1308,6 +1193,7 @@ def require_auth():
     if request.method == 'GET' and (
         request.path in (
             '/api/simulation/daily_pnl',
+            '/api/simulation/terminal',
             '/api/simulation/live_orders',
             '/api/simulation/live_data',
             '/api/simulation/backtest',
@@ -1319,6 +1205,11 @@ def require_auth():
             '/api/v8/weekly',
             '/api/v8/learning/outcomes',
             '/api/detective',
+            '/api/dip_breakout',
+            '/api/leaderboard',
+            '/api/news/global',
+            '/api/portfolio/reset_status',
+            '/api/me',
             '/api/dashboard_init'
         ) or request.path.startswith('/api/v8/')
     ):
@@ -1389,7 +1280,9 @@ def login_post():
         session['logged_in'] = True
         session['username'] = username
         upsert_app_user(f"local:{username}", display_name=username)
-        return jsonify({"status": "success"})
+        if request.is_json or (request.content_type and 'json' in request.content_type):
+            return jsonify({"status": "success"})
+        return redirect('/')
     return jsonify({"status": "error", "message": "Kullanıcı adı veya şifre hatalı"}), 401
 
 @app.route('/api/me', methods=['GET'])
@@ -1871,6 +1764,31 @@ def api_dashboard_init():
     persisted_cache = load_dashboard_cache()
     if persisted_cache:
         GLOBAL_DASHBOARD_CACHE = persisted_cache
+
+    try:
+        from zoneinfo import ZoneInfo
+        _now_ist = datetime.now(ZoneInfo("Europe/Istanbul"))
+    except Exception:
+        _now_ist = datetime.now()
+    today_str = _now_ist.strftime("%Y-%m-%d")
+
+    cache_dt = GLOBAL_DASHBOARD_CACHE.get("cache_date") if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else None
+    stats_len = len(GLOBAL_DASHBOARD_CACHE.get("all_symbols_stats", {})) if isinstance(GLOBAL_DASHBOARD_CACHE, dict) else 0
+
+    # OTOMATIK GUNCELLEME: Seans saatlerinde cache dunden kaldiysa veya bossa,
+    # 2.5s TradingView ile aninda taze veriyi ceker ve simulasyonu kosturur.
+    if (cache_dt != today_str or stats_len < 50) and 9 <= _now_ist.hour <= 19:
+        try:
+            from data.providers.tradingview_provider import TradingViewBulkProvider
+            tv = TradingViewBulkProvider()
+            fresh_tv = tv.build_dashboard_data()
+            if fresh_tv and len(fresh_tv.get("all_symbols_stats", {})) >= 50:
+                GLOBAL_DASHBOARD_CACHE = fresh_tv
+                save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
+                _sync_signals_and_run_simulation(today_str, fresh_tv)
+        except Exception as e_sg:
+            print(f"[AUTO-REFRESH ERROR] {e_sg}")
+
     market = bist_market_status()
 
     clean_cache = sanitize_for_json(
@@ -2843,6 +2761,8 @@ def api_system_fast_scan():
         if fresh_data and len(fresh_data.get("all_symbols_stats", {})) >= 50:
             GLOBAL_DASHBOARD_CACHE = fresh_data
             save_dashboard_cache(GLOBAL_DASHBOARD_CACHE)
+            # Sinyalleri ve simulasyonu da otomatik guncelle:
+            _sync_signals_and_run_simulation(today_str, fresh_data)
             return jsonify({
                 "status": "success",
                 "source": "tradingview",

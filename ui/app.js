@@ -4524,22 +4524,23 @@ async function syncCloudNow(btn) {
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Senkronize Ediliyor...';
     }
     try {
-        const res = await fetch('https://varantradar-pro-8.verdent.app/api/cron/sync_to_pa');
+        const res = await fetch('/api/system/fast_scan?token=pro8_sync');
         const data = await res.json();
         if (data && data.status === 'success') {
-            if (typeof showToast === 'function') showToast('Bulut verileri basariyla senkronize edildi!', 'success');
+            if (typeof showToast === 'function') showToast('Piyasa ve simülasyon verileri başarıyla senkronize edildi (' + (data.updated || 0) + ' hisse)!', 'success');
             setTimeout(fetchSimulationData, 1000);
+            if (typeof fetchDashboardData === 'function') setTimeout(fetchDashboardData, 1500);
         } else {
-            if (typeof showToast === 'function') showToast(data.message || 'Senkron uyarisi alindi.', 'warning');
+            if (typeof showToast === 'function') showToast(data.message || 'Senkron uyarısı alındı.', 'warning');
         }
     } catch (e) {
-        console.warn('Verdent sync error:', e);
+        console.warn('Sync error:', e);
         try {
             await vrAuthorizedFetch('/api/force_refresh', { method: 'POST' });
             if (typeof showToast === 'function') showToast('Veriler yenilendi.', 'info');
             setTimeout(fetchSimulationData, 1000);
         } catch (e2) {
-            if (typeof showToast === 'function') showToast('Bulut senkron basarisiz: ' + e2.message, 'error');
+            if (typeof showToast === 'function') showToast('Senkron başarısız: ' + e2.message, 'error');
         }
     } finally {
         if (btn) {
