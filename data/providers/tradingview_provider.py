@@ -61,7 +61,8 @@ class TradingViewBulkProvider(BaseDataProvider):
         "BB.lower",                 # 19: Bollinger Alt Bant
         "BB.basis",                 # 20: Bollinger Orta Bant
         "Stoch.K",                  # 21: Stokastik %K
-        "Stoch.D"                   # 22: Stokastik %D
+        "Stoch.D",                  # 22: Stokastik %D
+        "VWAP"                      # 23: Hacim Ağırlıklı Ortalama Fiyat (Kurumsal Çapa)
     ]
 
     def __init__(self):
@@ -190,6 +191,10 @@ class TradingViewBulkProvider(BaseDataProvider):
                     stoch_k = float(vals[21]) if len(vals) > 21 and vals[21] is not None else 50.0
                     stoch_d = float(vals[22]) if len(vals) > 22 and vals[22] is not None else 50.0
 
+                    # VWAP (Hacim Ağırlıklı Ortalama Fiyat)
+                    vwap = float(vals[23]) if len(vals) > 23 and vals[23] is not None and float(vals[23]) > 0 else (money_vol / volume if volume > 0 else price)
+                    dist_to_vwap = round(((price - vwap) / vwap) * 100.0, 2) if vwap > 0 else 0.0
+
                     vol_mult = round(volume / avg_vol_10d, 2) if avg_vol_10d > 0 else 1.0
 
                     # Gün İçi Pozisyon ve Güç
@@ -240,6 +245,8 @@ class TradingViewBulkProvider(BaseDataProvider):
                         "Score": score,
                         "Ceiling_Price": ceiling_target,
                         "Distance_To_Ceiling_Pct": dist_to_ceiling,
+                        "VWAP": round(vwap, 2),
+                        "Distance_To_VWAP_Pct": dist_to_vwap,
                         "Price_Stale": False,
                         "Last_Price_Update": today_str,
                         "time": time_str,
@@ -346,6 +353,13 @@ class TradingViewBulkProvider(BaseDataProvider):
             pos_pct = ((p - d_low) / rng) * 100.0
             if pos_pct < 70.0:
                 return False
+            # VWAP Kurumsal Çapası: Fiyat VWAP altında olamaz, %5'ten fazla aşırı şişmiş olamaz
+            vwap_val = float(x.get("VWAP", 0))
+            if vwap_val > 0:
+                if p < vwap_val * 0.998:
+                    return False
+                if p > vwap_val * 1.050:
+                    return False
             return True
 
         # Kurumsal Likidite ve Fitil Filtresi (Institutional Grade):

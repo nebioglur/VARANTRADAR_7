@@ -806,6 +806,18 @@ class SimulationEngine:
                     print(f"[SIM-GUARD] {s.get('symbol')} elendi: Üst fitil tuzağı / Gövdeden büyük fitil (%{upper_wick/rng*100:.1f})")
                     continue
 
+            # Kural F4 (VWAP KURUMSAL ÇAPASI):
+            # Fiyat VWAP altında ise kurumsal satış baskısı vardır; KESİNLİKLE ALINMAZ!
+            # Fiyat VWAP'tan %5'ten fazla uzaklaşmışsa aşırı şişmiştir; KESİNLİKLE ALINMAZ!
+            vwap_check = float(meta.get('VWAP') or 0.0)
+            if vwap_check > 0:
+                if price < vwap_check * 0.998:
+                    print(f"[SIM-GUARD] {s.get('symbol')} elendi: VWAP altında kurumsal satış ({price:.2f} < {vwap_check:.2f})")
+                    continue
+                if price > vwap_check * 1.050:
+                    print(f"[SIM-GUARD] {s.get('symbol')} elendi: VWAP'tan aşırı uzaklaşmış / Şişkinlik ({price:.2f} > {vwap_check*1.05:.2f})")
+                    continue
+
             indicators = meta.get('Indicators', {}) if isinstance(meta, dict) else {}
             rsi = float(indicators.get('RSI') or indicators.get('RSI_14') or meta.get('RSI') or 50)
             volume_multiplier = float(meta.get('Vol_Multiplier') or meta.get('Volume_Ratio') or indicators.get('Volume_Ratio') or r_vol or 1.2)
