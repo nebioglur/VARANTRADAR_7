@@ -24,7 +24,7 @@ class SimulationEngine:
 
     def __init__(self, daily_budget=500000.0, max_positions=3, owner=None):
         self.daily_budget = daily_budget
-        self.max_positions = 999  # KULLANICI ISTEGI: Simulasyonda islem sayisi SINIRSIZ
+        self.max_positions = max_positions or 3  # Kurumsal Risk Playbook: En fazla 3-4 pozisyon
         self.owner = owner or "local:nebioglur"
 
     @classmethod
@@ -336,82 +336,54 @@ class SimulationEngine:
         if risk_per_share <= 0:
             return 0.0, 0.0
 
-        # KULLANICI ISTEGI: Her hisseye potansiyeline gore bagimsiz islem butcesi!
-        # Nakit yatmasin, ozellikle BIST boga iken aktif ofansif pozisyon alinir.
         is_strong_bull = (regime == "STRONG_BULL" or "ÜÇLÜ" in str(regime))
         is_bull = (is_strong_bull or regime == "BULL" or "BOĞA" in str(regime))
+        is_strong_bear = (regime == "STRONG_BEAR" or "ŞİDDETLİ" in str(regime))
+        is_bear_effective = is_strong_bear or is_bear or regime == "BEAR" or "AYI" in str(regime)
 
-        # Taban bagimsiz islem buyuklugu (100.000 TL kasa icin taban ~25.000 TL)
-        base_notional = self.daily_budget * 0.25
+        # ── KURUMSAL SERMAYE KORUMA VE REJİM BÜTÇESİ (PLAYBOOK) ──
+        # Aşırı maruziyeti (%200 kaldıraç tuzağını) KESİNLİKLE engeller.
+        # Kasa asla tek bir günde eritilemez, risk katı kurallarla bölünür.
+        if is_strong_bear:
+            max_pos_ratio = 0.00
+            max_trade_risk_ratio = 0.000
+        elif is_bear_effective:
+            max_pos_ratio = 0.10        # 500K kasada en fazla 50.000 TL pozisyon
+            max_trade_risk_ratio = 0.004 # Max 2.000 TL işlem riski (%0.4)
+        elif not is_bull:               # NEUTRAL / DEFANSİF
+            max_pos_ratio = 0.12        # 500K kasada en fazla 60.000 TL pozisyon
+            max_trade_risk_ratio = 0.005 # Max 2.500 TL işlem riski (%0.5)
+        elif is_strong_bull:
+            max_pos_ratio = 0.20        # 500K kasada en fazla 100.000 TL pozisyon
+            max_trade_risk_ratio = 0.010 # Max 5.000 TL işlem riski (%1.0)
+        else:                           # BULL
+            max_pos_ratio = 0.16        # 500K kasada en fazla 80.000 TL pozisyon
+            max_trade_risk_ratio = 0.008 # Max 4.000 TL işlem riski (%0.8)
 
-        # 1. Rejim Carsani: Boga rejiminde parayi aktif kullan (+%30 - +%50 daha buyuk pozisyon)
-        if is_strong_bull:
-            regime_mult = 1.50
-        elif is_bull:
-            regime_mult = 1.30
-        elif is_bear:
-            regime_mult = 0.50
-        else:
-            regime_mult = 1.00
+        max_position_cap = self.daily_budget * max_pos_ratio
+        if max_position_cap <= 0:
+            return 0.0, 0.0
 
-        # 2. Hisse Potansiyel Carsani (Skor, Sektor Gucu, Akilli Para, Hacim)
-        potential_mult = 1.0
-        bonus_tags = bonus_tags or []
-        tag_str = " ".join(str(t) for t in bonus_tags).lower()
+        max_trade_risk = self.daily_budget * max_trade_risk_ratio
 
-        if total_score >= 100 or "lider sektor" in tag_str:
-            potential_mult += 0.25
-        elif total_score >= 95:
-            potential_mult += 0.15
-
-        if "akilli para" in tag_str:
-            potential_mult += 0.10
-        if "super hacim" in tag_str:
-            potential_mult += 0.10
-        if "erken kopus" in tag_str:
-            potential_mult += 0.05
-
-        target_notional = base_notional * regime_mult * potential_mult
-
-        if risk_pct and risk_pct > 0:
-            risk_budget = self.daily_budget * risk_pct
-        else:
-            if is_strong_bull:
-                risk_budget = self.daily_budget * 0.025
-            elif is_bull:
-                risk_budget = self.daily_budget * 0.020
-            elif is_bear:
-                risk_budget = self.daily_budget * 0.008
-            else:
-                risk_budget = self.daily_budget * 0.015
-
-        risk_limited_notional = risk_budget * entry_price / max(0.001, risk_per_share)
-        
-        # Boga modunda nakitin atil kalmasini onle, potansiyel buyuklugune oncelik ver
-        if is_bull:
-            allocation = max(target_notional, min(target_notional * 1.30, risk_limited_notional))
-        else:
-            allocation = min(target_notional, risk_limited_notional)
-
-        # Taban ve Tavan guvencesi: hisse basina kasanin %8'i ila %30'u (500K icin 40.000 TL - 150.000 TL)
-        # Pozisyonlara rahatca girmeyi saglar, tek hisseye asiri risk yigmasini onler.
-        max_position_cap = self.daily_budget * 0.30
-        min_position_floor = self.daily_budget * 0.08
-        allocation = max(min_position_floor, min(allocation, max_position_cap))
-
-        # RİSK PARİTESİ (Kelly / Volatilite Koruma Kuralı):
-        # Tek bir işlemde portföy riski en fazla %1.0 (5.000 TL) olabilir.
-        # Volatilitesi yüksek hissede bütçe otomatik küçülür, kasa korunur.
-        max_allowed_loss = self.daily_budget * 0.010
+        # RİSK PARİTESİ (Kelly / Stop Mesafesi Güvencesi):
+        # Stop mesafesi ne kadar genişse, pozisyon o kadar küçülür; stop olduğunda zarar ASLA tavanı aşamaz.
         stop_pct = max(0.015, risk_per_share / entry_price)
-        risk_parity_allocation = max_allowed_loss / stop_pct
-        allocation = min(allocation, risk_parity_allocation)
+        risk_parity_allocation = max_trade_risk / stop_pct
 
-        # Eldeki nakit sinirini asmasin (kullanilabilir nakit elverdigi olcude giris)
+        allocation = min(max_position_cap, risk_parity_allocation)
+
+        # Taban güvencesi (işleme değecek asgari pay: kasanın %5'i, 25.000 TL)
+        min_position_floor = min(max_position_cap, self.daily_budget * 0.05)
+        allocation = max(min_position_floor, allocation)
+
+        # Eldeki nakit sinirini asmasin
         if current_cash is not None:
             if current_cash < entry_price:
                 return 0.0, 0.0
             allocation = min(allocation, current_cash)
+
+        return allocation, min(max_trade_risk, allocation * risk_per_share / entry_price)
 
         max_trade_risk = self.daily_budget * 0.010
 
@@ -654,11 +626,11 @@ class SimulationEngine:
             print(f"[SimEngine] {date_str} -> Günlük kâr kilidi (+%2.0) önceden tetiklenmiş (+{_today_db_pnl:.0f} TL): kâr koruma devrede, yeni giriş yok")
         elif _sim_regime == "STRONG_BEAR" or is_strong_bear:
             effective_max_positions = 0
-            print(f"[SimEngine] {date_str} -> Şiddetli Ayı kilidi: simülasyon girişleri kapalı")
+            print(f"[SimEngine] {date_str} -> Şiddetli Ayı kilidi: YENİ GİRİŞLER TAMAMEN KAPALI (Nakit %100)")
         elif _sim_regime == "BEAR" or is_bear:
-            # SAVUNMA MODU: Sert düşüşte piyasa kilitlenmez; 500K kasayla en kaliteli 3 seçici işleme izin verilir
-            effective_max_positions = 3
-            print(f"[SimEngine] {date_str} -> Savunma Modu (Ayı): En kaliteli 3 seçici işleme izin veriliyor")
+            # SAVUNMA MODU (AYI): Sadece endeksten pozitif ayrışan tek 1 lider hisseye izin verilir
+            effective_max_positions = 1
+            print(f"[SimEngine] {date_str} -> Savunma Modu (Ayı): Kasa korunuyor, en fazla 1 seçici işlem")
         elif _weekly_loss_locked:
             effective_max_positions = 0
             print(f"[SimEngine] {date_str} -> Haftalık zarar kilidi aktif: yeni girişler durduruldu (açık pozisyonlar planıyla yönetilir)")
@@ -667,9 +639,9 @@ class SimulationEngine:
             print(f"[SimEngine] {date_str} -> Haftalık %6 hedefi doldu: KÂR KORUMA MODU (yeni giriş yok, açık pozisyonlar izleniyor)")
         else:
             # DİNAMİK VİTES POZİSYON LİMİTİ:
-            # Ofansif modda: En fazla 4 hisse (kazananları koşturma payı).
-            # Defansif modda: En fazla 3 hisse (sıkı garantici kalkan).
-            max_cap = 4 if is_offensive else 3
+            # Ofansif modda: En fazla 3-4 hisse (akışkan ralli).
+            # Defansif (Nötr) modda: En fazla 2 hisse (sıkı garantici kalkan).
+            max_cap = 4 if is_strong_bull else (3 if is_offensive else 2)
             effective_max_positions = min(max_cap, self.max_positions)
 
         # DOMINO_CLUSTERS ile dinamik sektor ayrismasi haritasi
@@ -1359,11 +1331,18 @@ class SimulationEngine:
 
             to_remove = []
             # DİNAMİK GÜNLÜK İŞLEM LİMİTİ:
-            # Ofansif modda: Günde en fazla 6 işlem (akışkan ralli, tavan avı).
-            # Defansif modda: Günde en fazla 4 işlem (testere piyasasında doğranma engeli).
-            max_daily_allowed = 6 if is_offensive else 4
+            # Ofansif modda: Günde en fazla 4 işlem (akışkan ralli, tavan avı).
+            # Defansif (Ayı/Nötr) modda: Günde KESİNLİKLE en fazla 2 işlem (doğranma ve testere engeli).
+            max_daily_allowed = 4 if is_offensive else 2
             if (len(completed_trades) + len(open_symbols)) >= max_daily_allowed and not (is_offensive and _daily_pnl >= _profit_limit):
                 pending_signals = []
+                break
+
+            # BRÜT MARUZİYET TAVANI (PORTFÖY KALDIRAÇ ENGELİ):
+            # Açık pozisyonların toplam tutarı portföyün %30'unu (Defansif: 150.000 TL) ASLA aşamaz.
+            current_total_exposure = sum(float(t.get('shares', 0)) * float(t.get('entry_price', 0)) for t in active_trades if t['status'] == 'OPEN')
+            max_allowed_exposure = self.daily_budget * (0.50 if is_offensive else 0.30)
+            if current_total_exposure >= max_allowed_exposure:
                 break
 
             for s in list(pending_signals):
@@ -1371,6 +1350,26 @@ class SimulationEngine:
                     break  # Yalnizca rejim/zarar kilidi aktifse durdur
                 if available_slots <= 0 or entries_in_this_bar >= MAX_ENTRIES_PER_BAR:
                     break
+
+                sym = s['symbol']
+                if sym in open_symbols or sym in stopped_out_symbols:
+                    continue
+
+                # KATI PENNY STOCK ENGELİ: Fiyatı 8.0 TL altındaki sığ hisseler ASLA giremez!
+                s_p = float(s.get('morning_price') or s.get('Price') or 0.0)
+                if 0 < s_p < 8.0:
+                    to_remove.append(s)
+                    continue
+
+                # SEKTÖR TEKELİ KORUMASI (Aynı Sektörden Çift Pozisyon Yasağı):
+                # Örneğin GARAN açıkken VAKBN alınamaz! Sektör riski zorunlu dağıtılır.
+                s_sector = s.get('_sector_name') or ''
+                if s_sector:
+                    open_sectors = {t.get('sector_name') or t.get('_sector_name') for t in active_trades if t['status'] == 'OPEN'}
+                    if s_sector in open_sectors:
+                        print(f"[SimEngine] {sym} elendi: {s_sector} sektöründe zaten açık pozisyon var")
+                        to_remove.append(s)
+                        continue
 
                 # DİNAMİK SEÇİCİLİK:
                 # candidate_pool zaten 6 temel filtreyi (RSI, Tuzak, VWAP, CMF, Hacim, Trend) geçmiş elit havuzdur.
@@ -1511,6 +1510,8 @@ class SimulationEngine:
                     'atr_value': setup['atr_value'],
                     'risk_amount': risk_amount,
                     'market_regime': market_regime,
+                    'sector_name': sec_name,
+                    '_sector_name': sec_name,
                     'engine_version': 'V8_ELITE'
                 }
                 trade_entry['owner'] = self.owner
