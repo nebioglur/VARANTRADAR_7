@@ -449,10 +449,11 @@ class SimulationEngine:
         # ── KATI PARASAL RİSK PARİTESİ (DOLLAR RISK PARITY) ──
         # Kural: Normal stop gerçekleşmesinde hedeflenen azami başlangıç riski 1.250 TL'dir (%0.25).
         # Stop mesafesi ne kadar genişse, pozisyon o kadar KÜÇÜLÜR:
-        # Pozisyon = min(%10 Sermaye, 1.250 TL / (Stop Mesafesi + Komisyon))
+        # Pozisyon = min(%10 Sermaye, 1.250 TL / (Stop Mesafesi + Gidiş-Dönüş Komisyon))
         max_trade_risk_tl = min(1250.0, self.daily_budget * 0.0025)
         stop_pct = max(0.015, risk_per_share / entry_price)
-        effective_risk_pct = stop_pct + 0.0008  # Çift yönlü %0.08 borsa/aracı kurum komisyon payı dahil
+        # Muhafazakar gidiş-dönüş komisyon ve kayma payı: %0.16 (0.0016)
+        effective_risk_pct = stop_pct + 0.0016
         risk_based_allocation = max_trade_risk_tl / effective_risk_pct
 
         # Nihai Pozisyon: min(Tavan, Parasal Risk Limiti)
@@ -1883,15 +1884,11 @@ class SimulationEngine:
                 reason = "SEANS SONU NAKİTE GEÇİŞ (17:50)"
 
             # ── MFE, MAE, R-MULTIPLE & HOLD DURATION TAKİBİ ──
-            # İntraday High ve Low kullanarak gerçek seans içi tepe (MFE) ve dip (MAE) tespiti
+            # Look-ahead bias ve giriş öncesi tepe/dip hatasını önlemek için:
+            # MFE ve MAE KESİNLİKLE işlem girişinden (entry_time) sonraki canlı fiyat adımlarıyla güncellenir.
             cur_unrealized_pct = round(((live_px - entry_px) / entry_px) * 100.0, 2)
-            day_h = float(stat.get('High') or live_px)
-            day_l = float(stat.get('Low') or live_px)
-            high_pct_possible = round(((day_h - entry_px) / entry_px) * 100.0, 2)
-            low_pct_possible = round(((day_l - entry_px) / entry_px) * 100.0, 2)
-
-            cur_mfe = max(float(r.get('mfe_pct') or 0.0), cur_unrealized_pct, high_pct_possible)
-            cur_mae = min(float(r.get('mae_pct') or 0.0), cur_unrealized_pct, low_pct_possible)
+            cur_mfe = max(float(r.get('mfe_pct') or 0.0), cur_unrealized_pct)
+            cur_mae = min(float(r.get('mae_pct') or 0.0), cur_unrealized_pct)
             risk_amt = float(r.get('risk_amount') or 1250.0)
             r_mult = round(net_pnl / risk_amt, 2) if risk_amt > 0 else 0.0
             hold_mins = 0
