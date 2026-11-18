@@ -876,6 +876,27 @@ import gzip
 import io
 from flask import request
 
+@app.after_request
+def compress_response(response):
+    try:
+        accept_encoding = request.headers.get('Accept-Encoding', '')
+        if (
+            'gzip' in accept_encoding.lower()
+            and response.status_code < 300
+            and not response.direct_passthrough
+            and 'Content-Encoding' not in response.headers
+            and response.mimetype in ['application/json', 'text/html', 'text/css', 'application/javascript', 'text/javascript']
+        ):
+            response_data = response.get_data()
+            if len(response_data) > 1024:
+                compressed_data = gzip.compress(response_data, compresslevel=6)
+                response.set_data(compressed_data)
+                response.headers['Content-Encoding'] = 'gzip'
+                response.headers['Content-Length'] = len(compressed_data)
+    except Exception:
+        pass
+    return response
+
 
 
 # Same-origin by default; cross-origin access requires an explicit allow-list.
@@ -2689,23 +2710,26 @@ def api_system_push_market_data():
             except Exception:
                 continue
 
-        from services.market_data import MarketDataManager
-        if all_cands:
-            MarketDataManager.record_signals(date_str, all_cands)
-            try:
-                import threading
-                threading.Thread(target=MarketDataManager.fetch_and_store_intraday, args=(date_str,), kwargs={"period": "5d"}, daemon=True).start()
-            except Exception:
-                pass
+        if incoming_trades:
+            sim_res = {'status': 'ok', 'source': 'bridge_trades', 'count': len(incoming_trades)}
+        else:
+            from services.market_data import MarketDataManager
+            if all_cands:
+                MarketDataManager.record_signals(date_str, all_cands)
+                try:
+                    import threading
+                    threading.Thread(target=MarketDataManager.fetch_and_store_intraday, args=(date_str,), kwargs={"period": "5d"}, daemon=True).start()
+                except Exception:
+                    pass
 
-        sim_res = {'status': 'skipped'}
-        try:
-            from services.simulation_engine import SimulationEngine
-            engine = SimulationEngine(owner=get_owner_key() or 'local:nebioglur')
-            engine.run_daily_simulation(date_str)
-            sim_res = {'status': 'ok'}
-        except Exception as e_sim:
-            sim_res = {'status': 'error', 'message': str(e_sim)}
+            sim_res = {'status': 'skipped'}
+            try:
+                from services.simulation_engine import SimulationEngine
+                engine = SimulationEngine(owner=get_owner_key() or 'local:nebioglur')
+                engine.run_daily_simulation(date_str)
+                sim_res = {'status': 'ok'}
+            except Exception as e_sim:
+                sim_res = {'status': 'error', 'message': str(e_sim)}
 
         # V8 ham sinyal spamı devre dışı bırakıldı; işlemler yalnızca SimulationEngine AL/SAT üzerinden bildirilir
         v8_sent = False

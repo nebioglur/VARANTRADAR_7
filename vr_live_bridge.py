@@ -217,8 +217,8 @@ def main():
             # Seans araligi: 09:50 - 18:15 (Pzt - Cuma)
             in_session = weekday and ((hour == 9 and minute >= 50) or (10 <= hour < 18) or (hour == 18 and minute <= 15))
 
-            # Seans ici canli veri: 3 dakikada bir (180 saniye), Seans disi: 8 dakikada bir (480 saniye)
-            interval = 120 if in_session else 300
+            # Seans ici canli veri: 3 dakikada bir (180 saniye), Seans disi: 5 dakikada bir (300 saniye)
+            interval = 180 if in_session else 300
 
             if in_session:
                 print_flush(f"[SEANS AKTIF] Veri senkronizasyonu yapiliyor ({now.strftime('%H:%M:%S')})...")
