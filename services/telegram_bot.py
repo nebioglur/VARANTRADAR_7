@@ -190,25 +190,36 @@ def send_telegram_message(text: str, parse_mode: str = "HTML", force: bool = Fal
                 kwargs["proxies"] = proxies
 
             response = None
-            e_direct_err = None
-            # 1. Deneme: Dogrudan baglanti (Telegram API whitelist'tedir ve dogrudan 200 doner)
-            try:
-                response = requests.post(url, json=payload, timeout=12)
-            except Exception as e_d:
-                e_direct_err = str(e_d)
-                logger.warning(f"Telegram dogrudan baglanti basarisiz ({e_d}), proxy deneniyor...")
+            p = "http://proxy.server:3128"
 
-            # 2. Deneme: Dogrudan basarisiz olduysa Squid proxy ile dene
+            # 1. Deneme: GET ile gonderim (PythonAnywhere Squid proxy GET isteklerini 100% gecirir)
+            try:
+                response = requests.get(url, params=payload, proxies={"http": p, "https": p}, timeout=10)
+            except Exception as e_get:
+                pass
+
+            # 2. Deneme: Eger GET proxy basarisizsa dogrudan GET
             if response is None or response.status_code != 200:
-                p = "http://proxy.server:3128"
                 try:
-                    p_resp = requests.post(url, json=payload, proxies={"http": p, "https": p}, timeout=15)
-                    if p_resp.status_code == 200:
-                        response = p_resp
-                except Exception as e_pxy:
+                    response = requests.get(url, params=payload, timeout=10)
+                except Exception:
+                    pass
+
+            # 3. Deneme: POST ile gonderim
+            if response is None or response.status_code != 200:
+                try:
+                    response = requests.post(url, json=payload, timeout=10)
+                except Exception:
+                    pass
+
+            # 4. Deneme: POST with proxy
+            if response is None or response.status_code != 200:
+                try:
+                    response = requests.post(url, json=payload, proxies={"http": p, "https": p}, timeout=10)
+                except Exception as e_final:
                     if response is None:
-                        _LAST_TG_ERROR = f"Direct: {e_direct_err} | Proxy: {e_pxy}"
-                        raise e_pxy
+                        _LAST_TG_ERROR = str(e_final)
+                        raise e_final
 
             response_data = response.json()
 
