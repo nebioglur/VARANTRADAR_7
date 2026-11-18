@@ -388,6 +388,10 @@ class TradingViewBulkProvider(BaseDataProvider):
             key=lambda x: x.get("Score", 0), reverse=True
         )[:20]
 
+        # Endeks Makro Şalteri:
+        index_guard_active = bool(xu100_chg is not None and xu100_chg < -0.30)
+        index_status_desc = "SATIŞ BASKISI (ENDEKS ŞALTERİ AKTİF)" if index_guard_active else ("GÜÇLÜ BOĞA" if (xu100_chg or 0) > 0.5 else "DENGELİ")
+
         return {
             "cache_date": today_str,
             "last_updated": time_str,
@@ -395,6 +399,8 @@ class TradingViewBulkProvider(BaseDataProvider):
             "price_updated_at": time.time(),
             "cache_timestamp": time.time(),
             "xu100_change": xu100_chg or 0.0,
+            "index_guard_active": index_guard_active,
+            "index_status": index_status_desc,
             "all_symbols_stats": stats,
             "gainers": gainers,
             "losers": losers,

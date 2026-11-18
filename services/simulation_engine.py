@@ -392,28 +392,30 @@ class SimulationEngine:
 
         # ── KURUMSAL SERMAYE KORUMA VE REJİM BÜTÇESİ (PLAYBOOK) ──
         # Aşırı maruziyeti (%200 kaldıraç tuzağını) KESİNLİKLE engeller.
-        # Kasa asla tek bir günde eritilemez, risk katı kurallarla bölünür.
+        # Kural: Hiçbir hisseye portföyün %10'undan fazlası (50.000 TL) KESİNLİKLE bağlanamaz!
         if is_strong_bear:
             max_pos_ratio = 0.00
             max_trade_risk_ratio = 0.000
         elif is_bear_effective:
-            max_pos_ratio = 0.10        # 500K kasada en fazla 50.000 TL pozisyon
-            max_trade_risk_ratio = 0.004 # Max 2.000 TL işlem riski (%0.4)
+            max_pos_ratio = 0.05        # 500K kasada en fazla 25.000 TL pozisyon (%5)
+            max_trade_risk_ratio = 0.002 # Max 1.000 TL işlem riski (%0.2)
         elif not is_bull:               # NEUTRAL / DEFANSİF
-            max_pos_ratio = 0.12        # 500K kasada en fazla 60.000 TL pozisyon
-            max_trade_risk_ratio = 0.005 # Max 2.500 TL işlem riski (%0.5)
+            max_pos_ratio = 0.08        # 500K kasada en fazla 40.000 TL pozisyon (%8)
+            max_trade_risk_ratio = 0.003 # Max 1.500 TL işlem riski (%0.3)
         elif is_strong_bull:
-            max_pos_ratio = 0.20        # 500K kasada en fazla 100.000 TL pozisyon
-            max_trade_risk_ratio = 0.010 # Max 5.000 TL işlem riski (%1.0)
+            max_pos_ratio = 0.10        # 500K kasada en fazla 50.000 TL pozisyon (%10 KURALI)
+            max_trade_risk_ratio = 0.005 # Max 2.500 TL işlem riski (%0.5)
         else:                           # BULL
-            max_pos_ratio = 0.16        # 500K kasada en fazla 80.000 TL pozisyon
-            max_trade_risk_ratio = 0.008 # Max 4.000 TL işlem riski (%0.8)
+            max_pos_ratio = 0.10        # 500K kasada en fazla 50.000 TL pozisyon (%10 KURALI)
+            max_trade_risk_ratio = 0.004 # Max 2.000 TL işlem riski (%0.4)
 
-        max_position_cap = self.daily_budget * max_pos_ratio
+        # Mutlak pozisyon tavanı: Kasanın azami %10'u (50.000 TL)
+        max_position_cap = min(self.daily_budget * 0.10, self.daily_budget * max_pos_ratio)
         if max_position_cap <= 0:
             return 0.0, 0.0
 
-        max_trade_risk = self.daily_budget * max_trade_risk_ratio
+        # İşlem başına azami risk: 1.000 - 2.500 TL (kasanın %0.2 - %0.5'i)
+        max_trade_risk = min(2500.0, self.daily_budget * max_trade_risk_ratio)
 
         # RİSK PARİTESİ (Kelly / Stop Mesafesi Güvencesi):
         # Stop mesafesi ne kadar genişse, pozisyon o kadar küçülür; stop olduğunda zarar ASLA tavanı aşamaz.
@@ -422,8 +424,8 @@ class SimulationEngine:
 
         allocation = min(max_position_cap, risk_parity_allocation)
 
-        # Taban güvencesi (işleme değecek asgari pay: kasanın %5'i, 25.000 TL)
-        min_position_floor = min(max_position_cap, self.daily_budget * 0.05)
+        # Taban güvencesi (işleme değecek asgari pay: kasanın %4'ü, 20.000 TL)
+        min_position_floor = min(max_position_cap, self.daily_budget * 0.04)
         allocation = max(min_position_floor, allocation)
 
         # Eldeki nakit sinirini asmasin
@@ -431,10 +433,6 @@ class SimulationEngine:
             if current_cash < entry_price:
                 return 0.0, 0.0
             allocation = min(allocation, current_cash)
-
-        return allocation, min(max_trade_risk, allocation * risk_per_share / entry_price)
-
-        max_trade_risk = self.daily_budget * 0.010
 
         return allocation, min(max_trade_risk, allocation * risk_per_share / entry_price)
 
@@ -1388,10 +1386,19 @@ class SimulationEngine:
                 break
 
             # BRÜT MARUZİYET TAVANI (PORTFÖY KALDIRAÇ ENGELİ):
-            # Açık pozisyonların toplam tutarı portföyün %30'unu (Defansif: 150.000 TL) ASLA aşamaz.
+            # Açık pozisyonların toplam tutarı portföyün %25 - %30'unu (max 125.000 - 150.000 TL) ASLA aşamaz.
+            # Kasanın en az %70'i (350.000 TL) HER ZAMAN NAKİTTE kalır!
             current_total_exposure = sum(float(t.get('shares', 0)) * float(t.get('entry_price', 0)) for t in active_trades if t['status'] == 'OPEN')
-            max_allowed_exposure = self.daily_budget * (0.50 if is_offensive else 0.30)
-            if current_total_exposure >= max_allowed_exposure:
+            max_allowed_exposure = self.daily_budget * (0.30 if is_offensive else 0.25)
+            if current_total_exposure >= max_allowed_exposure or len(open_symbols) >= 3:
+                break
+
+            # 🛡️ BIST 100 ENDEKS ŞALTERİ (MACRO INDEX KILL-SWITCH):
+            # 1. BIST 100 endeksi düşüşteyse (% -0.30'un altı)
+            # 2. veya piyasa genelinde düşüş baskısı %55'in üzerindeyse
+            # akıntıya kürek çekilmez; hiçbir YENİ ALIŞ POZİSYONU AÇILMAZ!
+            if xu100_change < -0.30 or pressure_pct >= 55.0:
+                print(f"[INDEX-GUARD] XU100 %{xu100_change:+.2f} / Satış Baskısı %{pressure_pct:.1f}! Yeni alımlar donduruldu.")
                 break
 
             for s in list(pending_signals):
@@ -1725,16 +1732,28 @@ class SimulationEngine:
         Stop-loss (Zarar Kes) veya Kâr Al seviyelerine ulaşıldığında pozisyonu
         anında kapatır, veritabanına işler ve Telegram bildirimini iletir.
         """
+        xu100_chg = 0.0
         if not live_stats:
             try:
                 for _cf_path in ["dashboard_cache.json", "data/cache/dashboard_cache.json"]:
                     if os.path.exists(_cf_path):
                         with open(_cf_path, "r", encoding="utf-8") as f:
-                            live_stats = json.load(f).get("all_symbols_stats", {})
+                            _cached_root = json.load(f)
+                            live_stats = _cached_root.get("all_symbols_stats", {})
+                            xu100_chg = float(_cached_root.get("xu100_change", 0.0))
                         if live_stats:
                             break
             except Exception:
                 live_stats = {}
+        else:
+            try:
+                for _cf_path in ["dashboard_cache.json", "data/cache/dashboard_cache.json"]:
+                    if os.path.exists(_cf_path):
+                        with open(_cf_path, "r", encoding="utf-8") as f:
+                            xu100_chg = float(json.load(f).get("xu100_change", 0.0))
+                        break
+            except Exception:
+                pass
 
         if not live_stats:
             return []
@@ -1788,17 +1807,24 @@ class SimulationEngine:
 
             atr = float(r.get('atr_value') or (entry_px * 0.02))
             stop_pct = min(0.040, max(0.024, (atr / entry_px) * 1.8))
+
+            # 🛡️ ENDEKS ŞALTERİ & ÇELİK STOP SIKILAŞTIRMASI:
+            # XU100 % -0.40'ın altına indiğinde veya yoğun satış dalgasında stopu agresifçe daralt (%1.6)
+            is_index_dump = (xu100_chg < -0.40)
+            if is_index_dump:
+                stop_pct = min(stop_pct, 0.016)
+
             stop_px = round(entry_px * (1.0 - stop_pct), 2)
             tp1_px = round(entry_px * 1.04, 2)
 
-            is_stopped = (live_px <= stop_px) or (pnl_pct <= -2.4)
+            is_stopped = (live_px <= stop_px) or (pnl_pct <= (-1.6 if is_index_dump else -2.4))
             is_tp = (live_px >= tp1_px) or (pnl_pct >= 4.0)
             is_eod = (now_ist.hour >= 18 or (now_ist.hour == 17 and now_ist.minute >= 50)) and r.get('date_str') == today_str
 
             should_close = is_stopped or is_tp or is_eod
             reason = ""
             if is_stopped:
-                reason = f"⛔ ÇELİK STOP KESİLDİ (%{pnl_pct:+.2f})"
+                reason = f"⛔ ENDEKS ŞALTERİ & ÇELİK STOP (%{pnl_pct:+.2f})" if is_index_dump else f"⛔ ÇELİK STOP KESİLDİ (%{pnl_pct:+.2f})"
             elif is_tp:
                 reason = f"🚀 KÂR ALINDI (%{pnl_pct:+.2f})"
             elif is_eod:
