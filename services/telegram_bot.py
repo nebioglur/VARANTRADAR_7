@@ -741,15 +741,27 @@ def notify_simulation_trade_event(action: str, trade: dict, date_str: str) -> bo
     price = float((trade.get("entry_price") if action == "AL" else trade.get("exit_price")) or 0)
     shares = int(trade.get("shares") or 0)
     if action == "AL":
-        text = f"🟢 <b>SİMÜLASYON AL</b> · {when}\n<b>#{symbol}</b> · ₺{price:.2f} · {shares} lot"
+        text  = "╔══════════════════════╗\n"
+        text += "║  🟢  SİMÜLASYON AL  🟢  ║\n"
+        text += "╚══════════════════════╝\n"
+        text += f"📌 <b>#{symbol}</b> · <code>{when}</code>\n"
+        text += f"💵 ₺{price:.2f}  ·  📦 {shares:,} lot"
     else:
         reason = str(trade.get("exit_reason") or "SATIŞ")
         label = "KISMİ KÂR AL (TP1)" if "TP1" in reason.upper() else "SAT"
         pnl = float(trade.get("pnl_val") or 0)
         pct = float(trade.get("pnl_pct") or 0)
         sign = "+" if pnl >= 0 else ""
-        text = f"{'💰' if pnl >= 0 else '🔴'} <b>SİMÜLASYON {label}</b> · {when}\n<b>#{symbol}</b> · ₺{price:.2f} · {shares} lot\nK/Z: {sign}₺{pnl:,.2f} ({sign}%{pct:.2f}) · {reason}"
-    text += "\nℹ️ Simülasyon verisidir; gerçek emir değildir."
+        result_icon = "💰" if pnl >= 0 else "🔴"
+        header_lbl = "KISMİ KÂR AL" if "TP1" in reason.upper() else ("KÂRLI SATIŞ" if pnl >= 0 else "ZARAR KES")
+        text  = "╔══════════════════════╗\n"
+        text += f"║  {result_icon}  SİM {header_lbl}  {result_icon}  ║\n"
+        text += "╚══════════════════════╝\n"
+        text += f"📌 <b>#{symbol}</b> · <code>{when}</code>\n"
+        text += f"📊 ₺{price:.2f}  ·  {shares:,} lot\n"
+        text += f"{result_icon} K/Z: <b>{sign}₺{pnl:,.2f}</b>  ({sign}%{pct:.2f})"
+    text += "\n──────────────────────\n"
+    text += "<i>⚠️ Simülasyon · Gerçek emir değildir</i>"
     sent = send_telegram_message(text)
     try:
         conn = get_connection()
@@ -823,22 +835,28 @@ def notify_simulation_trade_events(trades: list, date_str: str) -> bool:
     if not pending:
         return False
 
-    lines = ["🧪 <b>SİMÜLASYON İŞLEM ÖZETİ</b>"]
+    lines = [
+        "╔══════════════════════════╗",
+        "║  📋  SİMÜLASYON ÖZETİ  📋  ║",
+        "╚══════════════════════════╝",
+    ]
     for _, action, event_dt, trade, symbol in pending:
         when = event_dt.strftime("%H:%M")
         shares = int(trade.get("shares") or 0)
         if action == "AL":
             price = float(trade.get("entry_price") or 0)
-            lines.append(f"🟢 AL · {when} · <b>#{symbol}</b> · ₺{price:.2f} · {shares} lot")
+            lines.append(f"🟢 AL · <code>{when}</code> · <b>#{symbol}</b> · ₺{price:.2f} · {shares:,} lot")
         else:
             price = float(trade.get("exit_price") or 0)
             pnl = float(trade.get("pnl_val") or 0)
             pct = float(trade.get("pnl_pct") or 0)
             sign = "+" if pnl >= 0 else ""
             reason = str(trade.get("exit_reason") or "").upper()
-            label = "KISMİ KÂR AL" if "TP1" in reason else "SAT"
-            lines.append(f"{'💰' if pnl >= 0 else '🔴'} {label} · {when} · <b>#{symbol}</b> · ₺{price:.2f} · {shares} lot · {sign}₺{pnl:,.2f} ({sign}%{pct:.2f})")
-    lines.append("ℹ️ Simülasyon verisidir; gerçek emir veya yatırım tavsiyesi değildir.")
+            label = "KISMİ KÂR AL" if "TP1" in reason else ("KÂRLI SAT" if pnl >= 0 else "ZARAR KES")
+            icon = "💰" if pnl >= 0 else "🔴"
+            lines.append(f"{icon} {label} · <code>{when}</code> · <b>#{symbol}</b> · ₺{price:.2f} · {sign}₺{pnl:,.2f} ({sign}%{pct:.2f})")
+    lines.append("──────────────────────")
+    lines.append("<i>⚠️ Simülasyon · Gerçek emir veya yatırım tavsiyesi değildir</i>")
     sent = send_telegram_message("\n".join(lines))
 
     try:
@@ -1043,70 +1061,96 @@ def notify_sim_trade(symbol: str, action: str, price: float, pnl_pct: float = 0.
     display_time = _format_time_header(entry_time, date_str)
     
     if "AL" in action:
-        reentry_note = " (Yeniden Giriş)" if "Yeniden" in action else ""
+        reentry_note = " ♻️ YENİDEN GİRİŞ" if "Yeniden" in action else ""
         gear = trade.get('trading_gear') or ("OFANSİF (Tavan Avcısı)" if trade.get('is_offensive') else "DEFANSİF (Garantici Kalkan)")
         is_off = "OFANSİF" in str(gear) or trade.get('is_offensive')
         tp2 = trade.get('tp2_price', 0) or (round(price * 1.065, 2) if price else 0)
+        gear_icon = "⚔️" if is_off else "🛡️"
+        gear_label = "OFANSİF — Tavan Avcısı" if is_off else "DEFANSİF — Garantici Kalkan"
 
-        text = f"🟢 <b>[SİMÜLASYON AL EMRİ{reentry_note}] #{clean_sym}</b> 🟢\n"
-        text += f"⏰ <b>Saat:</b> <code>{display_time}</code> | 🏆 <b>Skor:</b> {float(trade_score):.0f}/100\n"
-        text += f"⚡ <b>Motor Vitesi:</b> <b>{gear}</b>\n"
-        text += "━━━━━━━━━━━━━━━━━━━━\n"
-        text += f"💵 <b>Alış Fiyatı:</b> ₺{price:.2f} · 📦 <b>Pozisyon:</b> {shares} Lot (₺{total_val:,.0f})\n\n"
-        text += "🎯 <b>HEDEFLER & RİSK PLANI:</b>\n"
+        text  = "╔══════════════════════╗\n"
+        text += f"║  🟢  SİMÜLASYON AL  🟢  ║\n"
+        text += "╚══════════════════════╝\n"
+        text += f"📌 <b>#{clean_sym}</b>{reentry_note} · <code>{display_time}</code>\n"
+        text += f"⭐ Skor: <b>{float(trade_score):.0f}/100</b> · {gear_icon} <b>{gear_label}</b>\n"
+        text += "──────────────────────\n"
+        text += f"💵 Alış: <b>₺{price:.2f}</b>  ·  📦 {shares:,} lot  ·  <b>₺{total_val:,.0f}</b>\n"
+        text += "──────────────────────\n"
+        text += "🎯 <b>ÇIKIŞ PLANI</b>\n"
         if is_off:
-            text += f"💰 <b>TP1 (Kâr Al):</b> ₺{tp1:.2f} (<b>+%{tp_pct:.1f}</b>) ➡️ <i>%30 sat, stop maliyete!</i>\n"
-            text += f"🚀 <b>TP2 (Tavan):</b> ₺{tp2:.2f} ➡️ <i>Runner ile tavana (+%9.9)</i>\n"
+            text += f"  ✅ TP1 → <b>₺{tp1:.2f}</b>  (<b>+%{tp_pct:.1f}</b>)  %30 sat · stop maliyete\n"
+            text += f"  🚀 TP2 → <b>₺{tp2:.2f}</b>  Runner ile tavana\n"
         else:
-            text += f"💰 <b>TP1 (Kâr Al):</b> ₺{tp1:.2f} (<b>+%{tp_pct:.1f}</b>) ➡️ <i>%60 sat, stop maliyete</i>\n"
-            text += f"🎯 <b>TP2 (Hedef):</b> ₺{tp2:.2f} ➡️ <i>Pozisyon kapatılır</i>\n"
-        text += f"🛑 <b>Zarar Kes (Stop):</b> ₺{sl:.2f} (<b>-%{sl_pct:.1f}</b>) ➡️ <i>Çelik disiplin</i>\n"
+            text += f"  ✅ TP1 → <b>₺{tp1:.2f}</b>  (<b>+%{tp_pct:.1f}</b>)  %60 sat · stop maliyete\n"
+            text += f"  🎯 TP2 → <b>₺{tp2:.2f}</b>  Pozisyon kapanır\n"
+        text += f"  🛑 Stop → <b>₺{sl:.2f}</b>  (<b>-%{sl_pct:.1f}</b>)  Çelik disiplin\n"
         if strategy:
-            text += f"\n🧠 <b>Strateji:</b> <i>{strategy}</i>\n"
-        text += "⏰ <i>17:50'de tüm açık pozisyonlar nakde geçirilir. Geceye hisse taşınmaz.</i>"
+            text += f"──────────────────────\n"
+            text += f"🧠 <i>{strategy}</i>\n"
+        text += "──────────────────────\n"
+        text += "⏱ <i>17:50 nakde geçiş · Geceye hisse taşınmaz</i>"
         return _send_once(text)
 
     elif "TP1" in action:
         pnl_val = trade.get('pnl_val', 0)
         display_exit_time = _format_time_header(exit_time, date_str)
-        text = f"💰 <b>[HEDEF 1 KÂR ALINDI] #{clean_sym}</b> 💰\n"
-        text += f"⏰ <b>Saat:</b> <code>{display_exit_time}</code>\n"
-        text += "━━━━━━━━━━━━━━━━━━━━\n"
-        text += f"💵 <b>Satış:</b> ₺{price:.2f} (Alış: ₺{float(entry):.2f})\n"
-        text += f"🟢 <b>Kilitlenen Kâr:</b> <b>+₺{pnl_val:,.2f}</b> (<b>+%{pnl_pct:.2f}</b>)\n\n"
-        text += "🛡️ <b>SIFIR RİSK DEVREDE:</b>\n"
-        text += "Kalan payın stopu maliyete çekildi. Artık bu işlemde risk SIFIRDIR!\n"
-        text += "🚀 Kalan pay tavan kilidine kadar iz süren stopla taşınıyor."
+
+        text  = "╔══════════════════════╗\n"
+        text += "║  💰  HEDEF 1 ALINDI  💰  ║\n"
+        text += "╚══════════════════════╝\n"
+        text += f"📌 <b>#{clean_sym}</b> · <code>{display_exit_time}</code>\n"
+        text += "──────────────────────\n"
+        text += f"📈 Satış: <b>₺{price:.2f}</b>  ←  Alış: ₺{float(entry):.2f}\n"
+        text += f"✅ Kilitlenen Kâr: <b>+₺{pnl_val:,.2f}</b>  (<b>+%{pnl_pct:.2f}</b>)\n"
+        text += "──────────────────────\n"
+        text += "🛡️ <b>SIFIR RİSK DEVREDE</b>\n"
+        text += "<i>Stop maliyete çekildi. Kalan pay tavana iz sürer.</i>"
         return _send_once(text)
 
     elif "GUN SONU" in action:
         pnl_val = trade.get('pnl_val', 0)
-        emoji = "🟢" if pnl_val >= 0 else "🔴"
-        v_sign = "+" if pnl_val >= 0 else ""
+        is_profit = pnl_val >= 0
+        v_sign = "+" if is_profit else ""
+        result_icon = "🟢" if is_profit else "🔴"
         display_exit_time = _format_time_header(exit_time, date_str)
-        text = f"🏁 <b>[SEANS SONU KAPANIŞ] #{clean_sym}</b> 🏁\n"
-        text += f"⏰ <b>Saat:</b> <code>{display_exit_time}</code>\n"
-        text += "━━━━━━━━━━━━━━━━━━━━\n"
-        text += f"💵 <b>Kapanış:</b> ₺{price:.2f} (Alış: ₺{float(entry):.2f})\n"
-        text += f"{emoji} <b>Net K/Z:</b> <b>{v_sign}₺{pnl_val:,.2f}</b> (<b>{v_sign}%{pnl_pct:.2f}</b>)\n"
-        text += "🏷️ <i>17:50 Seans sonu nakite geçiş kuralı uygulandı. Geceye hisse taşınmaz.</i>"
+
+        text  = "╔══════════════════════╗\n"
+        text += "║  🏁  SEANS SONU  🏁  ║\n"
+        text += "╚══════════════════════╝\n"
+        text += f"📌 <b>#{clean_sym}</b> · <code>{display_exit_time}</code>\n"
+        text += "──────────────────────\n"
+        text += f"📉 Kapanış: <b>₺{price:.2f}</b>  ←  Alış: ₺{float(entry):.2f}\n"
+        text += f"{result_icon} Net K/Z: <b>{v_sign}₺{pnl_val:,.2f}</b>  (<b>{v_sign}%{pnl_pct:.2f}</b>)\n"
+        text += "──────────────────────\n"
+        text += "<i>17:50 nakde geçiş tamamlandı.</i>"
         return _send_once(text)
 
     else:
         is_profit = pnl_pct >= 0
-        header_title = "🟢 <b>[KÂRLI SATIŞ]</b>" if is_profit else "🛑 <b>[ZARAR KES (STOP)]</b>"
-        emoji = "🟢" if is_profit else "🔴"
         pnl_val = trade.get('pnl_val', 0)
         v_sign = "+" if pnl_val >= 0 else ""
         display_exit_time = _format_time_header(exit_time, date_str)
-        text = f"{header_title} <b>#{clean_sym}</b>\n"
-        text += f"⏰ <b>Saat:</b> <code>{display_exit_time}</code>\n"
-        text += "━━━━━━━━━━━━━━━━━━━━\n"
-        text += f"💵 <b>Çıkış:</b> ₺{price:.2f} (Alış: ₺{float(entry):.2f})\n"
-        text += f"{emoji} <b>Net K/Z:</b> <b>{v_sign}₺{pnl_val:,.2f}</b> (<b>{v_sign}%{pnl_pct:.2f}</b>)\n"
+
+        if is_profit:
+            header_top  = "╔══════════════════════╗\n"
+            header_mid  = "║  🏆  KÂRLI SATIŞ  🏆  ║\n"
+            header_bot  = "╚══════════════════════╝\n"
+            result_icon = "🟢"
+        else:
+            header_top  = "╔══════════════════════╗\n"
+            header_mid  = "║  🛑  ZARAR KES (STOP)  🛑  ║\n"
+            header_bot  = "╚══════════════════════╝\n"
+            result_icon = "🔴"
+
+        text  = header_top + header_mid + header_bot
+        text += f"📌 <b>#{clean_sym}</b> · <code>{display_exit_time}</code>\n"
+        text += "──────────────────────\n"
+        text += f"📊 Çıkış: <b>₺{price:.2f}</b>  ←  Alış: ₺{float(entry):.2f}\n"
+        text += f"{result_icon} Net K/Z: <b>{v_sign}₺{pnl_val:,.2f}</b>  (<b>{v_sign}%{pnl_pct:.2f}</b>)\n"
         if reason:
-            text += f"🏷️ <b>Neden:</b> {reason}\n"
-        text += "✅ <i>İşlem tamamlandı, sermaye kasaya aktarıldı.</i>"
+            text += f"🏷️ <i>{reason}</i>\n"
+        text += "──────────────────────\n"
+        text += "✅ <i>İşlem kapandı · Sermaye kasaya aktarıldı</i>"
         return _send_once(text)
 
 
