@@ -100,6 +100,25 @@ class TradingViewBulkProvider(BaseDataProvider):
         df.index.name = "Datetime"
         return df
 
+    def get_live_price_single(self, symbol: str, timeout: int = 4) -> Optional[float]:
+        """Tek bir hissenin BIST canlı fiyatını TradingView'den anlık sorgular (Hızlı teyit)."""
+        clean_sym = symbol.replace(".IS", "").strip().upper()
+        payload = {
+            "symbols": {"tickers": [f"BIST:{clean_sym}"]},
+            "columns": ["close"]
+        }
+        try:
+            r = requests.post(self.SCANNER_URL, json=payload, timeout=timeout, proxies=_get_pa_proxies())
+            if r.status_code == 200:
+                data = r.json().get("data", [])
+                if data and data[0].get("d"):
+                    val = data[0]["d"][0]
+                    if val is not None and float(val) > 0:
+                        return round(float(val), 2)
+        except Exception:
+            pass
+        return None
+
     def fetch_all_bist(self, timeout: int = 15) -> Tuple[Dict[str, Any], Optional[float], Optional[float]]:
         """
         BIST'teki tüm hisse senetlerini ve XU100 endeksini tek bir POST isteğinde çeker.

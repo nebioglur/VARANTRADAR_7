@@ -1853,6 +1853,16 @@ class SimulationEngine:
             if entry_px <= 0 or shares <= 0:
                 continue
 
+            # 🛡️ DÜNKÜ BAZ FİYAT / ÇELİŞKİ KALKANI (Anti-Glitch Guard):
+            # Eğer hisse bugün yeşil/artıda (+%0.40 üzeri) ise, baz fiyatın (dünkü kapanışın)
+            # canlı fiyat sanılarak stop tetiklemesi matematiksel olarak engellenir.
+            ch_pct = float(stat.get('Change_Pct') or stat.get('change_pct') or 0.0)
+            if ch_pct > 0.4 and live_px < entry_px * 0.98:
+                implied_real_px = round(live_px * (1.0 + ch_pct / 100.0), 2)
+                if abs(implied_real_px - entry_px) < (entry_px * 0.04):
+                    print(f"[GLITCH PREVENTED] {sym} için dünkü baz kapanış ({live_px}) tespit edildi. Gerçek canlı fiyata ({implied_real_px}) düzeltildi.")
+                    live_px = implied_real_px
+
             buy_vol = shares * entry_px
             sell_vol = shares * live_px
             comm = (buy_vol + sell_vol) * 0.0004
@@ -1873,6 +1883,26 @@ class SimulationEngine:
             tp1_px = round(entry_px * 1.04, 2)
 
             is_stopped = (live_px <= stop_px) or (pnl_pct <= (-1.6 if is_index_dump else -2.4))
+
+            # 🛡️ CANLI BORSA DOĞRULAMASI (BIST TEYİT ZIRHI):
+            # Stop seviyesi tetiklendiğinde tek bir hatalı tık veya bayat veriyle pozisyon KAPATILMAZ.
+            # Doğrudan TradingView canlı tekil fiyat kontrolü yapılır:
+            if is_stopped:
+                try:
+                    from data.providers.tradingview_provider import TradingViewBulkProvider
+                    tv_live = TradingViewBulkProvider().get_live_price_single(clean_sym)
+                    if tv_live and tv_live > stop_px:
+                        print(f"[FALSE STOP PREVENTED] {sym} bayat/hatalı tık ({live_px}) reddedildi! TradingView BIST teyidi: ₺{tv_live} > Stop ₺{stop_px}")
+                        live_px = tv_live
+                        sell_vol = shares * live_px
+                        comm = (buy_vol + sell_vol) * 0.0004
+                        gross_pnl = shares * (live_px - entry_px)
+                        net_pnl = round(gross_pnl - comm, 2)
+                        pnl_pct = round((net_pnl / buy_vol) * 100.0, 2)
+                        is_stopped = False
+                except Exception as _e_chk:
+                    pass
+
             is_tp = (live_px >= tp1_px) or (pnl_pct >= 4.0)
             is_eod = (now_ist.hour >= 18 or (now_ist.hour == 17 and now_ist.minute >= 50)) and r.get('date_str') == today_str
 
