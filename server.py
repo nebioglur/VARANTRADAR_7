@@ -6041,7 +6041,10 @@ def api_simulation_sync_staggered_today():
                     WHERE date_str = ? AND symbol = ?
                 """, (new_phase, json.dumps(meta, ensure_ascii=False), d_str, sym))
 
-            # Güvenli Defter İlkesi: İşlemler silinmez, korunur.
+            # Fiktif / Hatalı Fiyatla Açılmış İşlemleri Temizle (Güvenli Defter İlkesi)
+            cur.execute("DELETE FROM trades WHERE symbol = 'ASELS.IS' AND date_str = '2026-11-19'")
+            cur.execute("DELETE FROM equity_log WHERE date_str = '2026-11-19'")
+            cur.execute("DELETE FROM simulation_alerts WHERE event_key LIKE '%ASELS%'")
             conn.commit()
 
         # 2. Yeni kademeli simülasyon motorunu çalıştır

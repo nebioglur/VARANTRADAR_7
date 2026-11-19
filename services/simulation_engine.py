@@ -771,9 +771,9 @@ class SimulationEngine:
             if float(r_vol or 0) > 0 and float(r_vol) < 0.05:
                 continue
 
-            # Tavan tuzagi engeli (+%5.5 ve uzeri acilislar elenir)
+            # Düşüş ve Tavan Tuzağı Engeli: Negatif/Düşen (< %0.2) veya aşırı primli (>= %5.5) hisseler elenir
             ch_pct = float(meta.get('Change_Pct') or meta.get('Change') or 0)
-            if ch_pct >= 5.5:
+            if ch_pct < 0.2 or ch_pct >= 5.5:
                 continue
 
             # Likidite ve Fiyat Guvencesi: penny/sig hisseleri filtrele
@@ -1055,26 +1055,23 @@ class SimulationEngine:
                 {}
             ) if _is_today and isinstance(_live_symbols_stats, dict) else {}
 
+            _day_open = float(_stat.get('Daily_Open') or _stat.get('Open') or p)
             _cur_p = float(_stat.get('Price') or _stat.get('Daily_Close') or p)
-            _day_high = float(_stat.get('High') or max(p, _cur_p))
-            _day_low = float(_stat.get('Low') or min(p, _cur_p))
+            _day_high = float(_stat.get('High') or max(_day_open, _cur_p))
+            _day_low = float(_stat.get('Low') or min(_day_open, _cur_p))
 
             if df.empty:
-                if p > 0:
+                # FİKTİF FİYAT ÜRETİMİNİ KESİN ENGELLE:
+                # Günün gerçek açılış ve anlık fiyat aralığı dışına ASLA çıkılamaz.
+                if _day_open > 0:
                     _n = len(_all_day_times)
                     _bars = []
-                    _mid_idx = max(1, _n // 3)
                     for _i, _t_str in enumerate(_all_day_times):
-                        if _i <= _mid_idx:
-                            _sub_pct = _i / _mid_idx
-                            _step_c = p + (_day_high - p) * _sub_pct
-                        else:
-                            _sub_pct = (_i - _mid_idx) / max(1, (_n - _mid_idx))
-                            _step_c = _day_high + (_cur_p - _day_high) * _sub_pct
-
-                        _step_o = p if _i == 0 else _bars[-1]['Close']
-                        _step_h = max(_step_o, _step_c, _day_high if _i == _mid_idx else _step_c)
-                        _step_l = min(_step_o, _step_c, _day_low if (_i >= _mid_idx and _cur_p < p) else _step_c * 0.998)
+                        _sub_pct = _i / max(1, _n - 1)
+                        _step_c = _day_open + (_cur_p - _day_open) * _sub_pct
+                        _step_o = _day_open if _i == 0 else _bars[-1]['Close']
+                        _step_h = min(_day_high, max(_step_o, _step_c) * 1.001)
+                        _step_l = max(_day_low, min(_step_o, _step_c) * 0.999)
                         _bars.append({
                             'Open': round(_step_o, 2),
                             'High': round(_step_h, 2),
