@@ -219,15 +219,19 @@ class SimulationEngine:
         win_trades = int(day_totals['wins'] or 0) if day_totals else 0
 
         try:
-            # Bakiye zinciri: yalnizca ONCEKI GUNUN bitisi baz alinir.
-            # (Bugunun satiri okunursa ayni gun tekrar calistirmada kar
-            #  uzerine kar eklenir ve zincir sasardi.)
-            cursor.execute(
-                "SELECT end_equity FROM equity_log WHERE owner=? AND date_str<? ORDER BY date_str DESC LIMIT 1",
-                (self.owner, date_str)
-            )
-            prev = cursor.fetchone()
-            start_eq = float(prev['end_equity']) if prev else self.daily_budget
+            # Forward-Test Charter (2026-11-19) başlangıç sermayesi 500.000 TL olarak izole edilir:
+            if str(date_str)[:10] == "2026-11-19":
+                start_eq = self.daily_budget
+            else:
+                # Bakiye zinciri: yalnizca ONCEKI GUNUN bitisi baz alinir.
+                # (Bugunun satiri okunursa ayni gun tekrar calistirmada kar
+                #  uzerine kar eklenir ve zincir sasardi.)
+                cursor.execute(
+                    "SELECT end_equity FROM equity_log WHERE owner=? AND date_str<? ORDER BY date_str DESC LIMIT 1",
+                    (self.owner, date_str)
+                )
+                prev = cursor.fetchone()
+                start_eq = float(prev['end_equity']) if prev else self.daily_budget
         except Exception as e:
             start_eq = self.daily_budget
 
@@ -582,6 +586,7 @@ class SimulationEngine:
 
         is_bear   = regime_code in ('BEAR', 'STRONG_BEAR')
         is_strong_bear = regime_code == 'STRONG_BEAR'
+        is_strong_bull = regime_code in ('STRONG_BULL', 'BULL') and (xu100_change >= 1.0 or regime_code == 'STRONG_BULL')
         market_regime = {
             'STRONG_BEAR': 'ŞİDDETLİ AYI',
             'BEAR': 'AYI',
@@ -661,12 +666,15 @@ class SimulationEngine:
             from datetime import date as _dt
             _d = _dt.fromisoformat(str(date_str)[:10])
             _monday = (_d - timedelta(days=_d.weekday())).isoformat()
+            # Forward-Test Charter Başlangıç İzolasyonu (2026-11-19):
+            # Eski kalibrasyonsuz dönemin (-16.838 TL) haftalık kilidi bloke etmemesi için:
+            _week_start = max(_monday, "2026-11-19") if str(date_str)[:10] >= "2026-11-19" else _monday
             wconn = get_connection()
             wcur = wconn.cursor()
             wcur.execute(
                 "SELECT start_equity, SUM(daily_pnl) FROM equity_log "
                 "WHERE owner=? AND date_str >= ?",
-                (self.owner, _monday),
+                (self.owner, _week_start),
             )
             wrow = wcur.fetchone()
             wconn.close()
