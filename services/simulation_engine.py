@@ -1438,11 +1438,14 @@ class SimulationEngine:
                 break
 
             # 🛡️ BIST 100 ENDEKS ŞALTERİ (MACRO INDEX KILL-SWITCH):
-            # 1. BIST 100 endeksi düşüşteyse (% -0.30'un altı)
-            # 2. veya piyasa genelinde düşüş baskısı %55'in üzerindeyse
-            # akıntıya kürek çekilmez; hiçbir YENİ ALIŞ POZİSYONU AÇILMAZ!
-            if xu100_change < -0.30 or pressure_pct >= 55.0:
-                print(f"[INDEX-GUARD] XU100 %{xu100_change:+.2f} / Satış Baskısı %{pressure_pct:.1f}! Yeni alımlar donduruldu.")
+            # 1. Şiddetli Çöküş (pressure_pct >= 80.0 veya xu100_change < -1.50) veya pozisyon hakkı 0 ise tamamen dur:
+            if effective_max_positions <= 0 or xu100_change < -1.50 or pressure_pct >= 80.0:
+                print(f"[INDEX-GUARD] Şiddetli Piyasa Kilidi: XU100 %{xu100_change:+.2f} / Satış Baskısı %{pressure_pct:.1f}! Yeni alımlar donduruldu.")
+                break
+            # 2. Ayı / Satış Baskısı Modunda (pressure_pct >= 55 veya xu100_change < -0.30):
+            # Savunma kuralı uygulanır: Kasa korunarak yalnızca en fazla 1 seçici pozisyona izin verilir.
+            if (xu100_change < -0.30 or pressure_pct >= 55.0) and len(open_symbols) >= 1:
+                print(f"[INDEX-GUARD] Savunma Modu Dolu: Açık pozisyon ({len(open_symbols)}/{effective_max_positions}) mevcut, yeni alım durduruldu.")
                 break
 
             for s in list(pending_signals):

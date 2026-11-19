@@ -5941,7 +5941,7 @@ def api_simulation_sync_staggered_today():
         if not owner or owner == 'default':
             owner = 'local:nebioglur'
 
-        # 1. Bugünün sinyallerini kontrol et ve 10:15 yapay yığılmasını düzelt
+        # 1. Bugünün sinyallerini kontrol et ve eksik adayları ekle
         import re
         from services.market_data import MarketDataManager
         with get_connection() as conn:
@@ -5950,51 +5950,65 @@ def api_simulation_sync_staggered_today():
             cur.execute("SELECT symbol, score, morning_phase, metadata, morning_price FROM signals WHERE date_str = ? ORDER BY score DESC", (d_str,))
             sig_rows = [dict(r) for r in cur.fetchall()]
 
-            if not sig_rows:
-                # Cache'den sinyalleri çek ve kaydet
-                all_cands = [_normalize_sim_candidate(c) for c in (GLOBAL_DASHBOARD_CACHE.get('tavan_adaylari', []) or []) if (c.get('symbol') or c.get('Symbol'))]
-                sim_seen = {c['symbol'] for c in all_cands if c.get('symbol')}
-                try:
-                    v8_al_cands = [x for x in (get_v8_breakout_data() or []) if (x.get("entry_status") or "").upper() == "ENTER"]
-                    for vc in reversed(v8_al_cands):
-                        vsym = vc.get("symbol")
-                        if vsym and vsym not in sim_seen:
-                            vp = float(vc.get("price") or vc.get("Daily_Close") or 0.0)
-                            all_cands.insert(0, {
-                                "symbol": vsym,
-                                "score": float(vc.get("breakout_score") or 99.0),
-                                "morning_price": vp,
-                                "ceiling_target": float(vc.get("target1") or (vp * 1.05)),
-                                "morning_phase": "V8 Kırılım (14:25)",
-                                "discovery_time": "14:25",
-                                "metadata": json.dumps(vc, ensure_ascii=False)
-                            })
-                            sim_seen.add(vsym)
-                except Exception:
-                    pass
-                for opp in (GLOBAL_DASHBOARD_CACHE.get('opportunities_1h', []) + GLOBAL_DASHBOARD_CACHE.get('opportunities', [])):
-                    osym = opp.get('symbol') or opp.get('Symbol')
-                    if osym and osym not in sim_seen:
-                        all_cands.append(_normalize_sim_candidate(opp))
-                        sim_seen.add(osym)
-                _stats = GLOBAL_DASHBOARD_CACHE.get('all_symbols_stats', {}) or {}
-                for sym, d in _stats.items():
-                    if not isinstance(d, dict) or sym in sim_seen: continue
-                    p = float(d.get('Price') or d.get('Daily_Close') or 0)
-                    ch = float(d.get('Change_Pct') or 0)
-                    v = float(d.get('Vol_Multiplier') or d.get('Volume_Ratio') or 0)
-                    if p >= 4.0 and 0.5 <= ch < 5.2 and v >= 1.2:
-                        cand = dict(d)
-                        cand['symbol'] = sym
-                        cand['score'] = float(d.get('Score') or 92.0)
-                        cand['morning_price'] = p
-                        cand['discovery_time'] = "14:25"
-                        all_cands.append(cand)
-                        sim_seen.add(sym)
-                if all_cands:
-                    MarketDataManager.record_signals(d_str, all_cands)
-                    cur.execute("SELECT symbol, score, morning_phase, metadata, morning_price FROM signals WHERE date_str = ? ORDER BY score DESC", (d_str,))
-                    sig_rows = [dict(r) for r in cur.fetchall()]
+            sim_seen = {r['symbol'] for r in sig_rows}
+            all_cands = []
+
+            # A. Tavan adayları
+            for c in (GLOBAL_DASHBOARD_CACHE.get('tavan_adaylari', []) or []):
+                sym = c.get('symbol') or c.get('Symbol')
+                if sym and sym not in sim_seen:
+                    all_cands.append(_normalize_sim_candidate(c))
+                    sim_seen.add(sym)
+
+            # B. V8 Kırılım Adayları
+            try:
+                v8_al_cands = [x for x in (get_v8_breakout_data() or []) if (x.get("entry_status") or "").upper() == "ENTER"]
+                for vc in reversed(v8_al_cands):
+                    vsym = vc.get("symbol")
+                    if vsym and vsym not in sim_seen:
+                        vp = float(vc.get("price") or vc.get("Daily_Close") or 0.0)
+                        all_cands.insert(0, {
+                            "symbol": vsym,
+                            "score": float(vc.get("breakout_score") or 99.0),
+                            "morning_price": vp,
+                            "ceiling_target": float(vc.get("target1") or (vp * 1.05)),
+                            "morning_phase": "V8 Kırılım (14:25)",
+                            "discovery_time": "14:25",
+                            "metadata": json.dumps(vc, ensure_ascii=False)
+                        })
+                        sim_seen.add(vsym)
+            except Exception:
+                pass
+
+            # C. Fırsatlar
+            for opp in (GLOBAL_DASHBOARD_CACHE.get('opportunities_1h', []) + GLOBAL_DASHBOARD_CACHE.get('opportunities', [])):
+                osym = opp.get('symbol') or opp.get('Symbol')
+                if osym and osym not in sim_seen:
+                    all_cands.append(_normalize_sim_candidate(opp))
+                    sim_seen.add(osym)
+
+            # D. Yüksek skorlu ve pozitif akışlı elit adaylar (Özellikle savunma modunda lider hisse seçimi için)
+            _stats = GLOBAL_DASHBOARD_CACHE.get('all_symbols_stats', {}) or {}
+            for sym, d in _stats.items():
+                if not isinstance(d, dict) or sym in sim_seen: continue
+                p = float(d.get('Price') or d.get('Daily_Close') or 0)
+                score = float(d.get('Score') or 0)
+                ch = float(d.get('Change_Pct') or 0)
+                flow = (d.get('intraday_strength') or {}).get('hourly_flow') or ''
+                mflow = (d.get('intraday_strength') or {}).get('money_flow_status') or ''
+                if p >= 8.0 and 0.2 <= ch <= 5.5 and flow not in ('Satılıyor', 'Outflow') and mflow not in ('Outflow', 'Strong Outflow') and score >= 85:
+                    cand = dict(d)
+                    cand['symbol'] = sym
+                    cand['score'] = score
+                    cand['morning_price'] = p
+                    cand['discovery_time'] = "10:20"
+                    all_cands.append(cand)
+                    sim_seen.add(sym)
+
+            if all_cands:
+                MarketDataManager.record_signals(d_str, all_cands)
+                cur.execute("SELECT symbol, score, morning_phase, metadata, morning_price FROM signals WHERE date_str = ? ORDER BY score DESC", (d_str,))
+                sig_rows = [dict(r) for r in cur.fetchall()]
 
             # Sinyallerin keşif saatlerini gerçek zamanlarına göre kademelendir
             staggered_hours = ["10:15", "10:20", "10:45", "11:15", "11:45", "13:30", "14:15"]
