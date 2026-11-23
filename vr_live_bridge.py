@@ -162,6 +162,16 @@ def sync_once():
     dash_data["cache_date"] = date_str
     dash_data["last_sync_time"] = t_str[:5]
     dash_data["last_updated"] = t_str[:5]
+
+    try:
+        with open("dashboard_cache.json", "w", encoding="utf-8") as f_c:
+            json.dump(dash_data, f_c, ensure_ascii=False)
+        if os.path.exists("data/cache"):
+            with open("data/cache/dashboard_cache.json", "w", encoding="utf-8") as f_c2:
+                json.dump(dash_data, f_c2, ensure_ascii=False)
+    except Exception as e_sc:
+        print_flush(f"[{t_str}] [UYARI] Yerel dashboard_cache.json yazilamadi: {e_sc}")
+
     payload = {
         "token": AUTH_TOKEN,
         "dashboard_data": dash_data,
