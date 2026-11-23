@@ -1845,6 +1845,17 @@ class SimulationEngine:
             )
             live_px = stat.get('Price') or stat.get('Daily_Close') or stat.get('last_price') or stat.get('price')
             if not live_px or float(live_px) <= 0:
+                # 🛡️ TRADINGVIEW CANLI FALLBACK: Verdent'te olmayan hisseler için anında doğrudan sorgula
+                try:
+                    from data.providers.tradingview_provider import TradingViewBulkProvider
+                    tv_fallback = TradingViewBulkProvider().get_live_price_single(clean_sym)
+                    if tv_fallback and tv_fallback > 0:
+                        live_px = tv_fallback
+                        print(f"[TV FALLBACK] {sym} için Verdent verisi bulunamadı, TradingView'den canlı fiyat alındı: ₺{live_px}")
+                except Exception:
+                    pass
+
+            if not live_px or float(live_px) <= 0:
                 continue
 
             live_px = round(float(live_px), 2)

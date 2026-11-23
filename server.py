@@ -2575,11 +2575,14 @@ def api_system_push_market_data():
 
         # Harici koşucudan (bridge) gelen güncel işlemleri anında SQLite'a senkronize et
         incoming_trades = payload.get('incoming_trades') or payload.get('trades') or []
-        if incoming_trades:
+        delete_trades = payload.get('delete_trades') or []
+        if incoming_trades or delete_trades:
             try:
                 from services.trade_database import get_connection
                 with get_connection() as conn:
                     cur = conn.cursor()
+                    for dt in delete_trades:
+                        cur.execute("DELETE FROM trades WHERE symbol = ? AND date_str = ?", (dt.get('symbol'), dt.get('date_str')))
                     for t in incoming_trades:
                         _d_str = t.get('date_str')
                         _sym = t.get('symbol')
@@ -4113,6 +4116,14 @@ def api_simulation_daily_pnl():
                                 t["pnl_pct"] = round(calc_pct, 2)
                     else:
                         st_p = float(st.get("Price") or st.get("Daily_Close") or 0.0)
+                        if st_p <= 0:
+                            try:
+                                from data.providers.tradingview_provider import TradingViewBulkProvider
+                                tv_fallback = TradingViewBulkProvider().get_live_price_single(clean_sym)
+                                if tv_fallback and tv_fallback > 0:
+                                    st_p = float(tv_fallback)
+                            except Exception:
+                                pass
                         if st_p > 0:
                             curr_p = st_p
                             if shares > 0 and entry_p > 0:

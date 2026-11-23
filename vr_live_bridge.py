@@ -147,6 +147,14 @@ def sync_once():
                 clean_sym = sym.replace('.IS', '')
                 st = all_stats.get(sym) or all_stats.get(clean_sym) or all_stats.get(clean_sym + '.IS') or {}
                 st_p = float(st.get('Price') or st.get('Daily_Close') or 0.0)
+                if st_p <= 0:
+                    try:
+                        from data.providers.tradingview_provider import TradingViewBulkProvider
+                        tv_p = TradingViewBulkProvider().get_live_price_single(clean_sym)
+                        if tv_p and tv_p > 0:
+                            st_p = float(tv_p)
+                    except Exception:
+                        pass
                 if st_p > 0:
                     tr['current_price'] = round(st_p, 2)
                     ep = float(tr.get('entry_price') or 0.0)
