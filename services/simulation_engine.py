@@ -360,8 +360,9 @@ class SimulationEngine:
 
         primary_support = max(valid_supports) if valid_supports else (entry_price * 0.985)
 
-        # Destek seviyesinin %0.8 altına çelik stop yerleştir
-        support_stop = primary_support * 0.992
+        # Destek seviyesinin altına nefes payı ile çelik stop yerleştir
+        # BIST dinamiklerinde %1.2 gibi mikro stoplar piyasa gürültüsünde doğrudan elenir.
+        support_stop = primary_support * 0.985
 
         # ATR hesapla
         prev_close = close.shift(1)
@@ -371,11 +372,12 @@ class SimulationEngine:
             (low - prev_close).abs()
         ], axis=1).max(axis=1)
         atr_series = true_range.ewm(alpha=1.0 / 14.0, adjust=False, min_periods=3).mean()
-        atr = float(atr_series.iloc[-1]) if len(atr_series) > 0 and pd.notna(atr_series.iloc[-1]) else (entry_price * 0.015)
+        atr = float(atr_series.iloc[-1]) if len(atr_series) > 0 and pd.notna(atr_series.iloc[-1]) else (entry_price * 0.018)
 
-        # Stop mesafesi: En az %1.2, en fazla %2.2 (asla körlemesine %3-%4 değil!)
-        calc_stop_pct = (entry_price - support_stop) / entry_price
-        stop_pct = max(0.012, min(0.022, calc_stop_pct))
+        # Stop mesafesi: En az %2.4, en fazla %3.5 (1.8x ATR nefes payı)
+        atr_pct = (atr / entry_price) if entry_price > 0 else 0.02
+        calc_stop_pct = max((entry_price - support_stop) / entry_price, atr_pct * 1.8)
+        stop_pct = max(0.024, min(0.035, calc_stop_pct))
         stop_price = round(entry_price * (1.0 - stop_pct), 2)
 
         return {
@@ -956,9 +958,11 @@ class SimulationEngine:
                 bonuses += 3.0
                 bonus_tags.append('Erken Kopus')
 
-            total_rank = base_score + bonuses
-            if total_rank < (minimum_score - 8) and base_score < minimum_score:
+            # KATI TABAN SKOR GÜVENCESİ:
+            # Ham skoru 90.0 altındaki hisseler ASLA giremez! Bonuslar sadece sıralamayı belirler, eşik atlatamaz!
+            if base_score < minimum_score:
                 continue
+            total_rank = base_score + bonuses
 
             s['_sector_name'] = _sym_sec
             s['_sector_rel'] = _rel
@@ -1881,19 +1885,23 @@ class SimulationEngine:
             net_pnl = round(gross_pnl - comm, 2)
             pnl_pct = round((net_pnl / buy_vol) * 100.0, 2)
 
-            atr = float(r.get('atr_value') or (entry_px * 0.02))
-            stop_pct = min(0.040, max(0.024, (atr / entry_px) * 1.8))
+            trade_init_stop = float(r.get('initial_stop') or 0.0)
+            if trade_init_stop > 0 and trade_init_stop < entry_px:
+                stop_px = trade_init_stop
+                stop_pct = (entry_px - stop_px) / entry_px
+            else:
+                atr = float(r.get('atr_value') or (entry_px * 0.02))
+                stop_pct = min(0.035, max(0.024, (atr / entry_px) * 1.8))
+                stop_px = round(entry_px * (1.0 - stop_pct), 2)
 
-            # 🛡️ ENDEKS ŞALTERİ & ÇELİK STOP SIKILAŞTIRMASI:
-            # XU100 % -0.40'ın altına indiğinde veya yoğun satış dalgasında stopu agresifçe daralt (%1.6)
-            is_index_dump = (xu100_chg < -0.40)
+            # 🛡️ ENDEKS ŞALTERİ: XU100 % -0.50'nin altına sert indiğinde devreye girer
+            is_index_dump = (xu100_chg < -0.50)
             if is_index_dump:
-                stop_pct = min(stop_pct, 0.016)
+                stop_pct = min(stop_pct, 0.020)
+                stop_px = max(stop_px, round(entry_px * (1.0 - stop_pct), 2))
 
-            stop_px = round(entry_px * (1.0 - stop_pct), 2)
             tp1_px = round(entry_px * 1.04, 2)
-
-            is_stopped = (live_px <= stop_px) or (pnl_pct <= (-1.6 if is_index_dump else -2.4))
+            is_stopped = (live_px <= stop_px) or (pnl_pct <= (-2.0 if is_index_dump else -3.2))
 
             # 🛡️ CANLI BORSA DOĞRULAMASI (BIST TEYİT ZIRHI):
             # Stop seviyesi tetiklendiğinde tek bir hatalı tık veya bayat veriyle pozisyon KAPATILMAZ.

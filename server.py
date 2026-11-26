@@ -2697,6 +2697,9 @@ def api_system_push_market_data():
             osym = opp.get('symbol') or opp.get('Symbol')
             if osym and osym not in sim_seen:
                 norm = _normalize_sim_candidate(opp)
+                # KATI TABAN SKOR: 90.0 altındaki hisseler ASLA simülasyon havuzuna eklenmez!
+                if float(norm.get('score') or norm.get('Score') or 0) < 90.0:
+                    continue
                 if not norm.get('discovery_time'):
                     norm['discovery_time'] = "10:15" if (_now_ist.hour < 10 or (_now_ist.hour == 10 and _now_ist.minute <= 20)) else _curr_bar_time
                 if not norm.get('morning_phase'):
@@ -2709,10 +2712,12 @@ def api_system_push_market_data():
                 p = float(st.get('Price') or st.get('Daily_Close') or 0)
                 ch = float(st.get('Change_Pct') or 0)
                 v = float(st.get('Vol_Multiplier') or st.get('Volume_Ratio') or 0)
-                if p >= 4.0 and 0.5 <= ch < 5.2 and v >= 1.2:
+                sc = float(st.get('Score') or 0.0)
+                # KATI TABAN: Fiyat >= 8 TL, Skor >= 90, Hacim >= 1.2x
+                if p >= 8.0 and 0.5 <= ch < 5.2 and v >= 1.2 and sc >= 90.0:
                     cand = dict(st)
                     cand['symbol'] = sym
-                    cand['score'] = float(st.get('Score') or 92.0)
+                    cand['score'] = sc
                     cand['morning_price'] = p
                     cand['discovery_time'] = "10:15" if (_now_ist.hour < 10 or (_now_ist.hour == 10 and _now_ist.minute <= 20)) else _curr_bar_time
                     cand['morning_phase'] = f"Momentum ({cand['discovery_time']})"
