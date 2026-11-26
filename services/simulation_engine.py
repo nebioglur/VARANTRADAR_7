@@ -329,15 +329,29 @@ class SimulationEngine:
         c_ema21 = float(ema21.iloc[-1])
 
         # 1. AŞIRI ŞİŞKİNLİK / TEPE TUZAĞI ENGELİ:
-        # Fiyat hem VWAP'tan hem EMA21'den %2.5'ten fazla yukarıdaysa, hisse ani patlamanın tepesindedir.
-        # "Desteğe yavaşça süzülüş" gerçekleşmeden tepeden girmek KESİNLİKLE yasaktır!
+        # Desteğe süzülüş stratejisinde fiyat VWAP veya EMA21'den %2.0'den fazla uzakta OLMAMALIDIR.
+        # Aşırı uzamış fiyata (tepeye) atlamak tepe tuzağı ve sert kar satışı getirir.
         dist_vwap = (entry_price - support_vwap) / support_vwap if support_vwap > 0 else 0.0
         dist_ema21 = (entry_price - c_ema21) / c_ema21 if c_ema21 > 0 else 0.0
 
-        if dist_vwap > 0.025 and dist_ema21 > 0.022:
+        if dist_vwap > 0.020 or dist_ema21 > 0.020:
             return None
 
-        # 2. YAVAŞ SÜZÜLME / DÜŞÜK SATIŞ HACMİ KONTROLÜ:
+        # 2. DÖNÜŞ VE DESTEK TUTUNMA TEYİDİ (Falling Knife Engeli):
+        # Düşen kırmızı barda (bıçak düşerken) ASLA alım yapılmaz!
+        # Son bar veya bir önceki bar yeşil olmalı (Close >= Open) veya uzun alt fitilli (çekiç/reddiye) alıcı kanıtı olmalıdır.
+        if len(sub_df) >= 2:
+            last_bar = sub_df.iloc[-1]
+            prev_bar = sub_df.iloc[-2]
+            last_green = bool(last_bar['Close'] >= last_bar['Open'])
+            prev_green = bool(prev_bar['Close'] >= prev_bar['Open'])
+            bar_range = max(0.01, float(last_bar['High'] - last_bar['Low']))
+            lower_wick = float(min(last_bar['Open'], last_bar['Close']) - last_bar['Low'])
+            has_hammer = (lower_wick / bar_range) >= 0.35
+            if not (last_green or prev_green or has_hammer):
+                return None  # Satıcı baskısı sürüyor, dönüş teyidi yok
+
+        # 3. YAVAŞ SÜZÜLME / DÜŞÜK SATIŞ HACMİ KONTROLÜ:
         # Son barlarda düşüş varsa hacim zayıf olmalı (büyük oyuncu satmıyor, sindiriyor)
         if len(sub_df) >= 4:
             recent_bars = sub_df.tail(4)
@@ -1391,7 +1405,10 @@ class SimulationEngine:
             _loss_limit = self.daily_budget * 0.015    # -%1.5 (1.500 TL)
             _profit_limit = self.daily_budget * 0.020  # +%2.0 (2.000 TL)
 
-            if _daily_pnl <= -_loss_limit or _daily_pnl >= _profit_limit or _streak >= 2:
+            _max_streak = 3 if is_offensive else 2
+            is_streak_blocked = (_streak >= _max_streak) and not (is_offensive and xu100_change >= 0.50 and _daily_pnl > -_loss_limit)
+
+            if _daily_pnl <= -_loss_limit or _daily_pnl >= _profit_limit or is_streak_blocked:
                 if _daily_pnl <= -_loss_limit:
                     _lock_reason = f"Günlük zarar kesici (-%1.5): {_daily_pnl:.0f} TL; sermaye koruma devrede, yeni alımlar durduruldu"
                 elif _daily_pnl >= _profit_limit:
