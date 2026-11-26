@@ -2655,7 +2655,7 @@ def api_system_push_market_data():
         # KATI SAAT SINIRI: 14:30'dan sonra gelen V8 sinyalleri simülasyona sokulmaz!
         try:
             v8_al_cands = []
-            if _now_ist.hour < 14 or (_now_ist.hour == 14 and _now_ist.minute <= 30):
+            if _now_ist.hour < 17:
                 v8_al_cands = [x for x in (get_v8_breakout_data() or []) if (x.get("entry_status") or "").upper() == "ENTER"]
             for vc in reversed(v8_al_cands):
                 vsym = vc.get("symbol")
@@ -5043,7 +5043,10 @@ def _v8_a_class_gate(row: dict, sym: str, data: dict):
     except (TypeError, ValueError):
         chg = 0.0
     if chg >= 9.2:
-        reasons.append(f"Hisse tavana kilitli/çok yakın (+{chg:+.1f}%; tavan riski)")
+        b_sc = float(row.get("breakout_score") or 0)
+        f_rk = float(row.get("fakeout_risk") or 0)
+        if not (b_sc >= 50 and f_rk <= 40):
+            reasons.append(f"Hisse tavana kilitli/çok yakın (+{chg:+.1f}%; tavan riski)")
     elif chg < -2.5:
         reasons.append(f"Hisse belirgin ekside ({chg:+.1f}%)")
 
@@ -5289,12 +5292,21 @@ def get_v8_breakout_data():
             chg = float(row.get("change_pct") or row.get("intraday_change_pct") or 0)
         except (TypeError, ValueError):
             chg = 0.0
+        b_sc = float(row.get("breakout_score") or 0)
+        f_rk = float(row.get("fakeout_risk") or 0)
         if chg >= 9.2:
-            row["entry_status"] = "NO_ENTRY"
-            row["ceiling_risk"] = True
-            row["entry_reasons"] = [
-                f"[TAVAN RİSKİ] +{chg:.1f} ile kovalama bölgesinde; tavan sonrası teyit beklenmeli"
-            ] + list(row.get("entry_reasons") or [])
+            if b_sc >= 50 and f_rk <= 40:
+                row["entry_status"] = "ENTER"
+                row["ceiling_locked"] = True
+                row["entry_reasons"] = [
+                    f"🚀 TAVAN KİLİTLİ (+%{chg:.1f}): Güçlü V8 kırılımı tavana ulaştı"
+                ] + [r for r in (row.get("entry_reasons") or []) if "TAVAN RİSKİ" not in r]
+            else:
+                row["entry_status"] = "NO_ENTRY"
+                row["ceiling_risk"] = True
+                row["entry_reasons"] = [
+                    f"[TAVAN RİSKİ] +{chg:.1f} ile kovalama bölgesinde; kırılım gücü yetersiz"
+                ] + list(row.get("entry_reasons") or [])
 
     return breakout_list
 
